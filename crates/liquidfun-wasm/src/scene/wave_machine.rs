@@ -1,7 +1,8 @@
 //! Pinned `LiquidFun` Wave Machine: motorized four-wall tank rocking from sim time.
 //!
 //! ANTI-PATTERN: Do not copy Water Wheel's motor-off revolute / empty motor writes.
-//! Motor speed is written only from `on_advance` using `0.05 * cos(t) * π`.
+//! Motor speed is `multiplier * 0.05 * cos(t) * π`. The `wave-speed` control sets
+//! the multiplier, starting at 0. `1` matches testWaveMachine.js. `10` is ten times that.
 
 use std::f32::consts::PI;
 
@@ -15,9 +16,7 @@ use liquidfun::{
     RevoluteJointDef, World,
 };
 
-use super::{
-    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
-};
+use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
 const PARTICLE_RADIUS: f32 = 0.025;
@@ -29,6 +28,9 @@ const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const TANK_POSITION: Vec2 = Vec2::new(0.0, 1.0);
 const WALL_DENSITY: f32 = 5.0;
 const MOTOR_SPEED_SCALE: f32 = 0.05;
+const WAVE_SPEED_CONTROL: &str = "wave-speed";
+/// Slider tenths. 10 is the original amplitude; 100 is ten times that.
+const MAX_WAVE_SPEED_TENTHS: u16 = 100;
 const MAX_MOTOR_TORQUE: f32 = 1.0e7;
 const SIM_DT: f32 = 1.0 / 60.0;
 const FILL_HALF: f32 = 0.9;
@@ -46,6 +48,7 @@ struct WaveMachineHooks {
     joint: JointId,
     wall_local_corners: [[Vec2; 4]; 4],
     time: f32,
+    speed_multiplier: f32,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -90,6 +93,7 @@ fn build_wave_machine() -> Result<BuiltScene, SceneError> {
             joint,
             wall_local_corners,
             time: 0.0,
+            speed_multiplier: 0.0,
         }),
     })
 }
@@ -128,16 +132,54 @@ fn attach_wall_fixture(
 }
 
 fn pin_tank(world: &mut World, ground: BodyId, tank: BodyId) -> Result<JointId, SceneError> {
-    let initial_speed = MOTOR_SPEED_SCALE * PI;
     let joint = RevoluteJointDef::new(ground, tank)
         .map_err(|_error| SceneError::Body)?
         .with_frame(TANK_POSITION, Vec2::ZERO, 0.0)
         .map_err(|_error| SceneError::Body)?
-        .with_motor(true, initial_speed, MAX_MOTOR_TORQUE)
+        .with_motor(true, 0.0, MAX_MOTOR_TORQUE)
         .map_err(|_error| SceneError::Body)?;
     world
         .create_joint(JointDef::from(joint))
         .map_err(|_error| SceneError::Body)
+}
+
+/// Accepts one-decimal tokens from `0.0` through `10.0`, matching the HUD slider.
+fn parse_wave_speed(value: &str) -> Option<f32> {
+    let (whole, fraction) = value.split_once('.')?;
+    if fraction.len() != 1 || !fraction.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if whole.is_empty() || !whole.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if whole.len() > 1 && whole.starts_with('0') {
+        return None;
+    }
+
+    let whole_value = whole.parse::<u16>().ok()?;
+    let tenth_byte = fraction.as_bytes().first().copied()?;
+    let tenth = u16::from(tenth_byte.checked_sub(b'0')?);
+    let tenths = whole_value.checked_mul(10)?.checked_add(tenth)?;
+    if tenths > MAX_WAVE_SPEED_TENTHS {
+        return None;
+    }
+
+    Some(f32::from(tenths) / 10.0)
+}
+
+fn scaled_motor_speed(time: f32, speed_multiplier: f32) -> f32 {
+    speed_multiplier * MOTOR_SPEED_SCALE * time.cos() * PI
+}
+
+fn write_motor_speed(
+    world: &mut World,
+    joint: JointId,
+    time: f32,
+    speed_multiplier: f32,
+) -> Result<(), SessionError> {
+    world
+        .set_revolute_motor_speed(joint, scaled_motor_speed(time, speed_multiplier))
+        .map_err(|_error| SessionError::StepFailed)
 }
 
 fn create_particle_fill(world: &mut World) -> Result<ParticleSystemId, SceneError> {
@@ -174,23 +216,28 @@ impl SceneHooks for WaveMachineHooks {
         world: &mut World,
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
-        // Match testWaveMachine.js Step: t += 1/60 then SetMotorSpeed(0.05 * cos(t) * π).
+        // Match testWaveMachine.js Step: t += 1/60 then SetMotorSpeed(multiplier * 0.05 * cos(t) * π).
         self.time += SIM_DT;
-        let speed = MOTOR_SPEED_SCALE * self.time.cos() * PI;
-        world
-            .set_revolute_motor_speed(self.joint, speed)
-            .map_err(|_error| SessionError::StepFailed)?;
-        Ok(())
+        write_motor_speed(world, self.joint, self.time, self.speed_multiplier)
     }
 
     fn apply_control(
         &mut self,
-        _world: &mut World,
+        world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
-        _value: &str,
+        name: &str,
+        value: &str,
     ) -> Result<ControlEffect, SessionError> {
-        Err(SessionError::UnknownControl)
+        if name != WAVE_SPEED_CONTROL {
+            return Err(SessionError::UnknownControl);
+        }
+        let Some(speed_multiplier) = parse_wave_speed(value) else {
+            return Err(SessionError::UnknownControl);
+        };
+
+        self.speed_multiplier = speed_multiplier;
+        write_motor_speed(world, self.joint, self.time, speed_multiplier)?;
+        Ok(ControlEffect::Live)
     }
 
     fn apply_action(
@@ -265,9 +312,38 @@ mod tests {
     }
 
     #[test]
-    fn motor_speed_follows_sim_time_after_advances() {
-        // Arrange — JS Step order: t += 1/60 then set_revolute_motor_speed(0.05 * cos(t) * π)
-        // Water Wheel motor-off is NOT the template.
+    fn default_wave_speed_stays_stopped() {
+        // Arrange
+        let super::super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = build(&[]).expect("Wave Machine should construct");
+
+        // Act
+        let initial = revolute_motor_speed(&world);
+        for _ in 0..30 {
+            hooks
+                .on_advance(&mut world, particle_system)
+                .expect("on_advance must keep a zero multiplier stopped");
+        }
+        let after = revolute_motor_speed(&world);
+
+        // Assert
+        assert!(
+            initial.abs() < 1.0e-6,
+            "the tank must start stopped (got {initial})"
+        );
+        assert!(
+            after.abs() < 1.0e-6,
+            "a zero wave speed must stay stopped after advances (got {after})"
+        );
+    }
+
+    #[test]
+    fn original_speed_follows_sim_time_after_advances() {
+        // Arrange — JS Step order: t += 1/60 then set_revolute_motor_speed(1 * 0.05 * cos(t) * π)
         let super::super::BuiltScene {
             mut world,
             particle_system,
@@ -275,6 +351,9 @@ mod tests {
             ..
         } = build(&[]).expect("Wave Machine should construct the pinned motorized tank");
         let advances = 7_u32;
+        hooks
+            .apply_control(&mut world, particle_system, "wave-speed", "1.0")
+            .expect("1.0 restores the pinned amplitude");
 
         // Act
         for _ in 0..advances {
@@ -288,13 +367,12 @@ mod tests {
         // Assert
         assert!(
             (speed - expected).abs() < 1.0e-5,
-            "motor speed must track sim time (got {speed}, expected {expected}); \
-             set_revolute_motor_speed writes 0.05 * cos(t) * PI"
+            "motor speed must track sim time at 1× (got {speed}, expected {expected})"
         );
     }
 
     #[test]
-    fn first_advance_changes_motor_speed_from_initial() {
+    fn max_wave_speed_is_ten_times_the_original_amplitude() {
         // Arrange
         let super::super::BuiltScene {
             mut world,
@@ -302,6 +380,39 @@ mod tests {
             mut hooks,
             ..
         } = build(&[]).expect("Wave Machine should construct");
+        let advances = 7_u32;
+        hooks
+            .apply_control(&mut world, particle_system, "wave-speed", "10.0")
+            .expect("10.0 is the slider maximum");
+
+        // Act
+        for _ in 0..advances {
+            hooks
+                .on_advance(&mut world, particle_system)
+                .expect("on_advance must scale the pinned amplitude");
+        }
+        let speed = revolute_motor_speed(&world);
+        let expected = 10.0 * 0.05 * (advances as f32 / 60.0).cos() * PI;
+
+        // Assert
+        assert!(
+            (speed - expected).abs() < 1.0e-4,
+            "10× must be ten times the pinned amplitude (got {speed}, expected {expected})"
+        );
+    }
+
+    #[test]
+    fn first_advance_changes_original_motor_speed() {
+        // Arrange
+        let super::super::BuiltScene {
+            mut world,
+            particle_system,
+            mut hooks,
+            ..
+        } = build(&[]).expect("Wave Machine should construct");
+        hooks
+            .apply_control(&mut world, particle_system, "wave-speed", "1.0")
+            .expect("1.0 restores the pinned amplitude");
         let initial = revolute_motor_speed(&world);
 
         // Act
@@ -311,10 +422,10 @@ mod tests {
         let after = revolute_motor_speed(&world);
         let expected = 0.05 * (1.0_f32 / 60.0).cos() * PI;
 
-        // Assert — not stalled at create speed forever; matches increment-then-set
+        // Assert — not stalled at the create-time speed; matches increment-then-set
         assert!(
             (initial - 0.05 * PI).abs() < 1.0e-5,
-            "initial motor speed must be 0.05 * PI before any advance (got {initial})"
+            "1× before any advance must be 0.05 * PI (got {initial})"
         );
         assert!(
             (after - expected).abs() < 1.0e-5,
@@ -323,6 +434,39 @@ mod tests {
         assert!(
             (after - initial).abs() > 1.0e-6,
             "motor speed must change from initial after the first advance"
+        );
+    }
+
+    #[test]
+    fn wave_speed_control_is_live() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::WaveMachine)
+            .expect("Wave Machine should construct the pinned motorized tank");
+        let before = session.particle_count();
+
+        // Act
+        let applied = session.apply_control("wave-speed", "2.5");
+
+        // Assert
+        assert_eq!(applied, Ok(false));
+        assert_eq!(session.particle_count(), before);
+    }
+
+    #[test]
+    fn wave_speed_rejects_off_scale_tokens() {
+        // Arrange
+        let mut session = SessionCore::create(SceneId::WaveMachine)
+            .expect("Wave Machine should construct the pinned motorized tank");
+
+        // Act
+        let rejected = ["1", "10", "10.1", "-1.0", "01.0", "1.00", "fast"]
+            .map(|value| session.apply_control("wave-speed", value));
+
+        // Assert
+        assert!(
+            rejected
+                .iter()
+                .all(|result| *result == Err(SessionError::UnknownControl))
         );
     }
 

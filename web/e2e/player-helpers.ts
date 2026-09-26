@@ -408,6 +408,19 @@ export async function activateLabeledControl(
     return;
   }
 
+  const labeled = page.getByLabel(control);
+  if ((await labeled.count()) === 1) {
+    const maybeType = await labeled.getAttribute("type");
+    if (maybeType === "range") {
+      const max = await labeled.getAttribute("max");
+      if (max === null) {
+        throw new Error(`range control ${control} is missing max`);
+      }
+      await labeled.fill(max);
+      return;
+    }
+  }
+
   await page.getByRole("button", { name: control, exact: true }).click();
 }
 

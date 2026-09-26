@@ -53,19 +53,24 @@ describe("readmeSvgRequest", () => {
   it("selects the default 10 second export for every catalog scene", () => {
     // Arrange
     assertReadmeSvgPlanCoverage();
-    const damBreak = README_SVG_PLANS[0];
+    const damBreak = README_SVG_PLANS.find((plan) => plan.id === "dam-break");
+    const waveMachine = README_SVG_PLANS.find((plan) => plan.id === "wave-machine");
+    expect(README_SVG_PLANS[0]?.id).toBe("wave-machine");
     expect(damBreak).toBeDefined();
-    if (damBreak === undefined) {
+    expect(waveMachine).toBeDefined();
+    if (damBreak === undefined || waveMachine === undefined) {
       return;
     }
 
     // Act
     const request = readmeSvgRequest(damBreak);
+    const waveRequest = readmeSvgRequest(waveMachine);
     const parsed = maybeParseSvgExportRequest(request);
 
     // Assert
     expect(README_SVG_PLANS.map((plan) => plan.id)).toEqual([...SCENE_IDS]);
     expect(parsed).toEqual(request);
+    expect(waveRequest.controls).toEqual([{ name: "wave-speed", value: "1.0" }]);
     expect(request).toMatchObject({
       sceneId: "dam-break",
       title: "Dam Break",

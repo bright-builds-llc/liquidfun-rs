@@ -41,6 +41,7 @@ export type CanvasHudProps = PlaybackButtonsProps & {
   readonly onZoomOut: () => void;
   readonly onResetZoom: () => void;
   readonly onPanEnabledChange: (enabled: boolean) => void;
+  readonly children?: JSX.Element;
 };
 
 function playDisabled(status: PlayerStatus): boolean {
@@ -131,24 +132,27 @@ export function CanvasHud(props: CanvasHudProps) {
         </output>
       </div>
       <div class="canvas-hud-bottom">
-        <div class="canvas-transport">
-          <PlaybackButtons
-            compact
-            status={props.status}
-            onPlay={props.onPlay}
-            onPause={props.onPause}
-            onReset={props.onReset}
-            onRetry={props.onRetry}
+        {props.children}
+        <div class="canvas-hud-toolbar">
+          <div class="canvas-transport">
+            <PlaybackButtons
+              compact
+              status={props.status}
+              onPlay={props.onPlay}
+              onPause={props.onPause}
+              onReset={props.onReset}
+              onRetry={props.onRetry}
+            />
+          </div>
+          <ViewportTools
+            showFullscreen={false}
+            panEnabled={props.panEnabled}
+            onZoomIn={props.onZoomIn}
+            onZoomOut={props.onZoomOut}
+            onResetZoom={props.onResetZoom}
+            onPanEnabledChange={props.onPanEnabledChange}
           />
         </div>
-        <ViewportTools
-          showFullscreen={false}
-          panEnabled={props.panEnabled}
-          onZoomIn={props.onZoomIn}
-          onZoomOut={props.onZoomOut}
-          onResetZoom={props.onResetZoom}
-          onPanEnabledChange={props.onPanEnabledChange}
-        />
       </div>
       <SceneControlsTrigger />
     </>

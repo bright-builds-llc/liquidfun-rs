@@ -66,7 +66,8 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Click or tap the canvas, or use Toggle paddle rail, to free the paddle from its rail or put it back. Labeled controls also work from the keyboard.",
   impulse:
     "Click or tap inside the box to shove the particle blob. Use Push to choose force or impulse. Clicks outside the box do nothing. Labeled controls also work from the keyboard.",
-  "wave-machine": WATCH_FIRST_HINT,
+  "wave-machine":
+    "Use Wave speed to rock the tank. It starts stopped, and 1× matches the original motor. Labeled controls also work from the keyboard.",
   "theo-jansen":
     "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
   "liquid-tumbler": WATCH_FIRST_HINT,
@@ -80,7 +81,6 @@ const WATCH_FIRST_SCENE_IDS = [
   "elastic-particles",
   "rigid-particles",
   "soup",
-  "wave-machine",
   "liquid-tumbler",
 ] as const;
 const FORBIDDEN_HINT_PHRASES = [
@@ -101,6 +101,7 @@ describe("SCENES", () => {
   it("lists seventeen locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
+      "wave-machine",
       "dam-break",
       "fountain",
       "float-or-sink",
@@ -115,7 +116,6 @@ describe("SCENES", () => {
       "soup",
       "soup-stirrer",
       "impulse",
-      "wave-machine",
       "theo-jansen",
       "liquid-tumbler",
     ] as const;
@@ -132,6 +132,7 @@ describe("SCENES", () => {
   it("uses the locked titles for each scene", () => {
     // Arrange
     const expectedTitles = [
+      "Wave Machine",
       "Dam Break",
       "Fountain",
       "Float or Sink",
@@ -146,7 +147,6 @@ describe("SCENES", () => {
       "Soup",
       "Soup Stirrer",
       "Impulse",
-      "Wave Machine",
       "Theo Jansen",
       "Liquid Tumbler",
     ];

@@ -41,6 +41,12 @@ open the live scene. The SVG link under each preview is the vector source. A
 post-merge workflow regenerates these files and commits them when the bytes
 change.
 
+#### [Wave Machine](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
+
+[![Wave Machine simulation preview](docs/assets/readme/wave-machine-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
+
+[Animated SVG](docs/assets/readme/wave-machine-10s.svg)
+
 #### [Dam Break](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
 
 [![Dam Break simulation preview](docs/assets/readme/dam-break-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/dam-break)
@@ -124,12 +130,6 @@ change.
 [![Impulse simulation preview](docs/assets/readme/impulse-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/impulse)
 
 [Animated SVG](docs/assets/readme/impulse-10s.svg)
-
-#### [Wave Machine](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
-
-[![Wave Machine simulation preview](docs/assets/readme/wave-machine-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-machine)
-
-[Animated SVG](docs/assets/readme/wave-machine-10s.svg)
 
 #### [Theo Jansen](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/theo-jansen)
 

@@ -19,6 +19,10 @@ import { GravityArrow } from "./GravityArrow";
 import type { FpsTick } from "./fps-meter";
 import { ViewportTools } from "./ViewportTools";
 import { CanvasHud, PlaybackButtons, SceneControlsSheet } from "./CanvasStage";
+import {
+  HudControlSlider,
+  type HudControlSliderProps,
+} from "./SceneControls";
 import { SiteFooter } from "./SiteFooter";
 import { Drawer } from "./ui/drawer";
 
@@ -52,6 +56,7 @@ export type PlayerPanelProps = {
   readonly onZoomOut: () => void;
   readonly onResetZoom: () => void;
   readonly onPanEnabledChange: (enabled: boolean) => void;
+  readonly hudControls: HudControlSliderProps;
   readonly children?: JSX.Element;
 };
 
@@ -196,7 +201,9 @@ function PlayerPanelLayout(layoutProps: {
               onZoomOut={props.onZoomOut}
               onResetZoom={props.onResetZoom}
               onPanEnabledChange={props.onPanEnabledChange}
-            />
+            >
+              <HudControlSlider {...props.hudControls} />
+            </CanvasHud>
           </Show>
         </div>
         <Show when={!layoutProps.canvasStage}>
@@ -210,16 +217,19 @@ function PlayerPanelLayout(layoutProps: {
         when={layoutProps.canvasStage}
         fallback={
           <>
-            <div class="control-row">
-              <PlaybackButtons
-                compact={false}
-                status={props.status}
-                onPlay={props.onPlay}
-                onPause={props.onPause}
-                onReset={props.onReset}
-                onRetry={props.onRetry}
-              />
-              <PlayerOptions panel={props} />
+            <div class="playback-stack">
+              <HudControlSlider {...props.hudControls} />
+              <div class="control-row">
+                <PlaybackButtons
+                  compact={false}
+                  status={props.status}
+                  onPlay={props.onPlay}
+                  onPause={props.onPause}
+                  onReset={props.onReset}
+                  onRetry={props.onRetry}
+                />
+                <PlayerOptions panel={props} />
+              </div>
             </div>
             <TiltPane panel={props} />
             {props.children}

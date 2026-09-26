@@ -184,7 +184,22 @@ describe("scene catalog controls", () => {
     expect(maybeSceneById("elastic-particles")?.controls).toEqual([]);
     expect(maybeSceneById("rigid-particles")?.controls).toEqual([]);
     expect(maybeSceneById("soup")?.controls).toEqual([]);
-    expect(maybeSceneById("wave-machine")?.controls).toEqual([]);
+    expect(maybeSceneById("wave-machine")?.controls).toEqual([
+      {
+        id: "wave-speed",
+        label: "Wave speed",
+        kind: "range",
+        recreates: false,
+        surface: "hud",
+        min: 0,
+        max: 10,
+        step: 0.1,
+        defaultValue: 0,
+        unit: "×",
+        scale: "linear",
+        ticks: [0, 5, 10],
+      },
+    ]);
     expect(maybeSceneById("liquid-tumbler")?.controls).toEqual([]);
     expect(soupStirrer?.controls).toHaveLength(1);
     expect(soupStirrer?.controls[0]).toMatchObject({

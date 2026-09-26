@@ -2,6 +2,7 @@ import { Show } from "solid-js";
 
 import type { SceneRecord } from "../catalog/scenes";
 import { sceneControlsIdentity } from "../player/runtime";
+import { sceneControlsForSurface } from "./scene-controls";
 import { SceneControls } from "./SceneControls";
 import { SceneCredits } from "./SceneCredits";
 
@@ -24,7 +25,7 @@ export function PlayerSceneChrome(props: PlayerSceneChromeProps) {
       >
         {(_controlsIdentity) => (
           <SceneControls
-            controls={props.scene.controls}
+            controls={sceneControlsForSurface(props.scene.controls, "panel")}
             disabled={props.disabled}
             maybeValues={props.maybeValues}
             onApplyControl={props.onApplyControl}

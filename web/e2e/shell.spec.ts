@@ -161,8 +161,8 @@ test("normalizes an empty hash without adding an extra history entry", async ({
   await page.goto(PLAYGROUND_ROOT_PATH);
 
   // Assert
-  await expect(page).toHaveURL(/#\/scene\/dam-break$/);
-  await expectReadySceneChrome(page, "Dam Break");
+  await expect(page).toHaveURL(/#\/scene\/wave-machine$/);
+  await expectReadySceneChrome(page, "Wave Machine");
 
   // Act
   await page.goBack();
