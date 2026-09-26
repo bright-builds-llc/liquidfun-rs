@@ -70,7 +70,7 @@ html[data-canvas-stage="true"] .viewport-frame canvas {
 }
 
 html[data-canvas-stage="true"] .debug-readout {
-  top: calc(max(8px, env(safe-area-inset-top, 0px)) + 52px);
+  top: calc(max(8px, env(safe-area-inset-top, 0px)) + 96px);
   left: max(8px, env(safe-area-inset-left, 0px));
 }
 
@@ -107,22 +107,34 @@ html[data-canvas-stage="true"] .gravity-arrow {
 }
 
 .canvas-fps {
-  flex: 0 0 auto;
+  position: absolute;
+  z-index: 2;
+  top: calc(max(8px, env(safe-area-inset-top, 0px)) + 52px);
+  left: max(8px, env(safe-area-inset-left, 0px));
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin: 0;
+  padding: 4px 10px;
+  color: #0B0F14;
   font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  pointer-events: none;
+  border-radius: 8px;
 }
 
 .canvas-fps[data-fps-tone="good"] {
-  color: #3DDC97;
+  background: #3DDC97;
 }
 
 .canvas-fps[data-fps-tone="fair"] {
-  color: #E6C35C;
+  background: #E6C35C;
 }
 
 .canvas-fps[data-fps-tone="poor"] {
-  color: #F07178;
+  background: #F07178;
 }
 
 .canvas-hud-bottom {
