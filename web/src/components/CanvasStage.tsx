@@ -119,6 +119,7 @@ export function CanvasHud(props: CanvasHudProps) {
   return (
     <>
       <div class="canvas-hud-title">
+        <RenderedFps fpsTicks={props.fpsTicks} />
         <h2 id="player-title">{props.sceneTitle}</h2>
         <output
           class={`session-status session-status--${props.status}`}
@@ -128,7 +129,6 @@ export function CanvasHud(props: CanvasHudProps) {
           <span class="status-dot" aria-hidden="true" />
           {props.statusLabel}
         </output>
-        <RenderedFps fpsTicks={props.fpsTicks} />
       </div>
       <div class="canvas-hud-bottom">
         <div class="canvas-transport">
