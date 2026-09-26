@@ -37,9 +37,10 @@ export const WAVE_MACHINE_SPEED_CONTROL: SceneControl = {
 /** Level. The tank does not rock. */
 export const WAVE_MACHINE_TILT_MIN = 0;
 /**
- * Widest HUD tilt that still fits the Wave Machine frame.
+ * Widest HUD tilt.
  *
- * `9` is the pinned peak, `0.05 * π` radians.
+ * `9` is the pinned peak, `0.05 * π` radians. The starting camera frames that
+ * peak. Wider tilts can swing past the frame on short screens.
  */
 export const WAVE_MACHINE_TILT_MAX = 30;
 export const WAVE_MACHINE_TILT_STEP = 1;

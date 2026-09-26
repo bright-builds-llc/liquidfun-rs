@@ -111,13 +111,14 @@ export const LIQUID_TUMBLER_VIEW_BOUNDS = {
 /**
  * Camera frame for Wave Machine, in meters.
  *
- * About twice as tight as the shared 12 m by 9 m frame, with room for a 30° tilt.
+ * Matches the tank in `wave_machine.rs` (about x = ±2.05, y = -0.05..2.05
+ * around (0, 1)) plus the default 9° rock and a slim margin.
  */
 export const WAVE_MACHINE_VIEW_BOUNDS = {
-  minX: -3,
-  minY: -1.2,
-  maxX: 3,
-  maxY: 3.6,
+  minX: -2.3,
+  minY: -0.47,
+  maxX: 2.3,
+  maxY: 2.47,
 } as const;
 
 const SHOWCASE = {
