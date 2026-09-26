@@ -14,8 +14,10 @@ import { maybeObservedFrame, type PlayerView } from "./view";
 import { resizeCanvasBackingStore } from "../render/canvas";
 import {
   IDENTITY_CAMERA_VIEW,
+  WORLD_BOUNDS,
   type Camera,
   type CameraView,
+  type WorldBounds,
 } from "../render/camera";
 
 const MILLISECONDS_PER_SECOND = 1000;
@@ -30,6 +32,7 @@ export type FrameClock = {
   maybeResizeObserver: ResizeObserver | undefined;
   maybeCamera: Camera | undefined;
   cameraView: CameraView;
+  worldBounds: WorldBounds;
 };
 
 export type FrameLoopDeps = {
@@ -62,6 +65,7 @@ export function createFrameClock(): FrameClock {
     maybeResizeObserver: undefined,
     maybeCamera: undefined,
     cameraView: IDENTITY_CAMERA_VIEW,
+    worldBounds: WORLD_BOUNDS,
   };
 }
 
@@ -228,6 +232,7 @@ export function connectResizeObserver(
         clock.viewportHeight,
         window.devicePixelRatio,
         clock.cameraView,
+        clock.worldBounds,
       );
       clock.maybeCamera = resizedCamera;
       if (resizedCamera === undefined) {

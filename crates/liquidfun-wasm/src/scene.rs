@@ -14,6 +14,7 @@ mod float_or_sink;
 mod fountain;
 mod jelly_drop;
 mod liquid_timer;
+mod liquid_tumbler;
 mod particles;
 mod rigid_particles;
 mod soup;
@@ -49,6 +50,7 @@ pub(crate) enum SceneId {
     Impulse,
     WaveMachine,
     TheoJansen,
+    LiquidTumbler,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -69,7 +71,18 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "impulse" => Ok(SceneId::Impulse),
         "wave-machine" => Ok(SceneId::WaveMachine),
         "theo-jansen" => Ok(SceneId::TheoJansen),
+        "liquid-tumbler" => Ok(SceneId::LiquidTumbler),
         _ => Err(SessionError::UnknownScene),
+    }
+}
+
+const DEFAULT_PARTICLE_ITERATIONS: u32 = 2;
+
+/// Particle substeps for one scene. Liquid Tumbler needs more than the shared default.
+pub(crate) const fn particle_iterations(id: SceneId) -> u32 {
+    match id {
+        SceneId::LiquidTumbler => liquid_tumbler::PARTICLE_ITERATIONS,
+        _ => DEFAULT_PARTICLE_ITERATIONS,
     }
 }
 
@@ -171,6 +184,7 @@ pub(crate) fn build_scene(
         SceneId::Impulse => impulse::build(presets),
         SceneId::WaveMachine => wave_machine::build(presets),
         SceneId::TheoJansen => theo_jansen::build(presets),
+        SceneId::LiquidTumbler => liquid_tumbler::build(presets),
     }
 }
 

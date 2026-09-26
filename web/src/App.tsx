@@ -1,6 +1,6 @@
 import { createEffect, createSignal, onCleanup } from "solid-js";
 
-import { maybeSceneById, type SceneId } from "./catalog/scenes";
+import { maybeSceneById, worldBoundsForScene, type SceneId } from "./catalog/scenes";
 import { changedPresetEntries } from "./export/presets";
 import type { SvgExportRequest } from "./export/messages";
 import { PlaygroundStage } from "./components/PlaygroundStage";
@@ -225,7 +225,7 @@ export function App() {
       return;
     }
 
-    clock.maybeCamera = createCamera(clock.viewportWidth, clock.viewportHeight, clock.cameraView);
+    clock.maybeCamera = createCamera(clock.viewportWidth, clock.viewportHeight, clock.cameraView, clock.worldBounds);
   }
 
   function changeRenderMode(nextMode: RenderMode): void {
@@ -290,6 +290,7 @@ export function App() {
     setStepsThisFrame(0);
     setFpsTicks([]);
     clock.maybeLastTimestamp = undefined;
+    clock.worldBounds = worldBoundsForScene(id);
     clock.cameraView = IDENTITY_CAMERA_VIEW;
     refreshCamera();
     setView({ kind: "loading" });

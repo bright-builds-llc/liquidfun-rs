@@ -2,7 +2,9 @@ import type { RenderFrame } from "../physics/frame";
 import {
   type Camera,
   type CameraView,
+  type WorldBounds,
   IDENTITY_CAMERA_VIEW,
+  WORLD_BOUNDS,
   createCamera,
   projectPoint,
   projectRadius,
@@ -54,8 +56,9 @@ export function resizeCanvasBackingStore(
   cssHeight: number,
   devicePixelRatio: number,
   view: CameraView = IDENTITY_CAMERA_VIEW,
+  bounds: WorldBounds = WORLD_BOUNDS,
 ): Camera {
-  const camera = createCamera(cssWidth, cssHeight, view);
+  const camera = createCamera(cssWidth, cssHeight, view, bounds);
   const pixelRatio = Math.min(
     requirePositiveFinite(devicePixelRatio),
     MAX_DEVICE_PIXEL_RATIO,

@@ -2,6 +2,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { worldBoundsForScene } from "../src/catalog/scenes";
 import { buildAnimatedSvg } from "../src/export/animated-svg";
 import { recordProjectedSamples, type ExportDriver } from "../src/export/record";
 import type { SvgExportRequest } from "../src/export/messages";
@@ -103,6 +104,7 @@ async function writeSceneSvg(
         panX: request.panX,
         panY: request.panY,
         maxRenderedParticles: request.maxRenderedParticles,
+        worldBounds: worldBoundsForScene(request.sceneId),
         beforeSample(sampleIndex) {
           applyPlanCues(session, plan, sampleIndex);
         },

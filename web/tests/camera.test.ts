@@ -206,6 +206,23 @@ describe("unprojectPoint", () => {
     expect(cameraSource).toContain("export function unprojectPoint");
   });
 
+  it("fits a caller-supplied world rectangle instead of the shared basin", () => {
+    // Arrange
+    const bounds = { minX: -0.07, minY: -0.02, maxX: 0.07, maxY: 0.16 };
+    const shared = createCamera(960, 540);
+    const camera = createCamera(960, 540, IDENTITY_CAMERA_VIEW, bounds);
+
+    // Act
+    const projected = projectPoint(camera, { x: 0, y: 0.07 });
+    const restored = unprojectPoint(camera, projected);
+
+    // Assert
+    expect(camera.bounds).toEqual(bounds);
+    expect(camera.scale).toBeGreaterThan(shared.scale * 20);
+    expect(restored.x).toBeCloseTo(0);
+    expect(restored.y).toBeCloseTo(0.07);
+  });
+
   it("zooms around the fitted center and pans in CSS pixels", () => {
     // Arrange
     const fitted = createCamera(960, 540);

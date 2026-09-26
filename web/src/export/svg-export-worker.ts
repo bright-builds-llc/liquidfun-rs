@@ -1,5 +1,6 @@
 import init, { ProofSession } from "../generated/liquidfun-wasm/liquidfun_wasm.js";
 import wasmUrl from "../generated/liquidfun-wasm/liquidfun_wasm_bg.wasm?url";
+import { worldBoundsForScene } from "../catalog/scenes";
 import { parseRenderFrame } from "../physics/frame";
 import { buildAnimatedSvg } from "./animated-svg";
 import {
@@ -35,9 +36,16 @@ async function runExport(data: unknown): Promise<void> {
     await ensureWasm();
     const session = new ProofSession(maybeRequest.sceneId);
     maybeSession = session;
-    const samples = recordProjectedSamples(driverFor(session), maybeRequest, (completed, total) => {
-      post({ type: "sampling", completed, total });
-    });
+    const samples = recordProjectedSamples(
+      driverFor(session),
+      {
+        ...maybeRequest,
+        worldBounds: worldBoundsForScene(maybeRequest.sceneId),
+      },
+      (completed, total) => {
+        post({ type: "sampling", completed, total });
+      },
+    );
     post({ type: "assembling", total: samples.length });
     const svg = buildAnimatedSvg({
       title: maybeRequest.title,

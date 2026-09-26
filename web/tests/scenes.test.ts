@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENE_IDS,
   SCENES,
   isReadySceneId,
   maybeSceneById,
+  worldBoundsForScene,
   type SceneId,
 } from "../src/catalog/scenes";
+import { WORLD_BOUNDS } from "../src/render/camera";
 
 const WATCH_FIRST_HINT =
   "This scene is watch-first. Use Play scene, Pause scene, and Reset scene.";
@@ -36,6 +39,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   "wave-machine": "Watch a motorized tank rock and slosh the water inside.",
   "theo-jansen":
     "Watch a walker move under a particle load and reverse its motor.",
+  "liquid-tumbler":
+    "A drinking glass at real size: 74 mm wide, 2 mm particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -64,6 +69,7 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   "wave-machine": WATCH_FIRST_HINT,
   "theo-jansen":
     "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
+  "liquid-tumbler": WATCH_FIRST_HINT,
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -75,6 +81,7 @@ const WATCH_FIRST_SCENE_IDS = [
   "rigid-particles",
   "soup",
   "wave-machine",
+  "liquid-tumbler",
 ] as const;
 const FORBIDDEN_HINT_PHRASES = [
   "Press Space to pause",
@@ -91,7 +98,7 @@ const LOCKED_ACTION_LABELS = [
 ] as const;
 
 describe("SCENES", () => {
-  it("lists sixteen locked scenes in the approved order", () => {
+  it("lists seventeen locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "dam-break",
@@ -110,13 +117,14 @@ describe("SCENES", () => {
       "impulse",
       "wave-machine",
       "theo-jansen",
+      "liquid-tumbler",
     ] as const;
 
     // Act
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(16);
+    expect(SCENES).toHaveLength(17);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -140,6 +148,7 @@ describe("SCENES", () => {
       "Impulse",
       "Wave Machine",
       "Theo Jansen",
+      "Liquid Tumbler",
     ];
 
     // Act
@@ -172,7 +181,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(16);
+    expect(readyCount).toBe(17);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -258,6 +267,22 @@ describe("maybeSceneById", () => {
     );
   });
 
+  it("frames Liquid Tumbler on the glass and leaves other scenes on the shared bounds", () => {
+    // Arrange
+    const tumbler = maybeSceneById("liquid-tumbler");
+    const damBreak = maybeSceneById("dam-break");
+
+    // Act
+    const tumblerBounds = worldBoundsForScene("liquid-tumbler");
+    const damBreakBounds = worldBoundsForScene("dam-break");
+
+    // Assert
+    expect(tumbler?.viewBounds).toEqual(LIQUID_TUMBLER_VIEW_BOUNDS);
+    expect(tumblerBounds).toEqual(LIQUID_TUMBLER_VIEW_BOUNDS);
+    expect(damBreak?.viewBounds).toBeUndefined();
+    expect(damBreakBounds).toEqual(WORLD_BOUNDS);
+  });
+
   it("returns undefined for an unknown id", () => {
     // Arrange
     const id = "not-a-scene";
@@ -271,7 +296,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all sixteen approved ids", () => {
+  it("is true for all seventeen approved ids", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -279,6 +304,6 @@ describe("isReadySceneId", () => {
     const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(readyFlags).toEqual(Array.from({ length: 16 }, () => true));
+    expect(readyFlags).toEqual(Array.from({ length: 17 }, () => true));
   });
 });

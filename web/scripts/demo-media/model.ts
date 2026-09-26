@@ -222,6 +222,13 @@ export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
     interactionStep: 180,
     action: { kind: "click", point: { x: 0.5, y: 0.5 } },
   },
+  {
+    id: "liquid-tumbler",
+    title: "Liquid Tumbler",
+    route: "/liquidfun-rs/#/scene/liquid-tumbler",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
 ];
 
 function assertSceneCapturePlanCoverage(): void {

@@ -314,6 +314,17 @@ function WaveMachinePreview() {
   );
 }
 
+function LiquidTumblerPreview() {
+  return (
+    <PreviewFrame>
+      <line x1="58" y1="22" x2="58" y2="74" stroke={RIGID} stroke-width="4" />
+      <line x1="58" y1="74" x2="102" y2="74" stroke={RIGID} stroke-width="4" />
+      <line x1="102" y1="74" x2="102" y2="22" stroke={RIGID} stroke-width="4" />
+      <rect x="62" y="46" width="36" height="28" fill={WATER} />
+    </PreviewFrame>
+  );
+}
+
 function TheoJansenPreview() {
   return (
     <PreviewFrame>
@@ -380,5 +391,7 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <WaveMachinePreview />;
     case "theo-jansen":
       return <TheoJansenPreview />;
+    case "liquid-tumbler":
+      return <LiquidTumblerPreview />;
   }
 }
