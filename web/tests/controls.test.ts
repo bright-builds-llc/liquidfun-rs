@@ -22,6 +22,7 @@ import {
   CONSTRUCTION_RESET_HINT,
   constructionHintVisible,
   initialPresetValue,
+  sceneControlsForSurface,
 } from "../src/components/scene-controls";
 
 function maybePresetControl(
@@ -359,5 +360,37 @@ describe("Dam Break gravity slider", () => {
     // Assert
     expect(readout).toBe("16 m/s²");
     expect(spoken).toBe("16 meters per second squared");
+  });
+
+  it("reads a wave-speed multiplier as times the original speed", () => {
+    // Arrange
+    const magnitude = "1.0";
+
+    // Act
+    const readout = formatRangeReadout(magnitude, "×");
+    const spoken = formatRangeValueText(magnitude, "×");
+
+    // Assert
+    expect(readout).toBe("1.0 ×");
+    expect(spoken).toBe("1.0 times the original wave speed");
+  });
+});
+
+describe("sceneControlsForSurface", () => {
+  it("keeps Wave speed on the HUD and out of the scene panel", () => {
+    // Arrange
+    const maybeScene = maybeSceneById("wave-machine");
+    expect(maybeScene).toBeDefined();
+    if (maybeScene === undefined) {
+      return;
+    }
+
+    // Act
+    const hud = sceneControlsForSurface(maybeScene.controls, "hud");
+    const panel = sceneControlsForSurface(maybeScene.controls, "panel");
+
+    // Assert
+    expect(hud.map((control) => control.id)).toEqual(["wave-speed"]);
+    expect(panel).toEqual([]);
   });
 });

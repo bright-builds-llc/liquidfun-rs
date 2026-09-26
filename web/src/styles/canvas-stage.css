@@ -144,11 +144,35 @@ html[data-canvas-stage="true"] .gravity-arrow {
   bottom: max(8px, env(safe-area-inset-bottom, 0px));
   left: max(8px, env(safe-area-inset-left, 0px));
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.canvas-hud-toolbar {
+  display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 4px;
-  pointer-events: none;
+}
+
+.canvas-hud-slider {
+  width: min(22rem, 100%);
+  pointer-events: auto;
+}
+
+.canvas-hud-bottom .canvas-hud-slider {
+  padding: 6px 10px 2px;
+  border-radius: 8px;
+  background: rgb(21 29 40 / 86%);
+}
+
+.canvas-hud-slider .scene-control-readout,
+.canvas-hud-slider .scene-control-slider {
+  width: 100%;
 }
 
 .canvas-transport,

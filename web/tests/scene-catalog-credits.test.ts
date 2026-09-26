@@ -220,7 +220,7 @@ describe("scene catalog credits", () => {
     expect(maybeSceneById("elastic-particles")?.controls).toHaveLength(0);
     expect(maybeSceneById("rigid-particles")?.controls).toHaveLength(0);
     expect(maybeSceneById("soup")?.controls).toHaveLength(0);
-    expect(maybeSceneById("wave-machine")?.controls).toHaveLength(0);
+    expect(maybeSceneById("wave-machine")?.controls).toHaveLength(1);
     expect(maybeSceneById("liquid-tumbler")?.controls).toHaveLength(0);
   });
 });

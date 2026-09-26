@@ -77,6 +77,9 @@ export function formatRangeValueText(value: string, unit: string): string {
   if (unit === "m/s²") {
     return `${value} meters per second squared`;
   }
+  if (unit === "×") {
+    return `${value} times the original wave speed`;
+  }
 
   return formatRangeReadout(value, unit);
 }

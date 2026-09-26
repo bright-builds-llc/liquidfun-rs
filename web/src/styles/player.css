@@ -228,6 +228,12 @@ figcaption,
   line-height: 1.4;
 }
 
+.playback-stack {
+  display: grid;
+  gap: var(--space-sm);
+  justify-items: start;
+}
+
 .control-row {
   display: flex;
   flex-wrap: wrap;

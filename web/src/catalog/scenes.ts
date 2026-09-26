@@ -1,6 +1,8 @@
 import { WORLD_BOUNDS, type WorldBounds } from "../render/camera";
+import { WAVE_MACHINE_SPEED_CONTROL } from "./wave-machine-speed";
 
 export const SCENE_IDS = [
+  "wave-machine",
   "dam-break",
   "fountain",
   "float-or-sink",
@@ -15,7 +17,6 @@ export const SCENE_IDS = [
   "soup",
   "soup-stirrer",
   "impulse",
-  "wave-machine",
   "theo-jansen",
   "liquid-tumbler",
 ] as const;
@@ -42,6 +43,8 @@ export type SceneControl =
       readonly unit: string;
       readonly scale: "linear" | "logarithmic";
       readonly ticks: readonly number[];
+      /** `hud` draws the slider above the play row. Other controls stay in the panel. */
+      readonly surface?: "hud";
     }
   | {
       readonly id: string;
@@ -244,6 +247,19 @@ function sceneSource(fileName: string): string {
 }
 
 export const SCENES: readonly SceneRecord[] = [
+  {
+    id: "wave-machine",
+    title: "Wave Machine",
+    ready: true,
+    description: "Watch a motorized tank rock and slosh the water inside.",
+    interactionHint:
+      "Use Wave speed to rock the tank. It starts stopped, and 1× matches the original motor. Labeled controls also work from the keyboard.",
+    controls: [WAVE_MACHINE_SPEED_CONTROL],
+    credits: {
+      implementationPath: sceneSource("wave_machine.rs"),
+      inspiration: [PINNED_WAVE_MACHINE_JS, PINNED_WAVE_MACHINE_H, SHOWCASE],
+    },
+  },
   {
     id: "dam-break",
     title: "Dam Break",
@@ -542,18 +558,6 @@ export const SCENES: readonly SceneRecord[] = [
     credits: {
       implementationPath: sceneSource("impulse.rs"),
       inspiration: [PINNED_IMPULSE_JS, PINNED_IMPULSE_H, SHOWCASE],
-    },
-  },
-  {
-    id: "wave-machine",
-    title: "Wave Machine",
-    ready: true,
-    description: "Watch a motorized tank rock and slosh the water inside.",
-    interactionHint: WATCH_FIRST_HINT,
-    controls: [],
-    credits: {
-      implementationPath: sceneSource("wave_machine.rs"),
-      inspiration: [PINNED_WAVE_MACHINE_JS, PINNED_WAVE_MACHINE_H, SHOWCASE],
     },
   },
   {

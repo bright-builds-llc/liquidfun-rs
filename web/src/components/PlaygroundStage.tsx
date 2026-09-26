@@ -2,7 +2,11 @@ import { Show } from "solid-js";
 
 import { maybeSceneById } from "../catalog/scenes";
 import type { RenderFrame } from "../physics/frame";
-import { maybeReadySceneId, sceneTitleForId } from "../player/runtime";
+import {
+  maybeReadySceneId,
+  sceneControlsIdentity,
+  sceneTitleForId,
+} from "../player/runtime";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "../player/view";
 import type { FpsTick } from "./fps-meter";
 import type { TiltDebug } from "../input/tilt-gravity";
@@ -10,11 +14,13 @@ import type { PointerKind } from "../input/pointer";
 import type { RenderMode } from "../render/mode";
 import type { SceneRoute } from "../routing/hash";
 import type { SvgExportRequest } from "../export/messages";
+import { sceneControlsForSurface } from "./scene-controls";
 import { AnimatedSvgPane } from "./AnimatedSvgPane";
 import { FallbackPanel } from "./FallbackPanel";
 import { PlayerPanel } from "./PlayerPanel";
 import { PlayerSceneChrome } from "./PlayerSceneChrome";
 import { PlaygroundShell } from "./PlaygroundShell";
+import type { HudControlSliderProps } from "./SceneControls";
 
 export type PlaygroundStageProps = {
   readonly canvasStage: boolean;
@@ -71,6 +77,23 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
   const sceneControlsDisabled = () => {
     const status = playerStatus(props.view());
     return status === "loading" || status === "failed";
+  };
+  const hudControls = (): HudControlSliderProps => {
+    const maybeScene = maybeCurrentScene();
+    const maybeId = maybeCurrentSceneId();
+    return {
+      controls:
+        maybeScene === undefined
+          ? []
+          : sceneControlsForSurface(maybeScene.controls, "hud"),
+      disabled: sceneControlsDisabled(),
+      identity:
+        maybeId === undefined
+          ? "none"
+          : sceneControlsIdentity(maybeId, props.resetGeneration()),
+      maybeValues: props.constructionValues,
+      onApplyControl: props.onApplyControl,
+    };
   };
   const routeIdentity = () => {
     const currentRoute = props.route();
@@ -132,6 +155,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
               onZoomOut={props.onZoomOut}
               onResetZoom={props.onResetZoom}
               onPanEnabledChange={props.onPanEnabledChange}
+              hudControls={hudControls()}
               tiltGravityEnabled={props.tiltGravityEnabled()}
               tiltDebug={props.tiltDebug()}
               onTiltGravityEnabledChange={props.onTiltGravityEnabledChange}
