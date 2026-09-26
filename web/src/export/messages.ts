@@ -1,7 +1,10 @@
 import { SCENE_IDS, type SceneId } from "../catalog/scenes";
 import { VIEWPORT_INSET } from "../render/camera";
 import { maybeParseRenderedParticleLimit } from "../render/particle-limit";
-import type { RenderMode } from "../render/mode";
+import {
+  maybeParseCircleRenderMode,
+  type CircleRenderMode,
+} from "../render/mode";
 import { maybeParseWireframeStrokeWidth } from "../render/stroke-width";
 import { MAX_SVG_EXPORT_SECONDS, maybeParseSvgExportSeconds } from "./duration";
 import type { ExportControl } from "./record";
@@ -23,7 +26,7 @@ export type SvgExportRequest = {
   readonly zoom: number;
   readonly panX: number;
   readonly panY: number;
-  readonly renderMode: RenderMode;
+  readonly renderMode: CircleRenderMode;
   readonly wireframeStrokeWidth: number;
   readonly maxRenderedParticles: number;
 };
@@ -208,12 +211,12 @@ function sceneIdFrom(value: unknown): SceneId | undefined {
   return value as SceneId;
 }
 
-function renderModeFrom(value: unknown): RenderMode | undefined {
-  if (value === "wireframe" || value === "solid") {
-    return value;
+function renderModeFrom(value: unknown): CircleRenderMode | undefined {
+  if (typeof value !== "string") {
+    return undefined;
   }
 
-  return undefined;
+  return maybeParseCircleRenderMode(value);
 }
 
 function maybeViewport(value: unknown): number | undefined {

@@ -129,6 +129,16 @@ function createRecordingContext(): RecordingContext {
         fillStyle: styleText(maybeFillStyle),
       });
     },
+    clearRect: (x: number, y: number, width: number, height: number) => {
+      operations.push({
+        kind: "fillRect",
+        x,
+        y,
+        width,
+        height,
+        fillStyle: "clear",
+      });
+    },
     moveTo: (x: number, y: number) => {
       segmentPaths.push([x, y]);
       operations.push({ kind: "moveTo", x, y });
@@ -322,5 +332,103 @@ describe("drawRenderFrame", () => {
 
     // Assert
     expect(wireframe.segmentPaths).toEqual(solid.segmentPaths);
+  });
+
+  it("draws surface particles through their painter and keeps rigid bodies solid", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    let metaballLimit = 0;
+    let contourLimit = 0;
+    const painters = {
+      paintMetaball: (
+        _context: CanvasRenderingContext2D,
+        _frame: RenderFrame,
+        _camera: ReturnType<typeof createCamera>,
+        limit: number,
+      ) => {
+        metaballLimit = limit;
+      },
+      paintContour: (
+        _context: CanvasRenderingContext2D,
+        _frame: RenderFrame,
+        _camera: ReturnType<typeof createCamera>,
+        limit: number,
+      ) => {
+        contourLimit = limit;
+      },
+    };
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "soft-blob", 0.3, 1, false, painters);
+
+    // Assert
+    expect(metaballLimit).toBe(Number.POSITIVE_INFINITY);
+    expect(contourLimit).toBe(0);
+    expect(canvas.operations.some((operation) => operation.kind === "arc" && operation.radius < 20)).toBe(false);
+    expect(
+      canvas.operations.filter((operation) => operation.kind === "stroke").map((operation) => operation.lineWidth),
+    ).toEqual([2, 2]);
+  });
+
+  it("uses the contour painter for contour mode", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    let painted = false;
+    const painters = {
+      paintMetaball: () => undefined,
+      paintContour: () => {
+        painted = true;
+      },
+    };
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "contour", 0.3, 1, false, painters);
+
+    // Assert
+    expect(painted).toBe(true);
+  });
+
+  it("leaves particle painting to the WebGL canvas when that surface is covered", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    let painted = false;
+    const painters = {
+      paintMetaball: () => {
+        painted = true;
+      },
+      paintContour: () => {
+        painted = true;
+      },
+    };
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "shaded-blob", 0.3, 1, true, painters);
+
+    // Assert
+    expect(painted).toBe(false);
+    expect(canvas.operations[0]).toMatchObject({ kind: "fillRect", fillStyle: "clear" });
+  });
+
+  it("falls back to the soft blob when the shaded surface is unavailable", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    let painted = false;
+    const painters = {
+      paintMetaball: () => {
+        painted = true;
+      },
+      paintContour: () => undefined,
+    };
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "shaded-blob", 0.3, 1, false, painters);
+
+    // Assert
+    expect(painted).toBe(true);
+    expect(canvas.operations[0]).toMatchObject({ fillStyle: "#071018" });
   });
 });

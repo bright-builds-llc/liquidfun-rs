@@ -119,12 +119,12 @@ test("switches rendering without stepping and persists across scenes and reload"
   const wireframePixels = await canvasPixelSha256(page);
 
   // Act
-  await page.getByLabel("Rendering").selectOption("solid");
+  await page.getByLabel("Particles", { exact: true }).selectOption("solid");
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
   await expect(status).toHaveText(PAUSED_STATUS);
-  await expect(page.getByLabel("Rendering")).toHaveValue("solid");
+  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("solid");
   expect(await numericAttribute(main, "data-step-index")).toBe(pausedStep);
   expect(await canvasPixelSha256(page)).not.toBe(wireframePixels);
 
@@ -134,7 +134,7 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
-  await expect(page.getByLabel("Rendering")).toHaveValue("solid");
+  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("solid");
 
   // Act
   await page.reload();
@@ -142,7 +142,7 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
-  await expect(page.getByLabel("Rendering")).toHaveValue("solid");
+  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("solid");
 
   // Arrange
   await page.getByRole("button", { name: "Pause scene" }).click();
@@ -151,12 +151,12 @@ test("switches rendering without stepping and persists across scenes and reload"
   const solidPixels = await canvasPixelSha256(page);
 
   // Act
-  await page.getByLabel("Rendering").selectOption("wireframe");
+  await page.getByLabel("Particles", { exact: true }).selectOption("wireframe");
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "wireframe");
   await expect(status).toHaveText(PAUSED_STATUS);
-  await expect(page.getByLabel("Rendering")).toHaveValue("wireframe");
+  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("wireframe");
   expect(await numericAttribute(main, "data-step-index")).toBe(solidStep);
   expect(await canvasPixelSha256(page)).not.toBe(solidPixels);
 });
@@ -326,7 +326,7 @@ test("sets data-last-pointer-kind to cancel after Dam Break pointercancel", asyn
 }) => {
   await openDamBreakPlaying(page);
   await pressCanvas(page);
-  await page.locator("canvas").dispatchEvent("pointercancel", { pointerId: 1 });
+  await page.locator("canvas.scene-canvas").dispatchEvent("pointercancel", { pointerId: 1 });
   await expect(page.locator("main")).toHaveAttribute(
     "data-last-pointer-kind",
     "cancel",

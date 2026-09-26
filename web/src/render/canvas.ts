@@ -9,8 +9,15 @@ import {
   projectPoint,
   projectRadius,
 } from "./camera";
-import type { RenderMode } from "./mode";
-import { particleDrawStride } from "./particle-limit";
+import { paintContour } from "./contour";
+import { paintMetaball } from "./metaball";
+import {
+  rigidRenderMode,
+  usesParticleStride,
+  type CircleRenderMode,
+  type RenderMode,
+} from "./mode";
+import { eachProjectedParticle } from "./projected-particle";
 import {
   DEFAULT_WIREFRAME_STROKE_WIDTH,
   maybeParseWireframeStrokeWidth,
@@ -22,6 +29,22 @@ const RIGID_FILL_COLOR = "#334155";
 const RIGID_STROKE_COLOR = "#CBD5E1";
 const RIGID_STROKE_WIDTH = 2;
 const MAX_DEVICE_PIXEL_RATIO = 2;
+
+/** Caps the backing-store scale shared by the 2D and shaded-blob canvases. */
+export function cappedDevicePixelRatio(devicePixelRatio: number): number {
+  return Math.min(requirePositiveFinite(devicePixelRatio), MAX_DEVICE_PIXEL_RATIO);
+}
+
+/** Particle surface painters. Tests replace these so node can skip real canvases. */
+export type SurfacePainters = {
+  readonly paintMetaball: typeof paintMetaball;
+  readonly paintContour: typeof paintContour;
+};
+
+const DEFAULT_SURFACE_PAINTERS: SurfacePainters = {
+  paintMetaball,
+  paintContour,
+};
 const INVALID_CANVAS_MESSAGE = "Invalid Canvas dimensions";
 const INVALID_RENDER_FRAME_MESSAGE = "Invalid renderer frame";
 const TAU = Math.PI * 2;
@@ -60,10 +83,7 @@ export function resizeCanvasBackingStore(
   bounds: WorldBounds = WORLD_BOUNDS,
 ): Camera {
   const camera = createCamera(cssWidth, cssHeight, view, bounds);
-  const pixelRatio = Math.min(
-    requirePositiveFinite(devicePixelRatio),
-    MAX_DEVICE_PIXEL_RATIO,
-  );
+  const pixelRatio = cappedDevicePixelRatio(devicePixelRatio);
 
   canvas.width = Math.round(cssWidth * pixelRatio);
   canvas.height = Math.round(cssHeight * pixelRatio);
@@ -87,7 +107,7 @@ function resolvedWireframeStrokeWidth(width: number): number {
 }
 
 function outlineWidth(
-  renderMode: RenderMode,
+  renderMode: CircleRenderMode,
   wireframeStrokeWidth: number,
 ): number {
   if (renderMode === "wireframe") {
@@ -97,54 +117,41 @@ function outlineWidth(
   return RIGID_STROKE_WIDTH;
 }
 
-function drawParticles(
+function drawDiscParticles(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
-  renderMode: RenderMode,
+  renderMode: CircleRenderMode,
   wireframeStrokeWidth: number,
   maxRenderedParticles: number,
 ): void {
-  const stride = particleDrawStride(frame.particleCount, maxRenderedParticles);
-  for (
-    let particleIndex = 0;
-    particleIndex < frame.particleCount && maxRenderedParticles > 0;
-    particleIndex += stride
-  ) {
-    const positionIndex = particleIndex * 2;
-    const colorIndex = particleIndex * 4;
-    const center = projectPoint(camera, {
-      x: valueAt(frame.particlePositions, positionIndex),
-      y: valueAt(frame.particlePositions, positionIndex + 1),
-    });
-    const radius = projectRadius(
-      camera,
-      valueAt(frame.particleRadii, particleIndex),
-    );
-    const red = valueAt(frame.particleColors, colorIndex);
-    const green = valueAt(frame.particleColors, colorIndex + 1);
-    const blue = valueAt(frame.particleColors, colorIndex + 2);
-    const alpha = valueAt(frame.particleColors, colorIndex + 3) / 255;
+  const strokeWidth = resolvedWireframeStrokeWidth(wireframeStrokeWidth);
+  eachProjectedParticle(
+    frame,
+    camera,
+    maxRenderedParticles,
+    (x, y, radius, red, green, blue, alpha) => {
+      const color = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+      context.beginPath();
+      context.arc(x, y, radius, 0, TAU);
+      if (renderMode === "wireframe") {
+        context.strokeStyle = color;
+        context.lineWidth = strokeWidth;
+        context.stroke();
+        return;
+      }
 
-    const color = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-    context.beginPath();
-    context.arc(center.x, center.y, radius, 0, TAU);
-    if (renderMode === "wireframe") {
-      context.strokeStyle = color;
-      context.lineWidth = resolvedWireframeStrokeWidth(wireframeStrokeWidth);
-      context.stroke();
-    } else {
       context.fillStyle = color;
       context.fill();
-    }
-  }
+    },
+  );
 }
 
 function drawSegments(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
-  renderMode: RenderMode,
+  renderMode: CircleRenderMode,
   wireframeStrokeWidth: number,
 ): void {
   context.strokeStyle = BASIN_STROKE_COLOR;
@@ -175,7 +182,7 @@ function drawCircles(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
   camera: Camera,
-  renderMode: RenderMode,
+  renderMode: CircleRenderMode,
   wireframeStrokeWidth: number,
 ): void {
   context.fillStyle = RIGID_FILL_COLOR;
@@ -198,7 +205,7 @@ function drawCircles(
 
     context.beginPath();
     context.arc(center.x, center.y, radius, 0, TAU);
-    if (renderMode === "solid") {
+    if (renderMode !== "wireframe") {
       context.fill();
     }
     context.stroke();
@@ -230,6 +237,55 @@ function drawCircleLabel(
   context.restore();
 }
 
+function clearFrame(
+  context: CanvasRenderingContext2D,
+  camera: Camera,
+  webglCovered: boolean,
+): void {
+  if (webglCovered) {
+    context.clearRect(0, 0, camera.viewport.width, camera.viewport.height);
+    return;
+  }
+
+  context.fillStyle = CANVAS_COLOR;
+  context.fillRect(0, 0, camera.viewport.width, camera.viewport.height);
+}
+
+function drawParticleSurface(
+  context: CanvasRenderingContext2D,
+  frame: RenderFrame,
+  camera: Camera,
+  renderMode: RenderMode,
+  wireframeStrokeWidth: number,
+  maxRenderedParticles: number,
+  webglCovered: boolean,
+  painters: SurfacePainters,
+): void {
+  const particleLimit = usesParticleStride(renderMode)
+    ? maxRenderedParticles
+    : Number.POSITIVE_INFINITY;
+  if (renderMode === "wireframe" || renderMode === "solid") {
+    drawDiscParticles(
+      context,
+      frame,
+      camera,
+      renderMode,
+      wireframeStrokeWidth,
+      particleLimit,
+    );
+    return;
+  }
+  if (renderMode === "contour") {
+    painters.paintContour(context, frame, camera, particleLimit);
+    return;
+  }
+  if (renderMode === "shaded-blob" && webglCovered) {
+    return;
+  }
+
+  painters.paintMetaball(context, frame, camera, particleLimit);
+}
+
 /** Draws one validated bulk Rust frame in the approved presentation order. */
 export function drawRenderFrame(
   context: CanvasRenderingContext2D,
@@ -238,23 +294,21 @@ export function drawRenderFrame(
   renderMode: RenderMode,
   wireframeStrokeWidth = DEFAULT_WIREFRAME_STROKE_WIDTH,
   maxRenderedParticles = Number.POSITIVE_INFINITY,
+  webglCovered = false,
+  painters: SurfacePainters = DEFAULT_SURFACE_PAINTERS,
 ): void {
-  context.fillStyle = CANVAS_COLOR;
-  context.fillRect(
-    0,
-    0,
-    camera.viewport.width,
-    camera.viewport.height,
-  );
-
-  drawParticles(
+  clearFrame(context, camera, webglCovered);
+  drawParticleSurface(
     context,
     frame,
     camera,
     renderMode,
     wireframeStrokeWidth,
     maxRenderedParticles,
+    webglCovered,
+    painters,
   );
-  drawSegments(context, frame, camera, renderMode, wireframeStrokeWidth);
-  drawCircles(context, frame, camera, renderMode, wireframeStrokeWidth);
+  const rigidMode = rigidRenderMode(renderMode);
+  drawSegments(context, frame, camera, rigidMode, wireframeStrokeWidth);
+  drawCircles(context, frame, camera, rigidMode, wireframeStrokeWidth);
 }

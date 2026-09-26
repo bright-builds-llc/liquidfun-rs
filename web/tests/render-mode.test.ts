@@ -2,16 +2,32 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_RENDER_MODE,
+  RENDER_MODE_GROUPS,
   RENDER_MODE_STORAGE_KEY,
+  circleExportMode,
   loadRenderMode,
+  maybeParseCircleRenderMode,
   maybeParseRenderMode,
+  needsWebglSurface,
+  particleSurface,
   persistRenderMode,
+  rigidRenderMode,
+  usesParticleStride,
 } from "../src/render/mode";
 
 describe("render mode", () => {
   it("parses only allowlisted values", () => {
     // Arrange
-    const values = ["wireframe", "solid", "Wireframe", "", null];
+    const values = [
+      "wireframe",
+      "solid",
+      "soft-blob",
+      "contour",
+      "shaded-blob",
+      "Wireframe",
+      "",
+      null,
+    ];
 
     // Act
     const parsed = values.map(maybeParseRenderMode);
@@ -20,9 +36,69 @@ describe("render mode", () => {
     expect(parsed).toEqual([
       "wireframe",
       "solid",
+      "soft-blob",
+      "contour",
+      "shaded-blob",
       undefined,
       undefined,
       undefined,
+    ]);
+  });
+
+  it("keeps circle export and rigid bodies on the two circle modes", () => {
+    // Arrange
+    const modes = [
+      "wireframe",
+      "solid",
+      "soft-blob",
+      "contour",
+      "shaded-blob",
+    ] as const;
+
+    // Act
+    const exported = modes.map(circleExportMode);
+    const rigid = modes.map(rigidRenderMode);
+
+    // Assert
+    expect(exported).toEqual(["wireframe", "solid", "solid", "solid", "solid"]);
+    expect(rigid).toEqual(exported);
+    expect(maybeParseCircleRenderMode("soft-blob")).toBeUndefined();
+  });
+
+  it("draws every particle for surface modes and reserves WebGL for the shaded blob", () => {
+    // Arrange
+    const surfaceModes = ["soft-blob", "contour", "shaded-blob"] as const;
+
+    // Act
+    const surfaces = surfaceModes.map(particleSurface);
+    const strides = surfaceModes.map(usesParticleStride);
+    const webgl = surfaceModes.map(needsWebglSurface);
+
+    // Assert
+    expect(surfaces).toEqual(["metaball", "contour", "webgl"]);
+    expect(strides).toEqual([false, false, false]);
+    expect(webgl).toEqual([false, false, true]);
+    expect(usesParticleStride("wireframe")).toBe(true);
+    expect(usesParticleStride("solid")).toBe(true);
+  });
+
+  it("lists circle and surface choices in the controls sheet order", () => {
+    // Arrange
+    const labels = RENDER_MODE_GROUPS.map((group) => group.label);
+
+    // Act
+    const values = RENDER_MODE_GROUPS.flatMap((group) =>
+      group.options.map((option) => option.value),
+    );
+
+    // Assert
+    expect(labels).toEqual(["Circles", "Surface"]);
+    expect(values).toEqual([
+      "wireframe",
+      "solid",
+      "soft-blob",
+      "contour",
+      "shaded-blob",
     ]);
   });
 

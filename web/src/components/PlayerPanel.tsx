@@ -3,7 +3,11 @@ import { Show, type JSX } from "solid-js";
 import type { PlayerStatus } from "../player/view";
 import type { RenderFrame } from "../physics/frame";
 import {
+  RENDER_MODE_GROUPS,
   maybeParseRenderMode,
+  needsWebglSurface,
+  particleSurface,
+  usesParticleStride,
   type RenderMode,
 } from "../render/mode";
 import {
@@ -33,6 +37,7 @@ export type PlayerPanelProps = {
   readonly maybeDetails?: string | undefined;
   readonly interactionHint: string;
   readonly assignCanvas: (canvas: HTMLCanvasElement) => void;
+  readonly assignParticleSurface: (canvas: HTMLCanvasElement) => void;
   readonly onPlay: () => void;
   readonly onPause: () => void;
   readonly onReset: () => void;
@@ -67,7 +72,7 @@ const PAUSED_STATUS = "Paused";
 const LOADING_OVERLAY_BODY =
   "Starting the Rust WebAssembly session. The scene appears when the first frame is ready.";
 const SHEET_DESCRIPTION =
-  "Rendering, playback options, scene parameters, and project details.";
+  "Particle rendering, playback options, scene parameters, and project details.";
 
 function statusText(status: PlayerStatus, sceneTitle: string): string {
   switch (status) {
@@ -136,6 +141,8 @@ function PlayerPanelLayout(layoutProps: {
       <figure>
         <div class="viewport-frame">
           <canvas
+            class="scene-canvas"
+            data-particle-surface={particleSurface(props.renderMode)}
             ref={(canvas) => props.assignCanvas(canvas)}
             width="960"
             height="540"
@@ -145,6 +152,14 @@ function PlayerPanelLayout(layoutProps: {
           >
             {`Canvas is required to display the ${props.sceneTitle} scene.`}
           </canvas>
+          <canvas
+            class="particle-surface"
+            data-active={needsWebglSurface(props.renderMode) ? "true" : "false"}
+            ref={(canvas) => props.assignParticleSurface(canvas)}
+            width="960"
+            height="540"
+            aria-hidden="true"
+          />
           <Show when={props.status === "loading"}>
             <div class="empty-state">
               <strong>{`Loading ${props.sceneTitle}`}</strong>
@@ -295,7 +310,7 @@ function PlayerOptions(props: { readonly panel: PlayerPanelProps }) {
   return (
     <>
       <label class="render-mode-control">
-        Rendering
+        Particles
         <select
           value={panel.renderMode}
           onChange={(event) => {
@@ -305,32 +320,39 @@ function PlayerOptions(props: { readonly panel: PlayerPanelProps }) {
             }
           }}
         >
-          <option value="wireframe">Wireframe</option>
-          <option value="solid">Solid</option>
+          {RENDER_MODE_GROUPS.map((group) => (
+            <optgroup label={group.label}>
+              {group.options.map((option) => (
+                <option value={option.value}>{option.label}</option>
+              ))}
+            </optgroup>
+          ))}
         </select>
       </label>
-      <label class="stroke-width-control">
-        Wireframe stroke
-        <input
-          id="wireframe-stroke"
-          type="range"
-          min={WIREFRAME_STROKE_WIDTH_MIN}
-          max={WIREFRAME_STROKE_WIDTH_MAX}
-          step={WIREFRAME_STROKE_WIDTH_STEP}
-          value={panel.wireframeStrokeWidth}
-          onInput={(event) => {
-            const maybeWidth = maybeParseWireframeStrokeWidth(
-              event.currentTarget.value,
-            );
-            if (maybeWidth !== undefined) {
-              panel.onWireframeStrokeWidthChange(maybeWidth);
-            }
-          }}
-        />
-        <output for="wireframe-stroke">
-          {formatWireframeStrokeWidth(panel.wireframeStrokeWidth)}
-        </output>
-      </label>
+      <Show when={panel.renderMode === "wireframe"}>
+        <label class="stroke-width-control">
+          Wireframe stroke
+          <input
+            id="wireframe-stroke"
+            type="range"
+            min={WIREFRAME_STROKE_WIDTH_MIN}
+            max={WIREFRAME_STROKE_WIDTH_MAX}
+            step={WIREFRAME_STROKE_WIDTH_STEP}
+            value={panel.wireframeStrokeWidth}
+            onInput={(event) => {
+              const maybeWidth = maybeParseWireframeStrokeWidth(
+                event.currentTarget.value,
+              );
+              if (maybeWidth !== undefined) {
+                panel.onWireframeStrokeWidthChange(maybeWidth);
+              }
+            }}
+          />
+          <output for="wireframe-stroke">
+            {formatWireframeStrokeWidth(panel.wireframeStrokeWidth)}
+          </output>
+        </label>
+      </Show>
       <label class="rendered-particle-control">
         Rendered particles
         <input
@@ -343,6 +365,9 @@ function PlayerOptions(props: { readonly panel: PlayerPanelProps }) {
           }}
         />
       </label>
+      <Show when={!usesParticleStride(panel.renderMode)}>
+        <p class="particle-cap-note">Surface modes draw every particle.</p>
+      </Show>
       <label class="debug-toggle">
         <input
           type="checkbox"
