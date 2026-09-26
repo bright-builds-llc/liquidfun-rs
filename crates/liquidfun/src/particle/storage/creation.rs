@@ -127,6 +127,7 @@ impl ParticleStorage {
             triads: Vec::new(),
             group_records: Vec::new(),
             solver_state: SolverState::new(),
+            contact_proxies: Vec::new(),
         })
     }
 

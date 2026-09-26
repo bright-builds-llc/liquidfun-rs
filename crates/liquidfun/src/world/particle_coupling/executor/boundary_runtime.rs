@@ -59,14 +59,27 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             .maybe_boundary
             .as_ref()
             .ok_or(StepError::ParticleLifecycleInvariant)?;
-        let hits = self.world.filtered_collision_hits(
-            source,
-            self.bodies,
-            time_step,
-            iteration,
-            self.hook_run,
-            Vec2::new(diameter, diameter),
-        )?;
+        let hits = {
+            let world = self.world;
+            let bodies = &mut *self.bodies;
+            let hook_run = &mut *self.hook_run;
+            let proxies = self
+                .systems
+                .get(self.system)
+                .expect("particle-system order contains only live systems")
+                .storage
+                .contact_proxies();
+            world.filtered_collision_hits(
+                source,
+                bodies,
+                time_step,
+                iteration,
+                hook_run,
+                Vec2::new(diameter, diameter),
+                proxies,
+                diameter,
+            )?
+        };
         let source = self
             .maybe_boundary
             .take()
@@ -155,7 +168,9 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
         &mut self,
         candidate: BoundaryCandidate,
     ) -> Result<(), StepError> {
-        self.record_mut()
+        let record = self.record_mut();
+        record.storage.clear_contact_scan();
+        record
             .storage
             .replace_solver_candidate(
                 &candidate.particle_ids,

@@ -131,29 +131,6 @@ impl ParticleContactUpdate {
         Ok(Self { contacts, effects })
     }
 
-    /// Generates dense-row contacts for the stepping path without a semantic snapshot.
-    pub(crate) fn generate_indexed(
-        view: &ParticleSystemView<'_>,
-        neighborhood: &ParticleNeighborhood,
-        previous: &[StoredParticleContact],
-        mut filter: impl FnMut(&ParticleContact) -> bool,
-    ) -> Result<(Vec<StoredParticleContact>, Vec<ParticleContactEffect>), ParticleContactError>
-    {
-        if neighborhood.system() != view.system() {
-            return Err(ParticleContactError::WrongParticleSystem);
-        }
-        if cfg!(debug_assertions) {
-            validate_neighborhood(view, neighborhood)?;
-        }
-        let contacts = collect_stored_contacts(view, neighborhood, &mut filter)?;
-        if !particle_contact_listeners_active(view) {
-            return Ok((contacts, Vec::new()));
-        }
-        let semantic = semantic_from_stored(view, &contacts)?;
-        let effects = listener_effects_from_stored(view, previous, &semantic)?;
-        Ok((contacts, effects))
-    }
-
     /// Returns retained contacts in source generation order.
     #[must_use]
     pub fn contacts(&self) -> &[ParticleContact] {
@@ -263,13 +240,13 @@ fn collect_stored_contacts(
     Ok(contacts)
 }
 
-fn particle_contact_listeners_active(view: &ParticleSystemView<'_>) -> bool {
+pub(crate) fn particle_contact_listeners_active(view: &ParticleSystemView<'_>) -> bool {
     view.flags()
         .iter()
         .any(|flags| flags.contains(ParticleFlags::PARTICLE_CONTACT_LISTENER))
 }
 
-fn semantic_from_stored(
+pub(crate) fn semantic_from_stored(
     view: &ParticleSystemView<'_>,
     contacts: &[StoredParticleContact],
 ) -> Result<Vec<ParticleContact>, ParticleContactError> {
@@ -329,7 +306,7 @@ fn listener_effects(
     Ok(diff_listener_effects(old, contacts))
 }
 
-fn listener_effects_from_stored(
+pub(crate) fn listener_effects_from_stored(
     view: &ParticleSystemView<'_>,
     previous: &[StoredParticleContact],
     contacts: &[ParticleContact],

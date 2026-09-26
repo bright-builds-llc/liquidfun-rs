@@ -279,6 +279,36 @@ impl ParticleStorage {
         debug_assert_eq!(self.check_invariants(), Ok(()));
     }
 
+    pub(crate) fn take_particle_contacts(&mut self) -> Vec<ParticleContact> {
+        std::mem::take(&mut self.particle_contacts)
+    }
+
+    pub(crate) fn install_particle_contacts(&mut self, contacts: Vec<ParticleContact>) {
+        self.particle_contacts = contacts;
+        debug_assert_eq!(self.check_invariants(), Ok(()));
+    }
+
+    pub(crate) fn contact_proxies(&self) -> &[crate::particle::contact_scan::ContactProxy] {
+        &self.contact_proxies
+    }
+
+    pub(crate) fn take_contact_proxies(
+        &mut self,
+    ) -> Vec<crate::particle::contact_scan::ContactProxy> {
+        std::mem::take(&mut self.contact_proxies)
+    }
+
+    pub(crate) fn install_contact_proxies(
+        &mut self,
+        proxies: Vec<crate::particle::contact_scan::ContactProxy>,
+    ) {
+        self.contact_proxies = proxies;
+    }
+
+    pub(crate) fn clear_contact_scan(&mut self) {
+        self.contact_proxies.clear();
+    }
+
     pub(in crate::particle) fn body_contacts(&self) -> &[ParticleBodyContact] {
         &self.body_contacts
     }
