@@ -17,6 +17,7 @@ pub(crate) mod gravity_slider;
 mod hydraulic_fountain;
 mod impulse;
 mod jelly_drop;
+mod liquid_bubbler;
 mod liquid_timer;
 mod liquid_tumbler;
 mod particles;
@@ -60,6 +61,7 @@ pub(crate) enum SceneId {
     Sparky,
     HydraulicFountain,
     WaveTank,
+    LiquidBubbler,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -85,6 +87,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "sparky" => Ok(SceneId::Sparky),
         "hydraulic-fountain" => Ok(SceneId::HydraulicFountain),
         "wave-tank" => Ok(SceneId::WaveTank),
+        "liquid-bubbler" => Ok(SceneId::LiquidBubbler),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -215,6 +218,7 @@ pub(crate) fn build_scene(
         SceneId::Sparky => sparky::build(&scene_presets),
         SceneId::HydraulicFountain => hydraulic_fountain::build(&scene_presets),
         SceneId::WaveTank => wave_tank::build(&scene_presets),
+        SceneId::LiquidBubbler => liquid_bubbler::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)
