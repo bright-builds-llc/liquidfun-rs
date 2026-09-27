@@ -71,7 +71,7 @@ describe("densityShade", () => {
     // Assert
     expect(packed).toBeGreaterThan(rest);
     expect(packedShade).toBeLessThan(restShade);
-    expect(packedShade).toBeLessThan(0.6);
+    expect(packedShade).toBeCloseTo(DENSITY_SHADE_FLOOR);
   });
 
   it("reaches the floor at the packed end", () => {
