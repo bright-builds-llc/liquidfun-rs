@@ -262,9 +262,11 @@ impl SessionCore {
                 .map_err(|_error| SessionError::FrameCaptureFailed)?;
             let particle_ids = view.particle_ids();
             let positions = view.positions();
-            let maybe_colors = view.maybe_colors();
-            let Some(colors) = maybe_colors else {
-                return Err(SessionError::FrameCaptureFailed);
+            let colors = match view.maybe_colors() {
+                Some(colors) => colors,
+                // An empty system allocates no color lane until the first colored particle.
+                None if particle_ids.is_empty() => &[],
+                None => return Err(SessionError::FrameCaptureFailed),
             };
             if particle_ids.len() != positions.len() || particle_ids.len() != colors.len() {
                 return Err(SessionError::FrameCaptureFailed);
