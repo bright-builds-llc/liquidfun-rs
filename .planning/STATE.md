@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 30-01-PLAN.md
-last_updated: "2026-09-27T15:21:03.630Z"
+stopped_at: Completed 30-02-PLAN.md
+last_updated: "2026-09-27T15:31:24.341Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 27
-  completed_plans: 25
-  percent: 93
+  completed_plans: 26
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 30 (periodic-hydraulic-fountain) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-27
 
@@ -94,6 +94,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 28]: Independent AI review remains eligible under D-26; implementing agent did not self-approve
 - [Phase 30]: Kept the plan starting numbers for the hydraulic piston. — The crossing test passed at speed 0.6, stroke 0.35, period 2.0, max force 1.0e6, and a floor throat below y = 0.12, so those values were not retuned.
 - [Phase 30]: Scene tests live beside the hydraulic fountain module. — The implementation plus inline tests would pass 500 physical lines, so tests moved to hydraulic_fountain/tests.rs and the credit path stayed a single scene file.
+- [Phase 30]: Copied the Plan 01 wall and piston endpoints unchanged into the portrait frame — The crossing test did not retune stroke, walls, or piston x, so the catalog frame uses those finished constants.
+- [Phase 30]: Raised the shared view rectangle maxY from 1.55 to 1.6 — At maxY 1.55 the fitted phone height was 0.277 after the 16px camera inset, under the required 0.28. maxY 1.6 clears that minimum and still contains the walls.
 
 ### Pending Todos
 
@@ -120,10 +122,12 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 | Plan | Duration | Tasks | Files |
 | --- | --- | --- | --- |
+| Phase 30 P01 | 41 min | 2 tasks | 5 files |
+| Phase 30 P02 | 7 min | 2 tasks | 13 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T15:19:55.855Z
-Stopped at: Completed 30-01-PLAN.md
+Last session: 2026-09-27T15:31:09.348Z
+Stopped at: Completed 30-02-PLAN.md
 Resume file: None
-| Phase 30 P01 | 41 min | 2 tasks | 5 files |
+
