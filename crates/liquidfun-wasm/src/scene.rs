@@ -137,6 +137,15 @@ pub(crate) trait SceneHooks {
         system: ParticleSystemId,
     ) -> Result<(), SessionError>;
 
+    fn on_after_step(
+        &mut self,
+        _world: &mut World,
+        _system: ParticleSystemId,
+        _transitions: &[liquidfun::ContactTransition],
+    ) -> Result<(), SessionError> {
+        Ok(())
+    }
+
     fn apply_control(
         &mut self,
         world: &mut World,

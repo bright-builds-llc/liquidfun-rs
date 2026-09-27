@@ -166,14 +166,24 @@ impl SessionCore {
                 self.last_failure_detail = detail;
                 return Err(SessionError::StepFailed);
             }
-            let stepped = self.world.step(
+            let report = match self.world.step(
                 self.step_configuration,
                 &mut NoDecisionHook,
                 self.step_limits,
-            );
-            if let Err(error) = stepped {
-                self.last_failure_detail = error.to_string();
-                return Err(SessionError::StepFailed);
+            ) {
+                Ok(report) => report,
+                Err(error) => {
+                    self.last_failure_detail = error.to_string();
+                    return Err(SessionError::StepFailed);
+                }
+            };
+            if let Err(error) = self.hooks.on_after_step(
+                &mut self.world,
+                self.particle_system,
+                report.contact_transitions(),
+            ) {
+                error.message().clone_into(&mut self.last_failure_detail);
+                return Err(error);
             }
         }
 
@@ -194,15 +204,25 @@ impl SessionCore {
                 self.last_failure_detail = detail;
                 SessionError::StepFailed
             })?;
-        let profile = self
-            .world
-            .step_profiled(
-                self.step_configuration,
-                &mut NoDecisionHook,
-                self.step_limits,
-            )
-            .map(|(_report, profile)| profile)
-            .map_err(|_error| SessionError::StepFailed)?;
+        let (report, profile) = match self.world.step_profiled(
+            self.step_configuration,
+            &mut NoDecisionHook,
+            self.step_limits,
+        ) {
+            Ok(stepped) => stepped,
+            Err(error) => {
+                self.last_failure_detail = error.to_string();
+                return Err(SessionError::StepFailed);
+            }
+        };
+        if let Err(error) = self.hooks.on_after_step(
+            &mut self.world,
+            self.particle_system,
+            report.contact_transitions(),
+        ) {
+            error.message().clone_into(&mut self.last_failure_detail);
+            return Err(error);
+        }
         self.step_index = next_step_index;
         Ok(profile)
     }

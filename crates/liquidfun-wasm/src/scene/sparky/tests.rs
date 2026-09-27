@@ -187,7 +187,7 @@ fn advance_steps(session: &mut SessionCore, steps: u32) {
 fn first_powder_group(session: &mut SessionCore, step_limit: u32) -> Option<ParticleGroupId> {
     for _ in 0..step_limit {
         advance_steps(session, 1);
-        if let Some(group) = session.read_particles(|world, system| powder_group(world, system)) {
+        if let Some(group) = session.read_particles(powder_group) {
             return Some(group);
         }
     }
