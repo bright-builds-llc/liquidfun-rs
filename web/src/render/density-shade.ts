@@ -12,8 +12,12 @@ export const DENSITY_SHADE_START = 1.15;
 /** Kernel sum that reaches the darkest packed shade. */
 export const DENSITY_SHADE_END = 2.8;
 
-/** Brightness kept where particles are packed well past a single kernel. */
-export const DENSITY_SHADE_FLOOR = 0.46;
+/**
+ * Brightness kept where particles are packed well past a single kernel.
+ *
+ * This is halfway from the earlier 46% floor back to the original color.
+ */
+export const DENSITY_SHADE_FLOOR = 0.73;
 
 /** Surface modes darken packed particles until the player turns this off. */
 export const DEFAULT_DENSITY_SHADING = true;
