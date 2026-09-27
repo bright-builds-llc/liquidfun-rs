@@ -91,8 +91,6 @@ Each task was committed atomically:
 - **Verification:** `just web-player-smoke` exited 0 with 44 Chromium tests passed.
 - **Committed in:** `1e37b53` (Task 2 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 bug)
 **Impact on plan:** The new title shares the word Fountain. The tighter locator keeps the existing Fountain navigation test on the original scene.
 

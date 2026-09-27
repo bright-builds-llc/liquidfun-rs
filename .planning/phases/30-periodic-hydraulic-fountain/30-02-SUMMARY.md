@@ -108,8 +108,6 @@ Each task was committed atomically:
 - **Verification:** `bun run test:unit -- tests/portrait-bounds.test.ts` passes, and every listed wall and piston point is inside the frame.
 - **Committed in:** `0227f2e` (Task 2 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 bug)
 **Impact on plan:** The camera inset made the planned height miss the phone-fill minimum by a small margin. The extra 5 cm of headroom keeps the chambers, throat, and piston on screen.
 
