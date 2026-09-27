@@ -609,7 +609,7 @@ export const SCENES: readonly SceneRecord[] = [
       minX: -1.3,
       minY: -0.15,
       maxX: 1.3,
-      maxY: 1.55,
+      maxY: 1.6,
     },
     credits: {
       implementationPath:

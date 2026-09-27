@@ -332,6 +332,24 @@ function DrawingParticlesPreview() {
   );
 }
 
+function HydraulicFountainPreview() {
+  return (
+    <PreviewFrame>
+      <line x1="28" y1="22" x2="28" y2="72" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="72" x2="74" y2="72" stroke={RIGID} stroke-width="3" />
+      <line x1="86" y1="72" x2="132" y2="72" stroke={RIGID} stroke-width="3" />
+      <line x1="132" y1="22" x2="132" y2="72" stroke={RIGID} stroke-width="3" />
+      <line x1="80" y1="22" x2="80" y2="52" stroke={RIGID} stroke-width="3" />
+      <rect x="36" y="28" width="8" height="40" fill={RIGID} />
+      <circle cx="54" cy="64" r="3" fill={WATER} />
+      <circle cx="62" cy="62" r="3" fill={WATER} />
+      <circle cx="70" cy="64" r="3" fill={WATER} />
+      <circle cx="58" cy="56" r="3" fill={WATER} />
+      <circle cx="66" cy="54" r="3" fill={WATER} />
+    </PreviewFrame>
+  );
+}
+
 function SparkyPreview() {
   return (
     <PreviewFrame>
@@ -438,5 +456,7 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <DrawingParticlesPreview />;
     case "sparky":
       return <SparkyPreview />;
+    case "hydraulic-fountain":
+      return <HydraulicFountainPreview />;
   }
 }

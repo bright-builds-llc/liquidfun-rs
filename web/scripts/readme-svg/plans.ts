@@ -75,6 +75,7 @@ export const README_SVG_PLANS: readonly ReadmeSvgPlan[] = [
     cues: [{ atSample: 20, kind: "pointer-up", worldX: 0, worldY: 2 }],
   },
   { id: "sparky", cues: [] },
+  { id: "hydraulic-fountain", cues: [] },
 ];
 
 /** Repo path of one committed README SVG loop. */
