@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Phase 30 context gathered
-last_updated: "2026-09-27T14:36:56.218Z"
-last_activity: 2026-09-27 -- Phase 30 execution started
+stopped_at: Completed 30-01-PLAN.md
+last_updated: "2026-09-27T15:21:03.630Z"
+last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 27
-  completed_plans: 24
-  percent: 89
+  completed_plans: 25
+  percent: 93
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 30 (periodic-hydraulic-fountain) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 30
-Last activity: 2026-09-27 -- Phase 30 execution started
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-09-27
 
 Progress: [██░░░░░░░░] 25%
 
@@ -92,6 +92,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 28]: Raised MAX_RIGID_SEGMENTS 16→64 and MAX_RIGID_CIRCLES 8→48 so Theo Jansen frame capture fits walker+balls
 - [Phase 28]: Routed Soup Stirrer toggle-paddle-rail through apply_action to match catalog action kind
 - [Phase 28]: Independent AI review remains eligible under D-26; implementing agent did not self-approve
+- [Phase 30]: Kept the plan starting numbers for the hydraulic piston. — The crossing test passed at speed 0.6, stroke 0.35, period 2.0, max force 1.0e6, and a floor throat below y = 0.12, so those values were not retuned.
+- [Phase 30]: Scene tests live beside the hydraulic fountain module. — The implementation plus inline tests would pass 500 physical lines, so tests moved to hydraulic_fountain/tests.rs and the credit path stayed a single scene file.
 
 ### Pending Todos
 
@@ -114,8 +116,14 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | --- | --- | --- | --- | --- |
 | 260921-tbx | Global wireframe stroke width slider from 0.1 to 1.5, default 0.3 | 2026-09-22 | complete | [260921-tbx](./quick/260921-tbx-global-wireframe-stroke-width-slider-fro/) |
 
+## Performance Metrics
+
+| Plan | Duration | Tasks | Files |
+| --- | --- | --- | --- |
+
 ## Session Continuity
 
-Last session: 2026-09-27T14:04:15.349Z
-Stopped at: Phase 30 context gathered
-Resume file: .planning/phases/30-periodic-hydraulic-fountain/30-CONTEXT.md
+Last session: 2026-09-27T15:19:55.855Z
+Stopped at: Completed 30-01-PLAN.md
+Resume file: None
+| Phase 30 P01 | 41 min | 2 tasks | 5 files |
