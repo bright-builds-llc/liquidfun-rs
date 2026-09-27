@@ -90,9 +90,12 @@ impl ProofSession {
 
     /// Replaces live world gravity without recreating the scene.
     ///
+    /// Sleeping dynamic bodies wake so resting rigid bodies follow the new vector.
+    ///
     /// # Errors
     ///
-    /// Returns a bounded JavaScript error when a coordinate is non-finite.
+    /// Returns a bounded JavaScript error when a coordinate is non-finite or a
+    /// body cannot be woken.
     #[wasm_bindgen(js_name = setGravity)]
     pub fn set_gravity(&mut self, x: f32, y: f32) -> Result<(), JsError> {
         self.core.set_gravity(x, y).map_err(js_error)

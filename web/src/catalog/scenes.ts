@@ -105,6 +105,21 @@ export const WAVE_MACHINE_VIEW_BOUNDS = {
   maxY: 2.47,
 } as const;
 
+/**
+ * Camera frame for Theo Jansen, in meters.
+ *
+ * The walker starts near the origin, with legs out to about x = ±7.2 and a
+ * particle slab at y = 15. Its motor walks it at about a meter per second, so
+ * a 12 m frame lets it leave immediately. This rectangle keeps the machine,
+ * the slab, and a stretch of ground balls in view at the start.
+ */
+export const THEO_JANSEN_VIEW_BOUNDS = {
+  minX: -24,
+  minY: -0.5,
+  maxX: 24,
+  maxY: 16.4,
+} as const;
+
 const SHOWCASE = {
   label: "LiquidFun showcase",
   href: "https://google.github.io/liquidfun/",
@@ -568,6 +583,7 @@ export const SCENES: readonly SceneRecord[] = [
         option("reverse", "Reverse"),
       ]),
     ]),
+    viewBounds: THEO_JANSEN_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("theo_jansen.rs"),
       inspiration: [PINNED_THEO_JANSEN_JS, PINNED_THEO_JANSEN_H, SHOWCASE],

@@ -510,3 +510,50 @@ fn deactivation_records_pending_contact_destruction() {
             .pending_contact_destruction
     );
 }
+
+#[test]
+fn set_gravity_does_not_wake_and_wake_dynamic_bodies_does() {
+    // Arrange
+    let mut world = test_world();
+    let definition = BodyDef::new(BodyType::Dynamic, Vec2::new(0.0, 1.0), 0.0, true)
+        .expect("finite body definition")
+        .with_awake(false);
+    let dynamic = world
+        .create_body(&definition)
+        .expect("dynamic body should fit");
+    let static_body = world
+        .create_body(&BodyDef::default())
+        .expect("static body should fit");
+    let static_awake = world
+        .body_snapshot(static_body)
+        .expect("static body should remain live")
+        .is_awake();
+
+    // Act
+    world
+        .set_gravity(Vec2::new(4.0, -2.0))
+        .expect("finite gravity applies");
+    let asleep_after_gravity = world
+        .body_snapshot(dynamic)
+        .expect("dynamic body should remain live")
+        .is_awake();
+    world
+        .wake_dynamic_bodies()
+        .expect("sleeping dynamic bodies should wake");
+
+    // Assert
+    assert!(!asleep_after_gravity);
+    assert!(
+        world
+            .body_snapshot(dynamic)
+            .expect("dynamic body should remain live")
+            .is_awake()
+    );
+    assert_eq!(
+        world
+            .body_snapshot(static_body)
+            .expect("static body should remain live")
+            .is_awake(),
+        static_awake
+    );
+}

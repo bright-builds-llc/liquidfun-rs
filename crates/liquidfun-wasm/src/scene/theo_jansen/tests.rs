@@ -33,8 +33,7 @@ fn create_builds_theo_jansen_with_particles() {
 #[test]
 fn soft_distance_joints_and_motorized_revolute_exist() {
     // Arrange / Act
-    let BuiltScene { world, .. } =
-        build(&[]).expect("Theo Jansen should construct with soft legs");
+    let BuiltScene { world, .. } = build(&[]).expect("Theo Jansen should construct with soft legs");
     let (distance_count, soft_count, motorized) = joint_inventory(&world);
 
     // Assert — CreateLeg soft suspension, not welded polygons
@@ -146,8 +145,7 @@ fn soft_legs_and_live_motor_are_not_water_wheel_motor_off() {
         "motor-direction must call set_revolute_motor_speed"
     );
     assert!(
-        !impl_source.contains("enable_motor: false")
-            && !impl_source.contains("with_motor(false"),
+        !impl_source.contains("enable_motor: false") && !impl_source.contains("with_motor(false"),
         "Theo Jansen must not copy Water Wheel motor-off"
     );
 }
@@ -178,6 +176,53 @@ fn joint_inventory(world: &World) -> (usize, usize, bool) {
         }
     }
     (distance_count, soft_count, motorized)
+}
+
+#[test]
+fn tilted_gravity_rolls_a_resting_ground_ball() {
+    // Arrange — the far ball settles and sleeps well away from the walker.
+    let mut session = SessionCore::create(SceneId::TheoJansen)
+        .expect("Theo Jansen should construct the pinned walker");
+    advance_steps(&mut session, 90);
+    let rested = far_ball_x(&session);
+
+    // Act — a phone tilt: mostly downward, with a sideways component.
+    session
+        .set_gravity(6.0, -8.0)
+        .expect("finite tilt gravity applies");
+    advance_steps(&mut session, 60);
+    let rolled = far_ball_x(&session);
+
+    // Assert
+    assert!(
+        rolled > rested + 0.4,
+        "a resting ground ball must roll when gravity tilts (rested {rested}, rolled {rolled})"
+    );
+}
+
+fn advance_steps(session: &mut SessionCore, steps: u32) {
+    let mut remaining = steps;
+    while remaining > 0 {
+        let count = remaining.min(4);
+        session
+            .advance(count)
+            .expect("Theo Jansen should step under the chosen gravity");
+        remaining -= count;
+    }
+}
+
+fn far_ball_x(session: &SessionCore) -> f32 {
+    let frame = crate::ProofFrame::from(
+        session
+            .capture_frame()
+            .expect("Theo Jansen frame capture should succeed"),
+    );
+    let circles = frame.rigid_circles();
+    assert!(
+        circles.len() >= 6,
+        "wheel plus at least one ground ball must be captured"
+    );
+    circles[3]
 }
 
 fn motorized_revolute_speed(world: &World) -> f32 {

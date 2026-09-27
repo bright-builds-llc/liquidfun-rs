@@ -280,6 +280,32 @@ impl World {
         self.update_body_state(body, |state| Ok(state.candidate_set_awake(awake)))
     }
 
+    /// Wakes every sleeping dynamic body.
+    ///
+    /// Awake bodies keep their velocities. Static and kinematic bodies are left
+    /// unchanged. [`World::set_gravity`] does not call this: the engine matches
+    /// the upstream contract and leaves sleep alone. Playground tilt uses it so
+    /// resting rigid bodies follow a new gravity vector.
+    ///
+    /// # Errors
+    ///
+    /// Returns a typed error when a stored body identity is stale or the world
+    /// is poisoned.
+    pub fn wake_dynamic_bodies(&mut self) -> Result<(), BodyControlError> {
+        let count = self.body_order.len();
+        for index in 0..count {
+            let body = self.body_order[index];
+            let snapshot = self
+                .body_snapshot(body)
+                .map_err(BodyControlError::InvalidHandle)?;
+            if snapshot.body_type() != BodyType::Dynamic || snapshot.is_awake() {
+                continue;
+            }
+            self.set_body_awake(body, true)?;
+        }
+        Ok(())
+    }
+
     /// Changes whether a live body may sleep automatically.
     ///
     /// Disabling sleep wakes the body immediately.

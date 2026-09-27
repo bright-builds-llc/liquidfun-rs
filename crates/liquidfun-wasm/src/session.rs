@@ -129,10 +129,18 @@ impl SessionCore {
         })
     }
 
+    /// Replaces live world gravity and wakes sleeping dynamic bodies.
+    ///
+    /// The engine's `set_gravity` leaves sleep untouched. Resting playground
+    /// bodies, such as the Theo Jansen ground balls, would otherwise ignore the
+    /// accelerometer until some other contact woke them.
     pub(crate) fn set_gravity(&mut self, x: f32, y: f32) -> Result<(), SessionError> {
         self.world
             .set_gravity(Vec2::new(x, y))
-            .map_err(|_error| SessionError::InvalidGravity)
+            .map_err(|_error| SessionError::InvalidGravity)?;
+        self.world
+            .wake_dynamic_bodies()
+            .map_err(|_error| SessionError::StepFailed)
     }
 
     pub(crate) fn restore_authored_gravity(&mut self) -> Result<(), SessionError> {
