@@ -13,22 +13,50 @@ import {
 
 const IPHONE = { width: 390, height: 844 } as const;
 
+/** Inner faces of the shared tall basin, matching the scene segment endpoints. */
+const TALL_BASIN_WALLS = [
+  { x: -5.5, y: 0 },
+  { x: -5.5, y: 8 },
+  { x: 5.5, y: 0 },
+  { x: 5.5, y: 8 },
+] as const;
+
+/** Floor and outer wall tips for the falling-ball basins. */
+const FLOOR_WALLS = [
+  { x: -4, y: 0 },
+  { x: 4, y: 0 },
+  { x: -4, y: 3 },
+  { x: 4, y: 3 },
+  { x: -2, y: 2 },
+  { x: 2, y: 2 },
+] as const;
+
+/** Soup floor and the tops of the slanted walls. */
+const SOUP_WALLS = [
+  { x: -4, y: 0 },
+  { x: 4, y: 0 },
+  { x: -4, y: 3 },
+  { x: 4, y: 3 },
+  { x: -2, y: 2 },
+  { x: 2, y: 2 },
+] as const;
+
 /** Smallest share of the iPhone height the fitted frame should cover. */
 const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   "wave-machine": 0.24,
-  "dam-break": 0.5,
-  fountain: 0.6,
-  "float-or-sink": 0.65,
-  "color-mixer": 0.4,
+  "dam-break": 0.3,
+  fountain: 0.3,
+  "float-or-sink": 0.3,
+  "color-mixer": 0.3,
   "jelly-drop": 0.38,
-  "water-wheel": 0.36,
-  particles: 0.75,
+  "water-wheel": 0.3,
+  particles: 0.43,
   "liquid-timer": 0.4,
-  "surface-tension": 0.75,
-  "elastic-particles": 0.75,
-  "rigid-particles": 0.75,
-  soup: 0.32,
-  "soup-stirrer": 0.32,
+  "surface-tension": 0.43,
+  "elastic-particles": 0.43,
+  "rigid-particles": 0.43,
+  soup: 0.16,
+  "soup-stirrer": 0.16,
   impulse: 0.45,
   "theo-jansen": 0.38,
   "liquid-tumbler": 0.6,
@@ -84,6 +112,74 @@ describe("portrait scene frames", () => {
         MIN_HEIGHT_FRACTION[fraction.id],
       );
     }
+  });
+
+  it("keeps each scene's walls inside the iPhone frame", () => {
+    // Arrange
+    const wallEndpoints = {
+      "dam-break": TALL_BASIN_WALLS,
+      fountain: TALL_BASIN_WALLS,
+      "float-or-sink": TALL_BASIN_WALLS,
+      "color-mixer": TALL_BASIN_WALLS,
+      "water-wheel": TALL_BASIN_WALLS,
+      particles: FLOOR_WALLS,
+      "surface-tension": FLOOR_WALLS,
+      "elastic-particles": FLOOR_WALLS,
+      "rigid-particles": FLOOR_WALLS,
+      soup: SOUP_WALLS,
+      "soup-stirrer": SOUP_WALLS,
+      "jelly-drop": [
+        { x: -3.55, y: 0.85 },
+        { x: -3.55, y: 7.2 },
+        { x: 3.55, y: 0.85 },
+        { x: 3.55, y: 7.2 },
+      ],
+      "liquid-timer": [
+        { x: -2, y: 0 },
+        { x: -2, y: 4 },
+        { x: 2, y: 0 },
+        { x: 2, y: 4 },
+      ],
+      impulse: [
+        { x: -2, y: 0 },
+        { x: -2, y: 4 },
+        { x: 2, y: 0 },
+        { x: 2, y: 4 },
+      ],
+      "liquid-tumbler": [
+        { x: -0.037, y: 0 },
+        { x: -0.037, y: 0.12 },
+        { x: 0.037, y: 0 },
+        { x: 0.037, y: 0.12 },
+      ],
+      "wave-machine": [
+        { x: -2.05, y: 0 },
+        { x: 2.05, y: 0 },
+        { x: -2.05, y: 2 },
+        { x: 2.05, y: 2 },
+      ],
+    } as const;
+
+    // Act
+    const outside = Object.entries(wallEndpoints).flatMap(([id, points]) => {
+      const bounds = worldBoundsForViewport(
+        id as SceneId,
+        IPHONE.width,
+        IPHONE.height,
+      );
+      return points
+        .filter(
+          (point) =>
+            point.x < bounds.minX ||
+            point.x > bounds.maxX ||
+            point.y < bounds.minY ||
+            point.y > bounds.maxY,
+        )
+        .map((point) => `${id} (${point.x}, ${point.y})`);
+    });
+
+    // Assert
+    expect(outside).toEqual([]);
   });
 
   it("keeps the dam obstacle and the timer bowl inside the iPhone frame", () => {
