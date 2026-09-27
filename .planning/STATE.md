@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Phase 29 context gathered
-last_updated: "2026-09-27T08:07:20.753Z"
+stopped_at: Phase 30 context gathered
+last_updated: "2026-09-27T14:04:15.353Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
@@ -116,6 +116,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 
 ## Session Continuity
 
-Last session: 2026-09-27T04:17:31.891Z
-Stopped at: Phase 29 context gathered
-Resume file: .planning/phases/29-sparky-drawing-and-full-catalog/29-CONTEXT.md
+Last session: 2026-09-27T14:04:15.349Z
+Stopped at: Phase 30 context gathered
+Resume file: .planning/phases/30-periodic-hydraulic-fountain/30-CONTEXT.md
