@@ -96,8 +96,6 @@ Each task was committed atomically:
 - **Verification:** `cargo test -p liquidfun-wasm scene::liquid_bubbler -- --test-threads=1` exited 0 (9 passed). `bun run test:unit -- tests/portrait-bounds.test.ts` exited 0 (5 passed).
 - **Committed in:** `d7fe3bc` (Task 2 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 bug)
 **Impact on plan:** The dwell, particle radius, step cap, and revolute motor stay as locked. The inlet and stroke changed so the return test can pass.
 
@@ -111,9 +109,8 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-The native return proof and the portrait frame test pass. `32-VERIFICATION.md` remains `gaps_found` until the orchestrator re-verifies. This summary does not approve the phase.
+The native return proof and the portrait frame test pass. Re-verification set `32-VERIFICATION.md` to passed. This summary does not approve the phase.
 
----
 *Phase: 32-liquid-motion-bubbler*
 *Completed: 2026-09-27*
 

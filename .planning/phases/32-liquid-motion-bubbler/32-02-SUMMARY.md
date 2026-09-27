@@ -112,8 +112,6 @@ Each task was committed atomically:
 - **Verification:** `bun run test:unit -- tests/scene-catalog-controls.test.ts` exits 0
 - **Committed in:** `4f84fd7` (Task 2 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 bug)
 **Impact on plan:** The extra expected id keeps the existing recreates lock honest. No scene controls were added.
 
@@ -133,7 +131,6 @@ Ready for 32-03. The hash route `#/scene/liquid-bubbler` is on the catalog allow
 
 None.
 
----
 *Phase: 32-liquid-motion-bubbler*
 *Completed: 2026-09-27*
 

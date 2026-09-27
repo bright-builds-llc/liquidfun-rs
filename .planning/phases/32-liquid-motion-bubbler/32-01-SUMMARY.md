@@ -113,8 +113,6 @@ Each task was committed atomically:
 - **Verification:** `cargo test -p liquidfun-wasm scene::gravity_slider -- --test-threads=1` exits 0
 - **Committed in:** `277710c` (Task 1 commit)
 
----
-
 **Total deviations:** 3 auto-fixed (2 bug, 1 blocking)
 **Impact on plan:** The retunes stay inside the allowed density and contact-clearance fixes. The waist, motor-off revolute, dwell, and 4-step cap are unchanged.
 
@@ -134,7 +132,6 @@ Ready for 32-02. The native scene builds and the crossing proof passes. Catalog,
 
 None.
 
----
 *Phase: 32-liquid-motion-bubbler*
 *Completed: 2026-09-27*
 
