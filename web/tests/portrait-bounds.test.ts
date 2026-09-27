@@ -58,7 +58,7 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   soup: 0.16,
   "soup-stirrer": 0.16,
   impulse: 0.45,
-  "theo-jansen": 0.38,
+  "theo-jansen": 0.12,
   "liquid-tumbler": 0.6,
 };
 

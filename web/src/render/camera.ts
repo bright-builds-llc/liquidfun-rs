@@ -9,8 +9,8 @@ export type WorldBounds = {
 /**
  * Default proof-scene bounds.
  *
- * Scenes that model a smaller world, such as Liquid Tumbler, pass their own
- * rectangle. Every other scene keeps this 12 m by 9 m frame.
+ * Scenes that need their own frame, such as Liquid Tumbler and Theo Jansen,
+ * pass a rectangle. Every other scene keeps this 12 m by 9 m frame.
  */
 export const WORLD_BOUNDS: WorldBounds = {
   minX: -6,

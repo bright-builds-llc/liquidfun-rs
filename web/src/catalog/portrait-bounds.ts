@@ -1,4 +1,5 @@
 import {
+  THEO_JANSEN_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
   worldBoundsForScene,
   type SceneId,
@@ -62,7 +63,7 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   soup: SOUP_BASIN,
   "soup-stirrer": SOUP_BASIN,
   impulse: { minX: -2.25, minY: -0.25, maxX: 2.25, maxY: 5.15 },
-  "theo-jansen": { minX: -6.4, minY: -0.35, maxX: 6.4, maxY: 13.1 },
+  "theo-jansen": THEO_JANSEN_VIEW_BOUNDS,
   "liquid-tumbler": { minX: -0.042, minY: -0.006, maxX: 0.042, maxY: 0.128 },
 };
 

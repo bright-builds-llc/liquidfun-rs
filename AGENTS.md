@@ -87,8 +87,9 @@ rectangle to that scene's action so the subject fills an iPhone canvas (about
 title and the transport controls. Include the scene's walls inside that
 rectangle so the canvas does not clip them. Leave enough of the subject
 visible that the scene stays recognizable; a wide scene may still have some
-vertical margin. Landscape viewports and wide README exports keep
-`worldBoundsForScene` through
+vertical margin. When the subject travels, as the Theo Jansen walker does,
+include enough of its path that the start of that motion stays on screen.
+Landscape viewports and wide README exports keep `worldBoundsForScene` through
 `worldBoundsForViewport`. `PORTRAIT_VIEW_BOUNDS` is keyed by every `SceneId`,
 and `web/tests/portrait-bounds.test.ts` checks that each portrait frame fills
 the phone.

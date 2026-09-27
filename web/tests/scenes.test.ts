@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   LIQUID_TUMBLER_VIEW_BOUNDS,
+  THEO_JANSEN_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
   SCENE_IDS,
   SCENES,
@@ -292,6 +293,23 @@ describe("maybeSceneById", () => {
     expect(waveMachineBounds).toEqual(WAVE_MACHINE_VIEW_BOUNDS);
     expect(damBreak?.viewBounds).toBeUndefined();
     expect(damBreakBounds).toEqual(WORLD_BOUNDS);
+  });
+
+  it("frames Theo Jansen wide enough for the walker to travel", () => {
+    // Arrange
+    const scene = maybeSceneById("theo-jansen");
+
+    // Act
+    const bounds = worldBoundsForScene("theo-jansen");
+
+    // Assert — legs reach about x = ±7.2 and the slab sits at y = 15.
+    expect(scene?.viewBounds).toEqual(THEO_JANSEN_VIEW_BOUNDS);
+    expect(bounds).toEqual(THEO_JANSEN_VIEW_BOUNDS);
+    expect(bounds.maxX - bounds.minX).toBeGreaterThan(30);
+    expect(bounds.minX).toBeLessThanOrEqual(-7.2);
+    expect(bounds.maxX).toBeGreaterThanOrEqual(7.2);
+    expect(bounds.minY).toBeLessThanOrEqual(0);
+    expect(bounds.maxY).toBeGreaterThanOrEqual(15.7);
   });
 
   it("frames the wave machine tank across a phone-sized screen", () => {
