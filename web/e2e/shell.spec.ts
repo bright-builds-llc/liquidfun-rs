@@ -69,13 +69,15 @@ test("renders the desktop shell and navigates from the sidebar", async ({
   // Act
   await page
     .locator(".demo-sidebar")
-    .getByRole("link", { name: /Fountain/ })
+    .getByRole("link", { name: /Static preview Fountain\b/ })
     .click();
 
   // Assert
   await expectReadySceneChrome(page, "Fountain");
   await expect(
-    page.locator(".demo-sidebar").getByRole("link", { name: /Fountain/ }),
+    page.locator(".demo-sidebar").getByRole("link", {
+      name: /Static preview Fountain\b/,
+    }),
   ).toHaveAttribute("aria-current", "page");
 });
 
