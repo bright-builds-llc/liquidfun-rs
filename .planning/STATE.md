@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: verifying
-stopped_at: Completed 31-03-PLAN.md
-last_updated: "2026-09-27T18:50:10.382Z"
+stopped_at: Phase 32 context gathered
+last_updated: "2026-09-27T18:58:19.300Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
@@ -140,6 +140,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 
 ## Session Continuity
 
-Last session: 2026-09-27T18:36:28.111Z
-Stopped at: Completed 31-03-PLAN.md
-Resume file: None
+Last session: 2026-09-27T18:58:19.294Z
+Stopped at: Phase 32 context gathered
+Resume file: .planning/phases/32-liquid-motion-bubbler/32-CONTEXT.md
