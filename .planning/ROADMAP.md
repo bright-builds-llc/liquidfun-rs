@@ -160,13 +160,15 @@ Plans:
 
 ### Phase 32: Liquid motion bubbler
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Visitors can watch Liquid Bubbler: colored liquid drips through a narrow waist and turns a small wheel, without changing Water Wheel.
+**Requirements**: none
 **Depends on:** Phase 31
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 32 to break down)
+- [ ] 32-01-PLAN.md — Static waist, motor-off paddle wheel, and a delayed side-shaft return, with a crossing and angle test
+- [ ] 32-02-PLAN.md — Catalog record, static preview, portrait frame, and README plan
+- [ ] 32-03-PLAN.md — Chromium smoke for Liquid Bubbler and the existing catalog
 
 ### Phase 33: Stacked drip fidget
 
