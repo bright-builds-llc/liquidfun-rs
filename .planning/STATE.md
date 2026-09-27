@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Phase 32 context gathered
-last_updated: "2026-09-27T19:27:40.586Z"
-last_activity: 2026-09-27 -- Phase 32 execution started
+stopped_at: Completed 32-01-PLAN.md
+last_updated: "2026-09-27T19:50:13.872Z"
+last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 33
-  completed_plans: 30
-  percent: 91
+  completed_plans: 31
+  percent: 94
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 32 (liquid-motion-bubbler) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 32
-Last activity: 2026-09-27 -- Phase 32 execution started
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-09-27
 
 Progress: [██████████] 100%
 
@@ -105,6 +105,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 31]: Passing catalog unit tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and D-11 says the implementing agent must not approve its own work.
 - [Phase 31]: Left ALL_SCENE_TIMEOUT_MS at 380000 and left both step caps at 4. — The Chromium run finished in 36.1 seconds, so the suite timeout did not need to grow.
 - [Phase 31]: Passing Chromium smoke is browser-gate evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and a passing smoke command is not a review acknowledgment.
+- [Phase 32]: Wheel density is 0.03 because 0.20 only turned the wheel about 0.007 rad in 2 seconds — Particle hits crossed the waist but stayed under the 0.05 angle floor at the starting density. The revolute motor stayed off.
+- [Phase 32]: The plate rests 0.02 m above the floor so polygon skin does not lift translation off 0 during the dwell — A flush contact separated to translation 0.015. Matching the joint frame to the raised rest pose keeps the dwell at speed 0.
+- [Phase 32]: Passing native bubbler tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing cargo test is not a review acknowledgment.
 
 ### Pending Todos
 
@@ -137,9 +140,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 31 P01 | 13 min | 2 tasks | 5 files |
 | Phase 31 P02 | 5 min | 2 tasks | 13 files |
 | Phase 31 P03 | 3 min | 2 tasks | 1 files |
+| Phase 32 P01 | 20 min | 2 tasks | 5 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T18:58:19.294Z
-Stopped at: Phase 32 context gathered
-Resume file: .planning/phases/32-liquid-motion-bubbler/32-CONTEXT.md
+Last session: 2026-09-27T19:50:00.285Z
+Stopped at: Completed 32-01-PLAN.md
+Resume file: None
