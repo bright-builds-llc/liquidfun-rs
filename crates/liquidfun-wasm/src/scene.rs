@@ -29,6 +29,7 @@ mod surface_tension;
 mod theo_jansen;
 mod water_wheel;
 mod wave_machine;
+mod wave_tank;
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
@@ -58,6 +59,7 @@ pub(crate) enum SceneId {
     DrawingParticles,
     Sparky,
     HydraulicFountain,
+    WaveTank,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -82,6 +84,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "drawing-particles" => Ok(SceneId::DrawingParticles),
         "sparky" => Ok(SceneId::Sparky),
         "hydraulic-fountain" => Ok(SceneId::HydraulicFountain),
+        "wave-tank" => Ok(SceneId::WaveTank),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -211,6 +214,7 @@ pub(crate) fn build_scene(
         SceneId::DrawingParticles => drawing_particles::build(&scene_presets),
         SceneId::Sparky => sparky::build(&scene_presets),
         SceneId::HydraulicFountain => hydraulic_fountain::build(&scene_presets),
+        SceneId::WaveTank => wave_tank::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)
