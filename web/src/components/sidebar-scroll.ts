@@ -34,13 +34,14 @@ export function scrollTopToCenterItem(target: SidebarScrollTarget): number {
  * Scroll the sidebar so its current link is centered once laid out.
  *
  * The mobile drawer focuses its first link, and that focus scrolls the list
- * back to the top. Reapply across a few frames so the current link wins.
+ * back to the top. Reapply across a few short timers so the current link
+ * wins without joining `requestAnimationFrame`.
  */
 export function scheduleSidebarReveal(navigation: HTMLElement): () => void {
   let frame = 0;
   let cancelled = false;
   let applying = false;
-  let maybeRequest: number | undefined;
+  let maybeTimer: number | undefined;
   let maybeContainer: HTMLElement | undefined;
 
   const stopListening = () => {
@@ -58,7 +59,7 @@ export function scheduleSidebarReveal(navigation: HTMLElement): () => void {
   };
 
   const attempt = () => {
-    maybeRequest = undefined;
+    maybeTimer = undefined;
     if (cancelled) {
       return;
     }
@@ -77,7 +78,7 @@ export function scheduleSidebarReveal(navigation: HTMLElement): () => void {
       stopListening();
       return;
     }
-    maybeRequest = requestAnimationFrame(attempt);
+    maybeTimer = window.setTimeout(attempt, 16);
   };
 
   attempt();
@@ -85,8 +86,8 @@ export function scheduleSidebarReveal(navigation: HTMLElement): () => void {
   return () => {
     cancelled = true;
     stopListening();
-    if (maybeRequest !== undefined) {
-      cancelAnimationFrame(maybeRequest);
+    if (maybeTimer !== undefined) {
+      window.clearTimeout(maybeTimer);
     }
   };
 }

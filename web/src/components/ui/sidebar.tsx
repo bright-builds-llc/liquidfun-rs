@@ -5,7 +5,7 @@ import { Match, Show, Switch, mergeProps, splitProps } from "solid-js";
 import { callHandler } from "../../lib/call-handler";
 import { cx } from "../../lib/cva";
 import { Button } from "./button";
-import { Drawer, DrawerContent } from "./drawer";
+import { Drawer, DrawerClose, DrawerContent } from "./drawer";
 import {
   SIDEBAR_WIDTH_MOBILE,
   SidebarProvider,
@@ -115,7 +115,12 @@ export const Sidebar = (props: SidebarProps) => {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
             }}
           >
-            <div class="flex h-full w-full flex-col">{merge.children}</div>
+            <div class="flex h-full w-full flex-col">
+              <DrawerClose class="drawer-dismiss" aria-label="Dismiss">
+                Dismiss
+              </DrawerClose>
+              {merge.children}
+            </div>
           </DrawerContent>
         </Drawer>
       </Match>

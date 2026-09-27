@@ -202,7 +202,7 @@ test("dismisses the mobile drawer through its overlay and restores focus", async
   await expect(dialog).toBeVisible();
 
   // Act
-  await page.locator(".demo-drawer-overlay").click({
+  await page.locator("[data-slot='drawer-overlay']").click({
     position: { x: 382, y: 400 },
   });
 
@@ -224,6 +224,9 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
   await trigger.click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
+  await expect
+    .poll(() => dialog.evaluate((node) => node.contains(document.activeElement)))
+    .toBe(true);
 
   // Act / Assert
   // Dismiss + nineteen scene links = 20 focusables; exercise wrap past one full cycle.
@@ -267,7 +270,7 @@ test("locks background scrolling and hides outside content while open", async ({
   await page.setViewportSize({ width: 390, height: 812 });
   await page.goto(DAM_BREAK_PATH);
   const trigger = page.getByRole("button", { name: "Demos" });
-  const outsideRoot = page.locator("#root");
+  const outsideRoot = page.locator(".app-shell");
 
   // Act
   await trigger.click();

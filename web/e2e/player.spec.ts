@@ -118,12 +118,12 @@ test("switches rendering without stepping and persists across scenes and reload"
   const wireframePixels = await canvasPixelSha256(page);
 
   // Act
-  await page.getByLabel("Particles", { exact: true }).selectOption("solid");
+  await page.getByRole("combobox", { name: "Particles", exact: true }).selectOption("solid");
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
   await expect(status).toHaveText(PAUSED_STATUS);
-  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("solid");
+  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("solid");
   expect(await numericAttribute(main, "data-step-index")).toBe(pausedStep);
   expect(await canvasPixelSha256(page)).not.toBe(wireframePixels);
 
@@ -133,7 +133,7 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
-  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("solid");
+  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("solid");
 
   // Act
   await page.reload();
@@ -141,7 +141,7 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
-  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("solid");
+  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("solid");
 
   // Arrange
   await page.getByRole("button", { name: "Pause scene" }).click();
@@ -150,12 +150,12 @@ test("switches rendering without stepping and persists across scenes and reload"
   const solidPixels = await canvasPixelSha256(page);
 
   // Act
-  await page.getByLabel("Particles", { exact: true }).selectOption("wireframe");
+  await page.getByRole("combobox", { name: "Particles", exact: true }).selectOption("wireframe");
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "wireframe");
   await expect(status).toHaveText(PAUSED_STATUS);
-  await expect(page.getByLabel("Particles", { exact: true })).toHaveValue("wireframe");
+  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("wireframe");
   expect(await numericAttribute(main, "data-step-index")).toBe(solidStep);
   expect(await canvasPixelSha256(page)).not.toBe(solidPixels);
 });
