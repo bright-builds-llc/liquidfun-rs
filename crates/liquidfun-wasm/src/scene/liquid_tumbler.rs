@@ -2,7 +2,7 @@
 //!
 //! The glass is 74 mm wide and 120 mm tall. Particles are 1.05 mm across.
 //! The lattice is placed through 55 mm and packs down to a few centimeters,
-//! because 4,500 particles sit wider than the resting spacing. Earth gravity
+//! because 3,800 particles sit wider than the resting spacing. Earth gravity
 //! is 9.8 m/s², matching a resting phone accelerometer.
 //! [`PARTICLE_ITERATIONS`] raises the pressure cap enough for that column to
 //! hold; the shared 2 substeps cannot.
@@ -30,10 +30,10 @@ const WATER_DEPTH: f32 = 0.055;
 /// Particle diameter, in meters (1.05 mm across).
 const PARTICLE_DIAMETER: f32 = 0.001_05;
 const PARTICLE_RADIUS: f32 = PARTICLE_DIAMETER * 0.5;
-/// Lattice that fills the glass with exactly 4,500 particles.
-/// 75 by 60 is the factorization closest to the glass width-to-depth ratio.
-const PARTICLE_COLUMNS: usize = 75;
-const PARTICLE_ROWS: usize = 60;
+/// Lattice that fills the glass with exactly 3,800 particles.
+/// 76 by 50 is the factorization closest to the glass width-to-depth ratio.
+const PARTICLE_COLUMNS: usize = 76;
+const PARTICLE_ROWS: usize = 50;
 const PARTICLE_DAMPING: f32 = 0.25;
 const MAXIMUM_PARTICLE_COUNT: usize = PARTICLE_COLUMNS * PARTICLE_ROWS;
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
@@ -42,7 +42,7 @@ const GRAVITY: Vec2 = Vec2::new(0.0, -9.8);
 /// The pressure cap grows with that product. Fewer substeps let the column
 /// sink into the floor and get thrown back up.
 pub(crate) const PARTICLE_ITERATIONS: u32 = 61;
-const _: () = assert!(MAXIMUM_PARTICLE_COUNT == 4_500);
+const _: () = assert!(MAXIMUM_PARTICLE_COUNT == 3_800);
 
 struct LiquidTumblerHooks {
     basin_segments: [RigidSegment; 3],
@@ -258,8 +258,8 @@ mod tests {
         // Assert
         assert_eq!(
             session.particle_count(),
-            4_500,
-            "the 1.05 mm fill should be 4500 particles"
+            3_800,
+            "the 1.05 mm fill should be 3800 particles"
         );
         assert_eq!(session.rigid_shape_count(), 3, "floor and two walls");
         assert!(
@@ -291,7 +291,7 @@ mod tests {
             speed < 1.0,
             "glass water should not be launched by the contact slop, got {speed}"
         );
-        // The 4,500-particle lattice is wider than the 0.75-diameter resting
+        // The 3,800-particle lattice is wider than the 0.75-diameter resting
         // spacing, so the surface can drop as the water packs. A few particles
         // may spill later; the longer test checks that the column settles.
         let surface = highest_particle(&positions);

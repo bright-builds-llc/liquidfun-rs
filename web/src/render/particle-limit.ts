@@ -4,15 +4,6 @@ export const MAX_RENDERED_PARTICLE_LIMIT = 16384;
 /** Default draw cap for scenes whose fills stay under a few thousand particles. */
 export const DEFAULT_RENDERED_PARTICLE_LIMIT = 4000;
 
-/** Draw cap applied when a scene starts. The tumbler fill is above the default. */
-export function initialRenderedParticleLimit(sceneId: string): number {
-  if (sceneId === "liquid-tumbler") {
-    return MAX_RENDERED_PARTICLE_LIMIT;
-  }
-
-  return DEFAULT_RENDERED_PARTICLE_LIMIT;
-}
-
 /**
  * Step through the particle list so a draw cap still covers the whole liquid.
  *
