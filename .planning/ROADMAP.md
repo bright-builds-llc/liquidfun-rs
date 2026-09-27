@@ -197,7 +197,7 @@ Plans:
 | 28. Interaction seams | v1.3 | 8/8 | Complete    | 2026-09-22 |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 5/5 | Complete    | 2026-09-27 |
 | 30. Periodic hydraulic fountain | v1.3 | 3/3 | Complete    | 2026-09-27 |
-| 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete   | 2026-09-27 |
+| 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 32. Liquid motion bubbler | v1.3 | 0/TBD | Not started | - |
 | 33. Stacked drip fidget | v1.3 | 0/TBD | Not started | - |
 

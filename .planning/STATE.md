@@ -4,7 +4,7 @@ milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: verifying
 stopped_at: Completed 31-03-PLAN.md
-last_updated: "2026-09-27T18:37:36.386Z"
+last_updated: "2026-09-27T18:50:10.382Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
@@ -25,8 +25,8 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 ## Current Position
 
-Phase: 31 (sinusoidal-wave-tank) — EXECUTING
-Plan: 3 of 3
+Phase: 32
+Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-09-27
 
