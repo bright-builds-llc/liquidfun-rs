@@ -9,7 +9,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 
 ### Shared player
 
-- [ ] **PLAY-01**: Visitor can open Drawing Particles, Elastic Particles, Impulse, Liquid Timer, Particles, Rigid Particles, Soup, Soup Stirrer, Sparky, Surface Tension, Theo Jansen, and Wave Machine from the catalog, and the existing six scenes remain available.
+- [x] **PLAY-01**: Visitor can open Drawing Particles, Elastic Particles, Impulse, Liquid Timer, Particles, Rigid Particles, Soup, Soup Stirrer, Sparky, Surface Tension, Theo Jansen, and Wave Machine from the catalog, and the existing six scenes remain available.
 - [x] **PLAY-02**: Visitor can play, pause, and reset each new scene, and reset restores that scene's initial layout.
 - [x] **PLAY-03**: Each new scene credits the pinned LiquidFun test it ports.
 
@@ -34,8 +34,8 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 
 ### Effects
 
-- [ ] **FX-01**: Visitor can watch Sparky: colliding circles throw fading particle sparks.
-- [ ] **FX-02**: Visitor can paint Drawing Particles into an empty vessel, and at least one non-water material looks different from plain water.
+- [x] **FX-01**: Visitor can watch Sparky: colliding circles throw fading particle sparks.
+- [x] **FX-02**: Visitor can paint Drawing Particles into an empty vessel, and at least one non-water material looks different from plain water.
 
 ## Future Requirements
 
@@ -65,7 +65,7 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| PLAY-01 | Phase 29 | Pending |
+| PLAY-01 | Phase 29 | Complete |
 | PLAY-02 | Phase 26 | Complete |
 | PLAY-03 | Phase 26 | Complete |
 | BASIN-01 | Phase 26 | Complete |
@@ -78,8 +78,8 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 | ACT-03 | Phase 28 | Complete |
 | ACT-04 | Phase 28 | Complete |
 | ACT-05 | Phase 28 | Complete |
-| FX-01 | Phase 29 | Pending |
-| FX-02 | Phase 29 | Pending |
+| FX-01 | Phase 29 | Complete |
+| FX-02 | Phase 29 | Complete |
 
 **Coverage:**
 - v1 requirements: 15 total
@@ -90,4 +90,4 @@ A visitor can open every JavaScript LiquidFun testbed scene the playground does 
 ---
 
 *Requirements defined: 2026-09-21*
-*Last updated: 2026-09-21 after v1.3 roadmap (Phases 26–29)*
+*Last updated: 2026-09-27 after Phase 29 Sparky, Drawing, and full catalog*
