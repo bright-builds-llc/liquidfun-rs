@@ -4,6 +4,7 @@ import type { PlayerStatus } from "../player/view";
 import type { RenderFrame } from "../physics/frame";
 import {
   RENDER_MODE_GROUPS,
+  isWireframeRenderMode,
   maybeParseRenderMode,
   needsWebglSurface,
   particleSurface,
@@ -357,7 +358,7 @@ function PlayerOptions(props: { readonly panel: PlayerPanelProps }) {
           ))}
         </select>
       </label>
-      <Show when={panel.renderMode === "wireframe"}>
+      <Show when={isWireframeRenderMode(panel.renderMode)}>
         <label class="stroke-width-control">
           Wireframe stroke
           <input

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { RenderFrame } from "../src/physics/frame";
 import { drawRenderFrame } from "../src/render/canvas";
+import { triangleWireVertices } from "../src/render/triangle-wire";
 import {
   createCamera,
   projectPoint,
@@ -47,6 +48,7 @@ type Operation =
     }
   | { readonly kind: "moveTo"; readonly x: number; readonly y: number }
   | { readonly kind: "lineTo"; readonly x: number; readonly y: number }
+  | { readonly kind: "closePath" }
   | { readonly kind: "fill"; readonly fillStyle: string }
   | {
       readonly kind: "stroke";
@@ -147,6 +149,9 @@ function createRecordingContext(): RecordingContext {
       segmentPaths.push([x, y]);
       operations.push({ kind: "lineTo", x, y });
     },
+    closePath: () => {
+      operations.push({ kind: "closePath" });
+    },
     get fillStyle() {
       return maybeFillStyle;
     },
@@ -181,7 +186,7 @@ function createRecordingContext(): RecordingContext {
 }
 
 describe("drawRenderFrame", () => {
-  it("wireframe strokes particles and rigid circles without filling", () => {
+  it("circle wireframe strokes particles and rigid circles without filling", () => {
     // Arrange
     const canvas = createRecordingContext();
     const camera = createCamera(960, 540);
@@ -205,7 +210,7 @@ describe("drawRenderFrame", () => {
     ];
 
     // Act
-    drawRenderFrame(canvas.context, FRAME, camera, "wireframe");
+    drawRenderFrame(canvas.context, FRAME, camera, "circle-wireframe");
 
     // Assert
     expect(canvas.fillCalls()).toBe(0);
@@ -235,6 +240,46 @@ describe("drawRenderFrame", () => {
         lineWidth: 0.3,
       },
     ]);
+  });
+
+  it("triangle wireframe strokes an equilateral outline and leaves particles unfilled", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    const center = projectPoint(camera, { x: 0, y: 1 });
+    const radius = projectRadius(camera, Math.fround(0.2));
+    const [first, second, third] = triangleWireVertices(center.x, center.y, radius);
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "triangle-wireframe");
+
+    // Assert
+    expect(canvas.fillCalls()).toBe(0);
+    expect(
+      canvas.operations.filter((operation) => operation.kind === "arc"),
+    ).toEqual([
+      {
+        kind: "arc",
+        ...projectPoint(camera, { x: 0, y: 2 }),
+        radius: projectRadius(camera, 0.75),
+        startAngle: 0,
+        endAngle: TAU,
+        counterclockwise: false,
+      },
+    ]);
+    expect(canvas.operations).toEqual(
+      expect.arrayContaining([
+        { kind: "moveTo", x: first.x, y: first.y },
+        { kind: "lineTo", x: second.x, y: second.y },
+        { kind: "lineTo", x: third.x, y: third.y },
+        { kind: "closePath" },
+        {
+          kind: "stroke",
+          strokeStyle: "rgba(57, 211, 199, 0.5019607843137255)",
+          lineWidth: 0.3,
+        },
+      ]),
+    );
   });
 
   it("solid preserves particle fill and rigid fill-plus-stroke behavior", () => {
@@ -310,7 +355,7 @@ describe("drawRenderFrame", () => {
     const camera = createCamera(960, 540);
 
     // Act
-    drawRenderFrame(canvas.context, FRAME, camera, "wireframe", 0.1);
+    drawRenderFrame(canvas.context, FRAME, camera, "circle-wireframe", 0.1);
 
     // Assert
     expect(
@@ -320,14 +365,14 @@ describe("drawRenderFrame", () => {
     ).toEqual([0.1, 0.1, 0.1]);
   });
 
-  it("renders identical rigid segment paths in both modes", () => {
+  it("renders identical rigid segment paths for circle wireframe and solid", () => {
     // Arrange
     const wireframe = createRecordingContext();
     const solid = createRecordingContext();
     const camera = createCamera(960, 540);
 
     // Act
-    drawRenderFrame(wireframe.context, FRAME, camera, "wireframe");
+    drawRenderFrame(wireframe.context, FRAME, camera, "circle-wireframe");
     drawRenderFrame(solid.context, FRAME, camera, "solid");
 
     // Assert

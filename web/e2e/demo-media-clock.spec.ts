@@ -207,7 +207,7 @@ test("rejects persisted solid mode for deterministic media capture", async ({
       plan,
       framesDirectory: testInfo.outputPath("solid-mode-capture"),
     }),
-  ).rejects.toThrow("Demo media capture requires wireframe rendering");
+  ).rejects.toThrow("Demo media capture requires circle wireframe rendering");
 });
 
 test.describe("capture preconditions", () => {

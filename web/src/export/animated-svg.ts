@@ -1,4 +1,5 @@
-import type { CircleRenderMode } from "../render/mode";
+import type { SvgRenderMode } from "../render/mode";
+import { triangleWireVertices } from "../render/triangle-wire";
 import type {
   ProjectedBody,
   ProjectedParticle,
@@ -21,7 +22,7 @@ export type AnimatedSvgInput = {
   readonly durationSeconds: number;
   readonly viewportWidth: number;
   readonly viewportHeight: number;
-  readonly renderMode: CircleRenderMode;
+  readonly renderMode: SvgRenderMode;
   readonly wireframeStrokeWidth: number;
 };
 
@@ -87,7 +88,7 @@ function attributeMarkup(
 }
 
 function shapeElement(
-  tag: "circle" | "line" | "text",
+  tag: "circle" | "line" | "polygon" | "text",
   attributes: readonly AnimatedAttribute[],
   duration: string,
   maybeText?: string,
@@ -133,11 +134,17 @@ function withOpacity(
   return [...attributes, maybeOpacity];
 }
 
+function polygonPoints(particle: ProjectedParticle): string {
+  return triangleWireVertices(particle.x, particle.y, particle.radius)
+    .map((vertex) => `${formatCoordinate(vertex.x)},${formatCoordinate(vertex.y)}`)
+    .join(" ");
+}
+
 function particleElement(
   samples: readonly ProjectedSample[],
   index: number,
   duration: string,
-  renderMode: CircleRenderMode,
+  renderMode: SvgRenderMode,
   strokeWidth: string,
 ): string | undefined {
   const present = samples.map((sample) => sample.particles[index] !== undefined);
@@ -146,14 +153,25 @@ function particleElement(
     return undefined;
   }
 
-  const colorAttributes: AnimatedAttribute[] =
-    renderMode === "wireframe"
-      ? [
-          { name: "fill", values: maybeHeld.map(() => "none") },
-          { name: "stroke", values: maybeHeld.map(particleFill) },
-          { name: "stroke-width", values: maybeHeld.map(() => strokeWidth) },
-        ]
-      : [{ name: "fill", values: maybeHeld.map(particleFill) }];
+  const colorAttributes: AnimatedAttribute[] = particlePaintAttributes(
+    renderMode,
+    maybeHeld,
+    strokeWidth,
+  );
+
+  if (renderMode === "triangle-wireframe") {
+    return shapeElement(
+      "polygon",
+      withOpacity(
+        [
+          { name: "points", values: maybeHeld.map(polygonPoints) },
+          ...colorAttributes,
+        ],
+        present,
+      ),
+      duration,
+    );
+  }
 
   return shapeElement(
     "circle",
@@ -203,11 +221,27 @@ function labelFontSize(radius: number): number {
   return Math.min(radius * LABEL_FONT_FACTOR, LABEL_FONT_MAX);
 }
 
+function particlePaintAttributes(
+  renderMode: SvgRenderMode,
+  particles: readonly ProjectedParticle[],
+  strokeWidth: string,
+): AnimatedAttribute[] {
+  if (renderMode === "solid") {
+    return [{ name: "fill", values: particles.map(particleFill) }];
+  }
+
+  return [
+    { name: "fill", values: particles.map(() => "none") },
+    { name: "stroke", values: particles.map(particleFill) },
+    { name: "stroke-width", values: particles.map(() => strokeWidth) },
+  ];
+}
+
 function bodyElements(
   samples: readonly ProjectedSample[],
   index: number,
   duration: string,
-  renderMode: CircleRenderMode,
+  renderMode: SvgRenderMode,
   strokeWidth: string,
 ): readonly string[] {
   const present = samples.map((sample) => sample.bodies[index] !== undefined);
@@ -216,7 +250,7 @@ function bodyElements(
     return [];
   }
 
-  const fill = renderMode === "wireframe" ? "none" : RIGID_FILL;
+  const fill = renderMode === "solid" ? RIGID_FILL : "none";
   const circle = shapeElement(
     "circle",
     withOpacity(
@@ -279,7 +313,7 @@ function bodyLabel(
 }
 
 function outlineWidth(input: AnimatedSvgInput): string {
-  if (input.renderMode === "wireframe") {
+  if (input.renderMode !== "solid") {
     return formatCoordinate(input.wireframeStrokeWidth);
   }
 

@@ -18,6 +18,7 @@ import {
   type RenderMode,
 } from "./mode";
 import { eachProjectedParticle } from "./projected-particle";
+import { triangleWireVertices } from "./triangle-wire";
 import {
   DEFAULT_WIREFRAME_STROKE_WIDTH,
   maybeParseWireframeStrokeWidth,
@@ -117,6 +118,15 @@ function outlineWidth(
   return RIGID_STROKE_WIDTH;
 }
 
+function particleColor(
+  red: number,
+  green: number,
+  blue: number,
+  alpha: number,
+): string {
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
 function drawDiscParticles(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
@@ -131,7 +141,7 @@ function drawDiscParticles(
     camera,
     maxRenderedParticles,
     (x, y, radius, red, green, blue, alpha) => {
-      const color = `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+      const color = particleColor(red, green, blue, alpha);
       context.beginPath();
       context.arc(x, y, radius, 0, TAU);
       if (renderMode === "wireframe") {
@@ -143,6 +153,32 @@ function drawDiscParticles(
 
       context.fillStyle = color;
       context.fill();
+    },
+  );
+}
+
+function drawTriangleParticles(
+  context: CanvasRenderingContext2D,
+  frame: RenderFrame,
+  camera: Camera,
+  wireframeStrokeWidth: number,
+  maxRenderedParticles: number,
+): void {
+  const strokeWidth = resolvedWireframeStrokeWidth(wireframeStrokeWidth);
+  eachProjectedParticle(
+    frame,
+    camera,
+    maxRenderedParticles,
+    (x, y, radius, red, green, blue, alpha) => {
+      const [first, second, third] = triangleWireVertices(x, y, radius);
+      context.beginPath();
+      context.moveTo(first.x, first.y);
+      context.lineTo(second.x, second.y);
+      context.lineTo(third.x, third.y);
+      context.closePath();
+      context.strokeStyle = particleColor(red, green, blue, alpha);
+      context.lineWidth = strokeWidth;
+      context.stroke();
     },
   );
 }
@@ -265,12 +301,22 @@ function drawParticleSurface(
   const particleLimit = usesParticleStride(renderMode)
     ? maxRenderedParticles
     : Number.POSITIVE_INFINITY;
-  if (renderMode === "wireframe" || renderMode === "solid") {
+  if (renderMode === "triangle-wireframe") {
+    drawTriangleParticles(
+      context,
+      frame,
+      camera,
+      wireframeStrokeWidth,
+      particleLimit,
+    );
+    return;
+  }
+  if (renderMode === "circle-wireframe" || renderMode === "solid") {
     drawDiscParticles(
       context,
       frame,
       camera,
-      renderMode,
+      renderMode === "circle-wireframe" ? "wireframe" : "solid",
       wireframeStrokeWidth,
       particleLimit,
     );
