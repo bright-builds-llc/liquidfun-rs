@@ -90,6 +90,7 @@ describe("scene catalog credits", () => {
       "hydraulic-fountain":
         "crates/liquidfun-wasm/src/scene/hydraulic_fountain.rs",
       "wave-tank": "crates/liquidfun-wasm/src/scene/wave_tank.rs",
+      "liquid-bubbler": "crates/liquidfun-wasm/src/scene/liquid_bubbler.rs",
     };
     const pinnedBasinInspiration = {
       particles: [

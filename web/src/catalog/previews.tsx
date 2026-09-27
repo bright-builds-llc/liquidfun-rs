@@ -3,6 +3,7 @@ import type { JSX } from "solid-js";
 import type { SceneId } from "./scenes";
 
 const WATER = "#4DA3FF";
+const DRIP = "#F2B040";
 const ACCENT_WATER = "#39D3C7";
 const MIX_RED = "#F87171";
 const MIX_GREEN = "#3DDC97";
@@ -345,6 +346,24 @@ function WaveTankPreview() {
   );
 }
 
+function LiquidBubblerPreview() {
+  return (
+    <PreviewFrame>
+      <line x1="28" y1="18" x2="28" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="74" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="132" y1="18" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="108" y1="28" x2="108" y2="62" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="46" x2="62" y2="46" stroke={RIGID} stroke-width="3" />
+      <line x1="76" y1="46" x2="108" y2="46" stroke={RIGID} stroke-width="3" />
+      <rect x="36" y="28" width="64" height="14" fill={DRIP} />
+      <rect x="66" y="46" width="6" height="10" fill={DRIP} />
+      <circle cx="69" cy="64" r="8" fill="none" stroke={RIGID} stroke-width="3" />
+      <line x1="69" y1="56" x2="69" y2="72" stroke={RIGID} stroke-width="2" />
+      <line x1="61" y1="64" x2="77" y2="64" stroke={RIGID} stroke-width="2" />
+    </PreviewFrame>
+  );
+}
+
 function HydraulicFountainPreview() {
   return (
     <PreviewFrame>
@@ -473,5 +492,7 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <HydraulicFountainPreview />;
     case "wave-tank":
       return <WaveTankPreview />;
+    case "liquid-bubbler":
+      return <LiquidBubblerPreview />;
   }
 }

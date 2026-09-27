@@ -64,6 +64,7 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   sparky: 0.4,
   "hydraulic-fountain": 0.28,
   "wave-tank": 0.20,
+  "liquid-bubbler": 0.40,
 };
 
 function fittedFrameFraction(

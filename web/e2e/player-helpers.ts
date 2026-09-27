@@ -49,6 +49,7 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   sparky: "/liquidfun-rs/#/scene/sparky",
   "hydraulic-fountain": "/liquidfun-rs/#/scene/hydraulic-fountain",
   "wave-tank": "/liquidfun-rs/#/scene/wave-tank",
+  "liquid-bubbler": "/liquidfun-rs/#/scene/liquid-bubbler",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {
