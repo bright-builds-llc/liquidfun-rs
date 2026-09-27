@@ -1,5 +1,6 @@
 use super::*;
 
+mod particle_color_batch;
 mod particle_group_transactions;
 
 fn test_world() -> World {
