@@ -151,6 +151,8 @@ test("hides shell chrome only during a successful capture callback", async ({
     expect(await page.locator("html").getAttribute("data-demo-media-capture")).toBe("true");
     await expect(page.locator(".site-header")).toBeHidden();
     await expect(page.locator(".demo-sidebar")).toBeHidden();
+    await expect(page.locator(".canvas-hud-title")).toBeHidden();
+    await expect(page.locator(".canvas-hud-bottom")).toBeHidden();
     await expect(page.locator(".site-footer")).toBeHidden();
     await expect(page.locator(".player-panel")).toBeVisible();
   });
@@ -158,7 +160,8 @@ test("hides shell chrome only during a successful capture callback", async ({
   // Assert
   expect(await page.locator("html").getAttribute("data-demo-media-capture")).toBeNull();
   await expect(page.locator(".site-header")).toBeVisible();
-  await expect(page.locator(".site-footer")).toBeVisible();
+  await expect(page.locator(".canvas-hud-title")).toBeVisible();
+  await expect(page.locator(".canvas-hud-bottom")).toBeVisible();
 });
 
 test("cleans up capture mode after a thrown callback", async ({ page }) => {

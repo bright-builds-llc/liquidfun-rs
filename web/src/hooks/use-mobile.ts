@@ -20,5 +20,11 @@ export const useIsMobile = () => {
   onCleanup(() => {
     mql.removeEventListener("change", update);
   });
-  return () => state() || readCanvasStage(document.fullscreenEnabled, navigator);
+  return () =>
+    state() ||
+    readCanvasStage(
+      document.fullscreenEnabled,
+      navigator,
+      window.location.search,
+    );
 };

@@ -1,16 +1,21 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
+  closeSceneControls,
   CONSTRUCTION_RESET_HINT,
   expectReadySceneChrome,
+  expectSceneOption,
   PAUSED_STATUS,
   PLAYING_STATUS,
+  revealLocator,
   SCENE_HASH_PATHS,
+  selectSceneOption,
   ALL_SCENE_TIMEOUT_MS,
   sessionStatus,
 } from "./player-helpers";
 
 async function resetPlayingScene(page: Page, title: string): Promise<void> {
+  await closeSceneControls(page);
   await page.getByRole("button", { name: "Reset scene" }).click();
   await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   await expectReadySceneChrome(page, title);
@@ -22,12 +27,12 @@ test("resets Fountain Emission rate from high to medium", async ({ page }) => {
   await expectReadySceneChrome(page, "Fountain");
 
   // Act
-  await page.getByLabel("Emission rate").selectOption("high");
-  await expect(page.getByLabel("Emission rate")).toHaveValue("high");
+  await selectSceneOption(page, "Emission rate", "high");
+  await expectSceneOption(page, "Emission rate", "high");
   await resetPlayingScene(page, "Fountain");
 
   // Assert
-  await expect(page.getByLabel("Emission rate")).toHaveValue("medium");
+  await expectSceneOption(page, "Emission rate", "medium");
 });
 
 test("resets Float or Sink Body from cork to wood", async ({ page }) => {
@@ -36,12 +41,12 @@ test("resets Float or Sink Body from cork to wood", async ({ page }) => {
   await expectReadySceneChrome(page, "Float or Sink");
 
   // Act
-  await page.getByLabel("Body").selectOption("cork");
-  await expect(page.getByLabel("Body")).toHaveValue("cork");
+  await selectSceneOption(page, "Body", "cork");
+  await expectSceneOption(page, "Body", "cork");
   await resetPlayingScene(page, "Float or Sink");
 
   // Assert
-  await expect(page.getByLabel("Body")).toHaveValue("wood");
+  await expectSceneOption(page, "Body", "wood");
 });
 
 test("resets Color Mixer Stir speed from fast to slow", async ({ page }) => {
@@ -50,12 +55,12 @@ test("resets Color Mixer Stir speed from fast to slow", async ({ page }) => {
   await expectReadySceneChrome(page, "Color Mixer");
 
   // Act
-  await page.getByLabel("Stir speed").selectOption("fast");
-  await expect(page.getByLabel("Stir speed")).toHaveValue("fast");
+  await selectSceneOption(page, "Stir speed", "fast");
+  await expectSceneOption(page, "Stir speed", "fast");
   await resetPlayingScene(page, "Color Mixer");
 
   // Assert
-  await expect(page.getByLabel("Stir speed")).toHaveValue("slow");
+  await expectSceneOption(page, "Stir speed", "slow");
 });
 
 test("resets Water Wheel Jet strength from strong to medium", async ({
@@ -66,12 +71,12 @@ test("resets Water Wheel Jet strength from strong to medium", async ({
   await expectReadySceneChrome(page, "Water Wheel");
 
   // Act
-  await page.getByLabel("Jet strength").selectOption("strong");
-  await expect(page.getByLabel("Jet strength")).toHaveValue("strong");
+  await selectSceneOption(page, "Jet strength", "strong");
+  await expectSceneOption(page, "Jet strength", "strong");
   await resetPlayingScene(page, "Water Wheel");
 
   // Assert
-  await expect(page.getByLabel("Jet strength")).toHaveValue("medium");
+  await expectSceneOption(page, "Jet strength", "medium");
 });
 
 test("resets Dam Break Water amount from large to medium", async ({ page }) => {
@@ -80,6 +85,7 @@ test("resets Dam Break Water amount from large to medium", async ({ page }) => {
   // Arrange
   await page.goto(SCENE_HASH_PATHS["dam-break"]);
   await expectReadySceneChrome(page, "Dam Break");
+  await revealLocator(page, page.getByLabel("Water amount"));
   const waterAmount = page.locator(".scene-control").filter({
     has: page.getByLabel("Water amount"),
   });
@@ -88,11 +94,11 @@ test("resets Dam Break Water amount from large to medium", async ({ page }) => {
   await waterAmount.getByLabel("Water amount").selectOption("large");
   await expect(waterAmount.getByText(CONSTRUCTION_RESET_HINT)).toBeVisible();
   await expectReadySceneChrome(page, "Dam Break");
-  await expect(page.getByLabel("Water amount")).toHaveValue("large");
+  await expectSceneOption(page, "Water amount", "large");
   await resetPlayingScene(page, "Dam Break");
 
   // Assert
-  await expect(page.getByLabel("Water amount")).toHaveValue("medium");
+  await expectSceneOption(page, "Water amount", "medium");
 });
 
 test("resets Color Mixer Mix strength from gentle to strong", async ({
@@ -103,6 +109,7 @@ test("resets Color Mixer Mix strength from gentle to strong", async ({
   // Arrange
   await page.goto(SCENE_HASH_PATHS["color-mixer"]);
   await expectReadySceneChrome(page, "Color Mixer");
+  await revealLocator(page, page.getByLabel("Mix strength"));
   const mixStrength = page.locator(".scene-control").filter({
     has: page.getByLabel("Mix strength"),
   });
@@ -111,11 +118,11 @@ test("resets Color Mixer Mix strength from gentle to strong", async ({
   await mixStrength.getByLabel("Mix strength").selectOption("gentle");
   await expect(mixStrength.getByText(CONSTRUCTION_RESET_HINT)).toBeVisible();
   await expectReadySceneChrome(page, "Color Mixer");
-  await expect(page.getByLabel("Mix strength")).toHaveValue("gentle");
+  await expectSceneOption(page, "Mix strength", "gentle");
   await resetPlayingScene(page, "Color Mixer");
 
   // Assert
-  await expect(page.getByLabel("Mix strength")).toHaveValue("strong");
+  await expectSceneOption(page, "Mix strength", "strong");
 });
 
 test("keeps Fountain Emission rate high across pause and play", async ({
@@ -124,16 +131,18 @@ test("keeps Fountain Emission rate high across pause and play", async ({
   // Arrange
   await page.goto(SCENE_HASH_PATHS.fountain);
   await expectReadySceneChrome(page, "Fountain");
-  await page.getByLabel("Emission rate").selectOption("high");
-  await expect(page.getByLabel("Emission rate")).toHaveValue("high");
+  await selectSceneOption(page, "Emission rate", "high");
+  await expectSceneOption(page, "Emission rate", "high");
 
   // Act
+  await closeSceneControls(page);
   await page.getByRole("button", { name: "Pause scene" }).click();
   await expect(sessionStatus(page)).toHaveText(PAUSED_STATUS);
-  await expect(page.getByLabel("Emission rate")).toHaveValue("high");
+  await expectSceneOption(page, "Emission rate", "high");
+  await closeSceneControls(page);
   await page.getByRole("button", { name: "Play scene" }).click();
 
   // Assert
   await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
-  await expect(page.getByLabel("Emission rate")).toHaveValue("high");
+  await expectSceneOption(page, "Emission rate", "high");
 });
