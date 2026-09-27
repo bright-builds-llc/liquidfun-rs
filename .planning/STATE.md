@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
 stopped_at: Phase 32 context gathered
-last_updated: "2026-09-27T19:27:22.738Z"
-last_activity: 2026-09-27 -- Phase 32 planning complete
+last_updated: "2026-09-27T19:27:40.586Z"
+last_activity: 2026-09-27 -- Phase 32 execution started
 progress:
   total_phases: 8
   completed_phases: 6
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 31 — sinusoidal-wave-tank
+**Current focus:** Phase 32 — liquid-motion-bubbler
 
 ## Current Position
 
-Phase: 32
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-27 -- Phase 32 planning complete
+Phase: 32 (liquid-motion-bubbler) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 32
+Last activity: 2026-09-27 -- Phase 32 execution started
 
 Progress: [██████████] 100%
 
