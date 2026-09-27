@@ -54,10 +54,10 @@ test("renders the desktop shell and navigates from the sidebar", async ({
   // Assert
   await expect(page.locator(".site-header")).toBeVisible();
   await expect(page.locator(".site-header")).not.toContainText(
-    "All nineteen demos",
+    "All twenty demos",
   );
   await expect(page.locator(".site-footer-summary")).toContainText(
-    "All nineteen demos",
+    "All twenty demos",
   );
   await expect(page.locator(".demo-sidebar")).toBeVisible();
   await expect(page.locator(".player-panel")).toBeVisible();
@@ -229,8 +229,8 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
     .toBe(true);
 
   // Act / Assert
-  // Dismiss + nineteen scene links = 20 focusables; exercise wrap past one full cycle.
-  for (let tabIndex = 0; tabIndex < 21; tabIndex += 1) {
+  // Dismiss + twenty scene links = 21 focusables; exercise wrap past one full cycle.
+  for (let tabIndex = 0; tabIndex < 22; tabIndex += 1) {
     await page.keyboard.press("Tab");
     await expect
       .poll(() =>
@@ -241,13 +241,13 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
 
   // Arrange
   const closeButton = dialog.getByRole("button", { name: "Dismiss" });
-  const lastLink = dialog.getByRole("link", { name: /Sparky/ });
+  const lastLink = dialog.getByRole("link", { name: /Hydraulic Fountain/ });
   await closeButton.focus();
   await expect(closeButton).toBeFocused();
 
   // Act / Assert
-  // Dismiss + nineteen scene links = 20 focusables; 21 reverse tabs ≡ 1 (mod 20) lands on last.
-  for (let reverseTabIndex = 0; reverseTabIndex < 21; reverseTabIndex += 1) {
+  // Dismiss + twenty scene links = 21 focusables; 22 reverse tabs ≡ 1 (mod 21) lands on last.
+  for (let reverseTabIndex = 0; reverseTabIndex < 22; reverseTabIndex += 1) {
     await page.keyboard.press("Shift+Tab");
     await expect
       .poll(() =>
@@ -317,7 +317,7 @@ test("closes the drawer for an authoritative external hash route", async ({
   ).toBe(true);
 });
 
-test("shows nineteen static previews in the desktop sidebar", async ({ page }) => {
+test("shows twenty static previews in the desktop sidebar", async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(DAM_BREAK_PATH);
@@ -326,10 +326,10 @@ test("shows nineteen static previews in the desktop sidebar", async ({ page }) =
   await expect(page.locator(".catalog-card")).toHaveCount(0);
   await expect(
     page.locator(".demo-sidebar").getByText("Static preview", { exact: true }),
-  ).toHaveCount(19);
+  ).toHaveCount(20);
   await expect(
     page.locator(".demo-sidebar").locator("svg[aria-hidden='true']"),
-  ).toHaveCount(19);
+  ).toHaveCount(20);
 });
 
 test("shows a static preview inside the mobile demos dialog", async ({
