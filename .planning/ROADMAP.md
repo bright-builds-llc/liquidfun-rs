@@ -49,7 +49,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 - [x] **Phase 29: Sparky, Drawing, and full catalog** - Contact sparks, paint presets, and all twelve scenes openable (completed 2026-09-27)
 - [x] **Phase 30: Periodic hydraulic fountain** - A timed piston squeezes liquid so it travels elsewhere (completed 2026-09-27)
 - [x] **Phase 31: Sinusoidal wave tank** - A still pool whose end platform rises and falls and sends waves (completed 2026-09-27)
-- [ ] **Phase 32: Liquid motion bubbler** - Colored liquid drips through a narrow waist and turns a small wheel
+- [x] **Phase 32: Liquid motion bubbler** - Colored liquid drips through a narrow waist and turns a small wheel (completed 2026-09-27)
 - [ ] **Phase 33: Stacked drip fidget** - Liquid drains through a stack of moving parts, and each part reacts when the drip reaches it
 
 ## Phase Details
@@ -163,7 +163,7 @@ Plans:
 **Goal:** Visitors can watch Liquid Bubbler: colored liquid drips through a narrow waist and turns a small wheel, without changing Water Wheel.
 **Requirements**: none
 **Depends on:** Phase 31
-**Plans:** 4/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 32-01-PLAN.md — Static waist, motor-off paddle wheel, and a delayed side-shaft return, with a crossing and angle test
@@ -201,7 +201,7 @@ Plans:
 | 29. Sparky, Drawing, and full catalog | v1.3 | 5/5 | Complete    | 2026-09-27 |
 | 30. Periodic hydraulic fountain | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete    | 2026-09-27 |
-| 32. Liquid motion bubbler | v1.3 | 4/4 | In Progress|  |
+| 32. Liquid motion bubbler | v1.3 | 4/4 | Complete    | 2026-09-27 |
 | 33. Stacked drip fidget | v1.3 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

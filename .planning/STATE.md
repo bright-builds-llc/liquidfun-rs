@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: verifying
-stopped_at: Completed 32-04-PLAN.md
-last_updated: "2026-09-27T20:44:33.264Z"
-last_activity: 2026-09-27
+status: ready
+stopped_at: Phase 32 verified and complete
+last_updated: "2026-09-27T20:52:00.000Z"
+last_activity: 2026-09-27 -- Phase 32 complete
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 34
   completed_plans: 34
   percent: 100
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 32 — liquid-motion-bubbler
+**Current focus:** Phase 33 — stacked-drip-fidget
 
 ## Current Position
 
-Phase: 32 (liquid-motion-bubbler) — VERIFYING
-Plan: 4 of 4
-Status: Ready for re-verification
-Last activity: 2026-09-27
+Phase: 33
+Plan: Not started
+Status: Ready to discuss
+Last activity: 2026-09-27 -- Phase 32 complete
 
 Progress: [██████████] 100%
 
