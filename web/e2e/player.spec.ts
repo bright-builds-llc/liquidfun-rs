@@ -108,14 +108,15 @@ test("switches rendering without stepping and persists across scenes and reload"
   await openDamBreakPlaying(page);
   const main = page.locator("main");
   const status = sessionStatus(page);
-  await expect(main).toHaveAttribute("data-render-mode", "wireframe");
+  await expect(main).toHaveAttribute("data-render-mode", "shaded-blob");
+  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("shaded-blob");
   await expect
     .poll(() => numericAttribute(main, "data-step-index"))
     .toBeGreaterThan(4);
   await page.getByRole("button", { name: "Pause scene" }).click();
   await expect(status).toHaveText(PAUSED_STATUS);
   const pausedStep = await numericAttribute(main, "data-step-index");
-  const wireframePixels = await canvasPixelSha256(page);
+  const shadedPixels = await canvasPixelSha256(page);
 
   // Act
   await page.getByRole("combobox", { name: "Particles", exact: true }).selectOption("solid");
@@ -125,7 +126,7 @@ test("switches rendering without stepping and persists across scenes and reload"
   await expect(status).toHaveText(PAUSED_STATUS);
   await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("solid");
   expect(await numericAttribute(main, "data-step-index")).toBe(pausedStep);
-  expect(await canvasPixelSha256(page)).not.toBe(wireframePixels);
+  expect(await canvasPixelSha256(page)).not.toBe(shadedPixels);
 
   // Act
   await page.goto(FOUNTAIN_PATH);
