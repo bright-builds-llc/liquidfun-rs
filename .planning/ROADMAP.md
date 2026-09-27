@@ -46,7 +46,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 - [x] **Phase 26: Catalog shell and basin scenes** - Shared player growth plus Particles and Liquid Timer (completed 2026-09-22)
 - [x] **Phase 27: Material flag groups** - Surface Tension, Elastic Particles, and Rigid Particles (completed 2026-09-22)
 - [x] **Phase 28: Interaction seams** - Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen (completed 2026-09-22)
-- [ ] **Phase 29: Sparky, Drawing, and full catalog** - Contact sparks, paint presets, and all twelve scenes openable
+- [x] **Phase 29: Sparky, Drawing, and full catalog** - Contact sparks, paint presets, and all twelve scenes openable (completed 2026-09-27)
 - [ ] **Phase 30: Periodic hydraulic fountain** - A timed piston squeezes liquid so it travels elsewhere
 - [ ] **Phase 31: Sinusoidal wave tank** - A still pool whose end platform rises and falls and sends waves
 - [ ] **Phase 32: Liquid motion bubbler** - Colored liquid drips through a narrow waist and turns a small wheel
@@ -123,14 +123,14 @@ Plans:
   2. Visitor can watch Sparky: colliding circles throw fading particle sparks (post-step contact observation; no mid-step world mutation; no FFI expansion).
   3. Visitor can paint Drawing Particles into an empty vessel, and at least one non-water material looks different from plain water.
   4. Developer can confirm scene docs and catalog wording describe recognizable ports, not sealed C++ parity, and do not cut particle counts or raise the 4-step catch-up cap to fake smoothness.
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 29-01-PLAN.md — Batch particle color write for spark fade
 - [x] 29-02-PLAN.md — Drawing Particles empty vessel and water or elastic paint
 - [x] 29-03-PLAN.md — Sparky post-step powder bursts and ring
 - [x] 29-04-PLAN.md — Nineteen-scene catalog, previews, portrait frames, README plans
-- [ ] 29-05-PLAN.md — Chromium smoke for both scenes plus the existing catalog
+- [x] 29-05-PLAN.md — Chromium smoke for both scenes plus the existing catalog
 
 **UI hint**: yes
 
@@ -191,7 +191,7 @@ Plans:
 | 26. Catalog shell and basin scenes | v1.3 | 5/5 | Complete    | 2026-09-22 |
 | 27. Material flag groups | v1.3 | 6/6 | Complete    | 2026-09-22 |
 | 28. Interaction seams | v1.3 | 8/8 | Complete    | 2026-09-22 |
-| 29. Sparky, Drawing, and full catalog | v1.3 | 4/5 | In Progress|  |
+| 29. Sparky, Drawing, and full catalog | v1.3 | 5/5 | Complete   | 2026-09-27 |
 | 30. Periodic hydraulic fountain | v1.3 | 0/TBD | Not started | - |
 | 31. Sinusoidal wave tank | v1.3 | 0/TBD | Not started | - |
 | 32. Liquid motion bubbler | v1.3 | 0/TBD | Not started | - |
