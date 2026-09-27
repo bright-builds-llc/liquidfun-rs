@@ -23,6 +23,7 @@ mod rigid_particles;
 mod soup;
 mod soup_family;
 mod soup_stirrer;
+mod sparky;
 mod surface_tension;
 mod theo_jansen;
 mod water_wheel;
@@ -54,6 +55,7 @@ pub(crate) enum SceneId {
     TheoJansen,
     LiquidTumbler,
     DrawingParticles,
+    Sparky,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -76,6 +78,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "theo-jansen" => Ok(SceneId::TheoJansen),
         "liquid-tumbler" => Ok(SceneId::LiquidTumbler),
         "drawing-particles" => Ok(SceneId::DrawingParticles),
+        "sparky" => Ok(SceneId::Sparky),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -194,6 +197,7 @@ pub(crate) fn build_scene(
         SceneId::TheoJansen => theo_jansen::build(&scene_presets),
         SceneId::LiquidTumbler => liquid_tumbler::build(&scene_presets),
         SceneId::DrawingParticles => drawing_particles::build(&scene_presets),
+        SceneId::Sparky => sparky::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)

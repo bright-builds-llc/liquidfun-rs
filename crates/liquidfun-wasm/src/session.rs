@@ -380,6 +380,12 @@ impl SessionCore {
             .map(ParticleSystemSnapshot::particle_count)
     }
 
+    /// Reads the live particle system after a step, for scene tests.
+    #[cfg(test)]
+    pub(crate) fn read_particles<T>(&self, read: impl FnOnce(&World, ParticleSystemId) -> T) -> T {
+        read(&self.world, self.particle_system)
+    }
+
     pub(crate) fn rigid_shape_count(&self) -> usize {
         let segment_count = self
             .hooks
