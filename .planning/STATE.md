@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: executing
-stopped_at: Completed 30-02-PLAN.md
-last_updated: "2026-09-27T15:31:24.341Z"
+status: verifying
+stopped_at: Completed 30-03-PLAN.md
+last_updated: "2026-09-27T15:40:08.065Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 27
-  completed_plans: 26
-  percent: 96
+  completed_plans: 27
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 30 (periodic-hydraulic-fountain) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-27
 
 Progress: [██░░░░░░░░] 25%
@@ -96,6 +96,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 30]: Scene tests live beside the hydraulic fountain module. — The implementation plus inline tests would pass 500 physical lines, so tests moved to hydraulic_fountain/tests.rs and the credit path stayed a single scene file.
 - [Phase 30]: Copied the Plan 01 wall and piston endpoints unchanged into the portrait frame — The crossing test did not retune stroke, walls, or piston x, so the catalog frame uses those finished constants.
 - [Phase 30]: Raised the shared view rectangle maxY from 1.55 to 1.6 — At maxY 1.55 the fitted phone height was 0.277 after the 16px camera inset, under the required 0.28. maxY 1.6 clears that minimum and still contains the walls.
+- [Phase 30]: Matched the original Fountain sidebar link as Static preview Fountain so Hydraulic Fountain does not share the click. — A role name of /Fountain/ also matched Hydraulic Fountain and failed Playwright strict mode.
+- [Phase 30]: Left ALL_SCENE_TIMEOUT_MS at 380000 and left both step caps at 4. — The smoke failure was a locator collision, and the passing Chromium run finished in 42.6 seconds.
+- [Phase 30]: Passing Chromium smoke is browser-gate evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and a passing smoke command is not a review acknowledgment.
 
 ### Pending Todos
 
@@ -124,10 +127,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | --- | --- | --- | --- |
 | Phase 30 P01 | 41 min | 2 tasks | 5 files |
 | Phase 30 P02 | 7 min | 2 tasks | 13 files |
+| Phase 30 P03 | 5 min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T15:31:09.348Z
-Stopped at: Completed 30-02-PLAN.md
+Last session: 2026-09-27T15:38:59.108Z
+Stopped at: Completed 30-03-PLAN.md
 Resume file: None
-
