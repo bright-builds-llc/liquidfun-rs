@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
 stopped_at: Phase 30 context gathered
-last_updated: "2026-09-27T14:36:16.162Z"
-last_activity: 2026-09-27 -- Phase 30 planning complete
+last_updated: "2026-09-27T14:36:56.218Z"
+last_activity: 2026-09-27 -- Phase 30 execution started
 progress:
   total_phases: 8
   completed_phases: 4
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 28 — Interaction seams
+**Current focus:** Phase 30 — periodic-hydraulic-fountain
 
 ## Current Position
 
-Phase: 30
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-27 -- Phase 30 planning complete
+Phase: 30 (periodic-hydraulic-fountain) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 30
+Last activity: 2026-09-27 -- Phase 30 execution started
 
 Progress: [██░░░░░░░░] 25%
 
