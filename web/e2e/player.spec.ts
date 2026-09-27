@@ -46,17 +46,16 @@ const POINTER_CONTROL: Readonly<
   impulse: { gesture: "click", control: "Push" },
   "theo-jansen": { gesture: "click", control: "Motor direction" },
   "wave-machine": { gesture: "click", control: "Wave speed" },
+  "drawing-particles": { gesture: "drag", control: "Material" },
 };
 
-const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter((sceneId) => {
-  const scene = SCENES.find((entry) => entry.id === sceneId);
-  return scene !== undefined && scene.controls.length > 0;
-});
+const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter(
+  (sceneId) => POINTER_CONTROL[sceneId] !== undefined,
+);
 
-const WATCH_FIRST_SCENE_IDS = SCENE_IDS.filter((sceneId) => {
-  const scene = SCENES.find((entry) => entry.id === sceneId);
-  return scene !== undefined && scene.controls.length === 0;
-});
+const WATCH_FIRST_SCENE_IDS = SCENE_IDS.filter(
+  (sceneId) => POINTER_CONTROL[sceneId] === undefined,
+);
 
 test("advances steps and canvas pixels at controlled 120 Hz", async ({
   page,
@@ -272,8 +271,17 @@ test("plays each interactive scene, accepts one pointer gesture, and activates a
       .poll(() => numericAttribute(main, "data-step-index"))
       .toBeGreaterThan(0);
 
+    if (sceneId === "drawing-particles") {
+      expect(await numericAttribute(main, "data-particle-count")).toBe(0);
+    }
+
     await performSceneGesture(page, maybeMapping.gesture);
     await expectAcceptedPointerGesture(page);
+    if (sceneId === "drawing-particles") {
+      await expect
+        .poll(() => numericAttribute(main, "data-particle-count"))
+        .toBeGreaterThan(0);
+    }
     await activateLabeledControl(page, maybeMapping.control);
     await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
   }
@@ -289,7 +297,6 @@ test("plays each watch-first scene through pause, play, and reset without pointe
     if (scene === undefined) {
       throw new Error(`missing catalog scene ${sceneId}`);
     }
-    expect(scene.controls.length).toBe(0);
     expect(POINTER_CONTROL[sceneId]).toBeUndefined();
 
     await page.goto(SCENE_HASH_PATHS[sceneId]);

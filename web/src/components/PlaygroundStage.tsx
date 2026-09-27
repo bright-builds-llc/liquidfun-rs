@@ -121,6 +121,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
         data-playback={props.view().kind}
         data-scene={maybeSceneAttr()}
         data-step-index={maybeFrame()?.stepIndex}
+        data-particle-count={maybeFrame()?.particleCount ?? 0}
         data-last-pointer-kind={props.lastPointerKind()}
         data-pointer-accepted={props.pointerAccepted()}
         data-render-mode={props.renderMode()}

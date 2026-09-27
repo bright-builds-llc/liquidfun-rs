@@ -19,7 +19,7 @@ export const RESET_STEP_CEILING = 8;
 export const CONSTRUCTION_RESET_HINT =
   "Changing this setting recreates the scene from its documented initial state.";
 /** Budget for loops that open every catalog scene (open/reset or play/pause/reset). */
-export const ALL_SCENE_TIMEOUT_MS = 220_000;
+export const ALL_SCENE_TIMEOUT_MS = 380_000;
 /** @deprecated Prefer `ALL_SCENE_TIMEOUT_MS` — kept for call-site compatibility. */
 export const SIX_SCENE_TIMEOUT_MS = ALL_SCENE_TIMEOUT_MS;
 export const DAM_BREAK_HINT =
@@ -44,12 +44,15 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   "wave-machine": "/liquidfun-rs/#/scene/wave-machine",
   "theo-jansen": "/liquidfun-rs/#/scene/theo-jansen",
   "liquid-tumbler": "/liquidfun-rs/#/scene/liquid-tumbler",
+  "drawing-particles": "/liquidfun-rs/#/scene/drawing-particles",
+  sparky: "/liquidfun-rs/#/scene/sparky",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {
   "Aim angle": "left",
   "Stir speed": "fast",
   "Jet strength": "strong",
+  Material: "elastic",
   Push: "impulse",
   "Motor direction": "reverse",
 };
