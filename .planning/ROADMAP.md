@@ -123,7 +123,15 @@ Plans:
   2. Visitor can watch Sparky: colliding circles throw fading particle sparks (post-step contact observation; no mid-step world mutation; no FFI expansion).
   3. Visitor can paint Drawing Particles into an empty vessel, and at least one non-water material looks different from plain water.
   4. Developer can confirm scene docs and catalog wording describe recognizable ports, not sealed C++ parity, and do not cut particle counts or raise the 4-step catch-up cap to fake smoothness.
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 29-01-PLAN.md — Batch particle color write for spark fade
+- [ ] 29-02-PLAN.md — Drawing Particles empty vessel and water or elastic paint
+- [ ] 29-03-PLAN.md — Sparky post-step powder bursts and ring
+- [ ] 29-04-PLAN.md — Nineteen-scene catalog, previews, portrait frames, README plans
+- [ ] 29-05-PLAN.md — Chromium smoke for both scenes plus the existing catalog
+
 **UI hint**: yes
 
 ### Phase 30: Periodic hydraulic fountain
