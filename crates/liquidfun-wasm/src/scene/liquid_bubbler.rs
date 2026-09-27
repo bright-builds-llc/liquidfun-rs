@@ -31,9 +31,12 @@ const HUB_RADIUS: f32 = 0.12;
 const PADDLE_INNER: f32 = 0.12;
 const PADDLE_OUTER: f32 = 0.32;
 const PADDLE_HALF_WIDTH: f32 = 0.035;
-const WHEEL_DENSITY: f32 = 0.20;
+const WHEEL_DENSITY: f32 = 0.03;
 const ANGULAR_DAMPING: f32 = 0.05;
-const PLATE_CENTER: Vec2 = Vec2::new(0.76, 0.04);
+/// Rests one polygon-skin pair above the floor so a flush contact does not
+/// pop the plate off translation 0 during the dwell.
+const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
+const PLATE_CENTER: Vec2 = Vec2::new(0.76, 0.04 + PLATE_FLOOR_CLEARANCE);
 const PLATE_HALF_WIDTH: f32 = 0.18;
 const PLATE_HALF_HEIGHT: f32 = 0.04;
 const PLATE_DENSITY: f32 = 1.0;
