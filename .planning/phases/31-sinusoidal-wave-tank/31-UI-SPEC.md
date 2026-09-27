@@ -1,10 +1,11 @@
 ---
 phase: 31
 slug: sinusoidal-wave-tank
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-09-27
+reviewed_at: 2026-09-27T17:41:00.000Z
 ---
 
 # Phase 31 — UI Design Contract
