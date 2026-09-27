@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: executing
-stopped_at: Completed 31-02-PLAN.md
-last_updated: "2026-09-27T18:30:48.961Z"
+status: verifying
+stopped_at: Completed 31-03-PLAN.md
+last_updated: "2026-09-27T18:37:36.386Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 30
-  completed_plans: 29
-  percent: 97
+  completed_plans: 30
+  percent: 100
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 31 (sinusoidal-wave-tank) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-27
 
-Progress: [██████████] 97%
+Progress: [██████████] 100%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -103,6 +103,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 31]: Passing native wave-tank tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and D-11 says the implementing agent must not approve its own work.
 - [Phase 31]: Used the plan pool rectangle because Plan 01 kept the starting wall and stroke constants — The far-wall test did not retune stroke, walls, or platform, so viewBounds and the phone frame stay at minX -0.12, minY -0.28, maxX 1.52, maxY 1.02.
 - [Phase 31]: Passing catalog unit tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and D-11 says the implementing agent must not approve its own work.
+- [Phase 31]: Left ALL_SCENE_TIMEOUT_MS at 380000 and left both step caps at 4. — The Chromium run finished in 36.1 seconds, so the suite timeout did not need to grow.
+- [Phase 31]: Passing Chromium smoke is browser-gate evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and a passing smoke command is not a review acknowledgment.
 
 ### Pending Todos
 
@@ -134,9 +136,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 30 P03 | 5 min | 2 tasks | 1 files |
 | Phase 31 P01 | 13 min | 2 tasks | 5 files |
 | Phase 31 P02 | 5 min | 2 tasks | 13 files |
+| Phase 31 P03 | 3 min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T18:30:36.798Z
-Stopped at: Completed 31-02-PLAN.md
+Last session: 2026-09-27T18:36:28.111Z
+Stopped at: Completed 31-03-PLAN.md
 Resume file: None
