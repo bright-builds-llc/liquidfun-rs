@@ -102,7 +102,21 @@ describe("render mode", () => {
     ]);
   });
 
-  it("defaults missing and invalid storage to wireframe", () => {
+  it("keeps a stored particle preference", () => {
+    // Arrange
+    const storage = {
+      getItem: () => "wireframe",
+      setItem: () => undefined,
+    };
+
+    // Act
+    const mode = loadRenderMode(() => storage);
+
+    // Assert
+    expect(mode).toBe("wireframe");
+  });
+
+  it("defaults missing and invalid storage to the shaded blob", () => {
     // Arrange
     const storedValues = [null, "unknown"];
 
@@ -116,7 +130,7 @@ describe("render mode", () => {
 
     // Assert
     expect(modes).toEqual([DEFAULT_RENDER_MODE, DEFAULT_RENDER_MODE]);
-    expect(DEFAULT_RENDER_MODE).toBe("wireframe");
+    expect(DEFAULT_RENDER_MODE).toBe("shaded-blob");
   });
 
   it("contains storage provider and read failures", () => {
@@ -136,8 +150,8 @@ describe("render mode", () => {
     const readMode = loadRenderMode(readFailure);
 
     // Assert
-    expect(providerMode).toBe("wireframe");
-    expect(readMode).toBe("wireframe");
+    expect(providerMode).toBe("shaded-blob");
+    expect(readMode).toBe("shaded-blob");
   });
 
   it("persists an allowlisted mode under the versioned key", () => {

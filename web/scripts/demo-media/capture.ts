@@ -3,6 +3,7 @@ import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { accumulateStepTime } from "../../src/physics/clock";
+import { RENDER_MODE_STORAGE_KEY } from "../../src/render/mode";
 import {
   CAPTURE_PROFILE,
   frameFileName,
@@ -174,6 +175,7 @@ export async function captureSceneFrames({
   assertCaptureViewport(page);
   await assertCaptureDeviceScaleFactor(page);
   await mkdir(framesDirectory, { recursive: true });
+  await pinUnsetWireframeRenderMode(page);
   await page.goto(plan.route);
   await waitForReadyScene(page, plan);
   await requireWireframeRenderMode(page);
@@ -242,6 +244,20 @@ export async function withDemoMediaCaptureMode<T>(
   } finally {
     await setDemoMediaCaptureAttribute(page, false);
   }
+}
+
+/**
+ * Deterministic media stays wireframe. A fresh browser has no saved preference,
+ * and the playground's first visit opens on the shaded blob, so capture pins
+ * wireframe only when nothing is stored. A saved non-wireframe choice still
+ * fails the later wireframe check.
+ */
+async function pinUnsetWireframeRenderMode(page: Page): Promise<void> {
+  await page.addInitScript((storageKey) => {
+    if (window.localStorage.getItem(storageKey) === null) {
+      window.localStorage.setItem(storageKey, "wireframe");
+    }
+  }, RENDER_MODE_STORAGE_KEY);
 }
 
 async function requireWireframeRenderMode(page: Page): Promise<void> {
