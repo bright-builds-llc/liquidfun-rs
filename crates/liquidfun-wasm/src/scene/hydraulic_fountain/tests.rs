@@ -1,6 +1,7 @@
 use liquidfun::{BodyType, JointDef, JointKind, WorldObservationLimits};
 
 use super::build;
+use crate::ProofFrame;
 use crate::scene::{SceneId, build_scene};
 use crate::session::{SessionCore, SessionError};
 
@@ -259,6 +260,56 @@ fn rebuild_restores_the_initial_liquid_layout() {
         "rebuild puts every particle back on the piston side"
     );
     assert_eq!(translation.to_bits(), 0.0_f32.to_bits());
+}
+
+#[test]
+fn captured_frame_draws_the_moving_piston() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::HydraulicFountain)
+        .expect("hydraulic fountain should construct");
+    let initial_right_face = piston_right_face_x(&session);
+
+    // Act
+    for _ in 0..5 {
+        session.advance(4).expect("the piston should keep stepping");
+    }
+    let later_right_face = piston_right_face_x(&session);
+
+    // Assert
+    assert!(
+        later_right_face > initial_right_face,
+        "the drawn piston face moves toward the throat"
+    );
+}
+
+fn piston_right_face_x(session: &SessionCore) -> f32 {
+    let segments = capture(session).rigid_segments();
+    assert_eq!(
+        segments.len(),
+        32,
+        "four wall segments and four piston edges"
+    );
+    segments
+        .chunks(4)
+        .filter_map(|segment| {
+            let start_x = segment[0];
+            let end_x = segment[2];
+            if start_x < -0.2 && end_x < -0.2 {
+                Some(start_x.max(end_x))
+            } else {
+                None
+            }
+        })
+        .max_by(f32::total_cmp)
+        .expect("the piston edges should be left of the throat")
+}
+
+fn capture(session: &SessionCore) -> ProofFrame {
+    ProofFrame::from(
+        session
+            .capture_frame()
+            .expect("hydraulic fountain should capture a frame"),
+    )
 }
 
 fn prismatic_motor_speed(session: &SessionCore) -> f32 {

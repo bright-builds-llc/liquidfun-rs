@@ -28,6 +28,12 @@ const PISTON_DENSITY: f32 = 1.0;
 const PISTON_CENTER_RETRACTED: Vec2 = Vec2::new(-0.90, 0.50);
 const PISTON_HALF_WIDTH: f32 = 0.04;
 const PISTON_HALF_HEIGHT: f32 = 0.45;
+const PISTON_LOCAL_CORNERS: [Vec2; 4] = [
+    Vec2::new(-PISTON_HALF_WIDTH, -PISTON_HALF_HEIGHT),
+    Vec2::new(PISTON_HALF_WIDTH, -PISTON_HALF_HEIGHT),
+    Vec2::new(PISTON_HALF_WIDTH, PISTON_HALF_HEIGHT),
+    Vec2::new(-PISTON_HALF_WIDTH, PISTON_HALF_HEIGHT),
+];
 const WALL_FRICTION: f32 = 0.2;
 const WALL_HALF_THICKNESS: f32 = 0.04;
 
@@ -61,6 +67,7 @@ const WALL_SEGMENTS: [RigidSegment; 4] = [
 struct HydraulicFountainHooks {
     elapsed: f32,
     joint: JointId,
+    piston: BodyId,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -92,6 +99,7 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
         hooks: Box::new(HydraulicFountainHooks {
             elapsed: 0.0,
             joint,
+            piston,
         }),
     })
 }
@@ -253,8 +261,20 @@ impl SceneHooks for HydraulicFountainHooks {
         Ok(())
     }
 
-    fn collect_segments(&self, _world: &World) -> Result<Vec<RigidSegment>, SessionError> {
-        Ok(WALL_SEGMENTS.to_vec())
+    fn collect_segments(&self, world: &World) -> Result<Vec<RigidSegment>, SessionError> {
+        let mut segments = WALL_SEGMENTS.to_vec();
+        let transform = world
+            .body_snapshot(self.piston)
+            .map_err(|_error| SessionError::FrameCaptureFailed)?
+            .transform();
+        let world_corners = PISTON_LOCAL_CORNERS.map(|corner| transform.apply(corner));
+        for index in 0..world_corners.len() {
+            segments.push(RigidSegment {
+                start: world_corners[index],
+                end: world_corners[(index + 1) % world_corners.len()],
+            });
+        }
+        Ok(segments)
     }
 
     fn collect_circles(&self, _world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
