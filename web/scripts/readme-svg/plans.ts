@@ -7,7 +7,6 @@ import {
 } from "../../src/export/duration";
 import type { SvgExportRequest } from "../../src/export/messages";
 import { IDENTITY_CAMERA_VIEW } from "../../src/render/camera";
-import { circleExportMode, DEFAULT_RENDER_MODE } from "../../src/render/mode";
 import { DEFAULT_RENDERED_PARTICLE_LIMIT } from "../../src/render/particle-limit";
 import { DEFAULT_WIREFRAME_STROKE_WIDTH } from "../../src/render/stroke-width";
 import { CAPTURE_PROFILE } from "../demo-media/model";
@@ -93,8 +92,9 @@ export function readmeWebpRepoPath(sceneId: SceneId): string {
  *
  * Controls stay empty so the clip uses the scene defaults, except Wave Machine,
  * which samples at 1× so the gallery still shows the pinned rocking motion.
- * The frame matches the demo gallery capture viewport, and the camera,
- * wireframe, and particle cap match a fresh playground session.
+ * The frame matches the demo gallery capture viewport. The camera and particle
+ * cap match a fresh playground session. Clips stay wireframe: animated SVG
+ * draws one circle per particle, while a fresh playground opens on the shaded blob.
  */
 export function readmeSvgRequest(plan: ReadmeSvgPlan): SvgExportRequest {
   if (README_SVG_SECONDS !== DEFAULT_SVG_EXPORT_SECONDS) {
@@ -118,7 +118,7 @@ export function readmeSvgRequest(plan: ReadmeSvgPlan): SvgExportRequest {
     zoom: IDENTITY_CAMERA_VIEW.zoom,
     panX: IDENTITY_CAMERA_VIEW.panX,
     panY: IDENTITY_CAMERA_VIEW.panY,
-    renderMode: circleExportMode(DEFAULT_RENDER_MODE),
+    renderMode: "wireframe",
     wireframeStrokeWidth: DEFAULT_WIREFRAME_STROKE_WIDTH,
     maxRenderedParticles: DEFAULT_RENDERED_PARTICLE_LIMIT,
   };

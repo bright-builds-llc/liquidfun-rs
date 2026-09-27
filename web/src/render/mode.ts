@@ -22,7 +22,8 @@ export type RenderModeGroup = {
   readonly options: readonly RenderModeOption[];
 };
 
-export const DEFAULT_RENDER_MODE: RenderMode = "wireframe";
+/** First visit, before a particle preference is stored. */
+export const DEFAULT_RENDER_MODE: RenderMode = "shaded-blob";
 export const RENDER_MODE_STORAGE_KEY = "liquidfun.render-mode.v1";
 
 /** Controls-sheet groups. Circle modes share one disc painter. */

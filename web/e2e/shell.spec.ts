@@ -22,6 +22,7 @@ import {
   PLAYGROUND_ROOT_PATH,
   SCENE_HASH_PATHS,
   sessionStatus,
+  withFormFactorShell,
 } from "./player-helpers";
 
 async function expectCurrentDemoFullyVisible(scope: Locator): Promise<void> {
@@ -49,7 +50,7 @@ test("renders the desktop shell and navigates from the sidebar", async ({
 }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
 
   // Assert
   await expect(page.locator(".site-header")).toBeVisible();
@@ -84,7 +85,7 @@ test("renders the desktop shell and navigates from the sidebar", async ({
 test("keeps scrolled mobile player controls painted", async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
   await expectReadySceneChrome(page, "Dam Break");
 
   // Act
@@ -139,7 +140,7 @@ test.describe("build timestamp", () => {
   }) => {
     // Arrange
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto(DAM_BREAK_PATH);
+    await page.goto(withFormFactorShell(DAM_BREAK_PATH));
 
     const builtAt = page
       .locator(".site-footer-provenance div")
@@ -163,7 +164,7 @@ test.describe("build timestamp", () => {
 test("keeps the source link at least 44 pixels tall", async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
 
   // Act
   const sourceLink = page.getByRole("link", { name: "GitHub source" });
@@ -178,8 +179,8 @@ test("normalizes an empty hash without adding an extra history entry", async ({
   page,
 }) => {
   // Arrange
-  await page.goto(FOUNTAIN_PATH);
-  await page.goto(PLAYGROUND_ROOT_PATH);
+  await page.goto(withFormFactorShell(FOUNTAIN_PATH));
+  await page.goto(withFormFactorShell(PLAYGROUND_ROOT_PATH));
 
   // Assert
   await expect(page).toHaveURL(/#\/scene\/wave-machine$/);
@@ -197,7 +198,7 @@ test("dismisses the mobile drawer through its overlay and restores focus", async
 }) => {
   // Arrange
   await page.setViewportSize({ width: 390, height: 812 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
   const trigger = page.getByRole("button", { name: "Demos" });
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Demos" });
@@ -218,7 +219,7 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
 }) => {
   // Arrange
   await page.setViewportSize({ width: 390, height: 812 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
   await expectReadySceneChrome(page, "Dam Break");
   await page.getByRole("button", { name: "Pause scene" }).click();
   await expect(sessionStatus(page)).toHaveText(PAUSED_STATUS);
@@ -270,7 +271,7 @@ test("locks background scrolling and hides outside content while open", async ({
 }) => {
   // Arrange
   await page.setViewportSize({ width: 390, height: 812 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
   const trigger = page.getByRole("button", { name: "Demos" });
   const outsideRoot = page.locator(".app-shell");
 
@@ -297,7 +298,7 @@ test("closes the drawer for an authoritative external hash route", async ({
 }) => {
   // Arrange
   await page.setViewportSize({ width: 390, height: 812 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
   const trigger = page.getByRole("button", { name: "Demos" });
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Demos" });
@@ -322,7 +323,7 @@ test("closes the drawer for an authoritative external hash route", async ({
 test("shows twenty static previews in the desktop sidebar", async ({ page }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
 
   // Assert
   await expect(page.locator(".catalog-card")).toHaveCount(0);
@@ -339,7 +340,7 @@ test("shows a static preview inside the mobile demos dialog", async ({
 }) => {
   // Arrange
   await page.setViewportSize({ width: 390, height: 812 });
-  await page.goto(DAM_BREAK_PATH);
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
 
   // Act
   await page.getByRole("button", { name: "Demos" }).click();
@@ -364,7 +365,7 @@ test("shows the current demo when the desktop sidebar is open", async ({
 }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(SCENE_HASH_PATHS["theo-jansen"]);
+  await page.goto(withFormFactorShell(SCENE_HASH_PATHS["theo-jansen"]));
   const sidebar = page.locator(".demo-sidebar");
 
   // Assert
@@ -379,7 +380,7 @@ test("scrolls back to the current demo when the desktop sidebar reopens", async 
 }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(SCENE_HASH_PATHS["theo-jansen"]);
+  await page.goto(withFormFactorShell(SCENE_HASH_PATHS["theo-jansen"]));
   const sidebar = page.locator(".demo-sidebar");
   const content = sidebar.locator("[data-slot='sidebar-content']");
   await expectCurrentDemoFullyVisible(sidebar);
@@ -403,7 +404,7 @@ test("shows the current demo when the mobile demos drawer opens", async ({
 }) => {
   // Arrange
   await page.setViewportSize({ width: 390, height: 812 });
-  await page.goto(SCENE_HASH_PATHS["theo-jansen"]);
+  await page.goto(withFormFactorShell(SCENE_HASH_PATHS["theo-jansen"]));
   await expectReadySceneChrome(page, "Theo Jansen");
 
   // Act

@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { type SceneId } from "../src/catalog/scenes";
+import { formFactorShellHref } from "../src/player/screen-shell";
 
 export const DAM_BREAK_PATH = "/liquidfun-rs/#/scene/dam-break";
 export const UNKNOWN_SCENE_PATH = "/liquidfun-rs/#/scene/not-a-scene";
@@ -74,6 +75,53 @@ export function sessionStatus(page: Page): Locator {
   return page.locator(".session-status");
 }
 
+/** Older page layouts, selected with `?shell=form-factor`. */
+export function withFormFactorShell(path: string): string {
+  return formFactorShellHref(path);
+}
+
+export async function canvasStageEnabled(page: Page): Promise<boolean> {
+  return (await page.locator("html").getAttribute("data-canvas-stage")) === "true";
+}
+
+export async function openSceneControls(page: Page): Promise<Locator> {
+  const sheet = page.getByRole("dialog", { name: "Scene controls" });
+  if (await sheet.isVisible()) {
+    return sheet;
+  }
+
+  await page.getByRole("button", { name: "Scene controls" }).click();
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+export async function closeSceneControls(page: Page): Promise<void> {
+  const sheet = page.getByRole("dialog", { name: "Scene controls" });
+  if (!(await sheet.isVisible())) {
+    return;
+  }
+
+  await page.keyboard.press("Escape");
+  await expect(sheet).toBeHidden();
+}
+
+export async function revealLocator(page: Page, locator: Locator): Promise<Locator> {
+  if ((await locator.count()) > 0 && (await locator.first().isVisible())) {
+    return locator;
+  }
+
+  await openSceneControls(page);
+  await expect(locator.first()).toBeVisible();
+  return locator;
+}
+
+async function revealLabeledControl(
+  page: Page,
+  label: string | RegExp,
+): Promise<Locator> {
+  return revealLocator(page, page.getByLabel(label));
+}
+
 export function collectWasmUrls(page: Page): string[] {
   const wasmUrls: string[] = [];
   page.on("request", (request) => {
@@ -138,6 +186,20 @@ export async function gateWasmUntilLoadingObserved(
   return releaseWasmRequest;
 }
 
+export async function expectSceneCredits(page: Page): Promise<void> {
+  if (await canvasStageEnabled(page)) {
+    await openSceneControls(page);
+  }
+
+  await expect(page.locator("#scene-credits-title")).toHaveText("Scene source");
+  await expect(
+    page.getByRole("link", { name: "View scene source" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Third-party notices" }),
+  ).toBeVisible();
+}
+
 export async function expectReadySceneChrome(
   page: Page,
   title: string,
@@ -146,13 +208,13 @@ export async function expectReadySceneChrome(
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
-  await expect(page.locator("#scene-credits-title")).toHaveText("Scene source");
-  await expect(
-    page.getByRole("link", { name: "View scene source" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Third-party notices" }),
-  ).toBeVisible();
+  if (await canvasStageEnabled(page)) {
+    await expect(page.getByRole("button", { name: "Scene controls" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pause scene" })).toBeVisible();
+    return;
+  }
+
+  await expectSceneCredits(page);
 }
 
 export async function openDesktopDemo(
@@ -250,6 +312,7 @@ export async function resetNearZero(page: Page): Promise<void> {
 
   const seriesStep = await numericAttribute(main, "data-step-index");
   await watchResetRestart(page, seriesStep);
+  await closeSceneControls(page);
   await page.getByRole("button", { name: "Reset scene" }).click();
   const resetStep = await readWatchedResetRestart(page);
   await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS);
@@ -408,24 +471,50 @@ export async function activateLabeledControl(
 ): Promise<void> {
   const maybeSelectValue = SELECT_NEXT_VALUE[control];
   if (maybeSelectValue !== undefined) {
-    await page.getByLabel(control).selectOption(maybeSelectValue);
+    const labeled = await revealLabeledControl(page, control);
+    await labeled.selectOption(maybeSelectValue);
     return;
   }
 
   const labeled = page.getByLabel(control);
-  if ((await labeled.count()) === 1) {
-    const maybeType = await labeled.getAttribute("type");
+  if ((await labeled.count()) === 0 || !(await labeled.first().isVisible())) {
+    await openSceneControls(page);
+  }
+  if ((await labeled.count()) === 1 && (await labeled.first().isVisible())) {
+    const maybeType = await labeled.first().getAttribute("type");
     if (maybeType === "range") {
-      const max = await labeled.getAttribute("max");
+      const max = await labeled.first().getAttribute("max");
       if (max === null) {
         throw new Error(`range control ${control} is missing max`);
       }
-      await labeled.fill(max);
+      await labeled.first().fill(max);
       return;
     }
   }
 
-  await page.getByRole("button", { name: control, exact: true }).click();
+  const button = page.getByRole("button", { name: control, exact: true });
+  if (!(await button.isVisible())) {
+    await openSceneControls(page);
+  }
+  await button.click();
+}
+
+export async function selectSceneOption(
+  page: Page,
+  label: string,
+  value: string,
+): Promise<void> {
+  const labeled = await revealLabeledControl(page, label);
+  await labeled.selectOption(value);
+}
+
+export async function expectSceneOption(
+  page: Page,
+  label: string,
+  value: string,
+): Promise<void> {
+  const labeled = await revealLabeledControl(page, label);
+  await expect(labeled).toHaveValue(value);
 }
 
 export async function expectAcceptedPointerGesture(page: Page): Promise<void> {

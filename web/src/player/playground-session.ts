@@ -40,7 +40,11 @@ function createShell(): SceneRuntime {
       ? { kind: "loading" }
       : { kind: "fallback" },
   );
-  const canvasStage = readCanvasStage(document.fullscreenEnabled, navigator);
+  const canvasStage = readCanvasStage(
+    document.fullscreenEnabled,
+    navigator,
+    window.location.search,
+  );
   const [debugEnabled, setDebugEnabled] = createSignal(!canvasStage);
   const [maybeDebugFrame, setMaybeDebugFrame] = createSignal<
     RenderFrame | undefined
