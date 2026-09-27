@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
 stopped_at: Phase 31 UI-SPEC approved
-last_updated: "2026-09-27T18:06:34.624Z"
-last_activity: 2026-09-27 -- Phase 31 planning complete
+last_updated: "2026-09-27T18:07:13.456Z"
+last_activity: 2026-09-27 -- Phase 31 execution started
 progress:
   total_phases: 8
   completed_phases: 5
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 30 — periodic-hydraulic-fountain
+**Current focus:** Phase 31 — sinusoidal-wave-tank
 
 ## Current Position
 
-Phase: 31
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-09-27 -- Phase 31 planning complete
+Phase: 31 (sinusoidal-wave-tank) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 31
+Last activity: 2026-09-27 -- Phase 31 execution started
 
 Progress: [██░░░░░░░░] 25%
 
