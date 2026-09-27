@@ -415,6 +415,35 @@ impl ParticleStorage {
         Ok(())
     }
 
+    pub(crate) fn resolve_color_index(
+        &self,
+        particle: ParticleId,
+    ) -> Result<usize, ParticleStorageError> {
+        Ok(self.resolve_live(particle)?.0)
+    }
+
+    pub(crate) fn has_color_lane(&self) -> bool {
+        self.maybe_colors.is_some()
+    }
+
+    /// Writes `color` into an existing lane. A missing lane is not allocated.
+    pub(crate) fn set_particle_colors_internal(
+        &mut self,
+        indices: &[usize],
+        color: ParticleColor,
+    ) -> Result<(), ParticleStorageError> {
+        let Some(colors) = self.maybe_colors.as_mut() else {
+            return Err(ParticleStorageError::InvalidLaneBundle);
+        };
+        if indices.iter().any(|index| *index >= colors.len()) {
+            return Err(ParticleStorageError::StaleOrDestroyed);
+        }
+        for index in indices {
+            colors[*index] = color;
+        }
+        Ok(())
+    }
+
     pub(in crate::particle) fn resolve_contiguous_live_range(
         &self,
         particles: &[ParticleId],

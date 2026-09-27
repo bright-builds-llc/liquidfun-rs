@@ -1,10 +1,12 @@
+use crate::ParticleColor;
+
 use super::{
     ArenaInsertError, HandleError, MAX_PARTICLE_COUNT, ParticleBufferAdoptionError,
     ParticleBufferAdoptionErrorKind, ParticleBufferBundle, ParticleCapacity, ParticleEditError,
-    ParticleEditor, ParticleId, ParticleLifetimeState, ParticleStorage, ParticleSystem,
-    ParticleSystemDef, ParticleSystemId, ParticleSystemSnapshot, ParticleSystemStatistics,
-    ParticleSystemView, ParticleWorldStatistics, Vec2, World, force, storage_creation_error,
-    storage_handle_error,
+    ParticleEditor, ParticleId, ParticleLifetimeState, ParticleStorage, ParticleStorageError,
+    ParticleSystem, ParticleSystemDef, ParticleSystemId, ParticleSystemSnapshot,
+    ParticleSystemStatistics, ParticleSystemView, ParticleWorldStatistics, Vec2, World, force,
+    storage_creation_error, storage_handle_error,
 };
 
 impl World {
@@ -291,6 +293,63 @@ impl World {
         self.edit_particle(particle, |editor| editor.set_velocity(velocity))
     }
 
+    /// Replaces the copied color of every listed particle in an existing lane.
+    ///
+    /// Every identity is resolved before any write. An empty slice writes
+    /// nothing. A missing lane stays unallocated, including when `color` is
+    /// [`ParticleColor::ZERO`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ParticleEditError::InvalidHandle`] when any identity is
+    /// foreign, stale, or not live. Returns
+    /// [`ParticleEditError::MissingColorLane`] when an owning system has no
+    /// color lane.
+    pub fn set_particle_colors(
+        &mut self,
+        particles: &[ParticleId],
+        color: ParticleColor,
+    ) -> Result<(), ParticleEditError> {
+        if particles.is_empty() {
+            return Ok(());
+        }
+        self.ensure_not_poisoned_for_handle()?;
+        let mut staged = Vec::with_capacity(particles.len());
+        for &particle in particles {
+            let system = self.particle_system_id_for_particle(particle)?;
+            let index = self
+                .particle_systems
+                .get(system)?
+                .storage
+                .resolve_color_index(particle)
+                .map_err(storage_handle_error)?;
+            staged.push((system, index));
+        }
+        let mut systems = Vec::new();
+        for (system, _) in &staged {
+            if systems.contains(system) {
+                continue;
+            }
+            systems.push(*system);
+            if !self.particle_systems.get(*system)?.storage.has_color_lane() {
+                return Err(ParticleEditError::MissingColorLane);
+            }
+        }
+        for system in systems {
+            let indices = staged
+                .iter()
+                .filter(|(candidate, _)| *candidate == system)
+                .map(|(_, index)| *index)
+                .collect::<Vec<_>>();
+            self.particle_systems
+                .get_mut(system)?
+                .storage
+                .set_particle_colors_internal(&indices, color)
+                .map_err(particle_color_write_error)?;
+        }
+        Ok(())
+    }
+
     /// Accumulates one checked world-space force for a stable particle.
     ///
     /// # Errors
@@ -393,5 +452,12 @@ impl World {
             .with_paused(paused);
         self.system_mut_after_validation(system).definition = definition;
         Ok(())
+    }
+}
+
+fn particle_color_write_error(error: ParticleStorageError) -> ParticleEditError {
+    match error {
+        ParticleStorageError::InvalidLaneBundle => ParticleEditError::MissingColorLane,
+        other => storage_handle_error(other).into(),
     }
 }

@@ -21,6 +21,8 @@ pub enum ParticleEditError {
     NonFiniteVelocityX,
     /// Velocity y is not finite.
     NonFiniteVelocityY,
+    /// The particle system has no allocated color lane.
+    MissingColorLane,
 }
 
 impl fmt::Display for ParticleEditError {
@@ -31,6 +33,7 @@ impl fmt::Display for ParticleEditError {
             Self::NonFinitePositionY => formatter.write_str("particle position y must be finite"),
             Self::NonFiniteVelocityX => formatter.write_str("particle velocity x must be finite"),
             Self::NonFiniteVelocityY => formatter.write_str("particle velocity y must be finite"),
+            Self::MissingColorLane => formatter.write_str("particle color lane is not allocated"),
         }
     }
 }
