@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: verifying
-stopped_at: Completed 30-03-PLAN.md
-last_updated: "2026-09-27T15:55:16.155Z"
+stopped_at: Phase 31 context gathered
+last_updated: "2026-09-27T17:25:11.435Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
@@ -131,6 +131,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the â‰¤ 3Ã
 
 ## Session Continuity
 
-Last session: 2026-09-27T15:38:59.108Z
-Stopped at: Completed 30-03-PLAN.md
-Resume file: None
+Last session: 2026-09-27T17:25:11.431Z
+Stopped at: Phase 31 context gathered
+Resume file: .planning/phases/31-sinusoidal-wave-tank/31-CONTEXT.md
