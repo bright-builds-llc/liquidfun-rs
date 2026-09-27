@@ -36,6 +36,7 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "gravity",
   "gravity",
+  "gravity",
 ] as const;
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
@@ -286,6 +287,13 @@ describe("scene catalog controls", () => {
       "elastic",
     ]);
     expect(sparky?.controls).toEqual([GRAVITY_CONTROL]);
+    const hydraulicFountain = maybeSceneById("hydraulic-fountain");
+    expect(hydraulicFountain?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(
+      (hydraulicFountain?.controls ?? []).some((control) =>
+        ["period", "stroke", "aim", "emission", "launch"].includes(control.id),
+      ),
+    ).toBe(false);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 });

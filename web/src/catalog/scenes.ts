@@ -26,6 +26,7 @@ export const SCENE_IDS = [
   "liquid-tumbler",
   "drawing-particles",
   "sparky",
+  "hydraulic-fountain",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];

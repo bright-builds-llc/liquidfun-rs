@@ -87,6 +87,8 @@ describe("scene catalog credits", () => {
       "drawing-particles":
         "crates/liquidfun-wasm/src/scene/drawing_particles.rs",
       sparky: "crates/liquidfun-wasm/src/scene/sparky.rs",
+      "hydraulic-fountain":
+        "crates/liquidfun-wasm/src/scene/hydraulic_fountain.rs",
     };
     const pinnedBasinInspiration = {
       particles: [
@@ -198,6 +200,7 @@ describe("scene catalog credits", () => {
     ]);
     expect(inspirationById["water-wheel"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["liquid-tumbler"]).toEqual([SHOWCASE_HREF]);
+    expect(inspirationById["hydraulic-fountain"]).toEqual([SHOWCASE_HREF]);
     expect(maybeSceneById("drawing-particles")?.credits.inspiration).toEqual([
       { label: "Pinned DrawingParticles.js", href: DRAWING_PARTICLES_JS_HREF },
       { label: "Pinned DrawingParticles.h", href: DRAWING_PARTICLES_H_HREF },

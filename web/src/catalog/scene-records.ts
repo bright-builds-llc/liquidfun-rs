@@ -597,4 +597,24 @@ export const SCENES: readonly SceneRecord[] = [
       inspiration: [PINNED_SPARKY_JS, PINNED_SPARKY_H, SHOWCASE],
     },
   },
+  {
+    id: "hydraulic-fountain",
+    title: "Hydraulic Fountain",
+    ready: true,
+    description:
+      "Watch a timed piston squeeze one water reservoir so that liquid travels through a throat into the other chamber. This is an original experimental scene.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: withGravitySlider([]),
+    viewBounds: {
+      minX: -1.3,
+      minY: -0.15,
+      maxX: 1.3,
+      maxY: 1.55,
+    },
+    credits: {
+      implementationPath:
+        "crates/liquidfun-wasm/src/scene/hydraulic_fountain.rs",
+      inspiration: [SHOWCASE],
+    },
+  },
 ];
