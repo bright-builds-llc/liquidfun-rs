@@ -153,7 +153,9 @@ test("opens scene details without leaving the portrait canvas", async ({
 
   // Assert
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByLabel("Particles", { exact: true })).toBeVisible();
+  await expect(
+    sheet.getByRole("combobox", { name: "Particles", exact: true }),
+  ).toBeVisible();
   await sheet.getByRole("checkbox", { name: "Debug info" }).check();
   await expect(page.locator(".debug-readout")).toBeVisible();
   await expect(sheet.locator("#scene-credits-title")).toHaveText("Scene source");

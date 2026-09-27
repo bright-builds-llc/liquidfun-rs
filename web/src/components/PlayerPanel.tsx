@@ -1,4 +1,4 @@
-import { Show, type JSX } from "solid-js";
+import { Show, createEffect, createSignal, on, type JSX } from "solid-js";
 
 import type { PlayerStatus } from "../player/view";
 import type { RenderFrame } from "../physics/frame";
@@ -95,12 +95,28 @@ function failureCopy(sceneTitle: string): string {
 
 /** Presentational player chrome for any ready scene. */
 export function PlayerPanel(props: PlayerPanelProps) {
+  const [controlsOpen, setControlsOpen] = createSignal(false);
+  // The sheet covers most of the canvas, so a new scene starts with it closed.
+  createEffect(
+    on(
+      () => props.sceneTitle,
+      () => {
+        setControlsOpen(false);
+      },
+      { defer: true },
+    ),
+  );
+
   return (
     <Show
       when={props.canvasStage}
       fallback={<PlayerPanelLayout canvasStage={false} panel={props} />}
     >
-      <Drawer side="bottom">
+      <Drawer
+        side="bottom"
+        open={controlsOpen()}
+        onOpenChange={setControlsOpen}
+      >
         <PlayerPanelLayout canvasStage panel={props} />
       </Drawer>
     </Show>
