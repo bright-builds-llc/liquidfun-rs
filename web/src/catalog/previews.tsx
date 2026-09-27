@@ -332,6 +332,19 @@ function DrawingParticlesPreview() {
   );
 }
 
+function WaveTankPreview() {
+  return (
+    <PreviewFrame>
+      <line x1="28" y1="22" x2="28" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="74" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="132" y1="22" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="58" x2="64" y2="58" stroke={RIGID} stroke-width="3" />
+      <line x1="64" y1="58" x2="64" y2="74" stroke={RIGID} stroke-width="3" />
+      <rect x="68" y="52" width="60" height="22" fill={WATER} />
+    </PreviewFrame>
+  );
+}
+
 function HydraulicFountainPreview() {
   return (
     <PreviewFrame>
@@ -458,5 +471,7 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <SparkyPreview />;
     case "hydraulic-fountain":
       return <HydraulicFountainPreview />;
+    case "wave-tank":
+      return <WaveTankPreview />;
   }
 }

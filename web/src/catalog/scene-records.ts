@@ -617,4 +617,23 @@ export const SCENES: readonly SceneRecord[] = [
       inspiration: [SHOWCASE],
     },
   },
+  {
+    id: "wave-tank",
+    title: "Wave Tank",
+    ready: true,
+    description:
+      "Watch a still pool whose end platform rises and falls and sends a wave toward the far wall. This is an original experimental scene.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: withGravitySlider([]),
+    viewBounds: {
+      minX: -0.12,
+      minY: -0.28,
+      maxX: 1.52,
+      maxY: 1.02,
+    },
+    credits: {
+      implementationPath: "crates/liquidfun-wasm/src/scene/wave_tank.rs",
+      inspiration: [SHOWCASE],
+    },
+  },
 ];

@@ -54,6 +54,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   sparky: "Watch colliding circles throw fading particle sparks.",
   "hydraulic-fountain":
     "Watch a timed piston squeeze one water reservoir so that liquid travels through a throat into the other chamber. This is an original experimental scene.",
+  "wave-tank":
+    "Watch a still pool whose end platform rises and falls and sends a wave toward the far wall. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -88,6 +90,7 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Drag on the canvas to paint into the vessel. A click with no move leaves one stamp. Use Material to paint Water or Elastic. Elastic paint clumps instead of flowing like water. Labeled controls also work from the keyboard.",
   sparky: WATCH_FIRST_HINT,
   "hydraulic-fountain": WATCH_FIRST_HINT,
+  "wave-tank": WATCH_FIRST_HINT,
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
