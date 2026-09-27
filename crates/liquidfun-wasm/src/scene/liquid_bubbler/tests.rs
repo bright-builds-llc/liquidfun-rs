@@ -104,6 +104,56 @@ fn drip_crosses_the_waist_and_turns_the_wheel() {
 }
 
 #[test]
+fn return_lifts_an_original_particle_above_the_waist() {
+    // Arrange
+    let mut session =
+        SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
+    let started_above = session.read_particles(|world, system| {
+        let view = world
+            .particle_system_view(system)
+            .expect("the water system should be live");
+        view.particle_ids()
+            .iter()
+            .copied()
+            .zip(view.positions().iter().copied())
+            .filter(|(_id, position)| position.y > WAIST_TOP)
+            .map(|(id, _position)| id)
+            .collect::<Vec<_>>()
+    });
+    let start_count = session
+        .live_particle_count()
+        .expect("the reservoir should start with water");
+
+    // Act
+    advance_return(&mut session);
+    let end_count = session
+        .live_particle_count()
+        .expect("the same water should still be live");
+    let returned = session.read_particles(|world, system| {
+        let view = world
+            .particle_system_view(system)
+            .expect("the water system should still be live");
+        started_above.iter().any(|id| {
+            view.particle_ids()
+                .iter()
+                .zip(view.positions())
+                .any(|(live, position)| {
+                    live == id && position.y > WAIST_TOP && position.x < DIVIDER_INNER_X
+                })
+        })
+    });
+    let motor_enabled = revolute_motor_enabled(&session);
+
+    // Assert
+    assert_eq!(end_count, start_count, "the live count stays unchanged");
+    assert!(
+        returned,
+        "an original above-waist particle is back above the waist and left of the divider"
+    );
+    assert!(!motor_enabled, "the revolute motor stays disabled");
+}
+
+#[test]
 fn plate_stays_down_during_the_proof() {
     // Arrange
     let mut session =
@@ -292,6 +342,32 @@ fn advance_proof(session: &mut SessionCore) {
             .advance(4)
             .expect("the two-second proof window should step");
     }
+}
+
+fn advance_return(session: &mut SessionCore) {
+    let seconds = super::DWELL + (super::STROKE / super::PLATE_SPEED) + 1.0;
+    let steps = (seconds / super::SIM_DT).ceil() as usize;
+    let batches = steps.div_ceil(4);
+    for _ in 0..batches {
+        session.advance(4).expect("the return window should step");
+    }
+}
+
+fn revolute_motor_enabled(session: &SessionCore) -> bool {
+    session.read_particles(|world, _system| {
+        let observation = world
+            .world_observation(WorldObservationLimits::reviewed())
+            .expect("reviewed observation should include the wheel joint");
+        let joint = observation
+            .joints()
+            .iter()
+            .find(|joint| joint.snapshot().kind() == JointKind::Revolute)
+            .expect("the wheel rides a revolute joint");
+        let JointDef::Revolute(definition) = joint.snapshot().definition() else {
+            panic!("the wheel joint should be revolute");
+        };
+        definition.is_motor_enabled()
+    })
 }
 
 fn is_below_the_waist_outside_the_hub(position: Vec2) -> bool {

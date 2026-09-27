@@ -36,11 +36,11 @@ const ANGULAR_DAMPING: f32 = 0.05;
 /// Rests one polygon-skin pair above the floor so a flush contact does not
 /// pop the plate off translation 0 during the dwell.
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
-const PLATE_CENTER: Vec2 = Vec2::new(0.78, 0.04 + PLATE_FLOOR_CLEARANCE);
-const PLATE_HALF_WIDTH: f32 = 0.12;
-const PLATE_HALF_HEIGHT: f32 = 0.04;
+const PLATE_HALF_WIDTH: f32 = 0.18;
+const PLATE_HALF_HEIGHT: f32 = 0.02;
+const PLATE_CENTER: Vec2 = Vec2::new(0.76, PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE);
 const PLATE_DENSITY: f32 = 1.0;
-const STROKE: f32 = 1.64;
+const STROKE: f32 = 1.80;
 const PLATE_SPEED: f32 = 0.15;
 const DWELL: f32 = 3.0;
 const RISE_SECONDS: f32 = STROKE / PLATE_SPEED;
@@ -178,8 +178,8 @@ fn wall_boxes() -> [BoxSpec; 6] {
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 0.65,
-            center: Vec2::new(0.52, 0.97),
+            half_height: 0.70,
+            center: Vec2::new(0.52, 0.92),
         },
         BoxSpec {
             half_width: LEFT_LIP_HALF_WIDTH,
