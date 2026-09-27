@@ -372,12 +372,11 @@ These are a starting point inside Claude's discretion, not locked geometry. Chan
 | A1 | Stroke `0.35` m, speed `0.6` m/s, period `2` s, radius `0.025`, and a `0.12` m floor throat cross within one period | Recommended starting numbers | The native test fails. Adjust those numbers inside discretion. Do not add an engine feature or cut the 4-step cap. |
 | A2 | A horizontal floor throat returns liquid on the retract half without a second pipe | Pattern 3 | If the pool does not fall back, widen the throat or lower the fountain floor. Do not add tensile flags or a delete/spawn refill. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Will the first numbers reach the limit against the water group?**
+1. **Will the first numbers reach the limit against the water group?** — RESOLVED
    - What we know: Motor impulse is clamped by `timestep * max_motor_force`, and limits hold once translation gets there.
-   - What's unclear: The force required for this group's mass is not measured yet.
-   - Recommendation: If the face stalls, raise max force and keep speed. If particles tunnel, lower speed and lengthen the period. Both stay inside discretion.
+   - Resolution: Plan 01 owns the retune. If the face stalls, raise max force and keep speed. If particles tunnel, lower speed and lengthen the period. Both stay inside discretion. Do not add an engine feature.
 
 ## Environment Availability
 
