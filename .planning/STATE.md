@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: verifying
-stopped_at: Completed 32-03-PLAN.md
-last_updated: "2026-09-27T20:06:54.558Z"
+stopped_at: Completed 32-04-PLAN.md
+last_updated: "2026-09-27T20:44:33.264Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 33
-  completed_plans: 33
+  total_plans: 34
+  completed_plans: 34
   percent: 100
 ---
 
@@ -25,9 +25,9 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 ## Current Position
 
-Phase: 32 (liquid-motion-bubbler) — EXECUTING
-Plan: 3 of 3
-Status: Ready for verification
+Phase: 32 (liquid-motion-bubbler) — VERIFYING
+Plan: 4 of 4
+Status: Ready for re-verification
 Last activity: 2026-09-27
 
 Progress: [██████████] 100%
@@ -112,6 +112,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 32]: Passing catalog unit tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing Vitest run is not a review acknowledgment.
 - [Phase 32]: Left ALL_SCENE_TIMEOUT_MS at 380000 and left both step caps at 4. — The Chromium run finished in 38.5 seconds, so the suite timeout did not need to grow.
 - [Phase 32]: Passing Chromium smoke is browser-gate evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing smoke command is not a review acknowledgment.
+- [Phase 32]: The plate spans the shaft and the 1.80 m stroke keeps its top above the spill lip one second into the descent. — A 0.10 m side gap drained liquid to the floor. The vertical slot stays wider than one particle while the plate seals the shaft. Dwell stays 3 s and the revolute motor stays off.
+- [Phase 32]: Passing return tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing cargo test is not a review acknowledgment.
 
 ### Pending Todos
 
@@ -147,9 +149,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 32 P01 | 20 min | 2 tasks | 5 files |
 | Phase 32 P02 | 7 min | 2 tasks | 13 files |
 | Phase 32 P03 | 4 min | 2 tasks | 1 files |
+| Phase 32 P04 | 24 min | 2 tasks | 3 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T20:05:53.785Z
-Stopped at: Completed 32-03-PLAN.md
+Last session: 2026-09-27T20:44:33.260Z
+Stopped at: Completed 32-04-PLAN.md
 Resume file: None

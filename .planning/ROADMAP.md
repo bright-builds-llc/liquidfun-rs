@@ -163,12 +163,13 @@ Plans:
 **Goal:** Visitors can watch Liquid Bubbler: colored liquid drips through a narrow waist and turns a small wheel, without changing Water Wheel.
 **Requirements**: none
 **Depends on:** Phase 31
-**Plans:** 3/3 plans executed
+**Plans:** 4/4 plans executed
 
 Plans:
 - [x] 32-01-PLAN.md — Static waist, motor-off paddle wheel, and a delayed side-shaft return, with a crossing and angle test
 - [x] 32-02-PLAN.md — Catalog record, static preview, portrait frame, and README plan
 - [x] 32-03-PLAN.md — Chromium smoke for Liquid Bubbler and the existing catalog
+- [x] 32-04-PLAN.md — Open the return shaft so an original particle returns above the waist
 
 ### Phase 33: Stacked drip fidget
 
@@ -200,7 +201,7 @@ Plans:
 | 29. Sparky, Drawing, and full catalog | v1.3 | 5/5 | Complete    | 2026-09-27 |
 | 30. Periodic hydraulic fountain | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete    | 2026-09-27 |
-| 32. Liquid motion bubbler | v1.3 | 3/3 | In Progress|  |
+| 32. Liquid motion bubbler | v1.3 | 4/4 | In Progress|  |
 | 33. Stacked drip fidget | v1.3 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
