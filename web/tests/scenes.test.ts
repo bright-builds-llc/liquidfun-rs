@@ -104,6 +104,7 @@ const WATCH_FIRST_SCENE_IDS = [
   "liquid-tumbler",
   "sparky",
   "hydraulic-fountain",
+  "wave-tank",
 ] as const;
 const FORBIDDEN_HINT_PHRASES = [
   "Press Space to pause",
@@ -120,7 +121,7 @@ const LOCKED_ACTION_LABELS = [
 ] as const;
 
 describe("SCENES", () => {
-  it("lists twenty locked scenes in the approved order", () => {
+  it("lists twenty-one locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "wave-machine",
@@ -143,13 +144,14 @@ describe("SCENES", () => {
       "drawing-particles",
       "sparky",
       "hydraulic-fountain",
+      "wave-tank",
     ] as const;
 
     // Act
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(20);
+    expect(SCENES).toHaveLength(21);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -177,6 +179,7 @@ describe("SCENES", () => {
       "Drawing Particles",
       "Sparky",
       "Hydraulic Fountain",
+      "Wave Tank",
     ];
 
     // Act
@@ -209,7 +212,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(20);
+    expect(readyCount).toBe(21);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -403,7 +406,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all twenty approved ids", () => {
+  it("is true for all twenty-one approved ids", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -411,7 +414,7 @@ describe("isReadySceneId", () => {
     const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(readyFlags).toEqual(Array.from({ length: 20 }, () => true));
+    expect(readyFlags).toEqual(Array.from({ length: 21 }, () => true));
   });
 });
 

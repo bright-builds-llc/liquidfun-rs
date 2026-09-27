@@ -37,6 +37,7 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "gravity",
   "gravity",
+  "gravity",
 ] as const;
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
@@ -292,6 +293,13 @@ describe("scene catalog controls", () => {
     expect(
       (hydraulicFountain?.controls ?? []).some((control) =>
         ["period", "stroke", "aim", "emission", "launch"].includes(control.id),
+      ),
+    ).toBe(false);
+    const waveTank = maybeSceneById("wave-tank");
+    expect(waveTank?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(
+      (waveTank?.controls ?? []).some((control) =>
+        ["period", "amplitude", "stroke"].includes(control.id),
       ),
     ).toBe(false);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
