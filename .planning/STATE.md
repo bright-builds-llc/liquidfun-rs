@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-09-27T18:22:46.439Z"
+stopped_at: Completed 31-02-PLAN.md
+last_updated: "2026-09-27T18:30:48.961Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 30
-  completed_plans: 28
-  percent: 93
+  completed_plans: 29
+  percent: 97
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 31 (sinusoidal-wave-tank) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-27
 
-Progress: [██░░░░░░░░] 25%
+Progress: [██████████] 97%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -101,6 +101,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 30]: Passing Chromium smoke is browser-gate evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and a passing smoke command is not a review acknowledgment.
 - [Phase 31]: Kept the plan starting numbers for the wave tank. — The far-wall test passed at stroke 0.16, period 2.0, channel 0.90, depth 0.32, damping 0.2, radius 0.025, and max force 1.0e6, so those values were not retuned.
 - [Phase 31]: Passing native wave-tank tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and D-11 says the implementing agent must not approve its own work.
+- [Phase 31]: Used the plan pool rectangle because Plan 01 kept the starting wall and stroke constants — The far-wall test did not retune stroke, walls, or platform, so viewBounds and the phone frame stay at minX -0.12, minY -0.28, maxX 1.52, maxY 1.02.
+- [Phase 31]: Passing catalog unit tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent AI review eligible, and D-11 says the implementing agent must not approve its own work.
 
 ### Pending Todos
 
@@ -131,9 +133,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 30 P02 | 7 min | 2 tasks | 13 files |
 | Phase 30 P03 | 5 min | 2 tasks | 1 files |
 | Phase 31 P01 | 13 min | 2 tasks | 5 files |
+| Phase 31 P02 | 5 min | 2 tasks | 13 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T18:22:38.617Z
-Stopped at: Completed 31-01-PLAN.md
+Last session: 2026-09-27T18:30:36.798Z
+Stopped at: Completed 31-02-PLAN.md
 Resume file: None
