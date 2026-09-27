@@ -65,7 +65,7 @@ fn default_create_is_still_medium_normal_basin() {
     assert_eq!(session.particle_count(), 1920);
     assert_eq!(world.gravity().x.to_bits(), 0.0_f32.to_bits());
     assert_eq!(world.gravity().y.to_bits(), (-10.0_f32).to_bits());
-    assert_eq!(system.definition().maximum_count(), Some(10240));
+    assert_eq!(system.definition().maybe_maximum_count(), Some(10240));
     assert_eq!(
         frame.particle_radii(),
         vec![0.063_245_55; 1920].into_boxed_slice()

@@ -25,17 +25,17 @@ impl World {
             broad_phase: new_world_broad_phase(),
             contact_manager: ContactManager::new(),
             continuous_step_state: ContinuousStepState::new(),
-            next_diagnostic_id: Some(1),
+            maybe_next_diagnostic_id: Some(1),
             step_state: StepState::new(),
             configuration: WorldConfiguration::default(),
         })
     }
 
     pub(in crate::world) fn allocate_diagnostic_id(&mut self) -> Result<u64, ArenaInsertError> {
-        let Some(id) = self.next_diagnostic_id else {
+        let Some(id) = self.maybe_next_diagnostic_id else {
             return Err(ArenaInsertError::DiagnosticIdExhausted);
         };
-        self.next_diagnostic_id = id.checked_add(1);
+        self.maybe_next_diagnostic_id = id.checked_add(1);
         Ok(id)
     }
 
@@ -43,7 +43,7 @@ impl World {
         &self,
         count: usize,
     ) -> Result<(u64, Option<u64>), ArenaInsertError> {
-        let Some(first) = self.next_diagnostic_id else {
+        let Some(first) = self.maybe_next_diagnostic_id else {
             return Err(ArenaInsertError::DiagnosticIdExhausted);
         };
         let last_offset = count
@@ -56,13 +56,13 @@ impl World {
         Ok((first, last.checked_add(1)))
     }
 
-    pub(in crate::world) fn commit_next_diagnostic_id(&mut self, next: Option<u64>) {
-        self.next_diagnostic_id = next;
+    pub(in crate::world) fn commit_next_diagnostic_id(&mut self, maybe_next: Option<u64>) {
+        self.maybe_next_diagnostic_id = maybe_next;
     }
 
     #[cfg(test)]
     pub(super) fn set_next_diagnostic_id_for_test(&mut self, next: u64) {
-        self.next_diagnostic_id = Some(next);
+        self.maybe_next_diagnostic_id = Some(next);
     }
 
     /// Creates a body from a reusable checked definition.

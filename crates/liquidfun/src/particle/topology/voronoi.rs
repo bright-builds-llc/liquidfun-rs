@@ -47,7 +47,7 @@ impl VoronoiDiagram {
         limits: VoronoiLimits,
     ) -> Result<Self, VoronoiError> {
         validate_inputs(generators, radius, margin, limits)?;
-        let Some((lower, upper)) = necessary_bounds(generators) else {
+        let Some((lower, upper)) = maybe_necessary_bounds(generators) else {
             return Ok(Self::empty());
         };
         let inverse_radius = 1.0 / radius;
@@ -200,10 +200,10 @@ fn validate_inputs(
     Ok(())
 }
 
-fn necessary_bounds(generators: &[VoronoiGenerator]) -> Option<(Vec2, Vec2)> {
-    let mut bounds: Option<(Vec2, Vec2)> = None;
+fn maybe_necessary_bounds(generators: &[VoronoiGenerator]) -> Option<(Vec2, Vec2)> {
+    let mut maybe_bounds: Option<(Vec2, Vec2)> = None;
     for generator in generators.iter().filter(|generator| generator.necessary) {
-        bounds = Some(match bounds {
+        maybe_bounds = Some(match maybe_bounds {
             None => (generator.center, generator.center),
             Some((lower, upper)) => (
                 Vec2::new(
@@ -217,7 +217,7 @@ fn necessary_bounds(generators: &[VoronoiGenerator]) -> Option<(Vec2, Vec2)> {
             ),
         });
     }
-    bounds
+    maybe_bounds
 }
 
 fn axis_count(lower: f32, upper: f32, inverse_radius: f32) -> Result<usize, VoronoiError> {

@@ -74,13 +74,7 @@ fn create_soft_groups(world: &mut World) -> Result<ParticleSystemId, SceneError>
         .create_particle_system_with_def(&system_definition)
         .map_err(|_error| SceneError::ParticleSystem)?;
 
-    create_circle_group(
-        world,
-        system,
-        RED_CENTER,
-        ParticleFlags::SPRING,
-        RED_COLOR,
-    )?;
+    create_circle_group(world, system, RED_CENTER, ParticleFlags::SPRING, RED_COLOR)?;
     create_circle_group(
         world,
         system,
@@ -121,13 +115,8 @@ fn create_spinning_box_group(
     system: ParticleSystemId,
 ) -> Result<(), SceneError> {
     let filled = Shape::from(
-        PolygonShape::oriented_box(
-            BLUE_BOX_HALF_WIDTH,
-            BLUE_BOX_HALF_HEIGHT,
-            Vec2::ZERO,
-            0.0,
-        )
-        .map_err(|_error| SceneError::Geometry)?,
+        PolygonShape::oriented_box(BLUE_BOX_HALF_WIDTH, BLUE_BOX_HALF_HEIGHT, Vec2::ZERO, 0.0)
+            .map_err(|_error| SceneError::Geometry)?,
     );
     let source =
         ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
@@ -135,7 +124,10 @@ fn create_spinning_box_group(
         .with_particle_flags(ParticleFlags::ELASTIC)
         .with_group_flags(ParticleGroupFlags::SOLID)
         .with_color(BLUE_COLOR)
-        .with_transform(Transform::from_position_angle(BLUE_BOX_CENTER, BLUE_BOX_ANGLE))
+        .with_transform(Transform::from_position_angle(
+            BLUE_BOX_CENTER,
+            BLUE_BOX_ANGLE,
+        ))
         .map_err(|_error| SceneError::Particle)?
         .with_angular_velocity(2.0)
         .map_err(|_error| SceneError::Particle)?;

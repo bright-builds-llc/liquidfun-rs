@@ -45,9 +45,10 @@ fn write_executable(path: &Path, source: &str) -> TestResult {
 }
 
 impl ProducerFixture {
-    // The constructor deliberately keeps the fake repository, command manifest,
-    // and fake GitHub boundary together so lifecycle tests share one exact setup.
-    #[allow(clippy::too_many_lines)]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the constructor keeps the fake repository, command manifest, and GitHub boundary together so lifecycle tests share one setup"
+    )]
     fn new(include_workflow: bool, helper_mode: &str) -> TestResult<Self> {
         let root = env::temp_dir().join(format!(
             "liquidfun-phase13-1-producer-{}-{}",

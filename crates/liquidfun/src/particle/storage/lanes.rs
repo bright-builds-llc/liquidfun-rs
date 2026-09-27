@@ -211,8 +211,8 @@ impl OwnedLaneBundle {
     }
 }
 
-fn optional_lane_is_empty<T>(lane: Option<&Vec<T>>, declared_capacity: usize) -> bool {
-    lane.is_none_or(|values| values.is_empty() && values.capacity() >= declared_capacity)
+fn optional_lane_is_empty<T>(maybe_lane: Option<&Vec<T>>, declared_capacity: usize) -> bool {
+    maybe_lane.is_none_or(|values| values.is_empty() && values.capacity() >= declared_capacity)
 }
 
 #[cfg(test)]

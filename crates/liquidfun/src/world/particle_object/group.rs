@@ -206,7 +206,7 @@ impl World {
             .len()
             .checked_add(usize::from(creates_shell))
             .ok_or(ArenaInsertError::DiagnosticIdExhausted)?;
-        let (first_diagnostic_id, next_diagnostic_id) =
+        let (first_diagnostic_id, maybe_next_diagnostic_id) =
             self.preflight_diagnostic_ids(diagnostic_count)?;
         let particle_diagnostic_start = first_diagnostic_id + u64::from(creates_shell);
 
@@ -247,7 +247,7 @@ impl World {
             system_candidate,
             result_group,
             maybe_shell,
-            next_diagnostic_id,
+            maybe_next_diagnostic_id,
         })
     }
 
@@ -270,7 +270,7 @@ impl World {
             .get_mut(plan.system)
             .expect("validated particle system remains live until immediate commit") =
             plan.system_candidate;
-        self.commit_next_diagnostic_id(plan.next_diagnostic_id);
+        self.commit_next_diagnostic_id(plan.maybe_next_diagnostic_id);
         plan.result_group
     }
 }

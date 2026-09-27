@@ -51,7 +51,9 @@ impl World {
         let declared_capacity = if capacity.is_fixed() {
             capacity.count()
         } else {
-            definition.maximum_count().unwrap_or(MAX_PARTICLE_COUNT)
+            definition
+                .maybe_maximum_count()
+                .unwrap_or(MAX_PARTICLE_COUNT)
         };
         let mut storage = ParticleStorage::from_buffer_bundle(
             self.scope_key,
@@ -115,7 +117,9 @@ impl World {
         let declared_capacity = if capacity.is_fixed() {
             capacity.count()
         } else {
-            definition.maximum_count().unwrap_or(MAX_PARTICLE_COUNT)
+            definition
+                .maybe_maximum_count()
+                .unwrap_or(MAX_PARTICLE_COUNT)
         };
         let mut storage = ParticleStorage::with_initial_capacity(
             self.scope_key,

@@ -9,9 +9,7 @@ use liquidfun::{
     BodyDef, BodyId, FixtureDef, ParticleGroupId, ParticleSystemDef, ParticleSystemId, World,
 };
 
-use super::{
-    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
-};
+use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
 const PARTICLE_RADIUS: f32 = 0.025;
@@ -163,10 +161,7 @@ fn create_particle_group(
 }
 
 fn pointer_inside_box(world_x: f32, world_y: f32) -> bool {
-    BOX_LEFT <= world_x
-        && world_x <= BOX_RIGHT
-        && BOX_BOTTOM <= world_y
-        && world_y <= BOX_TOP
+    BOX_LEFT <= world_x && world_x <= BOX_RIGHT && BOX_BOTTOM <= world_y && world_y <= BOX_TOP
 }
 
 fn shove_group(

@@ -277,7 +277,7 @@ impl ParticleStorage {
         Ok(ParticleSnapshot {
             id,
             diagnostic_id: self.identities[local_slot]
-                .diagnostic_id
+                .maybe_diagnostic_id
                 .expect("live particles always retain a diagnostic identity"),
             input: self.input_at(dense),
         })
@@ -292,7 +292,7 @@ impl ParticleStorage {
             IdentityState::Live(dense) => ParticleSnapshot {
                 id,
                 diagnostic_id: entry
-                    .diagnostic_id
+                    .maybe_diagnostic_id
                     .expect("live particles always retain a diagnostic identity"),
                 input: self.input_at(dense),
             },
@@ -386,7 +386,7 @@ impl ParticleStorage {
         if candidate.append_identity {
             self.identities.push(IdentityEntry {
                 generation: candidate.generation,
-                diagnostic_id: None,
+                maybe_diagnostic_id: None,
                 state: IdentityState::Vacant,
             });
         } else {
@@ -396,7 +396,7 @@ impl ParticleStorage {
                 .expect("prepared reused identity remains available until commit");
             debug_assert_eq!(reused, candidate.local_slot);
         }
-        self.identities[candidate.local_slot].diagnostic_id = Some(candidate.diagnostic_id);
+        self.identities[candidate.local_slot].maybe_diagnostic_id = Some(candidate.diagnostic_id);
         self.identities[candidate.local_slot].state = IdentityState::Live(candidate.dense);
         self.push_row(candidate.id, candidate.input);
         self.group_records = candidate.group_records;

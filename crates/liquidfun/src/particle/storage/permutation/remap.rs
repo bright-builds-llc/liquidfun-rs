@@ -8,33 +8,37 @@ pub(super) fn replace_contents<T>(target: &mut Vec<T>, source: impl IntoIterator
     target.extend(source);
 }
 
-pub(super) fn replace_optional_contents<T>(target: &mut Option<Vec<T>>, source: Option<Vec<T>>) {
-    match (target.as_mut(), source) {
+pub(super) fn replace_optional_contents<T>(
+    maybe_target: &mut Option<Vec<T>>,
+    maybe_source: Option<Vec<T>>,
+) {
+    match (maybe_target.as_mut(), maybe_source) {
         (Some(target), Some(source)) => replace_contents(target, source),
-        (None, Some(source)) => *target = Some(source),
-        (Some(_), None) => *target = None,
+        (None, Some(source)) => *maybe_target = Some(source),
+        (Some(_), None) => *maybe_target = None,
         (None, None) => {}
     }
 }
 
 pub(super) fn copy_optional<T: Copy>(
-    source: Option<&[T]>,
-    destination: Option<&mut [T]>,
+    maybe_source: Option<&[T]>,
+    maybe_destination: Option<&mut [T]>,
     old: usize,
     new: usize,
 ) {
-    if let (Some(source), Some(destination)) = (source, destination) {
-        destination[new] = source[old];
-    }
+    let (Some(source), Some(destination)) = (maybe_source, maybe_destination) else {
+        return;
+    };
+    destination[new] = source[old];
 }
 
 pub(super) fn copy_stuck(
-    source: Option<&StuckLanes>,
-    destination: Option<&mut StuckLanes>,
+    maybe_source: Option<&StuckLanes>,
+    maybe_destination: Option<&mut StuckLanes>,
     old: usize,
     new: usize,
 ) {
-    let (Some(source), Some(destination)) = (source, destination) else {
+    let (Some(source), Some(destination)) = (maybe_source, maybe_destination) else {
         return;
     };
     destination.last_body_contact_steps[new] = source.last_body_contact_steps[old];

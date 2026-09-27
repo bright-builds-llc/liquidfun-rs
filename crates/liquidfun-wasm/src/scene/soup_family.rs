@@ -10,8 +10,7 @@ use liquidfun::particle::{
     ParticleGroupSource,
 };
 use liquidfun::{
-    BodyDef, BodyId, BodyMassData, BodyType, FixtureDef, ParticleSystemDef, ParticleSystemId,
-    World,
+    BodyDef, BodyId, BodyMassData, BodyType, FixtureDef, ParticleSystemDef, ParticleSystemId, World,
 };
 
 use super::{RigidSegment, SceneError, attach_basin_fixture};
@@ -107,12 +106,7 @@ pub(crate) fn build_soup_family() -> Result<SoupFamilyBuilt, SceneError> {
     let right_box = create_floating_box(&mut world, RIGHT_BOX_CENTER, RIGHT_BOX_ANGLE)?;
     let (edge_bodies, edge_locals) = create_edge_noodles(&mut world)?;
 
-    carve_under_shape(
-        &mut world,
-        particle_system,
-        &circle_shape,
-        circle_body,
-    )?;
+    carve_under_shape(&mut world, particle_system, &circle_shape, circle_body)?;
     carve_under_shape(&mut world, particle_system, &left_box.1, left_box.0)?;
     carve_under_shape(&mut world, particle_system, &right_box.1, right_box.0)?;
 
@@ -162,8 +156,8 @@ fn create_floating_circle(world: &mut World) -> Result<(BodyId, Shape), SceneErr
     let body = world
         .create_body(&body_definition)
         .map_err(|_error| SceneError::Body)?;
-    let circle =
-        CircleShape::new(CIRCLE_LOCAL_CENTER, CIRCLE_RADIUS).map_err(|_error| SceneError::Geometry)?;
+    let circle = CircleShape::new(CIRCLE_LOCAL_CENTER, CIRCLE_RADIUS)
+        .map_err(|_error| SceneError::Geometry)?;
     let shape = Shape::from(circle);
     let fixture_definition = FixtureDef::new(
         shape.clone(),
@@ -214,9 +208,7 @@ fn create_floating_box(
     Ok((body, shape, corners))
 }
 
-fn create_edge_noodles(
-    world: &mut World,
-) -> Result<([BodyId; 3], [(Vec2, Vec2); 3]), SceneError> {
+fn create_edge_noodles(world: &mut World) -> Result<([BodyId; 3], [(Vec2, Vec2); 3]), SceneError> {
     let mut built_bodies = Vec::with_capacity(3);
     let mut locals = [(Vec2::ZERO, Vec2::ZERO); 3];
     for (index, (start, end)) in EDGE_ENDPOINTS.iter().copied().enumerate() {
@@ -239,18 +231,15 @@ fn create_edge_noodles(
             .create_fixture(body, &fixture_definition)
             .map_err(|_error| SceneError::Fixture)?;
         let midpoint = 0.5 * (start + end);
-        let mass = BodyMassData::new(EDGE_MASS, midpoint, 0.0).map_err(|_error| SceneError::Body)?;
+        let mass =
+            BodyMassData::new(EDGE_MASS, midpoint, 0.0).map_err(|_error| SceneError::Body)?;
         world
             .set_body_mass_data(body, mass)
             .map_err(|_error| SceneError::Body)?;
         built_bodies.push(body);
         locals[index] = (start, end);
     }
-    let bodies = [
-        built_bodies[0],
-        built_bodies[1],
-        built_bodies[2],
-    ];
+    let bodies = [built_bodies[0], built_bodies[1], built_bodies[2]];
     Ok((bodies, locals))
 }
 

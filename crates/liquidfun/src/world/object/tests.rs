@@ -412,7 +412,7 @@ fn failed_particle_replacement_preserves_the_eviction_candidate() {
     assert_eq!(world.particle_snapshot(victim), Ok(before_particle));
     assert_eq!(world.particle_system_snapshot(system), Ok(before_system));
     assert_eq!(world.bodies.iter().count(), before_body_count);
-    assert_eq!(world.next_diagnostic_id, None);
+    assert_eq!(world.maybe_next_diagnostic_id, None);
 }
 
 #[test]

@@ -50,7 +50,7 @@ impl RevoluteRuntime {
         &mut self,
         definition: RevoluteJointDef,
         angle: f32,
-        warm_start_ratio: Option<f32>,
+        maybe_warm_start_ratio: Option<f32>,
         fixed_rotation: bool,
     ) -> Result<(), JointMutationError> {
         let previous = *self;
@@ -70,7 +70,7 @@ impl RevoluteRuntime {
         if !definition.is_motor_enabled() || fixed_rotation {
             self.motor_impulse = 0.0;
         }
-        if let Some(ratio) = warm_start_ratio {
+        if let Some(ratio) = maybe_warm_start_ratio {
             if !ratio.is_finite() || ratio < 0.0 {
                 return Err(JointMutationError::InvalidValue);
             }

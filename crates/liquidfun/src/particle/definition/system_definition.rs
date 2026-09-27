@@ -546,7 +546,7 @@ impl ParticleSystemDef {
 
     /// Returns the particle maximum, or `None` for the pinned unlimited value.
     #[must_use]
-    pub const fn maximum_count(self) -> Option<usize> {
+    pub const fn maybe_maximum_count(self) -> Option<usize> {
         self.maybe_maximum_count
     }
 }

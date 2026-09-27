@@ -296,7 +296,7 @@ impl ParticleStorage {
         let snapshot = ParticleSnapshot {
             id,
             diagnostic_id: self.identities[local_slot]
-                .diagnostic_id
+                .maybe_diagnostic_id
                 .expect("live particles always retain a diagnostic identity"),
             input: self.input_at(dense),
         };

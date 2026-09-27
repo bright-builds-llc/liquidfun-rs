@@ -91,7 +91,7 @@ fn particle_system_defaults_match_pinned_values() {
         definition.capacity(),
         ParticleCapacity::growable(0).expect("zero initial growable capacity should be valid")
     );
-    assert_eq!(definition.maximum_count(), None);
+    assert_eq!(definition.maybe_maximum_count(), None);
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn particle_system_builders_preserve_checked_controls() {
         0.25_f32.to_bits()
     );
     assert_eq!(definition.capacity(), fixed);
-    assert_eq!(definition.maximum_count(), Some(32));
+    assert_eq!(definition.maybe_maximum_count(), Some(32));
 }
 
 #[test]

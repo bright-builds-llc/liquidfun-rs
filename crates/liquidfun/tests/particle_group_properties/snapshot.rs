@@ -100,7 +100,7 @@ struct SystemStatisticsState {
     paused: bool,
     declared_capacity: usize,
     effective_capacity: usize,
-    configured_maximum: Option<usize>,
+    maybe_configured_maximum: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -532,7 +532,7 @@ fn system_statistics_state(
         paused: statistics.is_paused(),
         declared_capacity: statistics.declared_capacity(),
         effective_capacity: statistics.effective_capacity(),
-        configured_maximum: statistics.configured_maximum(),
+        maybe_configured_maximum: statistics.maybe_configured_maximum(),
     }
 }
 

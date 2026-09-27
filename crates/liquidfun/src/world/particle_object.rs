@@ -106,7 +106,7 @@ struct ParticleGroupCreationPlan {
     system_candidate: ParticleSystem,
     result_group: ParticleGroupId,
     maybe_shell: Option<(ParticleGroupId, u64)>,
-    next_diagnostic_id: Option<u64>,
+    maybe_next_diagnostic_id: Option<u64>,
 }
 
 impl ParticleCreationReceipt {

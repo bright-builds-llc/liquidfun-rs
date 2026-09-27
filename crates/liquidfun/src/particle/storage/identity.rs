@@ -154,7 +154,7 @@ fn retired_identity_reports_exhaustion_without_resurrection() {
         .expect("test storage contract is valid");
     storage.identities.push(IdentityEntry {
         generation: u64::MAX,
-        diagnostic_id: None,
+        maybe_diagnostic_id: None,
         state: IdentityState::Vacant,
     });
     storage.free_identity_slots.push(0);

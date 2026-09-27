@@ -377,7 +377,7 @@ pub struct World {
     pub(super) broad_phase: BroadPhase<FixtureProxy>,
     pub(super) contact_manager: ContactManager,
     pub(super) continuous_step_state: ContinuousStepState,
-    next_diagnostic_id: Option<u64>,
+    maybe_next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,
     pub(super) configuration: WorldConfiguration,
 }

@@ -354,8 +354,11 @@ fn particle_can_be_connected(flags: ParticleFlags, maybe_group: Option<TopologyG
         || maybe_group.is_some_and(|group| group.flags.contains(ParticleGroupFlags::RIGID))
 }
 
-fn minimum_strength(first: Option<TopologyGroup>, second: Option<TopologyGroup>) -> f32 {
-    group_strength(first).min(group_strength(second))
+fn minimum_strength(
+    maybe_first: Option<TopologyGroup>,
+    maybe_second: Option<TopologyGroup>,
+) -> f32 {
+    group_strength(maybe_first).min(group_strength(maybe_second))
 }
 
 fn group_strength(maybe_group: Option<TopologyGroup>) -> f32 {

@@ -328,9 +328,8 @@ mod destroy_in_shape_tests {
                     .expect("particle fits");
             }
         }
-        let shape = Shape::from(
-            CircleShape::new(Vec2::ZERO, 0.2).expect("circle geometry is valid"),
-        );
+        let shape =
+            Shape::from(CircleShape::new(Vec2::ZERO, 0.2).expect("circle geometry is valid"));
         let transform = Transform::IDENTITY;
         let inside_before = count_particles_inside(&world, &shape, transform);
         assert!(

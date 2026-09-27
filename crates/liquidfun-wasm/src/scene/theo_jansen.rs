@@ -15,9 +15,7 @@ use liquidfun::{
     ParticleSystemId, RevoluteJointDef, World,
 };
 
-use super::{
-    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
-};
+use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
 const PARTICLE_RADIUS: f32 = 0.2;
@@ -170,8 +168,8 @@ fn create_balls(world: &mut World) -> Result<Vec<BodyId>, SceneError> {
 }
 
 fn create_chassis(world: &mut World, position: Vec2) -> Result<BodyId, SceneError> {
-    let definition = BodyDef::new(BodyType::Dynamic, position, 0.0, true)
-        .map_err(|_error| SceneError::Body)?;
+    let definition =
+        BodyDef::new(BodyType::Dynamic, position, 0.0, true).map_err(|_error| SceneError::Body)?;
     let body = world
         .create_body(&definition)
         .map_err(|_error| SceneError::Body)?;
@@ -186,8 +184,8 @@ fn create_chassis(world: &mut World, position: Vec2) -> Result<BodyId, SceneErro
 }
 
 fn create_wheel(world: &mut World, position: Vec2) -> Result<BodyId, SceneError> {
-    let definition = BodyDef::new(BodyType::Dynamic, position, 0.0, true)
-        .map_err(|_error| SceneError::Body)?;
+    let definition =
+        BodyDef::new(BodyType::Dynamic, position, 0.0, true).map_err(|_error| SceneError::Body)?;
     let body = world
         .create_body(&definition)
         .map_err(|_error| SceneError::Body)?;
@@ -288,7 +286,11 @@ fn create_leg(
     Ok(())
 }
 
-fn attach_leg_polygon(world: &mut World, body: BodyId, vertices: &[Vec2; 3]) -> Result<(), SceneError> {
+fn attach_leg_polygon(
+    world: &mut World,
+    body: BodyId,
+    vertices: &[Vec2; 3],
+) -> Result<(), SceneError> {
     let polygon = PolygonShape::new(vertices).map_err(|_error| SceneError::Geometry)?;
     let fixture = FixtureDef::new(Shape::from(polygon), 1.0, 0.2, 0.0, false, WALKER_FILTER)
         .map_err(|_error| SceneError::Fixture)?;

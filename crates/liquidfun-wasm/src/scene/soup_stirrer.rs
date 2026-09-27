@@ -10,9 +10,7 @@ use liquidfun::{
 };
 
 use super::soup_family::{self, SoupFamilyBuilt};
-use super::{
-    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
-};
+use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
 /// Pinned `SetDamping(1.0)` from `testSoupStirrer.js`.
@@ -109,7 +107,8 @@ fn create_paddle(world: &mut World) -> Result<BodyId, SceneError> {
     let body = world
         .create_body(&body_definition)
         .map_err(|_error| SceneError::Body)?;
-    let circle = CircleShape::new(PADDLE_CENTER, PADDLE_RADIUS).map_err(|_error| SceneError::Geometry)?;
+    let circle =
+        CircleShape::new(PADDLE_CENTER, PADDLE_RADIUS).map_err(|_error| SceneError::Geometry)?;
     let fixture_definition = FixtureDef::new(
         Shape::from(circle),
         PADDLE_DENSITY,
@@ -155,12 +154,7 @@ fn create_paddle_rail(
     let definition = PrismaticJointDef::new(ground, paddle)
         .map_err(|_error| SceneError::Body)?
         .with_collide_connected(true)
-        .with_frame(
-            paddle_position,
-            Vec2::ZERO,
-            Vec2::new(1.0, 0.0),
-            0.0,
-        )
+        .with_frame(paddle_position, Vec2::ZERO, Vec2::new(1.0, 0.0), 0.0)
         .map_err(|_error| SceneError::Body)?;
     world
         .create_joint(JointDef::from(definition))
@@ -376,13 +370,7 @@ mod tests {
 
         // Act — outside AABB must not toggle
         hooks
-            .apply_pointer(
-                &mut world,
-                particle_system,
-                PointerKind::Up,
-                10.0,
-                10.0,
-            )
+            .apply_pointer(&mut world, particle_system, PointerKind::Up, 10.0, 10.0)
             .expect("out-of-soup pointer up must succeed as a no-op");
         assert_eq!(
             world.joint_count(),
@@ -398,13 +386,7 @@ mod tests {
 
         // Act — outside again must not reattach
         hooks
-            .apply_pointer(
-                &mut world,
-                particle_system,
-                PointerKind::Up,
-                10.0,
-                10.0,
-            )
+            .apply_pointer(&mut world, particle_system, PointerKind::Up, 10.0, 10.0)
             .expect("out-of-soup pointer up must succeed as a no-op");
         assert_eq!(
             world.joint_count(),

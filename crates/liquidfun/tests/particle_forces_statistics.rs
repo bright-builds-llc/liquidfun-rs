@@ -410,7 +410,7 @@ fn statistics_follow_contact_refresh_and_explicit_capacity() {
     assert_eq!(before.particle_contact_count(), 0);
     assert_eq!(before.declared_capacity(), 4);
     assert_eq!(before.effective_capacity(), 3);
-    assert_eq!(before.configured_maximum(), Some(3));
+    assert_eq!(before.maybe_configured_maximum(), Some(3));
     assert_eq!(contacted.particle_contact_count(), 1);
     assert_eq!(contacted.body_contact_count(), 0);
     assert_eq!(

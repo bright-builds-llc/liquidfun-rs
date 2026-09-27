@@ -35,7 +35,7 @@ impl ParticleStorage {
         assert!(self.identities.len() < self.identity_capacity);
         self.identities.push(IdentityEntry {
             generation: u64::MAX,
-            diagnostic_id: None,
+            maybe_diagnostic_id: None,
             state: IdentityState::Retired,
         });
         self.retired_identity_slots += 1;

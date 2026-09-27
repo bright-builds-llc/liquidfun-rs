@@ -90,7 +90,7 @@ enum IdentityState {
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct IdentityEntry {
     generation: u64,
-    diagnostic_id: Option<u64>,
+    maybe_diagnostic_id: Option<u64>,
     state: IdentityState,
 }
 

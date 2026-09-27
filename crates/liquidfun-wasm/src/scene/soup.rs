@@ -4,9 +4,7 @@ use liquidfun::math::Vec2;
 use liquidfun::{BodyId, ParticleSystemId, World};
 
 use super::soup_family::{self, SoupFamilyBuilt};
-use super::{
-    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
-};
+use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
 struct SoupHooks {

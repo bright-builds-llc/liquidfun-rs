@@ -58,7 +58,7 @@ impl PrismaticRuntime {
         definition: PrismaticJointDef,
         translation: f32,
         world_axis: Vec2,
-        warm_start_ratio: Option<f32>,
+        maybe_warm_start_ratio: Option<f32>,
     ) -> Result<(), JointMutationError> {
         let previous = *self;
         if !translation.is_finite() || !world_axis.is_valid() {
@@ -80,7 +80,7 @@ impl PrismaticRuntime {
         if !definition.is_motor_enabled() {
             self.motor_impulse = 0.0;
         }
-        if let Some(ratio) = warm_start_ratio {
+        if let Some(ratio) = maybe_warm_start_ratio {
             if !ratio.is_finite() || ratio < 0.0 {
                 return Err(JointMutationError::InvalidValue);
             }

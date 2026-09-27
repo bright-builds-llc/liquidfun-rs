@@ -155,7 +155,7 @@ pub(super) fn plan_split(
         return Ok(split.result_groups().to_vec());
     }
 
-    let (first_diagnostic_id, next_diagnostic_id) =
+    let (first_diagnostic_id, maybe_next_diagnostic_id) =
         world.preflight_diagnostic_ids(new_group_count)?;
     let mut shell_candidate = world.particle_groups.clone();
     let mut new_groups = Vec::new();
@@ -193,7 +193,7 @@ pub(super) fn plan_split(
         .particle_systems
         .get_mut(system)
         .expect("validated system remains live until immediate commit") = system_candidate;
-    world.commit_next_diagnostic_id(next_diagnostic_id);
+    world.commit_next_diagnostic_id(maybe_next_diagnostic_id);
     Ok(result_groups)
 }
 

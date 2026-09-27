@@ -18,7 +18,7 @@ pub struct ParticleSystemStatistics {
     paused: bool,
     declared_capacity: usize,
     effective_capacity: usize,
-    configured_maximum: Option<usize>,
+    maybe_configured_maximum: Option<usize>,
 }
 
 impl ParticleSystemStatistics {
@@ -28,9 +28,9 @@ impl ParticleSystemStatistics {
         group_count: usize,
     ) -> Self {
         let declared_capacity = storage.declared_capacity();
-        let configured_maximum = definition.maximum_count();
-        let effective_capacity =
-            configured_maximum.map_or(declared_capacity, |maximum| maximum.min(declared_capacity));
+        let maybe_configured_maximum = definition.maybe_maximum_count();
+        let effective_capacity = maybe_configured_maximum
+            .map_or(declared_capacity, |maximum| maximum.min(declared_capacity));
         Self {
             system: storage.system(),
             particle_ids: storage.particle_ids().to_vec(),
@@ -43,7 +43,7 @@ impl ParticleSystemStatistics {
             paused: definition.is_paused(),
             declared_capacity,
             effective_capacity,
-            configured_maximum,
+            maybe_configured_maximum,
         }
     }
 
@@ -121,8 +121,8 @@ impl ParticleSystemStatistics {
 
     /// Returns the configured maximum, or `None` for the pinned unlimited value.
     #[must_use]
-    pub const fn configured_maximum(&self) -> Option<usize> {
-        self.configured_maximum
+    pub const fn maybe_configured_maximum(&self) -> Option<usize> {
+        self.maybe_configured_maximum
     }
 }
 

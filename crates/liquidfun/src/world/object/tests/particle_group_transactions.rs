@@ -126,7 +126,7 @@ impl Before {
             systems: world.particle_systems.clone(),
             groups: world.particle_groups.clone(),
             system_order: world.particle_system_order.clone(),
-            maybe_diagnostic: world.next_diagnostic_id,
+            maybe_diagnostic: world.maybe_next_diagnostic_id,
         }
     }
 
@@ -148,7 +148,7 @@ impl Before {
                 assert_eq!(after.diagnostic_id, before.diagnostic_id);
             });
         assert_eq!(world.particle_system_order, self.system_order);
-        assert_eq!(world.next_diagnostic_id, self.maybe_diagnostic);
+        assert_eq!(world.maybe_next_diagnostic_id, self.maybe_diagnostic);
         assert!(!world.step_state.is_locked());
         assert!(!world.step_state.is_poisoned());
     }
@@ -195,7 +195,7 @@ fn rejection_preserves_next_allocations_and_deferred_lifecycle() {
         .particle_groups
         .next_handle()
         .expect("next shell fits");
-    let diagnostic = world.next_diagnostic_id.expect("diagnostic fits");
+    let diagnostic = world.maybe_next_diagnostic_id.expect("diagnostic fits");
     let success = recipe(vec![Vec2::new(30.0, 0.0)], ParticleGroupDestination::New);
     let next_particle = world
         .particle_systems
@@ -261,7 +261,7 @@ fn rejection_preserves_next_allocations_and_deferred_lifecycle() {
             .diagnostic_id,
         diagnostic + 1
     );
-    assert_eq!(world.next_diagnostic_id, Some(diagnostic + 2));
+    assert_eq!(world.maybe_next_diagnostic_id, Some(diagnostic + 2));
     assert_eq!(created.identity().slot(), control_created.identity().slot());
     assert_eq!(
         created.identity().generation(),

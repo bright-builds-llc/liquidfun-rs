@@ -208,7 +208,7 @@ fn construction_creates_exact_bounded_colored_scene() {
         .world
         .particle_system_snapshot(session.particle_system)
         .expect("proof particle system should remain live");
-    assert_eq!(system.definition().maximum_count(), Some(10240));
+    assert_eq!(system.definition().maybe_maximum_count(), Some(10240));
     assert_eq!(system.particle_count(), 1920);
     assert_eq!(frame.step_index(), 0);
     assert_eq!(frame.particle_count(), 1920);

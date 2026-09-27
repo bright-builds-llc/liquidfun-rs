@@ -107,20 +107,18 @@ fn create_spinning_box_group(
     system: ParticleSystemId,
 ) -> Result<(), SceneError> {
     let filled = Shape::from(
-        PolygonShape::oriented_box(
-            BLUE_BOX_HALF_WIDTH,
-            BLUE_BOX_HALF_HEIGHT,
-            Vec2::ZERO,
-            0.0,
-        )
-        .map_err(|_error| SceneError::Geometry)?,
+        PolygonShape::oriented_box(BLUE_BOX_HALF_WIDTH, BLUE_BOX_HALF_HEIGHT, Vec2::ZERO, 0.0)
+            .map_err(|_error| SceneError::Geometry)?,
     );
     let source =
         ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
     let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
         .with_group_flags(ParticleGroupFlags::RIGID | ParticleGroupFlags::SOLID)
         .with_color(BLUE_COLOR)
-        .with_transform(Transform::from_position_angle(BLUE_BOX_CENTER, BLUE_BOX_ANGLE))
+        .with_transform(Transform::from_position_angle(
+            BLUE_BOX_CENTER,
+            BLUE_BOX_ANGLE,
+        ))
         .map_err(|_error| SceneError::Particle)?
         .with_angular_velocity(2.0)
         .map_err(|_error| SceneError::Particle)?;
@@ -243,7 +241,8 @@ mod tests {
                 .particle_group_view(*group)
                 .expect("group should stay live");
             let flags = group_view.flags();
-            if flags.contains(ParticleGroupFlags::RIGID) && flags.contains(ParticleGroupFlags::SOLID)
+            if flags.contains(ParticleGroupFlags::RIGID)
+                && flags.contains(ParticleGroupFlags::SOLID)
             {
                 rigid_solid_group_count += 1;
             }

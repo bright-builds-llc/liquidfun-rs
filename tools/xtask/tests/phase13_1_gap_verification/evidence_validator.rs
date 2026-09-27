@@ -92,9 +92,10 @@ fn write_json(path: &Path, value: &Value) -> TestResult {
 }
 
 impl Fixture {
-    // Keeping the complete trust-chain fixture in one constructor makes each
-    // mutation test start from the same auditable evidence graph.
-    #[allow(clippy::too_many_lines)]
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the constructor keeps the complete trust-chain fixture together so each mutation test starts from the same evidence graph"
+    )]
     fn new() -> TestResult<Self> {
         let temporary = TemporaryDirectory::new()?;
         let repository = temporary.path().join("repository");
