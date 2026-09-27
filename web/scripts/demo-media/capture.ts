@@ -247,15 +247,16 @@ export async function withDemoMediaCaptureMode<T>(
 }
 
 /**
- * Deterministic media stays wireframe. A fresh browser has no saved preference,
- * and the playground's first visit opens on the shaded blob, so capture pins
- * wireframe only when nothing is stored. A saved non-wireframe choice still
- * fails the later wireframe check.
+ * Deterministic media stays on circle wireframes. A fresh browser has no saved
+ * preference, and the playground's first visit opens on the shaded blob, so
+ * capture pins circle wireframes only when nothing is stored. A saved choice
+ * other than circle wireframes still fails the later check. Stored "wireframe"
+ * is the legacy circle-wireframe token.
  */
 async function pinUnsetWireframeRenderMode(page: Page): Promise<void> {
   await page.addInitScript((storageKey) => {
     if (window.localStorage.getItem(storageKey) === null) {
-      window.localStorage.setItem(storageKey, "wireframe");
+      window.localStorage.setItem(storageKey, "circle-wireframe");
     }
   }, RENDER_MODE_STORAGE_KEY);
 }
@@ -264,9 +265,9 @@ async function requireWireframeRenderMode(page: Page): Promise<void> {
   const maybeRenderMode = await page
     .locator("main")
     .getAttribute("data-render-mode");
-  if (maybeRenderMode !== "wireframe") {
+  if (maybeRenderMode !== "circle-wireframe") {
     throw new Error(
-      `Demo media capture requires wireframe rendering, got ${String(maybeRenderMode)}`,
+      `Demo media capture requires circle wireframe rendering, got ${String(maybeRenderMode)}`,
     );
   }
 }

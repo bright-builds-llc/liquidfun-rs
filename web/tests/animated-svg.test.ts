@@ -341,6 +341,26 @@ describe("buildAnimatedSvg", () => {
     expect(svg).toContain(`attributeName="opacity" values="0;1"`);
   });
 
+  it("draws triangle wireframe particles as stroked polygons", () => {
+    // Arrange
+    const samples = [sample([particle(1, 2)])];
+
+    // Act
+    const svg = buildAnimatedSvg({
+      ...SVG_INPUT,
+      samples,
+      renderMode: "triangle-wireframe",
+    });
+
+    // Assert
+    expect(svg).toContain("<polygon ");
+    expect(svg).toContain(`points="1,-2 4.5,4 -2.5,4"`);
+    expect(svg).toContain(`fill="none"`);
+    expect(svg).toContain(`stroke="rgba(12,34,56,1)"`);
+    expect(svg).toContain(`stroke-width="0.3"`);
+    expect(svg).not.toContain("<circle ");
+  });
+
   it("draws wireframe particles as strokes", () => {
     // Arrange
     const samples = [sample([particle(1, 2)])];
@@ -401,6 +421,30 @@ describe("maybeParseSvgExportRequest", () => {
 
     // Assert
     expect(parsed).toBeUndefined();
+  });
+
+  it("accepts a triangle wireframe export request", () => {
+    // Arrange
+    const request = {
+      sceneId: "dam-break",
+      title: "Dam Break",
+      durationSeconds: 10,
+      controls: [],
+      viewportWidth: 960,
+      viewportHeight: 540,
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      renderMode: "triangle-wireframe",
+      wireframeStrokeWidth: 0.3,
+      maxRenderedParticles: 4000,
+    };
+
+    // Act
+    const parsed = maybeParseSvgExportRequest(request);
+
+    // Assert
+    expect(parsed?.renderMode).toBe("triangle-wireframe");
   });
 });
 

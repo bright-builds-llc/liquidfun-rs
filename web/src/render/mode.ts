@@ -1,16 +1,25 @@
 /** Supported browser particle presentation modes. */
 export type RenderMode =
-  | "wireframe"
+  | "circle-wireframe"
+  | "triangle-wireframe"
   | "solid"
   | "soft-blob"
   | "contour"
   | "shaded-blob";
 
-/** Circle presentation used for rigid bodies and animated SVG. */
+/** Circle presentation used for rigid bodies. */
 export type CircleRenderMode = "wireframe" | "solid";
 
+/**
+ * Particle presentation stored in an animated SVG.
+ *
+ * Circle wireframes stay `"wireframe"` so existing exports keep one stroked
+ * circle per particle. Triangle wireframes add a polygon outline.
+ */
+export type SvgRenderMode = CircleRenderMode | "triangle-wireframe";
+
 /** How a particle mode is drawn. */
-export type ParticleSurface = "disc" | "metaball" | "contour" | "webgl";
+export type ParticleSurface = "disc" | "triangle" | "metaball" | "contour" | "webgl";
 
 export type RenderModeOption = {
   readonly value: RenderMode;
@@ -26,14 +35,18 @@ export type RenderModeGroup = {
 export const DEFAULT_RENDER_MODE: RenderMode = "shaded-blob";
 export const RENDER_MODE_STORAGE_KEY = "liquidfun.render-mode.v1";
 
-/** Controls-sheet groups. Circle modes share one disc painter. */
+/** Controls-sheet groups. Both wireframes share the stroke-width slider. */
 export const RENDER_MODE_GROUPS: readonly RenderModeGroup[] = [
   {
-    label: "Circles",
+    label: "Wireframe",
     options: [
-      { value: "wireframe", label: "Wireframe" },
-      { value: "solid", label: "Solid" },
+      { value: "circle-wireframe", label: "Circle wireframe" },
+      { value: "triangle-wireframe", label: "Triangle wireframe" },
     ],
+  },
+  {
+    label: "Circles",
+    options: [{ value: "solid", label: "Solid" }],
   },
   {
     label: "Surface",
@@ -52,8 +65,13 @@ export type RenderModeStorageProvider = () => RenderModeStorage;
 export function maybeParseRenderMode(
   maybeValue: string | null,
 ): RenderMode | undefined {
+  if (maybeValue === "wireframe") {
+    return "circle-wireframe";
+  }
+
   if (
-    maybeValue === "wireframe" ||
+    maybeValue === "circle-wireframe" ||
+    maybeValue === "triangle-wireframe" ||
     maybeValue === "solid" ||
     maybeValue === "soft-blob" ||
     maybeValue === "contour" ||
@@ -65,7 +83,7 @@ export function maybeParseRenderMode(
   return undefined;
 }
 
-/** Parses the circle vocabulary used by SVG export. */
+/** Parses the circle vocabulary used by rigid-body drawing. */
 export function maybeParseCircleRenderMode(
   maybeValue: string | null,
 ): CircleRenderMode | undefined {
@@ -74,6 +92,22 @@ export function maybeParseCircleRenderMode(
   }
 
   return undefined;
+}
+
+/** Parses the particle vocabulary stored on an animated SVG request. */
+export function maybeParseSvgRenderMode(
+  maybeValue: string | null,
+): SvgRenderMode | undefined {
+  if (maybeValue === "triangle-wireframe") {
+    return maybeValue;
+  }
+
+  return maybeParseCircleRenderMode(maybeValue);
+}
+
+/** Circle and triangle outlines both use the wireframe stroke width. */
+export function isWireframeRenderMode(mode: RenderMode): boolean {
+  return mode === "circle-wireframe" || mode === "triangle-wireframe";
 }
 
 /** Loads a render preference while containing unavailable browser storage. */
@@ -103,31 +137,43 @@ export function persistRenderMode(
   }
 }
 
-/** Rigid geometry follows wireframe only when particles are wireframe. */
+/** Both wireframe modes stroke rigid circles and walls. */
 export function rigidRenderMode(mode: RenderMode): CircleRenderMode {
-  if (mode === "wireframe") {
+  if (isWireframeRenderMode(mode)) {
     return "wireframe";
   }
 
   return "solid";
 }
 
-/** Animated SVG keeps one circle per particle. Surface modes export as solid. */
-export function circleExportMode(mode: RenderMode): CircleRenderMode {
+/**
+ * Maps a playground mode onto the animated SVG particle vocabulary.
+ *
+ * Surface modes export as filled circles. Triangle wireframes keep a polygon
+ * outline; every other wireframe stays a stroked circle.
+ */
+export function svgRenderMode(mode: RenderMode): SvgRenderMode {
+  if (mode === "triangle-wireframe") {
+    return "triangle-wireframe";
+  }
+
   return rigidRenderMode(mode);
 }
 
 /** Surface modes draw every particle. Stride would leave holes in the blob. */
 export function usesParticleStride(mode: RenderMode): boolean {
-  return particleSurface(mode) === "disc";
+  const surface = particleSurface(mode);
+  return surface === "disc" || surface === "triangle";
 }
 
 /** Selects the particle painter for a stored mode. */
 export function particleSurface(mode: RenderMode): ParticleSurface {
   switch (mode) {
-    case "wireframe":
+    case "circle-wireframe":
     case "solid":
       return "disc";
+    case "triangle-wireframe":
+      return "triangle";
     case "soft-blob":
       return "metaball";
     case "contour":

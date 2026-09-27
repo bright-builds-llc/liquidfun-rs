@@ -93,7 +93,7 @@ export function readmeWebpRepoPath(sceneId: SceneId): string {
  * Controls stay empty so the clip uses the scene defaults, except Wave Machine,
  * which samples at 1× so the gallery still shows the pinned rocking motion.
  * The frame matches the demo gallery capture viewport. The camera and particle
- * cap match a fresh playground session. Clips stay wireframe: animated SVG
+ * cap match a fresh playground session. Clips stay circle wireframe: animated SVG
  * draws one circle per particle, while a fresh playground opens on the shaded blob.
  */
 export function readmeSvgRequest(plan: ReadmeSvgPlan): SvgExportRequest {

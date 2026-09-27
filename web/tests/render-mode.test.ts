@@ -4,14 +4,16 @@ import {
   DEFAULT_RENDER_MODE,
   RENDER_MODE_GROUPS,
   RENDER_MODE_STORAGE_KEY,
-  circleExportMode,
+  isWireframeRenderMode,
   loadRenderMode,
   maybeParseCircleRenderMode,
   maybeParseRenderMode,
+  maybeParseSvgRenderMode,
   needsWebglSurface,
   particleSurface,
   persistRenderMode,
   rigidRenderMode,
+  svgRenderMode,
   usesParticleStride,
 } from "../src/render/mode";
 
@@ -19,6 +21,8 @@ describe("render mode", () => {
   it("parses only allowlisted values", () => {
     // Arrange
     const values = [
+      "circle-wireframe",
+      "triangle-wireframe",
       "wireframe",
       "solid",
       "soft-blob",
@@ -34,7 +38,9 @@ describe("render mode", () => {
 
     // Assert
     expect(parsed).toEqual([
-      "wireframe",
+      "circle-wireframe",
+      "triangle-wireframe",
+      "circle-wireframe",
       "solid",
       "soft-blob",
       "contour",
@@ -45,10 +51,11 @@ describe("render mode", () => {
     ]);
   });
 
-  it("keeps circle export and rigid bodies on the two circle modes", () => {
+  it("keeps rigid bodies stroked for both wireframes and exports triangles as polygons", () => {
     // Arrange
     const modes = [
-      "wireframe",
+      "circle-wireframe",
+      "triangle-wireframe",
       "solid",
       "soft-blob",
       "contour",
@@ -56,13 +63,37 @@ describe("render mode", () => {
     ] as const;
 
     // Act
-    const exported = modes.map(circleExportMode);
+    const exported = modes.map(svgRenderMode);
     const rigid = modes.map(rigidRenderMode);
 
     // Assert
-    expect(exported).toEqual(["wireframe", "solid", "solid", "solid", "solid"]);
-    expect(rigid).toEqual(exported);
+    expect(exported).toEqual([
+      "wireframe",
+      "triangle-wireframe",
+      "solid",
+      "solid",
+      "solid",
+      "solid",
+    ]);
+    expect(rigid).toEqual([
+      "wireframe",
+      "wireframe",
+      "solid",
+      "solid",
+      "solid",
+      "solid",
+    ]);
     expect(maybeParseCircleRenderMode("soft-blob")).toBeUndefined();
+    expect(maybeParseSvgRenderMode("triangle-wireframe")).toBe("triangle-wireframe");
+    expect(maybeParseSvgRenderMode("circle-wireframe")).toBeUndefined();
+    expect(modes.map(isWireframeRenderMode)).toEqual([
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
   });
 
   it("draws every particle for surface modes and reserves WebGL for the shaded blob", () => {
@@ -78,11 +109,14 @@ describe("render mode", () => {
     expect(surfaces).toEqual(["metaball", "contour", "webgl"]);
     expect(strides).toEqual([false, false, false]);
     expect(webgl).toEqual([false, false, true]);
-    expect(usesParticleStride("wireframe")).toBe(true);
+    expect(usesParticleStride("circle-wireframe")).toBe(true);
+    expect(usesParticleStride("triangle-wireframe")).toBe(true);
     expect(usesParticleStride("solid")).toBe(true);
+    expect(particleSurface("circle-wireframe")).toBe("disc");
+    expect(particleSurface("triangle-wireframe")).toBe("triangle");
   });
 
-  it("lists circle and surface choices in the controls sheet order", () => {
+  it("lists wireframe, circle, and surface choices in the controls sheet order", () => {
     // Arrange
     const labels = RENDER_MODE_GROUPS.map((group) => group.label);
 
@@ -92,9 +126,10 @@ describe("render mode", () => {
     );
 
     // Assert
-    expect(labels).toEqual(["Circles", "Surface"]);
+    expect(labels).toEqual(["Wireframe", "Circles", "Surface"]);
     expect(values).toEqual([
-      "wireframe",
+      "circle-wireframe",
+      "triangle-wireframe",
       "solid",
       "soft-blob",
       "contour",
@@ -113,7 +148,7 @@ describe("render mode", () => {
     const mode = loadRenderMode(() => storage);
 
     // Assert
-    expect(mode).toBe("wireframe");
+    expect(mode).toBe("circle-wireframe");
   });
 
   it("defaults missing and invalid storage to the shaded blob", () => {
@@ -181,7 +216,7 @@ describe("render mode", () => {
             throw new Error("write denied");
           },
         }),
-        "wireframe",
+        "circle-wireframe",
       );
 
     // Act / Assert

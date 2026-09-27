@@ -180,14 +180,25 @@ test("switches rendering without stepping and persists across scenes and reload"
     page,
     page.getByRole("combobox", { name: "Particles", exact: true }),
   );
-  await particlesAgain.selectOption("wireframe");
+  await particlesAgain.selectOption("circle-wireframe");
 
   // Assert
-  await expect(main).toHaveAttribute("data-render-mode", "wireframe");
+  await expect(main).toHaveAttribute("data-render-mode", "circle-wireframe");
   await expect(status).toHaveText(PAUSED_STATUS);
-  await expect(particlesAgain).toHaveValue("wireframe");
+  await expect(particlesAgain).toHaveValue("circle-wireframe");
   expect(await numericAttribute(main, "data-step-index")).toBe(solidStep);
-  expect(await canvasPixelSha256(page)).not.toBe(solidPixels);
+  const circlePixels = await canvasPixelSha256(page);
+  expect(circlePixels).not.toBe(solidPixels);
+
+  // Act
+  await particlesAgain.selectOption("triangle-wireframe");
+
+  // Assert
+  await expect(main).toHaveAttribute("data-render-mode", "triangle-wireframe");
+  await expect(status).toHaveText(PAUSED_STATUS);
+  await expect(particlesAgain).toHaveValue("triangle-wireframe");
+  expect(await numericAttribute(main, "data-step-index")).toBe(solidStep);
+  expect(await canvasPixelSha256(page)).not.toBe(circlePixels);
 });
 
 test("opens each native scene from desktop navigation, shows credits, and resets", async ({

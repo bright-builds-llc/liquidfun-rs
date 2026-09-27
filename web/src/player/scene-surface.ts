@@ -26,7 +26,7 @@ import {
   type CameraView,
 } from "../render/camera";
 import { maybeParseRenderedParticleLimit } from "../render/particle-limit";
-import { circleExportMode } from "../render/mode";
+import { svgRenderMode } from "../render/mode";
 import type { SceneRuntime } from "./scene-runtime";
 
 function paintHeldFrame(session: SceneRuntime): void {
@@ -275,7 +275,7 @@ function createSvgExportRequest(
     zoom: session.clock.cameraView.zoom,
     panX: session.clock.cameraView.panX,
     panY: session.clock.cameraView.panY,
-    renderMode: circleExportMode(session.appearance.renderMode()),
+    renderMode: svgRenderMode(session.appearance.renderMode()),
     wireframeStrokeWidth: session.appearance.wireframeStrokeWidth(),
     maxRenderedParticles: session.maxRenderedParticles(),
   };
