@@ -34,6 +34,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("drawing-particles", SceneId::DrawingParticles),
         ("sparky", SceneId::Sparky),
         ("hydraulic-fountain", SceneId::HydraulicFountain),
+        ("wave-tank", SceneId::WaveTank),
     ];
 
     for (raw, expected) in tokens {
