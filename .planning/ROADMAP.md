@@ -47,7 +47,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 - [x] **Phase 27: Material flag groups** - Surface Tension, Elastic Particles, and Rigid Particles (completed 2026-09-22)
 - [x] **Phase 28: Interaction seams** - Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen (completed 2026-09-22)
 - [x] **Phase 29: Sparky, Drawing, and full catalog** - Contact sparks, paint presets, and all twelve scenes openable (completed 2026-09-27)
-- [ ] **Phase 30: Periodic hydraulic fountain** - A timed piston squeezes liquid so it travels elsewhere
+- [x] **Phase 30: Periodic hydraulic fountain** - A timed piston squeezes liquid so it travels elsewhere (completed 2026-09-27)
 - [ ] **Phase 31: Sinusoidal wave tank** - A still pool whose end platform rises and falls and sends waves
 - [ ] **Phase 32: Liquid motion bubbler** - Colored liquid drips through a narrow waist and turns a small wheel
 - [ ] **Phase 33: Stacked drip fidget** - Liquid drains through a stack of moving parts, and each part reacts when the drip reaches it
@@ -139,7 +139,7 @@ Plans:
 **Goal:** Visitors can watch a timed piston squeeze a water reservoir so the same liquid travels through a throat into another chamber, without replacing the existing Fountain scene.
 **Requirements**: none (original scene; locked decisions D-01 through D-12)
 **Depends on:** Phase 29
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 30-01-PLAN.md — Dynamic piston, one water group, and the particle-identity crossing test
@@ -194,7 +194,7 @@ Plans:
 | 27. Material flag groups | v1.3 | 6/6 | Complete    | 2026-09-22 |
 | 28. Interaction seams | v1.3 | 8/8 | Complete    | 2026-09-22 |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 5/5 | Complete    | 2026-09-27 |
-| 30. Periodic hydraulic fountain | v1.3 | 3/3 | In Progress|  |
+| 30. Periodic hydraulic fountain | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 31. Sinusoidal wave tank | v1.3 | 0/TBD | Not started | - |
 | 32. Liquid motion bubbler | v1.3 | 0/TBD | Not started | - |
 | 33. Stacked drip fidget | v1.3 | 0/TBD | Not started | - |
