@@ -161,6 +161,12 @@ change.
 
 [Animated SVG](docs/assets/readme/hydraulic-fountain-10s.svg)
 
+#### [Wave Tank](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-tank)
+
+[![Wave Tank simulation preview](docs/assets/readme/wave-tank-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/wave-tank)
+
+[Animated SVG](docs/assets/readme/wave-tank-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
