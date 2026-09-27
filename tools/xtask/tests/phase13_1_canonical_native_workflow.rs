@@ -66,7 +66,10 @@ fn workflow_requires_the_exact_canonical_tool_identity() -> TestResult {
         fs::read_to_string(workspace_root().join("scripts/install-canonical-clang.sh"))?;
     assert!(installer.contains("9474ecd78b52aba6e923976b1e9773f5613027cc7e237b9956986cb536e02a36"));
     assert!(installer.contains("https://raw.githubusercontent.com/opencollab/llvm-jenkins.debian.net/eeed6742908255f0eeb12bb8e314366eff3c0a21/llvm.sh"));
-    assert!(installer.contains("sha256sum --check --strict"));
+    assert!(installer.contains("sha256_require"));
+    let helper = fs::read_to_string(workspace_root().join("scripts/portable-command.sh"))?;
+    assert!(helper.contains("sha256 mismatch"));
+    assert!(!installer.contains("sha256sum --check"));
     assert!(!source.contains("AppleClang"));
     assert_eq!(upload_count, 2);
     Ok(())

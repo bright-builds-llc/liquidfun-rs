@@ -51,7 +51,9 @@ for name in calibration summary validation-identity; do printf '{}\n' >"$root/pa
 jq '{completed_cases:[.cases[].case_id]}' protocol/benchmarks/phase12-v1.json >"$root/payload/paired-summary.json"
 (
 	cd "$root/payload"
-	find . -type f -printf '%P\n' | sort | xargs sha256sum
+	find . -type f -print | sed 's|^\./||' | LC_ALL=C sort | while read -r relative; do
+		printf '%s  %s\n' "$(hash_file "$relative")" "$relative"
+	done
 ) >"$root/index"
 cp "$root/index" "$root/payload/payload-files.sha256"
 jq -n --arg hash "$(hash_file "$root/payload/payload-files.sha256")" '{payload_files_sha256:$hash}' >"$root/payload/manifest-entry.json"

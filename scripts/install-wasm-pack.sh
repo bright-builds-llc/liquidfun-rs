@@ -13,6 +13,13 @@ fail() {
 	exit 1
 }
 
+helper="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/portable-command.sh"
+if [[ ! -f "$helper" ]]; then
+	fail "missing portable command helper: $helper"
+fi
+# shellcheck source=portable-command.sh
+source "$helper"
+
 [[ $# == 0 ]] || fail 'usage: bash scripts/install-wasm-pack.sh'
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'requires Linux x86_64'
 
@@ -25,7 +32,7 @@ printf 'Downloading wasm-pack %s\n' "$version"
 curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
 	--connect-timeout 30 --max-time 120 \
 	--output "$tmp/$archive" "$url"
-printf '%s  %s\n' "$sha256" "$tmp/$archive" | sha256sum --check --strict
+sha256_require "$sha256" "$tmp/$archive" || fail "wasm-pack archive checksum failed"
 tar -xzf "$tmp/$archive" -C "$tmp"
 install -m 0755 "$tmp/wasm-pack-v${version}-x86_64-unknown-linux-musl/wasm-pack" "$install_dir/wasm-pack"
 

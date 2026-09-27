@@ -3,13 +3,16 @@ set -euo pipefail
 
 source "$(dirname -- "${BASH_SOURCE[0]}")/package_import.sh"
 source "$(dirname -- "${BASH_SOURCE[0]}")/raw_payloads.sh"
+helper="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/portable-command.sh"
+if [[ ! -f "$helper" ]]; then
+	printf 'phase12-release-evidence: missing portable command helper: %s\n' "$helper" >&2
+	exit 1
+fi
+# shellcheck source=../portable-command.sh
+source "$helper"
 
 hash_file() {
-	if command -v sha256sum >/dev/null 2>&1; then
-		sha256sum "$1" | awk '{print $1}'
-	else
-		shasum -a 256 "$1" | awk '{print $1}'
-	fi
+	sha256_digest "$1"
 }
 validate_sha() {
 	local candidate_sha=$1

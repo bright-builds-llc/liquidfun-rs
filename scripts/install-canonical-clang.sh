@@ -13,6 +13,13 @@ fail() {
 	exit 1
 }
 
+helper="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/portable-command.sh"
+if [[ ! -f "$helper" ]]; then
+	fail "missing portable command helper: $helper"
+fi
+# shellcheck source=portable-command.sh
+source "$helper"
+
 [[ $# == 0 ]] || fail 'usage: bash scripts/install-canonical-clang.sh'
 [[ $(uname -s) == Linux && $(uname -m) == x86_64 ]] || fail 'requires Linux x86_64'
 candidate_sha=$(git rev-parse HEAD)
@@ -39,10 +46,10 @@ printf 'candidate_sha=%s\ninstaller_url=%s\ninstaller_sha256=%s\n' \
 printf 'Downloading immutable LLVM installer into %s\n' "$attempt"
 curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
 	--connect-timeout 30 --max-time 120 --output "$attempt/llvm.sh" "$installer_url"
-printf '%s  %s\n' "$installer_sha256" "$attempt/llvm.sh" | sha256sum --check --strict
+sha256_require "$installer_sha256" "$attempt/llvm.sh" || fail "LLVM installer checksum failed"
 printf 'Installing compiler and matching LLVM coverage/sanitizer tools\n'
-timeout 1200 sudo bash "$attempt/llvm.sh" 22
-timeout 600 sudo apt-get install -y llvm-22 llvm-22-tools libclang-rt-22-dev
+run_bounded 1200 sudo bash "$attempt/llvm.sh" 22
+run_bounded 600 sudo apt-get install -y llvm-22 llvm-22-tools libclang-rt-22-dev
 
 export PATH="$compiler_bin:$PATH"
 printf 'Verifying exact compiler, tool and target identities\n'
@@ -64,10 +71,10 @@ done
 
 # These are real compile/link/run checks through the same drivers CMake uses.
 printf 'int main(void) { return 0; }\n' | clang-22 -Werror -x c - -o "$attempt/probe-c"
-timeout 10 "$attempt/probe-c"
+run_bounded 10 "$attempt/probe-c"
 printf '#include <iostream>\nint main() { std::cout << ""; return 0; }\n' |
 	clang++-22 -Werror -x c++ - -o "$attempt/probe-cxx"
-timeout 10 "$attempt/probe-cxx"
+run_bounded 10 "$attempt/probe-cxx"
 
 # GitHub PATH and success identity are withheld until every probe passes.
 if [[ -n "${GITHUB_PATH:-}" ]]; then

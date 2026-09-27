@@ -30,7 +30,15 @@ fn acquisition_has_one_immutable_reviewed_source() -> TestResult {
     // Assert
     assert!(source.contains(&expected_url));
     assert!(source.contains(UPSTREAM_SHA256));
-    assert!(source.contains("sha256sum --check --strict"));
+    assert!(source.contains("portable-command.sh"));
+    assert!(source.contains("sha256_require"));
+    assert!(source.contains("run_bounded"));
+    let helper = fs::read_to_string(root().join("scripts/portable-command.sh"))?;
+    assert!(helper.contains("sha256 mismatch"));
+    assert!(helper.contains("run_bounded: timed out"));
+    assert!(!source.contains("sha256sum --check"));
+    assert!(!source.contains("timeout 1200"));
+    assert!(!source.contains("timeout 10 "));
     assert!(!source.contains("https://apt.llvm.org/llvm.sh"));
     Ok(())
 }

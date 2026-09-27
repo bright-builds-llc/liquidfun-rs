@@ -299,7 +299,10 @@ mod tests {
     use crate::scene::SceneId;
     use crate::session::{SessionCore, SessionError};
 
-    const Y_SEPARATION_STEPS: u32 = 120;
+    // 120 steps is still the plunge: the cork is on the particle bed. By 240 it
+    // has resurfaced, and by 960 it has settled above the basin floor while the
+    // stone stays down.
+    const Y_SEPARATION_STEPS: u32 = 960;
 
     #[test]
     fn create_float_or_sink_builds_a_pool_without_dropped_circles() {

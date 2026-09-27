@@ -13,9 +13,26 @@ fn executable_cases() {
         Ok(mode) => panic!("unsupported Phase 9 oracle mode {mode}"),
     };
     let Ok(executable) = OracleExecutable::resolve(&root, preset) else {
-        eprintln!("SKIP: build the selected Phase 9 oracle to execute the corpus");
+        eprintln!(
+            "SKIP: Phase 9 executable corpus needs the selected oracle. Build it before running this test."
+        );
         return;
     };
+    let mut missing_oracles = Vec::new();
+    if OracleExecutable::resolve(&root, OraclePreset::Debug).is_err() {
+        missing_oracles.push("oracle-debug at target/reference/oracle-debug/liquidfun-reference");
+    }
+    if OracleExecutable::resolve(&root, OraclePreset::Release).is_err() {
+        missing_oracles
+            .push("oracle-release at target/reference/oracle-release/liquidfun-reference");
+    }
+    if !missing_oracles.is_empty() {
+        eprintln!(
+            "SKIP: Phase 9 cross-run proofs need the missing oracle(s): {}. Build those presets. This test does not run while any of them is absent.",
+            missing_oracles.join("; ")
+        );
+        return;
+    }
     let maybe_evidence_root = std::env::var("LIQUIDFUN_PHASE9_EVIDENCE_MANIFEST")
         .ok()
         .map(|output| {

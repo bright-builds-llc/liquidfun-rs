@@ -36,6 +36,10 @@ impl Fixture {
                 &fixture.directory.join("bin").to_string_lossy(),
             );
         fs::write(fixture.directory.join("installer.sh"), source)?;
+        fs::copy(
+            root().join("scripts/portable-command.sh"),
+            fixture.directory.join("portable-command.sh"),
+        )?;
         for tool in [
             "curl",
             "sudo",

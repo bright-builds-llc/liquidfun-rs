@@ -7,6 +7,10 @@ use serde_json::Value;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const DEFERRED_TARGET: &str = "phase13_acceptance_contract";
+/// Integration tests added after the Phase 13.1 campaign. They stay out of the
+/// frozen manifest. A new xtask test must be recorded here, with a reason, or
+/// the campaign comparison fails loudly.
+const OUTSIDE_CAMPAIGN_TARGETS: [&str; 1] = ["playground_cli"];
 const SELECTED_TARGETS: [&str; 29] = [
     "canonical_toolchain_workflow",
     "catalog_cli",
@@ -95,15 +99,29 @@ fn manifest_selects_every_non_deferred_xtask_target_exactly_once() -> TestResult
         .collect::<Result<BTreeSet<_>, _>>()?;
 
     // Act
-    let expected = inventory
-        .iter()
-        .filter(|target| target.as_str() != DEFERRED_TARGET)
-        .cloned()
+    let frozen = SELECTED_TARGETS
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<BTreeSet<_>>();
+    let mut outside_campaign = inventory;
+    for target in &frozen {
+        outside_campaign.remove(target);
+    }
+    outside_campaign.remove(DEFERRED_TARGET);
+    let recorded_outside = OUTSIDE_CAMPAIGN_TARGETS
+        .into_iter()
+        .map(str::to_owned)
         .collect::<BTreeSet<_>>();
 
     // Assert
-    assert_eq!(selected, expected);
-    assert_eq!(selected.len(), SELECTED_TARGETS.len());
+    assert_eq!(
+        selected, frozen,
+        "Phase 13.1 manifest drifted from the frozen campaign targets"
+    );
+    assert_eq!(
+        outside_campaign, recorded_outside,
+        "an xtask integration test is outside the Phase 13.1 campaign. Record it in OUTSIDE_CAMPAIGN_TARGETS with a reason, and leave the frozen manifest unchanged"
+    );
     assert_eq!(
         manifest["deferred_xtask_targets"],
         serde_json::json!([DEFERRED_TARGET])
