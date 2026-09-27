@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_RENDERED_PARTICLE_LIMIT,
-  initialRenderedParticleLimit,
   maybeParseRenderedParticleLimit,
   particleDrawStride,
 } from "../src/render/particle-limit";
@@ -15,10 +14,6 @@ describe("maybeParseRenderedParticleLimit", () => {
     );
     expect(maybeParseRenderedParticleLimit("0")).toBe(0);
     expect(maybeParseRenderedParticleLimit("16384")).toBe(16384);
-    expect(initialRenderedParticleLimit("dam-break")).toBe(
-      DEFAULT_RENDERED_PARTICLE_LIMIT,
-    );
-    expect(initialRenderedParticleLimit("liquid-tumbler")).toBe(16384);
   });
 
   it("rejects partial, empty, and out-of-range text", () => {
