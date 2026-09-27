@@ -14,6 +14,7 @@ mod elastic_particles;
 mod float_or_sink;
 mod fountain;
 pub(crate) mod gravity_slider;
+mod hydraulic_fountain;
 mod impulse;
 mod jelly_drop;
 mod liquid_timer;
@@ -56,6 +57,7 @@ pub(crate) enum SceneId {
     LiquidTumbler,
     DrawingParticles,
     Sparky,
+    HydraulicFountain,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -79,6 +81,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "liquid-tumbler" => Ok(SceneId::LiquidTumbler),
         "drawing-particles" => Ok(SceneId::DrawingParticles),
         "sparky" => Ok(SceneId::Sparky),
+        "hydraulic-fountain" => Ok(SceneId::HydraulicFountain),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -207,6 +210,7 @@ pub(crate) fn build_scene(
         SceneId::LiquidTumbler => liquid_tumbler::build(&scene_presets),
         SceneId::DrawingParticles => drawing_particles::build(&scene_presets),
         SceneId::Sparky => sparky::build(&scene_presets),
+        SceneId::HydraulicFountain => hydraulic_fountain::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)
