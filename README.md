@@ -167,6 +167,12 @@ change.
 
 [Animated SVG](docs/assets/readme/wave-tank-10s.svg)
 
+#### [Liquid Bubbler](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-bubbler)
+
+[![Liquid Bubbler simulation preview](docs/assets/readme/liquid-bubbler-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/liquid-bubbler)
+
+[Animated SVG](docs/assets/readme/liquid-bubbler-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
