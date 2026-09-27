@@ -103,8 +103,6 @@ Each task was committed atomically:
 - **Verification:** The powder, lifetime, and fade tests compile and fail until Task 2, then pass.
 - **Committed in:** `d78b172` (Task 1 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 blocking)
 **Impact on plan:** The reader is test-only and does not widen `WorldCommand` or the public session. No scope creep.
 

@@ -105,8 +105,6 @@ Each task was committed atomically:
 - **Verification:** `every_scene_builds_downward_gravity_from_the_slider` passes.
 - **Committed in:** `a3ccdb6` (Task 1 commit)
 
----
-
 **Total deviations:** 2 auto-fixed (2 missing critical)
 **Impact on plan:** Both keep the empty vessel visible and the existing gravity coverage test valid. No Sparky id, no web edits, and `MAX_ADVANCE_STEPS` stays 4.
 

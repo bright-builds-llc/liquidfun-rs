@@ -135,8 +135,6 @@ Each task was committed atomically:
 - **Verification:** Render-mode persistence test passed in `just web-player-smoke`
 - **Committed in:** `03d3887`
 
----
-
 **Total deviations:** 5 auto-fixed (3 bugs, 2 missing critical)
 **Impact on plan:** The fixes keep the existing Chromium gate green for nineteen scenes. Step caps stay 4. No second browser, Linux qualification, or Pages deploy.
 
