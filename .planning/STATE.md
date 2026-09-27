@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: executing
-stopped_at: Completed 32-02-PLAN.md
-last_updated: "2026-09-27T19:59:54.809Z"
+status: verifying
+stopped_at: Completed 32-03-PLAN.md
+last_updated: "2026-09-27T20:06:54.558Z"
 last_activity: 2026-09-27
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 33
-  completed_plans: 32
-  percent: 97
+  completed_plans: 33
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 32 (liquid-motion-bubbler) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Ready for verification
 Last activity: 2026-09-27
 
 Progress: [██████████] 100%
@@ -110,6 +110,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 32]: Passing native bubbler tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing cargo test is not a review acknowledgment.
 - [Phase 32]: Kept the plan view rectangle because gap, stroke, and walls were unchanged; the raised plate still sits inside it — Plan 01 raised the plate 0.02 m and lowered wheel density. The waist gap, stroke, and walls stayed the same, so viewBounds and the phone frame stay at minX -0.71, minY -0.16, maxX 1.12, maxY 1.98.
 - [Phase 32]: Passing catalog unit tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing Vitest run is not a review acknowledgment.
+- [Phase 32]: Left ALL_SCENE_TIMEOUT_MS at 380000 and left both step caps at 4. — The Chromium run finished in 38.5 seconds, so the suite timeout did not need to grow.
+- [Phase 32]: Passing Chromium smoke is browser-gate evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing smoke command is not a review acknowledgment.
 
 ### Pending Todos
 
@@ -144,9 +146,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 31 P03 | 3 min | 2 tasks | 1 files |
 | Phase 32 P01 | 20 min | 2 tasks | 5 files |
 | Phase 32 P02 | 7 min | 2 tasks | 13 files |
+| Phase 32 P03 | 4 min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T19:59:42.842Z
-Stopped at: Completed 32-02-PLAN.md
+Last session: 2026-09-27T20:05:53.785Z
+Stopped at: Completed 32-03-PLAN.md
 Resume file: None
