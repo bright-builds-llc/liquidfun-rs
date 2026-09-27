@@ -9,6 +9,7 @@
 mod basin_family;
 mod color_mixer;
 mod dam_break;
+mod drawing_particles;
 mod elastic_particles;
 mod float_or_sink;
 mod fountain;
@@ -52,6 +53,7 @@ pub(crate) enum SceneId {
     WaveMachine,
     TheoJansen,
     LiquidTumbler,
+    DrawingParticles,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -73,6 +75,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "wave-machine" => Ok(SceneId::WaveMachine),
         "theo-jansen" => Ok(SceneId::TheoJansen),
         "liquid-tumbler" => Ok(SceneId::LiquidTumbler),
+        "drawing-particles" => Ok(SceneId::DrawingParticles),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -190,6 +193,7 @@ pub(crate) fn build_scene(
         SceneId::WaveMachine => wave_machine::build(&scene_presets),
         SceneId::TheoJansen => theo_jansen::build(&scene_presets),
         SceneId::LiquidTumbler => liquid_tumbler::build(&scene_presets),
+        SceneId::DrawingParticles => drawing_particles::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)
