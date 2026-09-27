@@ -143,6 +143,18 @@ change.
 
 [Animated SVG](docs/assets/readme/liquid-tumbler-10s.svg)
 
+#### [Drawing Particles](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/drawing-particles)
+
+[![Drawing Particles simulation preview](docs/assets/readme/drawing-particles-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/drawing-particles)
+
+[Animated SVG](docs/assets/readme/drawing-particles-10s.svg)
+
+#### [Sparky](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/sparky)
+
+[![Sparky simulation preview](docs/assets/readme/sparky-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/sparky)
+
+[Animated SVG](docs/assets/readme/sparky-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
