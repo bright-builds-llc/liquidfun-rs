@@ -2,10 +2,10 @@
 //!
 //! ANTI-PATTERN: Do not copy Water Wheel's motor-off revolute / empty motor writes.
 //! At 1× and 9°, motor speed is `0.05 * cos(t) * π`, matching testWaveMachine.js.
-//! `wave-speed` starts at 1 and raises rocking frequency with the speed setpoint.
-//! `wave-tilt` starts at 9° and sets that peak angle.
+//! `wave-speed` starts at 1 and raises rocking frequency from the current phase.
+//! `wave-tilt` starts at 9° and sets that absolute peak about level.
 
-use std::f32::consts::PI;
+mod drive;
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};
@@ -17,6 +17,7 @@ use liquidfun::{
     RevoluteJointDef, World,
 };
 
+use self::drive::WaveDrive;
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
@@ -55,9 +56,7 @@ struct WaveMachineHooks {
     tank: BodyId,
     joint: JointId,
     wall_local_corners: [[Vec2; 4]; 4],
-    time: f32,
-    speed_multiplier: f32,
-    tilt_degrees: f32,
+    drive: WaveDrive,
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -90,12 +89,8 @@ fn build_wave_machine() -> Result<BuiltScene, SceneError> {
         attach_wall_fixture(&mut world, tank, half_width, half_height, center)?;
     }
 
-    let joint = pin_tank(
-        &mut world,
-        ground,
-        tank,
-        scaled_motor_speed(0.0, DEFAULT_WAVE_SPEED, DEFAULT_TILT_DEGREES),
-    )?;
+    let mut drive = WaveDrive::pinned();
+    let joint = pin_tank(&mut world, ground, tank, drive.motor_speed(0.0))?;
     let particle_system = create_particle_fill(&mut world)?;
 
     Ok(BuiltScene {
@@ -106,9 +101,7 @@ fn build_wave_machine() -> Result<BuiltScene, SceneError> {
             tank,
             joint,
             wall_local_corners,
-            time: 0.0,
-            speed_multiplier: DEFAULT_WAVE_SPEED,
-            tilt_degrees: DEFAULT_TILT_DEGREES,
+            drive,
         }),
     })
 }
@@ -204,28 +197,15 @@ fn parse_tilt_degrees(value: &str) -> Option<f32> {
     Some(f32::from(degrees))
 }
 
-/// Motor speed for a chosen peak tilt and rocking frequency.
-///
-/// `testWaveMachine.js` commands `0.05 * cos(t) * π`, whose tracked angle is
-/// about `0.05 * π * sin(t)` (9°). Frequency and speed scale together, and the
-/// tilt slider scales that peak: `θ ≈ tilt_scale * 0.05 * π * sin(frequency * t)`.
-fn scaled_motor_speed(time: f32, speed_multiplier: f32, tilt_degrees: f32) -> f32 {
-    let tilt_scale = tilt_degrees / DEFAULT_TILT_DEGREES;
-    MOTOR_SPEED_SCALE * PI * tilt_scale * speed_multiplier * (speed_multiplier * time).cos()
+fn write_motor_speed(world: &mut World, joint: JointId, speed: f32) -> Result<(), SessionError> {
+    world
+        .set_revolute_motor_speed(joint, speed)
+        .map_err(|_error| SessionError::StepFailed)
 }
 
-fn write_motor_speed(
-    world: &mut World,
-    joint: JointId,
-    time: f32,
-    speed_multiplier: f32,
-    tilt_degrees: f32,
-) -> Result<(), SessionError> {
+fn tank_joint_angle(world: &World, joint: JointId) -> Result<f32, SessionError> {
     world
-        .set_revolute_motor_speed(
-            joint,
-            scaled_motor_speed(time, speed_multiplier, tilt_degrees),
-        )
+        .revolute_joint_angle(joint)
         .map_err(|_error| SessionError::StepFailed)
 }
 
@@ -263,16 +243,11 @@ impl SceneHooks for WaveMachineHooks {
         world: &mut World,
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
-        // Match testWaveMachine.js Step: t += 1/60, then set the motor.
+        // Match testWaveMachine.js Step: advance phase, then set the motor.
         // At 1× and 9° that speed is `0.05 * cos(t) * π`.
-        self.time += SIM_DT;
-        write_motor_speed(
-            world,
-            self.joint,
-            self.time,
-            self.speed_multiplier,
-            self.tilt_degrees,
-        )
+        let angle = tank_joint_angle(world, self.joint)?;
+        self.drive.advance(SIM_DT);
+        write_motor_speed(world, self.joint, self.drive.motor_speed(angle))
     }
 
     fn apply_control(
@@ -282,29 +257,24 @@ impl SceneHooks for WaveMachineHooks {
         name: &str,
         value: &str,
     ) -> Result<ControlEffect, SessionError> {
+        let angle = tank_joint_angle(world, self.joint)?;
         match name {
             WAVE_SPEED_CONTROL => {
                 let Some(speed_multiplier) = parse_wave_speed(value) else {
                     return Err(SessionError::UnknownControl);
                 };
-                self.speed_multiplier = speed_multiplier;
+                self.drive.set_speed(speed_multiplier);
             }
             WAVE_TILT_CONTROL => {
                 let Some(tilt_degrees) = parse_tilt_degrees(value) else {
                     return Err(SessionError::UnknownControl);
                 };
-                self.tilt_degrees = tilt_degrees;
+                self.drive.set_tilt(tilt_degrees, angle);
             }
             _ => return Err(SessionError::UnknownControl),
         }
 
-        write_motor_speed(
-            world,
-            self.joint,
-            self.time,
-            self.speed_multiplier,
-            self.tilt_degrees,
-        )?;
+        write_motor_speed(world, self.joint, self.drive.motor_speed(angle))?;
         Ok(ControlEffect::Live)
     }
 
@@ -356,5 +326,7 @@ impl SceneHooks for WaveMachineHooks {
     }
 }
 
+#[cfg(test)]
+mod live_controls;
 #[cfg(test)]
 mod tests;

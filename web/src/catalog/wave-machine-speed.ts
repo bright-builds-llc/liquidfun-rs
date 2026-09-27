@@ -6,6 +6,7 @@ export const WAVE_MACHINE_SPEED_MIN = 0;
  * Ten times the pinned Wave Machine rocking frequency.
  *
  * `1` matches `0.05 * cos(t) * π` from testWaveMachine.js and keeps that tilt.
+ * A live edit keeps the current phase, so the new speed is that absolute rate.
  */
 export const WAVE_MACHINE_SPEED_MAX = 10;
 export const WAVE_MACHINE_SPEED_STEP = 0.1;
@@ -51,7 +52,10 @@ export const WAVE_MACHINE_TILT_TICKS = [
   WAVE_MACHINE_TILT_MAX,
 ] as const;
 
-/** Live HUD slider for the peak rocking angle. Changing it does not rebuild the tank. */
+/**
+ * Live HUD slider for the peak rocking angle about level.
+ * Changing it does not rebuild the tank. The tank eases onto that absolute peak.
+ */
 export const WAVE_MACHINE_TILT_CONTROL: SceneControl = {
   id: "wave-tilt",
   label: "Wave tilt",
