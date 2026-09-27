@@ -113,7 +113,13 @@ test("switches rendering without stepping and persists across scenes and reload"
   const main = page.locator("main");
   const status = sessionStatus(page);
   await expect(main).toHaveAttribute("data-render-mode", "shaded-blob");
-  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("shaded-blob");
+  await expect(
+    await revealLocator(
+      page,
+      page.getByRole("combobox", { name: "Particles", exact: true }),
+    ),
+  ).toHaveValue("shaded-blob");
+  await closeSceneControls(page);
   await expect
     .poll(() => numericAttribute(main, "data-step-index"))
     .toBeGreaterThan(4);
