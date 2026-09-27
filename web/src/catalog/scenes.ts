@@ -24,6 +24,8 @@ export const SCENE_IDS = [
   "impulse",
   "theo-jansen",
   "liquid-tumbler",
+  "drawing-particles",
+  "sparky",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];

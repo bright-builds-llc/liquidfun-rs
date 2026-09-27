@@ -314,6 +314,47 @@ function WaveMachinePreview() {
   );
 }
 
+function DrawingParticlesPreview() {
+  return (
+    <PreviewFrame>
+      <line x1="36" y1="70" x2="124" y2="70" stroke={RIGID} stroke-width="3" />
+      <line x1="36" y1="28" x2="36" y2="70" stroke={RIGID} stroke-width="3" />
+      <line x1="124" y1="28" x2="124" y2="70" stroke={RIGID} stroke-width="3" />
+      <line x1="36" y1="28" x2="58" y2="28" stroke={RIGID} stroke-width="3" />
+      <line x1="102" y1="28" x2="124" y2="28" stroke={RIGID} stroke-width="3" />
+      <circle cx="52" cy="58" r="2" fill={WATER} />
+      <circle cx="58" cy="56" r="2" fill={WATER} />
+      <circle cx="64" cy="58" r="2" fill={WATER} />
+      <circle cx="96" cy="48" r="4" fill={MIX_GREEN} />
+      <circle cx="104" cy="50" r="4" fill={MIX_GREEN} />
+      <circle cx="100" cy="56" r="4" fill={MIX_GREEN} />
+    </PreviewFrame>
+  );
+}
+
+function SparkyPreview() {
+  return (
+    <PreviewFrame>
+      <rect
+        x="48"
+        y="16"
+        width="64"
+        height="62"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="3"
+      />
+      <circle cx="80" cy="30" r="8" fill="none" stroke={RIGID} stroke-width="2" />
+      <circle cx="68" cy="50" r="8" fill="none" stroke={RIGID} stroke-width="2" />
+      <circle cx="92" cy="50" r="8" fill="none" stroke={RIGID} stroke-width="2" />
+      <circle cx="80" cy="42" r="2" fill={MIX_RED} />
+      <circle cx="86" cy="40" r="2" fill={MIX_GREEN} />
+      <circle cx="74" cy="40" r="2" fill={ACCENT_WATER} />
+      <circle cx="80" cy="36" r="2" fill={JELLY} />
+    </PreviewFrame>
+  );
+}
+
 function LiquidTumblerPreview() {
   return (
     <PreviewFrame>
@@ -393,5 +434,9 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <TheoJansenPreview />;
     case "liquid-tumbler":
       return <LiquidTumblerPreview />;
+    case "drawing-particles":
+      return <DrawingParticlesPreview />;
+    case "sparky":
+      return <SparkyPreview />;
   }
 }

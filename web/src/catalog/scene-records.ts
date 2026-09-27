@@ -162,6 +162,26 @@ const PINNED_THEO_JANSEN_H = {
   href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/TheoJansen.h",
 } as const;
 
+const PINNED_DRAWING_PARTICLES_JS = {
+  label: "Pinned DrawingParticles.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testDrawingParticles.js",
+} as const;
+
+const PINNED_DRAWING_PARTICLES_H = {
+  label: "Pinned DrawingParticles.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/DrawingParticles.h",
+} as const;
+
+const PINNED_SPARKY_JS = {
+  label: "Pinned Sparky.js",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSparky.js",
+} as const;
+
+const PINNED_SPARKY_H = {
+  label: "Pinned Sparky.h",
+  href: "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Sparky.h",
+} as const;
+
 const WATCH_FIRST_HINT =
   "This scene is watch-first. Use Play scene, Pause scene, and Reset scene.";
 
@@ -528,6 +548,53 @@ export const SCENES: readonly SceneRecord[] = [
     credits: {
       implementationPath: sceneSource("liquid_tumbler.rs"),
       inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "drawing-particles",
+    title: "Drawing Particles",
+    ready: true,
+    description:
+      "Paint into an empty vessel, including elastic paint that clumps instead of flowing like water.",
+    interactionHint:
+      "Drag on the canvas to paint into the vessel. A click with no move leaves one stamp. Use Material to paint Water or Elastic. Elastic paint clumps instead of flowing like water. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([
+      runtimePreset("material", "Material", [
+        option("water", "Water"),
+        option("elastic", "Elastic"),
+      ]),
+    ]),
+    viewBounds: {
+      minX: -4.2,
+      minY: -2.2,
+      maxX: 4.2,
+      maxY: 6.2,
+    },
+    credits: {
+      implementationPath: sceneSource("drawing_particles.rs"),
+      inspiration: [
+        PINNED_DRAWING_PARTICLES_JS,
+        PINNED_DRAWING_PARTICLES_H,
+        SHOWCASE,
+      ],
+    },
+  },
+  {
+    id: "sparky",
+    title: "Sparky",
+    ready: true,
+    description: "Watch colliding circles throw fading particle sparks.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: withGravitySlider([]),
+    viewBounds: {
+      minX: -22,
+      minY: -1,
+      maxX: 22,
+      maxY: 42,
+    },
+    credits: {
+      implementationPath: sceneSource("sparky.rs"),
+      inspiration: [PINNED_SPARKY_JS, PINNED_SPARKY_H, SHOWCASE],
     },
   },
 ];

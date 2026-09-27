@@ -65,6 +65,8 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   impulse: { minX: -2.25, minY: -0.25, maxX: 2.25, maxY: 5.15 },
   "theo-jansen": THEO_JANSEN_VIEW_BOUNDS,
   "liquid-tumbler": { minX: -0.042, minY: -0.006, maxX: 0.042, maxY: 0.128 },
+  "drawing-particles": { minX: -4.2, minY: -2.2, maxX: 4.2, maxY: 6.2 },
+  sparky: { minX: -22, minY: -1, maxX: 22, maxY: 42 },
 };
 
 /** World rectangle fitted for one scene at the canvas's current aspect. */

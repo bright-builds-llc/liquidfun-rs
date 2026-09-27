@@ -49,6 +49,9 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Watch a walker move under a particle load and reverse its motor.",
   "liquid-tumbler":
     "A drinking glass at real size: 74 mm wide, 1.05 mm diameter particles, and Earth gravity. Phone tilt drives this water on a glass clock.",
+  "drawing-particles":
+    "Paint into an empty vessel, including elastic paint that clumps instead of flowing like water.",
+  sparky: "Watch colliding circles throw fading particle sparks.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -79,6 +82,9 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   "theo-jansen":
     "Use Motor direction to walk forward or reverse under the particle load. Labeled controls also work from the keyboard.",
   "liquid-tumbler": WATCH_FIRST_HINT,
+  "drawing-particles":
+    "Drag on the canvas to paint into the vessel. A click with no move leaves one stamp. Use Material to paint Water or Elastic. Elastic paint clumps instead of flowing like water. Labeled controls also work from the keyboard.",
+  sparky: WATCH_FIRST_HINT,
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -90,6 +96,7 @@ const WATCH_FIRST_SCENE_IDS = [
   "rigid-particles",
   "soup",
   "liquid-tumbler",
+  "sparky",
 ] as const;
 const FORBIDDEN_HINT_PHRASES = [
   "Press Space to pause",
@@ -106,7 +113,7 @@ const LOCKED_ACTION_LABELS = [
 ] as const;
 
 describe("SCENES", () => {
-  it("lists seventeen locked scenes in the approved order", () => {
+  it("lists nineteen locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "wave-machine",
@@ -126,13 +133,15 @@ describe("SCENES", () => {
       "impulse",
       "theo-jansen",
       "liquid-tumbler",
+      "drawing-particles",
+      "sparky",
     ] as const;
 
     // Act
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(17);
+    expect(SCENES).toHaveLength(19);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -157,6 +166,8 @@ describe("SCENES", () => {
       "Impulse",
       "Theo Jansen",
       "Liquid Tumbler",
+      "Drawing Particles",
+      "Sparky",
     ];
 
     // Act
@@ -189,7 +200,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(17);
+    expect(readyCount).toBe(19);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -383,7 +394,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all seventeen approved ids", () => {
+  it("is true for all nineteen approved ids", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -391,7 +402,7 @@ describe("isReadySceneId", () => {
     const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(readyFlags).toEqual(Array.from({ length: 17 }, () => true));
+    expect(readyFlags).toEqual(Array.from({ length: 19 }, () => true));
   });
 });
 

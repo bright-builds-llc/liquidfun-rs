@@ -52,6 +52,14 @@ const THEO_JANSEN_JS_HREF =
   "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testTheoJansen.js";
 const THEO_JANSEN_H_HREF =
   "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/TheoJansen.h";
+const DRAWING_PARTICLES_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testDrawingParticles.js";
+const DRAWING_PARTICLES_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/DrawingParticles.h";
+const SPARKY_JS_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/lfjs/testbed/tests/testSparky.js";
+const SPARKY_H_HREF =
+  "https://github.com/google/liquidfun/blob/7f20402173fd143a3988c921bc384459c6a858f2/liquidfun/Box2D/Testbed/Tests/Sparky.h";
 const PINNED_COMMIT = "7f20402173fd143a3988c921bc384459c6a858f2";
 
 describe("scene catalog credits", () => {
@@ -76,6 +84,9 @@ describe("scene catalog credits", () => {
       "wave-machine": "crates/liquidfun-wasm/src/scene/wave_machine.rs",
       "theo-jansen": "crates/liquidfun-wasm/src/scene/theo_jansen.rs",
       "liquid-tumbler": "crates/liquidfun-wasm/src/scene/liquid_tumbler.rs",
+      "drawing-particles":
+        "crates/liquidfun-wasm/src/scene/drawing_particles.rs",
+      sparky: "crates/liquidfun-wasm/src/scene/sparky.rs",
     };
     const pinnedBasinInspiration = {
       particles: [
@@ -187,6 +198,16 @@ describe("scene catalog credits", () => {
     ]);
     expect(inspirationById["water-wheel"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["liquid-tumbler"]).toEqual([SHOWCASE_HREF]);
+    expect(maybeSceneById("drawing-particles")?.credits.inspiration).toEqual([
+      { label: "Pinned DrawingParticles.js", href: DRAWING_PARTICLES_JS_HREF },
+      { label: "Pinned DrawingParticles.h", href: DRAWING_PARTICLES_H_HREF },
+      { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+    ]);
+    expect(maybeSceneById("sparky")?.credits.inspiration).toEqual([
+      { label: "Pinned Sparky.js", href: SPARKY_JS_HREF },
+      { label: "Pinned Sparky.h", href: SPARKY_H_HREF },
+      { label: "LiquidFun showcase", href: SHOWCASE_HREF },
+    ]);
     expect(particlesInspiration).toEqual([...pinnedBasinInspiration.particles]);
     expect(liquidTimerInspiration).toEqual([
       ...pinnedBasinInspiration["liquid-timer"],

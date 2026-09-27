@@ -60,6 +60,8 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   impulse: 0.45,
   "theo-jansen": 0.12,
   "liquid-tumbler": 0.6,
+  "drawing-particles": 0.4,
+  sparky: 0.4,
 };
 
 function fittedFrameFraction(
@@ -151,6 +153,22 @@ describe("portrait scene frames", () => {
         { x: -0.037, y: 0.12 },
         { x: 0.037, y: 0 },
         { x: 0.037, y: 0.12 },
+      ],
+      "drawing-particles": [
+        { x: -4, y: -2 },
+        { x: 4, y: -2 },
+        { x: -4, y: 6 },
+        { x: 4, y: 6 },
+        { x: -2, y: 0 },
+        { x: 2, y: 0 },
+        { x: -2, y: 4 },
+        { x: 2, y: 4 },
+      ],
+      sparky: [
+        { x: -20, y: 0 },
+        { x: 20, y: 0 },
+        { x: -20, y: 40 },
+        { x: 20, y: 40 },
       ],
       "wave-machine": [
         { x: -2.05, y: 0 },

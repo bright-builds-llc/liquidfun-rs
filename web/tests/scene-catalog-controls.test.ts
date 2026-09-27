@@ -34,6 +34,8 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "gravity",
   "gravity",
+  "gravity",
+  "gravity",
 ] as const;
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
@@ -268,6 +270,22 @@ describe("scene catalog controls", () => {
       "forward",
       "reverse",
     ]);
+    const drawing = maybeSceneById("drawing-particles");
+    const sparky = maybeSceneById("sparky");
+    expect(controlLabels(drawing?.controls ?? [])).toEqual([
+      "Material",
+      "Gravity",
+    ]);
+    expect(drawing?.controls[0]).toMatchObject({
+      id: "material",
+      kind: "preset",
+      recreates: false,
+    });
+    expect(presetValueIds(drawing?.controls[0] as SceneControl)).toEqual([
+      "water",
+      "elastic",
+    ]);
+    expect(sparky?.controls).toEqual([GRAVITY_CONTROL]);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 });
