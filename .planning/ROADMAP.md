@@ -136,13 +136,15 @@ Plans:
 
 ### Phase 30: Periodic hydraulic fountain
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Visitors can watch a timed piston squeeze a water reservoir so the same liquid travels through a throat into another chamber, without replacing the existing Fountain scene.
+**Requirements**: none (original scene; locked decisions D-01 through D-12)
 **Depends on:** Phase 29
-**Plans:** 8/8 plans complete
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 30 to break down)
+- [ ] 30-01-PLAN.md — Dynamic piston, one water group, and the particle-identity crossing test
+- [ ] 30-02-PLAN.md — Watch-first catalog record, preview, portrait frame, and README plan
+- [ ] 30-03-PLAN.md — Chromium smoke for the new scene and the existing catalog
 
 ### Phase 31: Sinusoidal wave tank
 
