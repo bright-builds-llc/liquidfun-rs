@@ -155,6 +155,12 @@ change.
 
 [Animated SVG](docs/assets/readme/sparky-10s.svg)
 
+#### [Hydraulic Fountain](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/hydraulic-fountain)
+
+[![Hydraulic Fountain simulation preview](docs/assets/readme/hydraulic-fountain-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/hydraulic-fountain)
+
+[Animated SVG](docs/assets/readme/hydraulic-fountain-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
