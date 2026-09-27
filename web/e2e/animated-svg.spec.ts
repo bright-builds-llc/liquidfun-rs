@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import {
   numericAttribute,
   openDamBreakPlaying,
+  openSceneControls,
   PLAYING_STATUS,
   sessionStatus,
 } from "./player-helpers";
@@ -13,6 +14,7 @@ test("exports a one-second animated SVG while the scene keeps playing", async ({
 }) => {
   test.setTimeout(120_000);
   await openDamBreakPlaying(page);
+  await openSceneControls(page);
 
   const main = page.locator("main");
   const stepBefore = await numericAttribute(main, "data-step-index");

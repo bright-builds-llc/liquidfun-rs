@@ -1,3 +1,5 @@
+import { screenShellFromSearch, type ScreenShell } from "./screen-shell";
+
 /** True when `Element.requestFullscreen` can succeed in this document. */
 export function fullscreenApiAvailable(fullscreenEnabled: boolean): boolean {
   return fullscreenEnabled;
@@ -45,13 +47,19 @@ function androidMobileUserAgent(userAgent: string): boolean {
 export type CanvasStageInput = {
   readonly fullscreenEnabled: boolean;
   readonly androidPhone: boolean;
+  readonly shell: ScreenShell;
 };
 
 /**
- * iPhone Safari has no element fullscreen. Android phones do, and still use
- * the full-canvas stage so the simulation is the page.
+ * The canvas shell is the default on every screen.
+ * The form-factor shell keeps the older page layout when element fullscreen
+ * is available, and still uses the canvas shell on iPhone and Android phones.
  */
 export function canvasStageActive(input: CanvasStageInput): boolean {
+  if (input.shell === "canvas") {
+    return true;
+  }
+
   return !fullscreenApiAvailable(input.fullscreenEnabled) || input.androidPhone;
 }
 
@@ -59,10 +67,11 @@ type NavigatorWithHints = Navigator & {
   userAgentData?: unknown;
 };
 
-/** Reads the live document and navigator into the canvas-stage decision. */
+/** Reads the live document, navigator, and shell query into the canvas-stage decision. */
 export function readCanvasStage(
   fullscreenEnabled: boolean,
   navigatorLike: Navigator,
+  locationSearch: string,
 ): boolean {
   return canvasStageActive({
     fullscreenEnabled,
@@ -70,6 +79,7 @@ export function readCanvasStage(
       userAgent: navigatorLike.userAgent,
       maybeClientHints: clientHintsFrom(navigatorLike),
     }),
+    shell: screenShellFromSearch(locationSearch),
   });
 }
 

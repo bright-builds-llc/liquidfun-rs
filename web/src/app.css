@@ -65,7 +65,11 @@ html[data-demo-media-capture="true"] .demo-sidebar,
 html[data-demo-media-capture="true"] [data-slot="sidebar-gap"],
 html[data-demo-media-capture="true"] [data-slot="sidebar-trigger"],
 html[data-demo-media-capture="true"] .site-footer,
-html[data-demo-media-capture="true"] [data-slot="drawer-overlay"] {
+html[data-demo-media-capture="true"] [data-slot="drawer-overlay"],
+html[data-demo-media-capture="true"] .canvas-hud-stats,
+html[data-demo-media-capture="true"] .canvas-hud-title,
+html[data-demo-media-capture="true"] .canvas-hud-bottom,
+html[data-demo-media-capture="true"] .canvas-hud-corner {
   visibility: hidden;
 }
 .site-header h1 {

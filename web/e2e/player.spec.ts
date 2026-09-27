@@ -5,6 +5,7 @@ import {
   activateLabeledControl,
   assertChromiumOnlyPlaywrightConfig,
   canvasPixelSha256,
+  closeSceneControls,
   CONSTRUCTION_RESET_HINT,
   DAM_BREAK_HINT,
   DAM_BREAK_PATH,
@@ -13,6 +14,7 @@ import {
   pressCanvas,
   expectAcceptedPointerGesture,
   expectReadySceneChrome,
+  expectSceneCredits,
   FOUNTAIN_PATH,
   installControlledRefreshRate,
   numericAttribute,
@@ -30,6 +32,8 @@ import {
   ALL_SCENE_TIMEOUT_MS,
   sessionStatus,
   tabUntilFirstSceneSelectFocused,
+  revealLocator,
+  withFormFactorShell,
   UNKNOWN_SCENE_PATH,
 } from "./player-helpers";
 
@@ -118,12 +122,16 @@ test("switches rendering without stepping and persists across scenes and reload"
   const wireframePixels = await canvasPixelSha256(page);
 
   // Act
-  await page.getByRole("combobox", { name: "Particles", exact: true }).selectOption("solid");
+  const particles = await revealLocator(
+    page,
+    page.getByRole("combobox", { name: "Particles", exact: true }),
+  );
+  await particles.selectOption("solid");
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
   await expect(status).toHaveText(PAUSED_STATUS);
-  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("solid");
+  await expect(particles).toHaveValue("solid");
   expect(await numericAttribute(main, "data-step-index")).toBe(pausedStep);
   expect(await canvasPixelSha256(page)).not.toBe(wireframePixels);
 
@@ -133,7 +141,12 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
-  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("solid");
+  await expect(
+    await revealLocator(
+      page,
+      page.getByRole("combobox", { name: "Particles", exact: true }),
+    ),
+  ).toHaveValue("solid");
 
   // Act
   await page.reload();
@@ -141,21 +154,31 @@ test("switches rendering without stepping and persists across scenes and reload"
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "solid");
-  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("solid");
+  await expect(
+    await revealLocator(
+      page,
+      page.getByRole("combobox", { name: "Particles", exact: true }),
+    ),
+  ).toHaveValue("solid");
 
   // Arrange
+  await closeSceneControls(page);
   await page.getByRole("button", { name: "Pause scene" }).click();
   await expect(status).toHaveText(PAUSED_STATUS);
   const solidStep = await numericAttribute(main, "data-step-index");
   const solidPixels = await canvasPixelSha256(page);
 
   // Act
-  await page.getByRole("combobox", { name: "Particles", exact: true }).selectOption("wireframe");
+  const particlesAgain = await revealLocator(
+    page,
+    page.getByRole("combobox", { name: "Particles", exact: true }),
+  );
+  await particlesAgain.selectOption("wireframe");
 
   // Assert
   await expect(main).toHaveAttribute("data-render-mode", "wireframe");
   await expect(status).toHaveText(PAUSED_STATUS);
-  await expect(page.getByRole("combobox", { name: "Particles", exact: true })).toHaveValue("wireframe");
+  await expect(particlesAgain).toHaveValue("wireframe");
   expect(await numericAttribute(main, "data-step-index")).toBe(solidStep);
   expect(await canvasPixelSha256(page)).not.toBe(solidPixels);
 });
@@ -164,13 +187,15 @@ test("opens each native scene from desktop navigation, shows credits, and resets
   page,
 }) => {
   test.setTimeout(ALL_SCENE_TIMEOUT_MS);
-  await page.goto(PLAYGROUND_ROOT_PATH, { waitUntil: "domcontentloaded" });
+  await page.goto(withFormFactorShell(PLAYGROUND_ROOT_PATH), {
+    waitUntil: "domcontentloaded",
+  });
 
   for (const [index, scene] of SCENES.entries()) {
     if (index % 2 === 0) {
       await openDesktopDemo(page, scene.title, scene.id);
     } else {
-      await page.goto(SCENE_HASH_PATHS[scene.id]);
+      await page.goto(withFormFactorShell(SCENE_HASH_PATHS[scene.id]));
       await expect(page).toHaveURL(new RegExp(`#/scene/${scene.id}$`));
     }
     await expectReadySceneChrome(page, scene.title);
@@ -223,6 +248,7 @@ test("applies a Dam Break Gravity construction setting and returns to Playing", 
   page,
 }) => {
   await openDamBreakPlaying(page);
+  await revealLocator(page, page.getByRole("slider", { name: /Gravity/ }));
 
   const gravity = page.locator(".scene-control").filter({
     has: page.getByRole("slider", { name: /Gravity/ }),
@@ -321,10 +347,7 @@ test("plays each watch-first scene through pause, play, and reset without pointe
       .toBeGreaterThan(pausedStep);
 
     await resetNearZero(page);
-    await expect(page.locator("#scene-credits-title")).toHaveText("Scene source");
-    await expect(
-      page.getByRole("link", { name: "View scene source" }),
-    ).toBeVisible();
+    await expectSceneCredits(page);
   }
 });
 
@@ -380,7 +403,9 @@ test("tabs to a scene control and scrolls the page at 375px", async ({
   expect(test.info().project.name).toBe("chromium");
 
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto(DAM_BREAK_PATH, { waitUntil: "domcontentloaded" });
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH), {
+    waitUntil: "domcontentloaded",
+  });
   await expectReadySceneChrome(page, "Dam Break");
   await expect(page.locator("figcaption")).toHaveText(DAM_BREAK_HINT);
   await page.getByRole("button", { name: "Pause scene" }).click();

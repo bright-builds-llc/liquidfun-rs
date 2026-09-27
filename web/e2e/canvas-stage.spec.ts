@@ -5,6 +5,7 @@ import {
   PAUSED_STATUS,
   PLAYING_STATUS,
   sessionStatus,
+  withFormFactorShell,
 } from "./player-helpers";
 
 const PORTRAIT = { width: 390, height: 812 } as const;
@@ -44,12 +45,37 @@ async function expectCanvasFillsViewport(page: Page): Promise<void> {
   expect(box?.height).toBeGreaterThanOrEqual(viewport.height - 1);
 }
 
-test("keeps element fullscreen on a browser that supports it", async ({
+test("fills a desktop viewport with the canvas shell and HUD", async ({
   page,
 }) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(DAM_BREAK_PATH);
+
+  // Assert
+  await expect(page.locator("html")).toHaveAttribute("data-canvas-stage", "true");
+  await expectCanvasFillsViewport(page);
+  await expect(page.getByRole("button", { name: "Pause scene" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Scene controls" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Demos" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Full screen" })).toHaveCount(0);
+  await expect(page.locator(".site-footer")).toBeHidden();
+  await expect(page.locator("[data-slot='sidebar-container']")).toHaveCount(0);
+
+  // Act
+  await page.setViewportSize({ width: 768, height: 1024 });
+
+  // Assert
+  await expect(page.locator("html")).toHaveAttribute("data-canvas-stage", "true");
+  await expectCanvasFillsViewport(page);
+});
+
+test("restores the page layout when the form-factor shell can enter fullscreen", async ({
+  page,
+}) => {
+  // Arrange
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(withFormFactorShell(DAM_BREAK_PATH));
 
   // Assert
   await expect(page.locator("html")).not.toHaveAttribute(

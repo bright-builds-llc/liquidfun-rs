@@ -4,8 +4,10 @@ import {
   androidPhone,
   canvasStageActive,
   fullscreenApiAvailable,
+  readCanvasStage,
   type FormFactorSource,
 } from "../src/player/fullscreen-capability";
+import { formFactorShellHref } from "../src/player/screen-shell";
 
 const CHROME_ANDROID_PHONE =
   "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36";
@@ -21,25 +23,39 @@ function source(partial: FormFactorSource): FormFactorSource {
 }
 
 describe("fullscreen capability", () => {
-  it("keeps the page layout when element fullscreen is available", () => {
+  it("uses the canvas shell on a desktop browser by default", () => {
     // Act
     const available = fullscreenApiAvailable(true);
     const canvasStage = canvasStageActive({
       fullscreenEnabled: true,
       androidPhone: false,
+      shell: "canvas",
     });
 
     // Assert
     expect(available).toBe(true);
+    expect(canvasStage).toBe(true);
+  });
+
+  it("keeps the page layout when the form-factor shell can enter fullscreen", () => {
+    // Act
+    const canvasStage = canvasStageActive({
+      fullscreenEnabled: true,
+      androidPhone: false,
+      shell: "form-factor",
+    });
+
+    // Assert
     expect(canvasStage).toBe(false);
   });
 
-  it("uses the canvas stage when element fullscreen is unavailable", () => {
+  it("uses the canvas stage when the form-factor shell has no element fullscreen", () => {
     // Act
     const available = fullscreenApiAvailable(false);
     const canvasStage = canvasStageActive({
       fullscreenEnabled: false,
       androidPhone: false,
+      shell: "form-factor",
     });
 
     // Assert
@@ -52,10 +68,49 @@ describe("fullscreen capability", () => {
     const canvasStage = canvasStageActive({
       fullscreenEnabled: true,
       androidPhone: true,
+      shell: "form-factor",
     });
 
     // Assert
     expect(canvasStage).toBe(true);
+  });
+
+  it("reads a form-factor query as the older page layout", () => {
+    // Arrange
+    const navigatorLike = {
+      userAgent: DESKTOP_CHROME,
+    } as Navigator;
+
+    // Act
+    const canvasStage = readCanvasStage(true, navigatorLike, "?shell=form-factor");
+
+    // Assert
+    expect(canvasStage).toBe(false);
+  });
+
+  it("keeps the canvas shell when the shell query is absent or unknown", () => {
+    // Arrange
+    const navigatorLike = {
+      userAgent: DESKTOP_CHROME,
+    } as Navigator;
+
+    // Act
+    const absent = readCanvasStage(true, navigatorLike, "");
+    const unknown = readCanvasStage(true, navigatorLike, "?shell=page");
+
+    // Assert
+    expect(absent).toBe(true);
+    expect(unknown).toBe(true);
+  });
+});
+
+describe("form-factor shell links", () => {
+  it("inserts the shell query ahead of a hash route", () => {
+    // Act
+    const href = formFactorShellHref("/liquidfun-rs/#/scene/dam-break");
+
+    // Assert
+    expect(href).toBe("/liquidfun-rs/?shell=form-factor#/scene/dam-break");
   });
 });
 
