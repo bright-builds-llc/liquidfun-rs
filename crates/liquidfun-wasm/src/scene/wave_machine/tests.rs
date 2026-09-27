@@ -416,7 +416,7 @@ fn peak_commanded_angle_with_tilt(multiplier: f32, tilt_degrees: f32, steps: u32
     let dt = 1.0 / 60.0;
     for _ in 0..steps {
         time += dt;
-        angle += super::scaled_motor_speed(time, multiplier, tilt_degrees) * dt;
+        angle += super::drive::open_loop_speed(time, multiplier, tilt_degrees) * dt;
         peak = peak.max(angle.abs());
     }
     peak
