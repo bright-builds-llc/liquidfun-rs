@@ -148,13 +148,15 @@ Plans:
 
 ### Phase 31: Sinusoidal wave tank
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Visitors can watch Wave Tank: a still pool whose end platform rises and falls and sends a wave toward the far wall, without changing Wave Machine.
+**Requirements**: none
 **Depends on:** Phase 30
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 31 to break down)
+- [ ] 31-01-PLAN.md — Dynamic end platform on a vertical prismatic sine motor, with a far-wall rise test
+- [ ] 31-02-PLAN.md — Catalog record, static preview, portrait frame, and README plan
+- [ ] 31-03-PLAN.md — Chromium smoke for Wave Tank and the existing catalog
 
 ### Phase 32: Liquid motion bubbler
 
@@ -195,7 +197,7 @@ Plans:
 | 28. Interaction seams | v1.3 | 8/8 | Complete    | 2026-09-22 |
 | 29. Sparky, Drawing, and full catalog | v1.3 | 5/5 | Complete    | 2026-09-27 |
 | 30. Periodic hydraulic fountain | v1.3 | 3/3 | Complete    | 2026-09-27 |
-| 31. Sinusoidal wave tank | v1.3 | 0/TBD | Not started | - |
+| 31. Sinusoidal wave tank | v1.3 | 0/3 | Planned | - |
 | 32. Liquid motion bubbler | v1.3 | 0/TBD | Not started | - |
 | 33. Stacked drip fidget | v1.3 | 0/TBD | Not started | - |
 
