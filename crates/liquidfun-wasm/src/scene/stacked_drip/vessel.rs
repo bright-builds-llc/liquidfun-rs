@@ -5,7 +5,7 @@
 
 use liquidfun::math::Vec2;
 
-use super::{COUNTERWEIGHT_DENSITY, DECK_DENSITY, DIVIDER_CENTER_X, WALL_HALF};
+use super::{COUNTERWEIGHT_DENSITY, DECK_DENSITY, WALL_HALF};
 
 #[derive(Clone, Copy)]
 pub(super) struct BoxSpec {
@@ -41,8 +41,8 @@ pub(super) fn wall_boxes() -> [BoxSpec; 4] {
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 1.05,
-            center: Vec2::new(DIVIDER_CENTER_X, 1.05),
+            half_height: 0.81,
+            center: Vec2::new(0.94, 1.09),
         },
     ]
 }

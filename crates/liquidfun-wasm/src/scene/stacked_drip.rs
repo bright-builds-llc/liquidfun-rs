@@ -52,7 +52,6 @@ const ANGLE_FLOOR: f32 = 0.05;
 const DIVIDER_INNER_X: f32 = 0.90;
 const TOP_TRAY_Y: f32 = 1.45;
 const BOTTOM_TRAY_Y: f32 = 0.55;
-const DIVIDER_CENTER_X: f32 = DIVIDER_INNER_X + WALL_HALF;
 
 const _: () = {
     assert!(PROOF_BATCHES == 75);
