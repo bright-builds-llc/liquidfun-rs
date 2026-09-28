@@ -111,6 +111,46 @@ A local Dam Break Medium hunt that persisted an unprofiled Rust-versus-C++ pair,
 - Sessions: discuss, plan, execute, and audit across phases 22–25, plus a post-gate dam-break debug.
 - Notable: 23 plans in two calendar days, much smaller than v1.0 and smaller than v1.1.
 
+## Milestone: v1.3 — Reference Testbed Scenes
+
+**Shipped:** 2026-09-28
+**Phases:** 8 | **Plans:** 38
+
+### What Was Built
+
+Twelve missing JavaScript LiquidFun testbed scenes in the existing playground, then Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. The six earlier scenes stayed. The catalog now has twenty-three ready scenes.
+
+### What Worked
+
+- Each new scene stayed a native WASM builder in the shared player, with play, pause, and reset already in place.
+- Watch-first scenes reused empty controls. Interaction scenes (Soup Stirrer, Impulse, Theo Jansen, Drawing Particles) called live WASM hooks.
+- Original hydraulics and fidgets were proven by an original particle id moving, with the revolute motors left off and the neighboring scenes left in place.
+- A fresh milestone audit before archive caught that Phases 30–33 had goals but no requirement IDs, and those goals were already verified.
+
+### What Was Inefficient
+
+- Phases 30–33 were added after REQUIREMENTS.md froze at Phase 29, so the traceability table never named the four original scenes.
+- The first return shafts for Liquid Bubbler and Stacked Drip drained beside the plate, which took a follow-up plan each.
+- Summary one-liners include a Wave Machine line that recorded a RED-stub note instead of the scene result. The curated milestone entry does not repeat it.
+
+### Patterns Established
+
+- A new playground scene needs a catalog record, a portrait frame, a README plan, and a phone-height check.
+- Side-shaft returns keep the motor off and move an original particle id. They do not teleport particles.
+- Planning archive is not a git release tag.
+
+### Key Lessons
+
+1. Audit before archive, including phases that have no requirement IDs.
+1. Keep a new scene beside the one it resembles. Do not reuse that scene's id.
+1. A source-text assertion is not the return proof. Keep the behavioral test.
+
+### Cost Observations
+
+- Model mix: unavailable; no estimates asserted.
+- Sessions: discuss, plan, execute, and audit across phases 26–33.
+- Notable: 38 plans in eight days, larger than v1.2 and close to v1.1.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Archive date | Package/tag |
@@ -118,5 +158,6 @@ A local Dam Break Medium hunt that persisted an unprofiled Rust-versus-C++ pair,
 | v1.0 Experimental Foundation | 16 | 252 | 2026-09-17 | No |
 | v1.1 Web Playground | 6 | 39 | 2026-09-20 | No |
 | v1.2 Native Performance Closing | 4 | 23 | 2026-09-21 | No |
+| v1.3 Reference Testbed Scenes | 8 | 38 | 2026-09-28 | No |
 
-Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. All three archives withhold release tags.
+Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. v1.3 filled the missing testbed catalog and added four original scenes. All four archives withhold release tags.
