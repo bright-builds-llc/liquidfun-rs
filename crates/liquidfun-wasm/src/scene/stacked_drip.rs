@@ -25,9 +25,12 @@ const SIM_DT: f32 = 1.0 / 60.0;
 const WALL_HALF: f32 = 0.04;
 const WALL_FRICTION: f32 = 0.2;
 const POUR_ANGLE: f32 = std::f32::consts::TAU / 8.0;
-const ANGULAR_DAMPING: f32 = 0.4;
+/// Slow enough that a poured tray is still past the angle floor at the 5 s sample.
+const ANGULAR_DAMPING: f32 = 20.0;
 const DECK_DENSITY: f32 = 1.0;
-const COUNTERWEIGHT_DENSITY: f32 = 8.0;
+/// Just above the deck density, so an empty tray rests at the lower limit and a
+/// loaded tray still pours.
+const COUNTERWEIGHT_DENSITY: f32 = 1.05;
 /// Rests one polygon-skin pair above the floor so a flush contact does not
 /// pop the plate off translation 0 during the dwell.
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
