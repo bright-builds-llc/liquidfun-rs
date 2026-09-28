@@ -346,6 +346,23 @@ function WaveTankPreview() {
   );
 }
 
+function StackedDripPreview() {
+  const DRIP = "#40C4C4";
+  return (
+    <PreviewFrame>
+      <line x1="18" y1="12" x2="18" y2="78" stroke={RIGID} stroke-width="3" />
+      <line x1="18" y1="78" x2="142" y2="78" stroke={RIGID} stroke-width="3" />
+      <line x1="142" y1="12" x2="142" y2="78" stroke={RIGID} stroke-width="3" />
+      <line x1="112" y1="18" x2="112" y2="78" stroke={RIGID} stroke-width="3" />
+      <rect x="36" y="18" width="48" height="10" fill={DRIP} />
+      <rect x="56" y="28" width="5" height="8" fill={DRIP} />
+      <line x1="40" y1="40" x2="88" y2="46" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="54" x2="76" y2="60" stroke={RIGID} stroke-width="3" />
+      <line x1="40" y1="68" x2="88" y2="74" stroke={RIGID} stroke-width="3" />
+    </PreviewFrame>
+  );
+}
+
 function LiquidBubblerPreview() {
   return (
     <PreviewFrame>
@@ -494,5 +511,7 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <WaveTankPreview />;
     case "liquid-bubbler":
       return <LiquidBubblerPreview />;
+    case "stacked-drip":
+      return <StackedDripPreview />;
   }
 }

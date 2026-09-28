@@ -523,4 +523,18 @@ export const SCENES: readonly SceneRecord[] = [
       inspiration: [SHOWCASE],
     },
   },
+  {
+    id: "stacked-drip",
+    title: "Stacked Drip",
+    ready: true,
+    description:
+      "Watch colored liquid drain through three tipping trays. This is an original experimental scene.",
+    interactionHint: WATCH_FIRST_HINT,
+    controls: withGravitySlider([]),
+    viewBounds: { minX: -0.86, minY: -0.16, maxX: 1.68, maxY: 2.18 },
+    credits: {
+      implementationPath: "crates/liquidfun-wasm/src/scene/stacked_drip.rs",
+      inspiration: [SHOWCASE],
+    },
+  },
 ];

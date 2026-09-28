@@ -58,6 +58,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Watch a still pool whose end platform rises and falls and sends a wave toward the far wall. This is an original experimental scene.",
   "liquid-bubbler":
     "Watch colored liquid drip through a narrow waist and turn a small wheel. This is an original experimental scene.",
+  "stacked-drip":
+    "Watch colored liquid drain through three tipping trays. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -94,6 +96,7 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   "hydraulic-fountain": WATCH_FIRST_HINT,
   "wave-tank": WATCH_FIRST_HINT,
   "liquid-bubbler": WATCH_FIRST_HINT,
+  "stacked-drip": WATCH_FIRST_HINT,
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
