@@ -84,7 +84,7 @@ export function readmeSvgRepoPath(sceneId: SceneId): string {
   return `docs/assets/readme/${svgExportFileName(sceneId, README_SVG_SECONDS)}`;
 }
 
-/** Repo path of the 60 fps WebP rasterized from that SVG. */
+/** Repo path of the 60 fps WebP recorded beside that SVG. */
 export function readmeWebpRepoPath(sceneId: SceneId): string {
   return readmeSvgRepoPath(sceneId).replace(/\.svg$/, ".webp");
 }

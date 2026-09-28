@@ -160,6 +160,20 @@ export function svgRenderMode(mode: RenderMode): SvgRenderMode {
   return rigidRenderMode(mode);
 }
 
+/**
+ * Canvas painter mode for an animated-SVG export mode.
+ *
+ * SVG circle wireframes use the token `"wireframe"`. The canvas painter calls
+ * that same stroked-circle path `"circle-wireframe"`.
+ */
+export function canvasRenderMode(mode: SvgRenderMode): RenderMode {
+  if (mode === "wireframe") {
+    return "circle-wireframe";
+  }
+
+  return mode;
+}
+
 /** Surface modes draw every particle. Stride would leave holes in the blob. */
 export function usesParticleStride(mode: RenderMode): boolean {
   const surface = particleSurface(mode);

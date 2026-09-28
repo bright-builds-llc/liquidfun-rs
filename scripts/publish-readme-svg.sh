@@ -31,7 +31,7 @@ git -c "user.name=${github_actions_name}" -c "user.email=${github_actions_email}
 	commit -m "$(cat <<'EOF'
 chore: update README scene previews
 
-Regenerate the 10 second scene SVGs, their 60 fps WebP rasters, and the README demo gallery.
+Regenerate the 10 second scene SVGs, their directly recorded 60 fps WebPs, and the README demo gallery.
 EOF
 )" -- "$readme_path" "$svg_dir"
 
