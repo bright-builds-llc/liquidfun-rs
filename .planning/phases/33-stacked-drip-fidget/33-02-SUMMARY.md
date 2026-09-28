@@ -114,8 +114,6 @@ Each task was committed atomically:
 - **Verification:** `bun run test:unit` for the catalog suite exits 0.
 - **Committed in:** `19a6867` (Task 2 commit)
 
----
-
 **Total deviations:** 1 auto-fixed (1 bug)
 **Impact on plan:** The extra gravity id is the shared slider the plan already required. No scene behavior changed.
 
