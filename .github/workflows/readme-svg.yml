@@ -1,9 +1,9 @@
 name: Readme scene previews
 
 # Post-merge job. After a push to main, regenerate one 10 second SVG per
-# catalog scene, rasterize it to a 60 fps animated WebP, and refresh the
-# README gallery that embeds the WebP. The SVG stays in the repo. Commit
-# only when those files changed.
+# catalog scene, record a 60 fps animated WebP directly from that scene, and
+# refresh the README gallery that embeds the WebP. The SVG stays in the repo.
+# Commit only when those files changed.
 #
 # Push access:
 # - permissions.contents: write lets this workflow ask GITHUB_TOKEN to push.
@@ -58,7 +58,7 @@ jobs:
           bun-version: 1.4.2
       - name: Install ffmpeg and DejaVu Sans
         run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core
-      - name: Generate scene SVGs, WebP previews, and the README gallery
+      - name: Generate scene SVGs, direct WebP recordings, and the README gallery
         run: |
           bun scripts/web-build.ts wasm
           cd web && bun install --frozen-lockfile && bun run readme-svg

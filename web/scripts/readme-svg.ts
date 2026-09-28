@@ -2,10 +2,8 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { worldBoundsForViewport } from "../src/catalog/portrait-bounds";
-import { buildAnimatedSvg } from "../src/export/animated-svg";
-import { recordProjectedSamples, type ExportDriver } from "../src/export/record";
 import type { SvgExportRequest } from "../src/export/messages";
+import type { ExportDriver } from "../src/export/record";
 import { parseRenderFrame } from "../src/physics/frame";
 import type { GeneratedProofSession } from "../src/physics/session";
 import {
@@ -17,14 +15,10 @@ import {
   type ReadmeSvgCue,
   type ReadmeSvgPlan,
 } from "./readme-svg/plans";
-import { README_RASTER_FONT_FILE, rasterizeAnimatedSvg } from "./readme-svg/raster";
+import { recordReadmePreview } from "./readme-svg/capture";
+import { README_PREVIEW_FONT_FILE } from "./readme-svg/paint";
 import { upsertReadmeSvgGallery } from "./readme-svg/section";
-import {
-  assertReadmeWebpByteLimit,
-  README_WEBP_FPS,
-  README_WEBP_PRESET,
-  README_WEBP_QUALITY,
-} from "./readme-svg/webp";
+import { assertReadmeWebpByteLimit } from "./readme-svg/webp";
 
 type GeneratedWasm = {
   default: (input?: { module_or_path?: BufferSource }) => Promise<unknown>;
@@ -48,12 +42,11 @@ async function main(): Promise<void> {
 
   for (const plan of README_SVG_PLANS) {
     const request = readmeSvgRequest(plan);
-    const svgChanged = await writeSceneSvg(generated, plan, request);
-    if (svgChanged) {
+    const written = await writeScene(generated, plan, request);
+    if (written.svgChanged) {
       svgCount += 1;
     }
-    const webpChanged = await writeSceneWebp(plan, svgChanged);
-    if (webpChanged) {
+    if (written.webpChanged) {
       webpCount += 1;
     }
   }
@@ -83,58 +76,32 @@ function previewSummary(svgCount: number, webpCount: number, readmeChanged: bool
   return `updated ${parts.join(" and ")}`;
 }
 
-async function writeSceneSvg(
+async function writeScene(
   generated: GeneratedWasm,
   plan: ReadmeSvgPlan,
   request: SvgExportRequest,
-): Promise<boolean> {
+): Promise<{ readonly svgChanged: boolean; readonly webpChanged: boolean }> {
   const session = new generated.ProofSession(request.sceneId);
   try {
     note(
       `recording ${request.sceneId} for ${request.durationSeconds}s at ${request.viewportWidth}x${request.viewportHeight}`,
     );
-    const samples = recordProjectedSamples(
-      driverFor(session),
-      {
-        durationSeconds: request.durationSeconds,
-        controls: request.controls,
-        viewportWidth: request.viewportWidth,
-        viewportHeight: request.viewportHeight,
-        zoom: request.zoom,
-        panX: request.panX,
-        panY: request.panY,
-        maxRenderedParticles: request.maxRenderedParticles,
-        worldBounds: worldBoundsForViewport(
-          request.sceneId,
-          request.viewportWidth,
-          request.viewportHeight,
-        ),
-        beforeSample(sampleIndex) {
-          applyPlanCues(session, plan, sampleIndex);
-        },
+    const { svg, webp } = await recordReadmePreview({
+      driver: driverFor(session),
+      request,
+      fontFile: README_PREVIEW_FONT_FILE,
+      onProgress: note,
+      beforeSample(sampleIndex) {
+        applyPlanCues(session, plan, sampleIndex);
       },
-      (completed, total) => {
-        if (completed === 1 || completed === total || completed % 40 === 0) {
-          note(`${request.sceneId} sampled ${completed} of ${total}`);
-        }
-      },
-    );
-    const svg = buildAnimatedSvg({
-      title: request.title,
-      samples,
-      durationSeconds: request.durationSeconds,
-      viewportWidth: request.viewportWidth,
-      viewportHeight: request.viewportHeight,
-      renderMode: request.renderMode,
-      wireframeStrokeWidth: request.wireframeStrokeWidth,
     });
-    if (!svg.startsWith("<svg")) {
-      throw new Error(`${request.sceneId} export did not produce an SVG document.`);
-    }
-
+    assertReadmeWebpByteLimit(plan.id, webp.length);
     const svgPath = resolve(repoRoot, readmeSvgRepoPath(plan.id));
+    const webpPath = resolve(repoRoot, readmeWebpRepoPath(plan.id));
     await mkdir(dirname(svgPath), { recursive: true });
-    return await writeIfChanged(svgPath, svg);
+    const svgChanged = await writeIfChanged(svgPath, svg);
+    const webpChanged = await writeBytesIfChanged(webpPath, webp);
+    return { svgChanged, webpChanged };
   } finally {
     try {
       session.free();
@@ -208,42 +175,6 @@ function driverFor(session: GeneratedProofSession): ExportDriver {
       }
     },
   };
-}
-
-async function writeSceneWebp(plan: ReadmeSvgPlan, svgChanged: boolean): Promise<boolean> {
-  const svgPath = resolve(repoRoot, readmeSvgRepoPath(plan.id));
-  const webpPath = resolve(repoRoot, readmeWebpRepoPath(plan.id));
-  if (!svgChanged && (await exists(webpPath))) {
-    note(`${plan.id} WebP already matches the SVG`);
-    return false;
-  }
-
-  note(
-    `rasterizing ${plan.id} at ${README_WEBP_FPS} fps, quality ${README_WEBP_QUALITY}, preset ${README_WEBP_PRESET}`,
-  );
-  const webp = await rasterizeAnimatedSvg(await readFile(svgPath, "utf8"), {
-    framesPerSecond: README_WEBP_FPS,
-    quality: README_WEBP_QUALITY,
-    preset: README_WEBP_PRESET,
-    fontFile: README_RASTER_FONT_FILE,
-    onFrame(completed, total) {
-      note(`${plan.id} rasterized ${completed} of ${total}`);
-    },
-  });
-  assertReadmeWebpByteLimit(plan.id, webp.length);
-  return writeBytesIfChanged(webpPath, webp);
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch (error) {
-    if (isMissingFile(error)) {
-      return false;
-    }
-    throw error;
-  }
 }
 
 async function writeBytesIfChanged(path: string, next: Uint8Array): Promise<boolean> {

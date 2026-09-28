@@ -22,7 +22,7 @@ export const README_WEBP_QUALITY = 60;
 /** GitHub warns on files at or above 50MiB. README rasters stay under that. */
 export const README_WEBP_BYTE_LIMIT = 50 * 1024 * 1024;
 
-/** libwebp preset suited to the thin wireframe strokes in the scene SVGs. */
+/** libwebp preset suited to the thin wireframe strokes in the scene previews. */
 export const README_WEBP_PRESET = "drawing";
 
 const WEBP_PRESETS = ["none", "default", "picture", "photo", "drawing", "icon", "text"] as const;
@@ -32,6 +32,14 @@ const ANMF_REPLACE_FRAME = 0b11;
 
 /** VP8X feature bit that marks an animated canvas. */
 const VP8X_ANIMATION_FLAG = 0b10;
+
+/**
+ * VP8X feature bit for a per-frame alpha channel.
+ *
+ * ffmpeg sets this when the input is RGBA even if every encoded frame is
+ * opaque. Leaving it set makes decoders expect transparency that is not there.
+ */
+const VP8X_ALPHA_FLAG = 0b10000;
 
 /** Byte length of the ANMF frame header before the image chunk. */
 const ANMF_HEADER_BYTES = 16;
@@ -138,6 +146,55 @@ export function muxAnimatedWebp(
 
   const body = Buffer.concat(parts);
   return Buffer.concat([Buffer.from("RIFF"), u32(body.length), body]);
+}
+
+/**
+ * Normalizes an ffmpeg animation to the README playback container.
+ *
+ * Each frame replaces the canvas instead of blending, and the dispose color
+ * is the scene background `#071018`. Frame pixels and durations stay put.
+ */
+export function prepareRecordedWebp(bytes: Uint8Array): Buffer {
+  const normalized = Buffer.from(bytes);
+  describeAnimatedWebp(normalized);
+  let sawCanvas = false;
+  let sawAnimation = false;
+  let offset = 12;
+  while (offset + 8 <= normalized.length) {
+    const tag = normalized.toString("ascii", offset, offset + 4);
+    const size = normalized.readUInt32LE(offset + 4);
+    const payload = offset + 8;
+    if (payload + size > normalized.length) {
+      throw new Error(`WebP chunk ${tag} exceeds the file.`);
+    }
+    if (tag === "VP8X") {
+      const flags = normalized[payload] ?? 0;
+      if ((flags & VP8X_ANIMATION_FLAG) === 0) {
+        throw new Error("Recorded WebP canvas is not marked as an animation.");
+      }
+      normalized[payload] = flags & ~VP8X_ALPHA_FLAG;
+      sawCanvas = true;
+    } else if (tag === "ANIM") {
+      if (size < 4) {
+        throw new Error("Recorded WebP animation chunk is too small.");
+      }
+      normalized[payload] = 0x18;
+      normalized[payload + 1] = 0x10;
+      normalized[payload + 2] = 0x07;
+      normalized[payload + 3] = 0xff;
+      sawAnimation = true;
+    } else if (tag === "ANMF") {
+      if (size < ANMF_HEADER_BYTES) {
+        throw new Error("Recorded WebP frame header is truncated.");
+      }
+      normalized[payload + 15] = ANMF_REPLACE_FRAME;
+    }
+    offset = payload + size + (size % 2);
+  }
+  if (!sawCanvas || !sawAnimation || offset !== normalized.length) {
+    throw new Error("Recorded WebP is missing its animation container.");
+  }
+  return normalized;
 }
 
 /** Reads the canvas size and per-frame durations back out of an animated WebP. */

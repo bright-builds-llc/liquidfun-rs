@@ -34,8 +34,8 @@ WEBTEST-01 gate and does not claim Firefox or Safari coverage.
 
 <!-- readme-svg-gallery:begin -->
 
-Each preview is a 60 fps animated WebP rasterized from the committed 10 second
-SVG. The frame is 1280 by 960, wireframe, with the identity camera. Scenes
+Each preview is a 60 fps animated WebP recorded directly from the
+scene. The frame is 1280 by 960, wireframe, with the identity camera. Scenes
 that stay still until you act include one cue. Select a title or preview to
 open the live scene. The SVG link under each preview is the vector source. A
 post-merge workflow regenerates these files and commits them when the bytes
@@ -207,11 +207,12 @@ not expected to pass against current Play/Pause/Reset chrome.
 Ordinary playground proof is `just web-player-smoke`.
 
 `just readme-svg` rebuilds the WASM package, writes one 10 second animated SVG
-per catalog scene under `docs/assets/readme/`, rasterizes each SVG to a 60 fps
-animated WebP, and upserts the demo gallery. The post-merge Readme scene
-preview workflow runs the same command and commits when the export changes. A
-new scene also needs a plan in `web/scripts/readme-svg/plans.ts`, including a
-cue when the default scene does not move on its own.
+per catalog scene under `docs/assets/readme/`, records a 60 fps animated WebP
+directly from that scene, and upserts the demo gallery. The SVG stays in the
+repo. The post-merge Readme scene preview workflow runs the same command and
+commits when the export changes. A new scene also needs a plan in
+`web/scripts/readme-svg/plans.ts`, including a cue when the default scene does
+not move on its own.
 
 `just demo-media` and `just demo-media-check` remain optional local MP4 and
 WebP captures into `docs/assets/demos`. They are not the README gallery. They

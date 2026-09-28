@@ -4,6 +4,7 @@ import {
   DEFAULT_RENDER_MODE,
   RENDER_MODE_GROUPS,
   RENDER_MODE_STORAGE_KEY,
+  canvasRenderMode,
   isWireframeRenderMode,
   loadRenderMode,
   maybeParseCircleRenderMode,
@@ -86,6 +87,9 @@ describe("render mode", () => {
     expect(maybeParseCircleRenderMode("soft-blob")).toBeUndefined();
     expect(maybeParseSvgRenderMode("triangle-wireframe")).toBe("triangle-wireframe");
     expect(maybeParseSvgRenderMode("circle-wireframe")).toBeUndefined();
+    expect(canvasRenderMode("wireframe")).toBe("circle-wireframe");
+    expect(canvasRenderMode("solid")).toBe("solid");
+    expect(canvasRenderMode("triangle-wireframe")).toBe("triangle-wireframe");
     expect(modes.map(isWireframeRenderMode)).toEqual([
       true,
       true,

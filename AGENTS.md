@@ -71,8 +71,8 @@ On 2026-09-16, the repository owner authorized independent AI review and removed
 When a scenario is added to the playground catalog (`web/src/catalog/scenes.ts`),
 also extend the README SVG plans in `web/scripts/readme-svg/plans.ts` with that
 scene id and any cue the preview needs. `just readme-svg` writes
-`docs/assets/readme/<id>-10s.svg`, rasterizes that SVG to a 60 fps WebP beside
-it, and the README upserter refreshes the demo gallery from those plans. The
+`docs/assets/readme/<id>-10s.svg`, records a 60 fps animated WebP directly
+beside it, and the README upserter refreshes the demo gallery from those plans. The
 post-merge Readme scene preview workflow runs the same command. A catalog scene
 missing from the plans fails `assertReadmeSvgPlanCoverage`.
 

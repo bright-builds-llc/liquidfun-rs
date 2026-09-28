@@ -22,8 +22,8 @@ export function readmeSvgGalleryBody(plans: readonly ReadmeSvgPlan[]): string {
   return [
     README_SVG_BEGIN,
     "",
-    `Each preview is a ${README_WEBP_FPS} fps animated WebP rasterized from the committed 10 second`,
-    "SVG. The frame is 1280 by 960, wireframe, with the identity camera. Scenes",
+    `Each preview is a ${README_WEBP_FPS} fps animated WebP recorded directly from the`,
+    "scene. The frame is 1280 by 960, wireframe, with the identity camera. Scenes",
     "that stay still until you act include one cue. Select a title or preview to",
     "open the live scene. The SVG link under each preview is the vector source. A",
     "post-merge workflow regenerates these files and commits them when the bytes",
