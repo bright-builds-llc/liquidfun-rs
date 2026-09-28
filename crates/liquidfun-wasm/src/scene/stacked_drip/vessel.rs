@@ -5,7 +5,11 @@
 
 use liquidfun::math::Vec2;
 
-use super::{COUNTERWEIGHT_DENSITY, DECK_DENSITY, DIVIDER_CENTER_X, WALL_HALF};
+use super::{
+    COUNTERWEIGHT_DENSITY, DECK_DENSITY, DIVIDER_CENTER_X, DIVIDER_CENTER_Y, DIVIDER_HALF_HEIGHT,
+    DIVIDER_INNER_X, FLOOR_BOTTOM_Y, FLOOR_OUTER_LEFT_X, FLOOR_OUTER_RIGHT_X, RIGHT_WALL_CENTER_X,
+    SLOPE_HIGH_X, SLOPE_HIGH_Y, SLOPE_LOW_Y, WALL_HALF,
+};
 
 #[derive(Clone, Copy)]
 pub(super) struct BoxSpec {
@@ -30,20 +34,32 @@ pub(super) fn wall_boxes() -> [BoxSpec; 4] {
             center: Vec2::new(-0.74, 1.05),
         },
         BoxSpec {
-            half_width: 1.19,
+            half_width: (FLOOR_OUTER_RIGHT_X - DIVIDER_INNER_X) * 0.5,
             half_height: WALL_HALF,
-            center: Vec2::new(0.41, -0.04),
+            center: Vec2::new(
+                (DIVIDER_INNER_X + FLOOR_OUTER_RIGHT_X) * 0.5,
+                FLOOR_BOTTOM_Y + WALL_HALF,
+            ),
         },
         BoxSpec {
             half_width: WALL_HALF,
             half_height: 1.05,
-            center: Vec2::new(1.56, 1.05),
+            center: Vec2::new(RIGHT_WALL_CENTER_X, 1.05),
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 1.05,
-            center: Vec2::new(DIVIDER_CENTER_X, 1.05),
+            half_height: DIVIDER_HALF_HEIGHT,
+            center: Vec2::new(DIVIDER_CENTER_X, DIVIDER_CENTER_Y),
         },
+    ]
+}
+
+pub(super) fn floor_wedge() -> [Vec2; 4] {
+    [
+        Vec2::new(FLOOR_OUTER_LEFT_X, FLOOR_BOTTOM_Y),
+        Vec2::new(DIVIDER_INNER_X, FLOOR_BOTTOM_Y),
+        Vec2::new(DIVIDER_INNER_X, SLOPE_LOW_Y),
+        Vec2::new(SLOPE_HIGH_X, SLOPE_HIGH_Y),
     ]
 }
 

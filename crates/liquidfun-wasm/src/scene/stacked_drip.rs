@@ -34,9 +34,22 @@ const COUNTERWEIGHT_DENSITY: f32 = 1.05;
 /// Rests one polygon-skin pair above the floor so a flush contact does not
 /// pop the plate off translation 0 during the dwell.
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
-const PLATE_HALF_WIDTH: f32 = 0.12;
-const PLATE_HALF_HEIGHT: f32 = 0.04;
-const PLATE_CENTER: Vec2 = Vec2::new(1.20, 0.04 + PLATE_FLOOR_CLEARANCE);
+const PARTICLE_DIAMETER: f32 = 2.0 * PARTICLE_RADIUS;
+/// Narrower than one particle, matching the bubbler seal, so liquid cannot
+/// fall between the divider and the plate or between the plate and the wall.
+const SHAFT_SIDE_GAP: f32 = 0.02;
+const RIGHT_WALL_CENTER_X: f32 = 1.56;
+const RIGHT_WALL_INNER_X: f32 = RIGHT_WALL_CENTER_X - WALL_HALF;
+const DIVIDER_INNER_X: f32 = 0.90;
+const DIVIDER_CENTER_X: f32 = DIVIDER_INNER_X + WALL_HALF;
+const DIVIDER_OUTER_X: f32 = DIVIDER_CENTER_X + WALL_HALF;
+const PLATE_LEFT_X: f32 = DIVIDER_OUTER_X + SHAFT_SIDE_GAP;
+const PLATE_RIGHT_X: f32 = RIGHT_WALL_INNER_X - SHAFT_SIDE_GAP;
+const PLATE_HALF_WIDTH: f32 = (PLATE_RIGHT_X - PLATE_LEFT_X) * 0.5;
+const PLATE_CENTER_X: f32 = (PLATE_LEFT_X + PLATE_RIGHT_X) * 0.5;
+const PLATE_HALF_HEIGHT: f32 = 0.02;
+const PLATE_CENTER: Vec2 = Vec2::new(PLATE_CENTER_X, PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE);
+const PLATE_REST_TOP: f32 = PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE + PLATE_HALF_HEIGHT;
 const PLATE_DENSITY: f32 = 1.0;
 const STROKE: f32 = 1.90;
 const PLATE_SPEED: f32 = 0.15;
@@ -49,14 +62,34 @@ const MAX_MOTOR_FORCE: f32 = 1.0e6;
 const PROOF_SECONDS: f32 = 5.0;
 const PROOF_BATCHES: u32 = 75;
 const ANGLE_FLOOR: f32 = 0.05;
-const DIVIDER_INNER_X: f32 = 0.90;
 const TOP_TRAY_Y: f32 = 1.45;
 const BOTTOM_TRAY_Y: f32 = 0.55;
-const DIVIDER_CENTER_X: f32 = DIVIDER_INNER_X + WALL_HALF;
+/// Open above the resting plate by more than one particle diameter.
+const DIVIDER_BOTTOM_Y: f32 = 0.22;
+/// Spill lip. One second into the descent the plate top is still above this.
+const SPILL_LIP_Y: f32 = 1.70;
+const DIVIDER_HALF_HEIGHT: f32 = (SPILL_LIP_Y - DIVIDER_BOTTOM_Y) * 0.5;
+const DIVIDER_CENTER_Y: f32 = (DIVIDER_BOTTOM_Y + SPILL_LIP_Y) * 0.5;
+const SAMPLE_PLATE_TOP: f32 = PLATE_REST_TOP + STROKE - PLATE_SPEED;
+/// The left floor falls toward the shaft so drained liquid boards the plate.
+const SLOPE_HIGH_X: f32 = -0.70;
+const SLOPE_HIGH_Y: f32 = 0.16;
+const SLOPE_LOW_Y: f32 = 0.08;
+const FLOOR_BOTTOM_Y: f32 = -2.0 * WALL_HALF;
+const FLOOR_OUTER_LEFT_X: f32 = -0.78;
+const FLOOR_OUTER_RIGHT_X: f32 = RIGHT_WALL_CENTER_X + WALL_HALF;
 
 const _: () = {
     assert!(PROOF_BATCHES == 75);
     assert!(PROOF_SECONDS > ANGLE_FLOOR);
+    assert!(DWELL > PROOF_SECONDS);
+    assert!(SHAFT_SIDE_GAP < PARTICLE_DIAMETER);
+    assert!(DIVIDER_BOTTOM_Y - PLATE_REST_TOP > PARTICLE_DIAMETER);
+    assert!(SAMPLE_PLATE_TOP > SPILL_LIP_Y);
+    assert!(PLATE_SPEED > 0.0 && PLATE_SPEED <= 0.30);
+    assert!(SLOPE_LOW_Y > PLATE_REST_TOP);
+    assert!(SLOPE_LOW_Y < DIVIDER_BOTTOM_Y);
+    assert!(SLOPE_HIGH_Y < BOTTOM_TRAY_Y);
 };
 
 const UPPER_PIVOT: Vec2 = Vec2::new(0.55, TOP_TRAY_Y);
@@ -142,6 +175,7 @@ fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError
             0.0,
         )?;
     }
+    attach_polygon(world, ground, &vessel::floor_wedge())?;
     Ok(())
 }
 
@@ -211,6 +245,23 @@ fn create_plate_joint(
     world
         .create_joint(JointDef::from(definition))
         .map_err(|_error| SceneError::Body)
+}
+
+fn attach_polygon(world: &mut World, body: BodyId, points: &[Vec2]) -> Result<(), SceneError> {
+    let polygon = PolygonShape::new(points).map_err(|_error| SceneError::Geometry)?;
+    let definition = FixtureDef::new(
+        Shape::from(polygon),
+        0.0,
+        WALL_FRICTION,
+        0.0,
+        false,
+        FilterData::default(),
+    )
+    .map_err(|_error| SceneError::Fixture)?;
+    world
+        .create_fixture(body, &definition)
+        .map_err(|_error| SceneError::Fixture)?;
+    Ok(())
 }
 
 fn attach_box(
@@ -286,6 +337,15 @@ fn push_box_outline(
         Vec2::new(center.x + half_width, center.y + half_height),
         Vec2::new(center.x - half_width, center.y + half_height),
     ];
+    for index in 0..corners.len() {
+        segments.push(RigidSegment {
+            start: corners[index],
+            end: corners[(index + 1) % corners.len()],
+        });
+    }
+}
+
+fn push_polygon_outline(segments: &mut Vec<RigidSegment>, corners: &[Vec2]) {
     for index in 0..corners.len() {
         segments.push(RigidSegment {
             start: corners[index],
@@ -377,6 +437,7 @@ impl SceneHooks for StackedDripHooks {
                 wall.half_height,
             );
         }
+        push_polygon_outline(&mut segments, &vessel::floor_wedge());
         let trays = vessel::tray_fixtures();
         push_body_boxes(&mut segments, world, self.upper.body, &trays)?;
         push_body_boxes(&mut segments, world, self.middle.body, &trays)?;
