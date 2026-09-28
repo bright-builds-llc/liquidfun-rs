@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Phase 33 context gathered
-last_updated: "2026-09-28T00:10:17.432Z"
-last_activity: 2026-09-28 -- Phase 33 planning complete
+stopped_at: Completed 33-01-PLAN.md
+last_updated: "2026-09-28T00:34:45.155Z"
+last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 38
-  completed_plans: 34
-  percent: 89
+  completed_plans: 35
+  percent: 92
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 33
-Plan: Not started
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-09-28 -- Phase 33 planning complete
+Last activity: 2026-09-28 -- Completed 33-01 stacked drip scene
 
-Progress: [██████████] 100%
+Progress: [█████████░] 92%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -114,6 +114,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 32]: Passing Chromium smoke is browser-gate evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing smoke command is not a review acknowledgment.
 - [Phase 32]: The plate spans the shaft and the 1.80 m stroke keeps its top above the spill lip one second into the descent. — A 0.10 m side gap drained liquid to the floor. The vertical slot stays wider than one particle while the plate seals the shaft. Dwell stays 3 s and the revolute motor stays off.
 - [Phase 32]: Passing return tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-11 keep independent AI review eligible, and a passing cargo test is not a review acknowledgment.
+- [Phase 33]: Counterweight density is 1.05 so a loaded tray stays poured through the 5 second proof while an empty tray still rests on the lower limit. — Density 8 held the empty trays, and the loaded trays returned under 0.05 rad before the 5 second sample.
+- [Phase 33]: Angular damping is 20 so a poured tray has not crept back under 0.05 rad by the 5 second proof sample. — Damping 0.4 and 4 let the trays return to the lower limit before the sample even after the counterweight was lightened.
+- [Phase 33]: Plan 33-01 summary records the cascade evidence and does not approve the implementation. — D-12 requires an independent reviewer. The implementing agent must not approve its own work.
 
 ### Pending Todos
 
@@ -150,9 +153,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 32 P02 | 7 min | 2 tasks | 13 files |
 | Phase 32 P03 | 4 min | 2 tasks | 1 files |
 | Phase 32 P04 | 24 min | 2 tasks | 3 files |
+| Phase 33 P01 | 21 min | 2 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-09-27T23:44:28.861Z
-Stopped at: Phase 33 context gathered
-Resume file: .planning/phases/33-stacked-drip-fidget/33-CONTEXT.md
+Last session: 2026-09-28T00:33:07.702Z
+Stopped at: Completed 33-01-PLAN.md
+Resume file: None
