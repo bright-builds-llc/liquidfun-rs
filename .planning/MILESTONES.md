@@ -2,7 +2,7 @@
 
 ## v1.3 Reference Testbed Scenes (Archived: 2026-09-28)
 
-**Delivered:** The twelve missing JavaScript LiquidFun testbed scenes in the existing SolidJS playground, plus Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. The six earlier scenes stay. The v1.3 label identifies planning history; the crate was not published or tagged as a release.
+**Delivered:** The twelve missing JavaScript LiquidFun testbed scenes in the existing SolidJS playground, plus Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. The six earlier scenes stay. The v1.3 label identifies planning history; the crate was not published. Annotated tag `v1.3` marks this archive.
 
 **Completed:** 8 phases, 38 plans, 76 tasks.
 
@@ -34,7 +34,7 @@
 - [Milestone audit](milestones/v1.3-MILESTONE-AUDIT.md)
 - [Completion state](milestones/v1.3-STATE.md)
 
-**Next:** No new milestone scope chosen. Use `/gsd-new-milestone` when ready; define fresh requirements and continue phase numbering after 33. Phase directories remain in place for stable historical references. No Git version tag was created: archive completion is not release-tag authorization.
+**Next:** No new milestone scope chosen. Use `/gsd-new-milestone` when ready; define fresh requirements and continue phase numbering after 33. Phase directories remain in place for stable historical references. The owner authorized annotated tag `v1.3` on 2026-09-28. That tag marks this planning archive. It is not crate publication.
 
 ---
 

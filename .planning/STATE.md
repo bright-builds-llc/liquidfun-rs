@@ -47,7 +47,7 @@ v1.3 Reference Testbed Scenes is archived. Phase numbering continues after 33. N
 
 v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key Decisions.
 
-- [v1.3]: Archive is a planning label. No git release tag and no crate publication.
+- [v1.3]: Archive is a planning label. No crate publication. Annotated tag `v1.3` marks the archive.
 - The recorded ≤ 3× pair stays bound to git `89d34564`. A fresh unprofiled pair is required before claiming that ratio for later HEAD.
 
 ### Pending Todos

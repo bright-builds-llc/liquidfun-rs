@@ -137,7 +137,7 @@ Twelve missing JavaScript LiquidFun testbed scenes in the existing playground, t
 
 - A new playground scene needs a catalog record, a portrait frame, a README plan, and a phone-height check.
 - Side-shaft returns keep the motor off and move an original particle id. They do not teleport particles.
-- Planning archive is not a git release tag.
+- Crate publication stays separate from the archive. Annotated tag `v1.3` marks this milestone only.
 
 ### Key Lessons
 
@@ -158,6 +158,6 @@ Twelve missing JavaScript LiquidFun testbed scenes in the existing playground, t
 | v1.0 Experimental Foundation | 16 | 252 | 2026-09-17 | No |
 | v1.1 Web Playground | 6 | 39 | 2026-09-20 | No |
 | v1.2 Native Performance Closing | 4 | 23 | 2026-09-21 | No |
-| v1.3 Reference Testbed Scenes | 8 | 38 | 2026-09-28 | No |
+| v1.3 Reference Testbed Scenes | 8 | 38 | 2026-09-28 | Tag `v1.3` only |
 
-Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. v1.3 filled the missing testbed catalog and added four original scenes. All four archives withhold release tags.
+Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. v1.3 filled the missing testbed catalog and added four original scenes. v1.0 through v1.2 withhold release tags. The owner authorized annotated tag `v1.3` as a milestone marker, not crate publication.
