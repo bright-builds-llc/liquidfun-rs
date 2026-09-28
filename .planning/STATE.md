@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 33-02-PLAN.md
-last_updated: "2026-09-28T00:45:01.982Z"
+stopped_at: Completed 33-03-PLAN.md
+last_updated: "2026-09-28T00:51:03.959Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 38
-  completed_plans: 36
-  percent: 95
+  completed_plans: 37
+  percent: 97
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 33
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
-Last activity: 2026-09-28 -- Completed 33-02 stacked drip catalog
+Last activity: 2026-09-28
 
 Progress: [██████████] 95%
 
@@ -120,6 +120,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 33]: Kept the planned stacked-drip view rectangle because Plan 01 did not retune walls, pivots, or stroke. — Finished wall, tray, and plate endpoints still fit inside minX -0.86, minY -0.16, maxX 1.68, maxY 2.18 with about 0.08 m of pad.
 - [Phase 33]: Set the stacked-drip phone height floor to 0.39 because the fitted iPhone fraction is 0.391. — The plan says to lower only MIN_HEIGHT_FRACTION when the honest rectangle stays under 0.40. The view rectangle was not enlarged.
 - [Phase 33]: Plan 33-02 summary records the catalog evidence and does not approve the implementation. — D-12 requires an independent reviewer. The implementing agent must not approve its own work.
+- [Phase 33]: Left ALL_SCENE_TIMEOUT_MS at 380_000 because Chromium smoke finished in 38.8 seconds. — The suite did not time out, so the plan forbids raising the timeout.
+- [Phase 33]: Passing Chromium smoke is evidence only; this implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent review separate from the smoke gate.
 
 ### Pending Todos
 
@@ -158,9 +160,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 32 P04 | 24 min | 2 tasks | 3 files |
 | Phase 33 P01 | 21 min | 2 tasks | 6 files |
 | Phase 33 P02 | 7 min | 2 tasks | 13 files |
+| Phase 33 P03 | 3 min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-09-28T00:44:33.356Z
-Stopped at: Completed 33-02-PLAN.md
+Last session: 2026-09-28T00:50:27.991Z
+Stopped at: Completed 33-03-PLAN.md
 Resume file: None
