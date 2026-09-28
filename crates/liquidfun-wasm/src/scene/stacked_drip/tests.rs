@@ -52,27 +52,41 @@ fn cohort_passes_below_the_bottom_tray() {
     let end_count = session
         .live_particle_count()
         .expect("the same water should still be live");
-    let drained = session.read_particles(|world, system| {
+    let cohort = session.read_particles(|world, system| {
         let view = world
             .particle_system_view(system)
             .expect("the water system should still be live");
-        started_above.iter().all(|id| {
-            view.particle_ids()
-                .iter()
-                .zip(view.positions())
-                .any(|(live, position)| {
-                    live == id
-                        && position.y < super::BOTTOM_TRAY_Y
-                        && position.x < super::DIVIDER_INNER_X
-                })
-        })
+        started_above
+            .iter()
+            .filter_map(|id| {
+                view.particle_ids()
+                    .iter()
+                    .zip(view.positions())
+                    .find(|(live, _position)| *live == id)
+                    .map(|(_live, position)| *position)
+            })
+            .collect::<Vec<_>>()
     });
 
     // Assert
     assert_eq!(end_count, start_count, "the live count stays unchanged");
+    assert_eq!(
+        cohort.len(),
+        started_above.len(),
+        "every original particle is still live"
+    );
     assert!(
-        drained,
-        "every original particle that began above the top tray is below the bottom tray and left of the divider"
+        cohort
+            .iter()
+            .all(|position| position.y < super::BOTTOM_TRAY_Y),
+        "every original particle that began above the top tray is below the bottom tray, cohort {cohort:?}"
+    );
+    let bypassed = cohort
+        .iter()
+        .any(|position| position.x >= super::DIVIDER_INNER_X && position.y >= super::BOTTOM_TRAY_Y);
+    assert!(
+        !bypassed,
+        "an original particle is right of the divider while still at or above the bottom tray, cohort {cohort:?}"
     );
 }
 
@@ -143,6 +157,53 @@ fn plate_stays_down_during_the_cascade() {
     assert!(
         (speed - 0.0).abs() < SPEED_TOLERANCE,
         "the plate motor stays at 0 during the dwell, speed {speed}"
+    );
+}
+
+#[test]
+fn return_lifts_an_original_particle_above_the_top_tray() {
+    // Arrange
+    let mut session = fresh_session();
+    let started_above = ids_above_the_top_tray(&session);
+    let start_count = session
+        .live_particle_count()
+        .expect("the reservoir should start with water");
+
+    // Act
+    advance_return(&mut session);
+    let end_count = session
+        .live_particle_count()
+        .expect("the same water should still be live");
+    let cohort = session.read_particles(|world, system| {
+        let view = world
+            .particle_system_view(system)
+            .expect("the water system should still be live");
+        started_above
+            .iter()
+            .filter_map(|id| {
+                view.particle_ids()
+                    .iter()
+                    .zip(view.positions())
+                    .find(|(live, _position)| *live == id)
+                    .map(|(_live, position)| *position)
+            })
+            .collect::<Vec<_>>()
+    });
+    let returned = cohort
+        .iter()
+        .any(|position| position.y > super::TOP_TRAY_Y && position.x < super::DIVIDER_INNER_X);
+    let translation = plate_translation(&session);
+    let motors_enabled = revolute_motors_enabled(&session);
+
+    // Assert
+    assert_eq!(end_count, start_count, "the live count stays unchanged");
+    assert!(
+        returned,
+        "an original particle that started above the top tray is above it again and left of the divider, translation {translation}, cohort {cohort:?}"
+    );
+    assert!(
+        motors_enabled.iter().all(|enabled| !enabled),
+        "each tray motor stays disabled"
     );
 }
 
@@ -286,6 +347,34 @@ fn advance_proof(session: &mut SessionCore) {
             .advance(4)
             .expect("the cascade proof window should step");
     }
+}
+
+fn advance_return(session: &mut SessionCore) {
+    let seconds = super::DWELL + (super::STROKE / super::PLATE_SPEED) + 1.0;
+    let steps = (seconds / super::SIM_DT).ceil() as usize;
+    let batches = steps.div_ceil(4);
+    for _ in 0..batches {
+        session.advance(4).expect("the return window should step");
+    }
+}
+
+fn revolute_motors_enabled(session: &SessionCore) -> Vec<bool> {
+    session.read_particles(|world, _system| {
+        let observation = world
+            .world_observation(WorldObservationLimits::reviewed())
+            .expect("reviewed observation should include the tray joints");
+        observation
+            .joints()
+            .iter()
+            .filter(|joint| joint.snapshot().kind() == JointKind::Revolute)
+            .map(|joint| {
+                let JointDef::Revolute(definition) = joint.snapshot().definition() else {
+                    panic!("a revolute tray should carry a revolute definition");
+                };
+                definition.is_motor_enabled()
+            })
+            .collect()
+    })
 }
 
 fn particle_state(session: &SessionCore) -> (usize, Vec<Vec2>, Vec<Vec2>) {
