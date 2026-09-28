@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
-status: executing
-stopped_at: Completed 33-03-PLAN.md
-last_updated: "2026-09-28T00:51:03.959Z"
+status: verifying
+stopped_at: Completed 33-04-PLAN.md
+last_updated: "2026-09-28T02:16:39.166Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 38
-  completed_plans: 37
-  percent: 97
+  completed_plans: 38
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 
 Phase: 33
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-28
 
 Progress: [██████████] 95%
@@ -122,6 +122,8 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 33]: Plan 33-02 summary records the catalog evidence and does not approve the implementation. — D-12 requires an independent reviewer. The implementing agent must not approve its own work.
 - [Phase 33]: Left ALL_SCENE_TIMEOUT_MS at 380_000 because Chromium smoke finished in 38.8 seconds. — The suite did not time out, so the plan forbids raising the timeout.
 - [Phase 33]: Passing Chromium smoke is evidence only; this implementing agent did not approve the work. — The 2026-09-16 owner policy keeps independent review separate from the smoke gate.
+- [Phase 33]: The plate spans the shaft and the 1.90 m stroke keeps its top above the y 1.70 spill lip one second into the descent. — A 0.10 m side gap drains to the floor. The left floor slopes into the 0.16 m slot so liquid boards the plate. Dwell stays 6 s and the revolute motors stay off.
+- [Phase 33]: Passing return tests are evidence only. This implementing agent did not approve the work. — The 2026-09-16 owner policy and D-12 keep independent AI review eligible, and a passing cargo test is not a review acknowledgment.
 
 ### Pending Todos
 
@@ -161,9 +163,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 33 P01 | 21 min | 2 tasks | 6 files |
 | Phase 33 P02 | 7 min | 2 tasks | 13 files |
 | Phase 33 P03 | 3 min | 2 tasks | 1 files |
+| Phase 33 P04 | 25 min | 2 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-09-28T00:50:27.991Z
-Stopped at: Completed 33-03-PLAN.md
+Last session: 2026-09-28T02:16:39.164Z
+Stopped at: Completed 33-04-PLAN.md
 Resume file: None

@@ -50,7 +50,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 - [x] **Phase 30: Periodic hydraulic fountain** - A timed piston squeezes liquid so it travels elsewhere (completed 2026-09-27)
 - [x] **Phase 31: Sinusoidal wave tank** - A still pool whose end platform rises and falls and sends waves (completed 2026-09-27)
 - [x] **Phase 32: Liquid motion bubbler** - Colored liquid drips through a narrow waist and turns a small wheel (completed 2026-09-27)
-- [ ] **Phase 33: Stacked drip fidget** - Liquid drains through a stack of moving parts, and each part reacts when the drip reaches it
+- [x] **Phase 33: Stacked drip fidget** - Liquid drains through a stack of moving parts, and each part reacts when the drip reaches it (completed 2026-09-28)
 
 ## Phase Details
 
@@ -176,13 +176,13 @@ Plans:
 **Goal:** Visitors can watch Stacked Drip: colored liquid leaves a top reservoir, tips three motor-off trays from top to bottom, and a quiet side shaft returns the same particles, without changing Liquid Timer or Liquid Bubbler.
 **Requirements**: none
 **Depends on:** Phase 32
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 33-01-PLAN.md — Three motor-off revolute trays, a delayed side-shaft plate, and a top-to-bottom cascade proof
 - [x] 33-02-PLAN.md — Catalog record, static preview, portrait frame, and README plan
 - [x] 33-03-PLAN.md — Chromium smoke for Stacked Drip and the existing catalog
-- [ ] 33-04-PLAN.md — Open the return shaft so an original particle returns above the top tray
+- [x] 33-04-PLAN.md — Open the return shaft so an original particle returns above the top tray
 
 ## Progress
 
@@ -205,6 +205,6 @@ Plans:
 | 30. Periodic hydraulic fountain | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 32. Liquid motion bubbler | v1.3 | 4/4 | Complete    | 2026-09-27 |
-| 33. Stacked drip fidget | v1.3 | 3/4 | In Progress|  |
+| 33. Stacked drip fidget | v1.3 | 4/4 | Complete   | 2026-09-28 |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
