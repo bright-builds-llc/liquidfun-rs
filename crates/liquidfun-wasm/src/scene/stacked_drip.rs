@@ -1,6 +1,6 @@
 //! Stacked Drip: colored water lands on three motor-off trays from top to bottom.
 //!
-//! A side-shaft plate stays down through that cascade, then creeps upward later.
+//! A side-shaft plate stays down through that cascade, then eases up, pauses, and eases back down.
 
 mod vessel;
 
@@ -17,12 +17,22 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.025;
+/// Twenty millimetres across.
+const PARTICLE_DIAMETER: f32 = 0.020;
+const PARTICLE_RADIUS: f32 = PARTICLE_DIAMETER * 0.5;
+/// Substeps so this diameter still holds against the plate and the shaft walls.
+pub(crate) const PARTICLE_ITERATIONS: u32 = 12;
 const PARTICLE_DAMPING: f32 = 0.2;
 const DRIP_COLOR: ParticleColor = ParticleColor::new(64, 196, 196, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const SIM_DT: f32 = 1.0 / 60.0;
 const WALL_HALF: f32 = 0.04;
+/// Tall enough that a splash from the reservoir cannot clear the side walls.
+const WALL_TOP_Y: f32 = 3.20;
+/// Lid below the side-wall tops, so a splash cannot leave the tank.
+const CEILING_CENTER_Y: f32 = 3.05;
+const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
+const WALL_CENTER_Y: f32 = WALL_HALF_HEIGHT;
 const WALL_FRICTION: f32 = 0.2;
 const POUR_ANGLE: f32 = std::f32::consts::TAU / 8.0;
 /// Slow enough that a poured tray is still past the angle floor at the 5 s sample.
@@ -34,17 +44,20 @@ const COUNTERWEIGHT_DENSITY: f32 = 1.05;
 /// Rests one polygon-skin pair above the floor so a flush contact does not
 /// pop the plate off translation 0 during the dwell.
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
-const PARTICLE_DIAMETER: f32 = 2.0 * PARTICLE_RADIUS;
-/// Narrower than one particle, matching the bubbler seal, so liquid cannot
-/// fall between the divider and the plate or between the plate and the wall.
-const SHAFT_SIDE_GAP: f32 = 0.02;
+/// The plate overlaps each shaft wall by one polygon skin. A gap wide enough
+/// for the skins to clear would also let these particles fall beside the plate.
+const PLATE_WALL_OVERLAP: f32 = 0.01;
+/// Same negative group as the divider and the right wall, so the overlap does
+/// not jam the slide. The plate still rests on the floor.
+const PLATE_FILTER: FilterData = FilterData::new(0x0001, 0xFFFF, -2);
+const SHAFT_WALL_FILTER: FilterData = FilterData::new(0x0001, 0xFFFF, -2);
 const RIGHT_WALL_CENTER_X: f32 = 1.56;
 const RIGHT_WALL_INNER_X: f32 = RIGHT_WALL_CENTER_X - WALL_HALF;
 const DIVIDER_INNER_X: f32 = 0.90;
 const DIVIDER_CENTER_X: f32 = DIVIDER_INNER_X + WALL_HALF;
 const DIVIDER_OUTER_X: f32 = DIVIDER_CENTER_X + WALL_HALF;
-const PLATE_LEFT_X: f32 = DIVIDER_OUTER_X + SHAFT_SIDE_GAP;
-const PLATE_RIGHT_X: f32 = RIGHT_WALL_INNER_X - SHAFT_SIDE_GAP;
+const PLATE_LEFT_X: f32 = DIVIDER_OUTER_X - PLATE_WALL_OVERLAP;
+const PLATE_RIGHT_X: f32 = RIGHT_WALL_INNER_X + PLATE_WALL_OVERLAP;
 const PLATE_HALF_WIDTH: f32 = (PLATE_RIGHT_X - PLATE_LEFT_X) * 0.5;
 const PLATE_CENTER_X: f32 = (PLATE_LEFT_X + PLATE_RIGHT_X) * 0.5;
 const PLATE_HALF_HEIGHT: f32 = 0.02;
@@ -52,10 +65,15 @@ const PLATE_CENTER: Vec2 = Vec2::new(PLATE_CENTER_X, PLATE_HALF_HEIGHT + PLATE_F
 const PLATE_REST_TOP: f32 = PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE + PLATE_HALF_HEIGHT;
 const PLATE_DENSITY: f32 = 1.0;
 const STROKE: f32 = 1.90;
-const PLATE_SPEED: f32 = 0.15;
+/// Peak speed at mid-stroke. Three times the previous 0.45 m/s cruise.
+const PLATE_SPEED: f32 = 1.35;
 const DWELL: f32 = 6.0;
-const RISE_SECONDS: f32 = STROKE / PLATE_SPEED;
-const CYCLE: f32 = DWELL + RISE_SECONDS + RISE_SECONDS;
+/// Pause at the top of the stroke before the descent.
+const TOP_DWELL: f32 = 3.0;
+/// Peak of the smootherstep derivative, so the rise starts and ends at rest.
+const EASE_PEAK: f32 = 15.0 / 8.0;
+const RISE_SECONDS: f32 = EASE_PEAK * STROKE / PLATE_SPEED;
+const CYCLE: f32 = DWELL + RISE_SECONDS + TOP_DWELL + RISE_SECONDS;
 const LIMIT_LOW: f32 = -0.02;
 const LIMIT_HIGH: f32 = STROKE + 0.02;
 const MAX_MOTOR_FORCE: f32 = 1.0e6;
@@ -66,11 +84,19 @@ const TOP_TRAY_Y: f32 = 1.45;
 const BOTTOM_TRAY_Y: f32 = 0.55;
 /// Open above the resting plate by more than one particle diameter.
 const DIVIDER_BOTTOM_Y: f32 = 0.22;
-/// Spill lip. One second into the descent the plate top is still above this.
+/// Spill lip. The plate is held fully raised through the pause above this.
 const SPILL_LIP_Y: f32 = 1.70;
 const DIVIDER_HALF_HEIGHT: f32 = (SPILL_LIP_Y - DIVIDER_BOTTOM_Y) * 0.5;
 const DIVIDER_CENTER_Y: f32 = (DIVIDER_BOTTOM_Y + SPILL_LIP_Y) * 0.5;
-const SAMPLE_PLATE_TOP: f32 = PLATE_REST_TOP + STROKE - PLATE_SPEED;
+/// Halfway through the pause at the top, while liquid can still cross the lip.
+const SPILL_SAMPLE_SECONDS: f32 = TOP_DWELL * 0.5;
+const SAMPLE_PLATE_TOP: f32 = PLATE_REST_TOP + STROKE;
+/// Outer face of the counterweight, in tray-local metres.
+const COUNTERWEIGHT_OUTER_X: f32 = 0.22;
+/// Air between that face and the divider, so the top tray reads flush.
+const DIVIDER_CLEARANCE: f32 = 0.03;
+const UPPER_PIVOT_X: f32 = DIVIDER_INNER_X - DIVIDER_CLEARANCE - COUNTERWEIGHT_OUTER_X;
+const TRAY_PIVOT_STEP: f32 = 0.30;
 /// The left floor falls toward the shaft so drained liquid boards the plate.
 const SLOPE_HIGH_X: f32 = -0.70;
 const SLOPE_HIGH_Y: f32 = 0.16;
@@ -83,24 +109,30 @@ const _: () = {
     assert!(PROOF_BATCHES == 75);
     assert!(PROOF_SECONDS > ANGLE_FLOOR);
     assert!(DWELL > PROOF_SECONDS);
-    assert!(SHAFT_SIDE_GAP < PARTICLE_DIAMETER);
+    assert!(TOP_DWELL >= 2.0);
+    assert!(RISE_SECONDS > STROKE / PLATE_SPEED);
+    assert!(PLATE_LEFT_X < DIVIDER_OUTER_X);
+    assert!(PLATE_RIGHT_X > RIGHT_WALL_INNER_X);
     assert!(DIVIDER_BOTTOM_Y - PLATE_REST_TOP > PARTICLE_DIAMETER);
     assert!(SAMPLE_PLATE_TOP > SPILL_LIP_Y);
-    assert!(PLATE_SPEED > 0.0 && PLATE_SPEED <= 0.30);
+    assert!(PLATE_SPEED > 0.0 && PLATE_SPEED <= 2.0);
+    assert!(DIVIDER_CLEARANCE > 0.02);
+    assert!(UPPER_PIVOT_X + COUNTERWEIGHT_OUTER_X < DIVIDER_INNER_X);
     assert!(SLOPE_LOW_Y > PLATE_REST_TOP);
     assert!(SLOPE_LOW_Y < DIVIDER_BOTTOM_Y);
     assert!(SLOPE_HIGH_Y < BOTTOM_TRAY_Y);
+    assert!(WALL_TOP_Y > SAMPLE_PLATE_TOP);
 };
 
-const UPPER_PIVOT: Vec2 = Vec2::new(0.55, TOP_TRAY_Y);
-const MIDDLE_PIVOT: Vec2 = Vec2::new(0.25, 1.00);
-const LOWER_PIVOT: Vec2 = Vec2::new(-0.05, BOTTOM_TRAY_Y);
+const UPPER_PIVOT: Vec2 = Vec2::new(UPPER_PIVOT_X, TOP_TRAY_Y);
+const MIDDLE_PIVOT: Vec2 = Vec2::new(UPPER_PIVOT_X - TRAY_PIVOT_STEP, 1.00);
+const LOWER_PIVOT: Vec2 = Vec2::new(UPPER_PIVOT_X - 2.0 * TRAY_PIVOT_STEP, BOTTOM_TRAY_Y);
 
 const WATER_POLYGON: [Vec2; 4] = [
-    Vec2::new(0.20, 1.62),
-    Vec2::new(0.55, 1.62),
-    Vec2::new(0.55, 1.78),
-    Vec2::new(0.20, 1.78),
+    Vec2::new(-0.45, 1.62),
+    Vec2::new(0.75, 1.62),
+    Vec2::new(0.75, 1.98),
+    Vec2::new(-0.45, 1.98),
 ];
 
 const PLATE_LOCAL: vessel::LocalBox = vessel::LocalBox {
@@ -173,6 +205,11 @@ fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError
             wall.half_height,
             wall.center,
             0.0,
+            if wall.shares_plate_group {
+                SHAFT_WALL_FILTER
+            } else {
+                FilterData::default()
+            },
         )?;
     }
     attach_polygon(world, ground, &vessel::floor_wedge())?;
@@ -196,6 +233,7 @@ fn create_tray_rig(world: &mut World, ground: BodyId, pivot: Vec2) -> Result<Tra
             fixture.half_height,
             fixture.center,
             fixture.density,
+            FilterData::default(),
         )?;
     }
     let joint = RevoluteJointDef::new(ground, body)
@@ -224,6 +262,7 @@ fn create_plate(world: &mut World) -> Result<BodyId, SceneError> {
         PLATE_LOCAL.half_height,
         PLATE_LOCAL.center,
         PLATE_LOCAL.density,
+        PLATE_FILTER,
     )?;
     Ok(plate)
 }
@@ -271,6 +310,7 @@ fn attach_box(
     half_height: f32,
     center: Vec2,
     density: f32,
+    filter: FilterData,
 ) -> Result<(), SceneError> {
     let polygon = PolygonShape::oriented_box(half_width, half_height, center, 0.0)
         .map_err(|_error| SceneError::Geometry)?;
@@ -280,7 +320,7 @@ fn attach_box(
         WALL_FRICTION,
         0.0,
         false,
-        FilterData::default(),
+        filter,
     )
     .map_err(|_error| SceneError::Fixture)?;
     world
@@ -317,12 +357,26 @@ fn create_water_group(world: &mut World) -> Result<ParticleSystemId, SceneError>
 fn scheduled_plate_speed(elapsed: f32) -> f32 {
     let phase = elapsed.rem_euclid(CYCLE);
     if phase < DWELL {
-        0.0
-    } else if phase < DWELL + RISE_SECONDS {
-        PLATE_SPEED
-    } else {
-        -PLATE_SPEED
+        return 0.0;
     }
+    let after_bottom = phase - DWELL;
+    if after_bottom < RISE_SECONDS {
+        return eased_travel_speed(after_bottom / RISE_SECONDS);
+    }
+    let after_rise = after_bottom - RISE_SECONDS;
+    if after_rise < TOP_DWELL {
+        return 0.0;
+    }
+    let descent = after_rise - TOP_DWELL;
+    -eased_travel_speed(descent / RISE_SECONDS)
+}
+
+/// Smootherstep speed: zero speed and zero acceleration at each end of the stroke.
+fn eased_travel_speed(progress: f32) -> f32 {
+    let unit = progress.clamp(0.0, 1.0);
+    let toward_end = unit * (1.0 - unit);
+    let shape = 30.0 * toward_end * toward_end;
+    PLATE_SPEED * shape / EASE_PEAK
 }
 
 fn push_box_outline(

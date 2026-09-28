@@ -21,7 +21,10 @@ fn reservoir_starts_still_above_the_top_tray() {
     let translation = plate_translation(&session);
 
     // Assert
-    assert!(live_count > 0, "the reservoir should start with water");
+    assert!(
+        live_count == 2000,
+        "the reservoir should hold 2000 particles, got {live_count}"
+    );
     assert!(
         velocities.iter().copied().all(velocity_is_zero),
         "a fresh drip has no particle velocity"
@@ -157,6 +160,55 @@ fn plate_stays_down_during_the_cascade() {
     assert!(
         (speed - 0.0).abs() < SPEED_TOLERANCE,
         "the plate motor stays at 0 during the dwell, speed {speed}"
+    );
+}
+
+#[test]
+fn plate_speed_eases_through_each_end_and_pauses_at_the_top() {
+    // Arrange
+    let rise = super::RISE_SECONDS;
+    let top = super::DWELL + rise;
+    let descent = top + super::TOP_DWELL;
+
+    // Act
+    let bottom = super::scheduled_plate_speed(super::DWELL * 0.5);
+    let leaving_bottom = super::scheduled_plate_speed(super::DWELL + rise * 0.1);
+    let mid_rise = super::scheduled_plate_speed(super::DWELL + rise * 0.5);
+    let arriving_top = super::scheduled_plate_speed(top - super::SIM_DT);
+    let held = super::scheduled_plate_speed(top + super::TOP_DWELL * 0.5);
+    let leaving_top = super::scheduled_plate_speed(descent + rise * 0.1);
+    let mid_descent = super::scheduled_plate_speed(descent + rise * 0.5);
+    let arriving_bottom = super::scheduled_plate_speed(descent + rise - super::SIM_DT);
+
+    // Assert
+    assert!(
+        bottom.abs() < SPEED_TOLERANCE,
+        "the bottom pause is stopped"
+    );
+    assert!(held.abs() < SPEED_TOLERANCE, "the top pause is stopped");
+    assert!(
+        leaving_bottom > 0.0 && leaving_bottom < mid_rise * 0.5,
+        "the rise leaves the bottom slower than the cruise, speed {leaving_bottom}"
+    );
+    assert!(
+        (mid_rise - super::PLATE_SPEED).abs() < 1.0e-3,
+        "the rise peaks at the cruise speed, speed {mid_rise}"
+    );
+    assert!(
+        arriving_top > 0.0 && arriving_top < mid_rise * 0.5,
+        "the rise arrives at the top slower than the cruise, speed {arriving_top}"
+    );
+    assert!(
+        leaving_top < 0.0 && leaving_top.abs() < mid_descent.abs() * 0.5,
+        "the descent leaves the top slower than the cruise, speed {leaving_top}"
+    );
+    assert!(
+        (mid_descent + super::PLATE_SPEED).abs() < 1.0e-3,
+        "the descent peaks at the cruise speed, speed {mid_descent}"
+    );
+    assert!(
+        arriving_bottom < 0.0 && arriving_bottom.abs() < mid_descent.abs() * 0.5,
+        "the descent arrives at the bottom slower than the cruise, speed {arriving_bottom}"
     );
 }
 
@@ -350,7 +402,7 @@ fn advance_proof(session: &mut SessionCore) {
 }
 
 fn advance_return(session: &mut SessionCore) {
-    let seconds = super::DWELL + (super::STROKE / super::PLATE_SPEED) + 1.0;
+    let seconds = super::DWELL + super::RISE_SECONDS + super::SPILL_SAMPLE_SECONDS;
     let steps = (seconds / super::SIM_DT).ceil() as usize;
     let batches = steps.div_ceil(4);
     for _ in 0..batches {

@@ -8,7 +8,7 @@ use liquidfun::math::Vec2;
 use super::{
     COUNTERWEIGHT_DENSITY, DECK_DENSITY, DIVIDER_CENTER_X, DIVIDER_CENTER_Y, DIVIDER_HALF_HEIGHT,
     DIVIDER_INNER_X, FLOOR_BOTTOM_Y, FLOOR_OUTER_LEFT_X, FLOOR_OUTER_RIGHT_X, RIGHT_WALL_CENTER_X,
-    SLOPE_HIGH_X, SLOPE_HIGH_Y, SLOPE_LOW_Y, WALL_HALF,
+    SLOPE_HIGH_X, SLOPE_HIGH_Y, SLOPE_LOW_Y, WALL_CENTER_Y, WALL_HALF, WALL_HALF_HEIGHT,
 };
 
 #[derive(Clone, Copy)]
@@ -16,6 +16,8 @@ pub(super) struct BoxSpec {
     pub(super) half_width: f32,
     pub(super) half_height: f32,
     pub(super) center: Vec2,
+    /// Shares the plate's negative collision group so the plate can overlap it.
+    pub(super) shares_plate_group: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -26,12 +28,13 @@ pub(super) struct LocalBox {
     pub(super) density: f32,
 }
 
-pub(super) fn wall_boxes() -> [BoxSpec; 4] {
+pub(super) fn wall_boxes() -> [BoxSpec; 5] {
     [
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 1.05,
-            center: Vec2::new(-0.74, 1.05),
+            half_height: WALL_HALF_HEIGHT,
+            center: Vec2::new(-0.74, WALL_CENTER_Y),
+            shares_plate_group: false,
         },
         BoxSpec {
             half_width: (FLOOR_OUTER_RIGHT_X - DIVIDER_INNER_X) * 0.5,
@@ -40,16 +43,28 @@ pub(super) fn wall_boxes() -> [BoxSpec; 4] {
                 (DIVIDER_INNER_X + FLOOR_OUTER_RIGHT_X) * 0.5,
                 FLOOR_BOTTOM_Y + WALL_HALF,
             ),
+            shares_plate_group: false,
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 1.05,
-            center: Vec2::new(RIGHT_WALL_CENTER_X, 1.05),
+            half_height: WALL_HALF_HEIGHT,
+            center: Vec2::new(RIGHT_WALL_CENTER_X, WALL_CENTER_Y),
+            shares_plate_group: true,
         },
         BoxSpec {
             half_width: WALL_HALF,
             half_height: DIVIDER_HALF_HEIGHT,
             center: Vec2::new(DIVIDER_CENTER_X, DIVIDER_CENTER_Y),
+            shares_plate_group: true,
+        },
+        BoxSpec {
+            half_width: (FLOOR_OUTER_RIGHT_X - FLOOR_OUTER_LEFT_X) * 0.5,
+            half_height: WALL_HALF,
+            center: Vec2::new(
+                (FLOOR_OUTER_LEFT_X + FLOOR_OUTER_RIGHT_X) * 0.5,
+                super::CEILING_CENTER_Y,
+            ),
+            shares_plate_group: false,
         },
     ]
 }

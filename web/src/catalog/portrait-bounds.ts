@@ -70,7 +70,7 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   "hydraulic-fountain": { minX: -1.3, minY: -0.15, maxX: 1.3, maxY: 1.6 },
   "wave-tank": { minX: -0.12, minY: -0.28, maxX: 1.52, maxY: 1.02 },
   "liquid-bubbler": { minX: -0.71, minY: -0.16, maxX: 1.12, maxY: 1.98 },
-  "stacked-drip": { minX: -0.86, minY: -0.16, maxX: 1.68, maxY: 2.18 },
+  "stacked-drip": { minX: -0.86, minY: -0.16, maxX: 1.68, maxY: 3.28 },
 };
 
 /** World rectangle fitted for one scene at the canvas's current aspect. */

@@ -97,10 +97,12 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
 
 const DEFAULT_PARTICLE_ITERATIONS: u32 = 2;
 
-/// Particle substeps for one scene. Liquid Tumbler needs more than the shared default.
+/// Particle substeps for one scene. Liquid Tumbler and Stacked Drip need more
+/// than the shared default so their fine particles stay on the solids.
 pub(crate) const fn particle_iterations(id: SceneId) -> u32 {
     match id {
         SceneId::LiquidTumbler => liquid_tumbler::PARTICLE_ITERATIONS,
+        SceneId::StackedDrip => stacked_drip::PARTICLE_ITERATIONS,
         _ => DEFAULT_PARTICLE_ITERATIONS,
     }
 }
