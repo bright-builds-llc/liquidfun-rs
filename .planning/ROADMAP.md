@@ -176,11 +176,11 @@ Plans:
 **Goal:** Visitors can watch Stacked Drip: colored liquid leaves a top reservoir, tips three motor-off trays from top to bottom, and a quiet side shaft returns the same particles, without changing Liquid Timer or Liquid Bubbler.
 **Requirements**: none
 **Depends on:** Phase 32
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 - [x] 33-01-PLAN.md — Three motor-off revolute trays, a delayed side-shaft plate, and a top-to-bottom cascade proof
-- [ ] 33-02-PLAN.md — Catalog record, static preview, portrait frame, and README plan
+- [x] 33-02-PLAN.md — Catalog record, static preview, portrait frame, and README plan
 - [ ] 33-03-PLAN.md — Chromium smoke for Stacked Drip and the existing catalog
 - [ ] 33-04-PLAN.md — Open the return shaft so an original particle returns above the top tray
 
@@ -205,6 +205,6 @@ Plans:
 | 30. Periodic hydraulic fountain | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 32. Liquid motion bubbler | v1.3 | 4/4 | Complete    | 2026-09-27 |
-| 33. Stacked drip fidget | v1.3 | 1/4 | In Progress|  |
+| 33. Stacked drip fidget | v1.3 | 2/4 | In Progress|  |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

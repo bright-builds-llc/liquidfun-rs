@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: executing
-stopped_at: Completed 33-01-PLAN.md
-last_updated: "2026-09-28T00:34:45.155Z"
+stopped_at: Completed 33-02-PLAN.md
+last_updated: "2026-09-28T00:45:01.982Z"
 last_activity: 2026-09-28
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 38
-  completed_plans: 35
-  percent: 92
+  completed_plans: 36
+  percent: 95
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: `.planning/PROJECT.md` (updated 2026-09-21)
 ## Current Position
 
 Phase: 33
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
-Last activity: 2026-09-28 -- Completed 33-01 stacked drip scene
+Last activity: 2026-09-28 -- Completed 33-02 stacked drip catalog
 
-Progress: [█████████░] 92%
+Progress: [██████████] 95%
 
 v1.3 Reference Testbed Scenes. Add the twelve JavaScript testbed scenes the playground does not already have. Phase numbering continues after 25. No package publication or release tag.
 
@@ -117,6 +117,9 @@ v1.2 decisions are in `.planning/milestones/v1.2-STATE.md` and PROJECT.md Key De
 - [Phase 33]: Counterweight density is 1.05 so a loaded tray stays poured through the 5 second proof while an empty tray still rests on the lower limit. — Density 8 held the empty trays, and the loaded trays returned under 0.05 rad before the 5 second sample.
 - [Phase 33]: Angular damping is 20 so a poured tray has not crept back under 0.05 rad by the 5 second proof sample. — Damping 0.4 and 4 let the trays return to the lower limit before the sample even after the counterweight was lightened.
 - [Phase 33]: Plan 33-01 summary records the cascade evidence and does not approve the implementation. — D-12 requires an independent reviewer. The implementing agent must not approve its own work.
+- [Phase 33]: Kept the planned stacked-drip view rectangle because Plan 01 did not retune walls, pivots, or stroke. — Finished wall, tray, and plate endpoints still fit inside minX -0.86, minY -0.16, maxX 1.68, maxY 2.18 with about 0.08 m of pad.
+- [Phase 33]: Set the stacked-drip phone height floor to 0.39 because the fitted iPhone fraction is 0.391. — The plan says to lower only MIN_HEIGHT_FRACTION when the honest rectangle stays under 0.40. The view rectangle was not enlarged.
+- [Phase 33]: Plan 33-02 summary records the catalog evidence and does not approve the implementation. — D-12 requires an independent reviewer. The implementing agent must not approve its own work.
 
 ### Pending Todos
 
@@ -154,9 +157,10 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | Phase 32 P03 | 4 min | 2 tasks | 1 files |
 | Phase 32 P04 | 24 min | 2 tasks | 3 files |
 | Phase 33 P01 | 21 min | 2 tasks | 6 files |
+| Phase 33 P02 | 7 min | 2 tasks | 13 files |
 
 ## Session Continuity
 
-Last session: 2026-09-28T00:33:07.702Z
-Stopped at: Completed 33-01-PLAN.md
+Last session: 2026-09-28T00:44:33.356Z
+Stopped at: Completed 33-02-PLAN.md
 Resume file: None
