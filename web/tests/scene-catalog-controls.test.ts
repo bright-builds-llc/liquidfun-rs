@@ -39,6 +39,7 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "gravity",
   "gravity",
+  "gravity",
 ] as const;
 
 function controlLabels(controls: readonly SceneControl[]): string[] {
@@ -308,6 +309,13 @@ describe("scene catalog controls", () => {
     expect(
       (liquidBubbler?.controls ?? []).some((control) =>
         ["waist", "color", "wheel"].includes(control.id),
+      ),
+    ).toBe(false);
+    const stackedDrip = maybeSceneById("stacked-drip");
+    expect(stackedDrip?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(
+      (stackedDrip?.controls ?? []).some((control) =>
+        ["tray", "color", "speed"].includes(control.id),
       ),
     ).toBe(false);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);

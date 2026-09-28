@@ -25,11 +25,11 @@ describe("demo media capture model", () => {
     ] as const;
 
     // Assert
-    expect(actualIds).toHaveLength(22);
+    expect(actualIds).toHaveLength(23);
     expect(actualIds).toEqual(expectedIds);
     expect(new Set(actualIds).size).toBe(expectedIds.length);
     expect(actualIds[0]).toBe("wave-machine");
-    expect(actualIds.at(-1)).toBe("liquid-bubbler");
+    expect(actualIds.at(-1)).toBe("stacked-drip");
     for (const id of interactionIds) {
       const plan = SCENE_CAPTURE_PLANS.find((entry) => entry.id === id);
       expect(plan?.interactionStep).toBe(180);
