@@ -26,6 +26,7 @@ mod soup;
 mod soup_family;
 mod soup_stirrer;
 mod sparky;
+mod stacked_drip;
 mod surface_tension;
 mod theo_jansen;
 mod water_wheel;
@@ -62,6 +63,7 @@ pub(crate) enum SceneId {
     HydraulicFountain,
     WaveTank,
     LiquidBubbler,
+    StackedDrip,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -88,6 +90,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "hydraulic-fountain" => Ok(SceneId::HydraulicFountain),
         "wave-tank" => Ok(SceneId::WaveTank),
         "liquid-bubbler" => Ok(SceneId::LiquidBubbler),
+        "stacked-drip" => Ok(SceneId::StackedDrip),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -219,6 +222,7 @@ pub(crate) fn build_scene(
         SceneId::HydraulicFountain => hydraulic_fountain::build(&scene_presets),
         SceneId::WaveTank => wave_tank::build(&scene_presets),
         SceneId::LiquidBubbler => liquid_bubbler::build(&scene_presets),
+        SceneId::StackedDrip => stacked_drip::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)
