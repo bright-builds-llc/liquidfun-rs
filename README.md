@@ -173,6 +173,12 @@ change.
 
 [Animated SVG](docs/assets/readme/liquid-bubbler-10s.svg)
 
+#### [Stacked Drip](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/stacked-drip)
+
+[![Stacked Drip simulation preview](docs/assets/readme/stacked-drip-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/stacked-drip)
+
+[Animated SVG](docs/assets/readme/stacked-drip-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
