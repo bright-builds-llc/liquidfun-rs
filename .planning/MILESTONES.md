@@ -1,5 +1,43 @@
 # Project Milestones: liquidfun-rs
 
+## v1.3 Reference Testbed Scenes (Archived: 2026-09-28)
+
+**Delivered:** The twelve missing JavaScript LiquidFun testbed scenes in the existing SolidJS playground, plus Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. The six earlier scenes stay. The v1.3 label identifies planning history; the crate was not published or tagged as a release.
+
+**Completed:** 8 phases, 38 plans, 76 tasks.
+
+### Accomplishments
+
+- Added Particles, Liquid Timer, Surface Tension, Elastic Particles, Rigid Particles, Soup, Soup Stirrer, Impulse, Wave Machine, Theo Jansen, Sparky, and Drawing Particles as recognizable native ports with pinned-test credits.
+- Kept play, pause, and reset on the shared player. Soup Stirrer, Impulse, Theo Jansen, and Drawing Particles use live WASM controls rather than JavaScript physics stand-ins.
+- Added Hydraulic Fountain and Wave Tank beside Fountain and Wave Machine, so a timed piston and a sine-driven pool do not replace those ports.
+- Added Liquid Bubbler and Stacked Drip as watch-first fidgets: colored liquid crosses a waist or three trays, and a quiet side shaft returns an original particle.
+- Left `MAX_ADVANCE_STEPS` at 4. Audit status `passed` on 2026-09-28 (15/15 requirements, 8/8 phases, 19/19 integration checks, 4/4 flows).
+
+### Scope and known gaps
+
+- All 15 v1.3 requirements (PLAY-01 through FX-02) are Complete. Phases 30–33 are original scenes with no requirement IDs.
+- Deferred by design: DRAW-02, PRESET-01, PARITY-01, and BOX2D-01.
+- The v1.2 ≤ 3× pair remains bound to git `89d34564`. This milestone did not remeasure it.
+- Strict native qualification, crate publication, and release tags remain separately authorized.
+
+### Statistics and provenance
+
+- Timeline: 2026-09-21 to 2026-09-28 in Git author dates; archive date 2026-09-28 UTC.
+- Git range: `c359201` (start milestone v1.3) through `cb1eedd` (Stacked Drip elevator); 310 commits, 455 paths, +59749/−4235.
+- Audit: `.planning/milestones/v1.3-MILESTONE-AUDIT.md`, audited 2026-09-28T17:10:40Z.
+
+### Archives
+
+- [Roadmap](milestones/v1.3-ROADMAP.md)
+- [Requirements and outcomes](milestones/v1.3-REQUIREMENTS.md)
+- [Milestone audit](milestones/v1.3-MILESTONE-AUDIT.md)
+- [Completion state](milestones/v1.3-STATE.md)
+
+**Next:** No new milestone scope chosen. Use `/gsd-new-milestone` when ready; define fresh requirements and continue phase numbering after 33. Phase directories remain in place for stable historical references. No Git version tag was created: archive completion is not release-tag authorization.
+
+---
+
 ## v1.2 Native Performance Closing (Archived: 2026-09-21)
 
 **Delivered:** A developer-facing Dam Break Medium performance close: unprofiled scalar Rust `--release` recorded at 2.96× pinned C++ `oracle-release` on one macOS host, with shared hot-path fixes, spot-checks, and honest notes. The v1.2 label identifies planning history; the crate was not published or tagged as a release.

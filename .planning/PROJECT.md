@@ -4,7 +4,7 @@
 
 `liquidfun-rs` is a fun, experimental, open-source Rust implementation of Google's LiquidFun physics engine for learning, games, simulations, and visualization. It develops useful native Rust behavior incrementally against a pinned upstream reference; complete parity and production certification are optional ambitions.
 
-Visitors can also explore twenty-two native scenes in a SolidJS GitHub Pages playground compiled from this engine to WebAssembly. The repository retains upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
+Visitors can also explore twenty-three native scenes in a SolidJS GitHub Pages playground compiled from this engine to WebAssembly. The repository retains upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
 
 ## Core Value
 
@@ -16,11 +16,34 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.3 Reference Testbed Scenes is in progress. Phase 32 is complete: Liquid Bubbler is a watch-first scene after Wave Tank, amber liquid drips through one static waist onto a motor-off paddle wheel, and a side-shaft plate returns an original particle above the waist. Water Wheel stays the jet-driven wheel. `just web-player-smoke` recorded 44 Chromium tests after the return-shaft fix. Phase 31 is complete: Wave Tank is a watch-first scene after Hydraulic Fountain, a still pool whose end platform rises and falls on a prismatic sine and sends a wave to the far wall, and Wave Machine stays the rocking-container port. `just web-player-smoke` recorded 44 Chromium tests. Phase 30 is complete: Hydraulic Fountain is a watch-first scene after Sparky, a dynamic piston squeezes one water group through a floor throat, the captured frame draws that piston, and the existing Fountain scene stays an aimed emitter. `just web-player-smoke` recorded 44 Chromium tests before the piston-draw commit; the draw is locked by `captured_frame_draws_the_moving_piston`. Phase 29 is complete: Drawing Particles and Sparky are in the catalog after Liquid Tumbler, sparks fade after the step, elastic paint differs from water, and `just web-player-smoke` recorded 44 Chromium tests. The twelve added testbed scenes and the original six remain. This is a recognizable port, not sealed C++ parity, and not a crate release. Phase 28 is complete: Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen run in the shared player with native destroy-in-shape, group shove, and live revolute motors, and the prior eleven scenes remain. `just web-player-smoke` recorded 38 Chromium tests. Phase 27 is complete: Surface Tension, Elastic Particles, and Rigid Particles are watch-first scenes in the shared player, and the prior eight scenes remain. Phase 26 is complete: Particles and Liquid Timer are watch-first scenes in the shared player, and the original six scenes remain. v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
+v1.3 Reference Testbed Scenes is archived (2026-09-28): 8 phases, 38 plans, and 76 tasks. The playground lists twenty-three ready scenes. That is the twelve missing JavaScript testbed ports, the six earlier scenes, Liquid Tumbler, and four original scenes: Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. Credits for the ports cite the pinned LiquidFun tests. `MAX_ADVANCE_STEPS` stays 4. The audit passed 15/15 requirements. This is not sealed C++ parity, crate publication, or a git release tag. See `.planning/MILESTONES.md` and `.planning/milestones/v1.3-REQUIREMENTS.md`.
+
+v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
 
 The v1.1 Web Playground planning milestone is archived (2026-09-20): 6 phases and 39 plans completed. Visitors can run Dam Break, Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel at `https://bright-builds-llc.github.io/liquidfun-rs/` with in-app SVG previews, play/pause/reset, honest Reset labels, pointer interaction, and automatic Pages delivery. This is not a crate or npm release. See `.planning/MILESTONES.md` and `.planning/milestones/v1.1-REQUIREMENTS.md`.
 
 The v1.0 Experimental Foundation planning milestone remains archived (2026-09-17): 16 phases and 252 active plans under hobby scope. Native checks, isolated packaging and macOS CI were verified at `75ead0edcbde68d01b804e2c466f2f4b2a4d30da`.
+
+<details>
+<summary>v1.3 phase-by-phase completion notes</summary>
+
+Phase 26: Particles and Liquid Timer as watch-first basin ports. The original six scenes stay.
+
+Phase 27: Surface Tension, Elastic Particles, and Rigid Particles as flag-group showcases.
+
+Phase 28: Soup, Soup Stirrer, Impulse, Wave Machine, and Theo Jansen with native destroy-in-shape, group shove, and live revolute motors.
+
+Phase 29: Sparky sparks and Drawing Particles paint. All twelve missing testbed scenes are in the catalog.
+
+Phase 30: Hydraulic Fountain. A timed piston moves one water group through a throat. Fountain stays the aimed emitter.
+
+Phase 31: Wave Tank. A sine-driven end platform sends a wave to the far wall. Wave Machine stays the rocking tank.
+
+Phase 32: Liquid Bubbler. Amber liquid turns a motor-off wheel, and a side shaft returns an original particle. Water Wheel stays.
+
+Phase 33: Stacked Drip. Teal liquid tips three motor-off trays, and a side shaft returns an original particle. Liquid Timer and Liquid Bubbler stay.
+
+</details>
 
 <details>
 <summary>v1.2 phase-by-phase completion notes</summary>
@@ -52,27 +75,11 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 </details>
 
-## Current Milestone: v1.3 Reference Testbed Scenes
+## Next Milestone Goals
 
-**Goal:** A visitor can open every JavaScript LiquidFun testbed scene we do not already have, running on this engine in the existing playground.
+No new milestone scope is chosen. Use `/gsd-new-milestone` to question, research, and write a fresh requirements file. Phase numbering continues after 33.
 
-**Target features:**
-- Drawing Particles
-- Elastic Particles
-- Impulse
-- Liquid Timer
-- Particles
-- Rigid Particles
-- Soup
-- Soup Stirrer
-- Sparky
-- Surface Tension
-- Theo Jansen
-- Wave Machine
-
-The six current playground scenes stay, including Dam Break. Fountain, Float or Sink, Color Mixer, Jelly Drop, and Water Wheel remain original scenes. Each new scene is a recognizable port in the existing SolidJS player. Missing engine behavior is in scope only where a listed scene cannot run without it. This is not a sealed C++ parity claim, a public benchmark, or a crate release. Phase numbering continues after 25. Package publication and a git release tag remain separately authorized.
-
-Ideas still left out until a later milestone adopts them: an explicit SIMD or parallel opt-in, relaxing `unsafe_code = "forbid"` for a measured intrinsic, Phase 12 sealed-matrix calibration, and WASM stepping work beyond what these scenes need.
+Still unmapped until a later milestone adopts them: DRAW-02 (full Drawing Particles material matrix), PRESET-01 (Impulse and Liquid Timer presets), PARITY-01 (sealed per-scene differential evidence), and BOX2D-01 (Box2D-only tests the JavaScript testbed leaves commented out). An explicit SIMD or parallel opt-in, relaxing `unsafe_code = "forbid"`, Phase 12 sealed-matrix calibration, and a public speed claim stay out until separately chosen. Package publication and a git release tag remain separately authorized.
 
 ## Requirements
 
@@ -81,6 +88,8 @@ Ideas still left out until a later milestone adopts them: an explicit SIMD or pa
 None. PLAY-01, FX-01, and FX-02 were validated in Phase 29.
 
 ### Validated
+
+- ✓ v1.3 Reference Testbed Scenes — 15/15 requirements, 8 phases, 38 plans, audit passed 2026-09-28. Twenty-three playground scenes, including the twelve missing testbed ports and four original scenes. Not a crate release.
 
 - [x] Phase 29 completed PLAY-01, FX-01, and FX-02: Drawing Particles and Sparky follow Liquid Tumbler in the existing catalog; colliding circles throw fading powder sparks after the step; paint starts in an empty vessel and elastic clumps instead of flowing like water; the original six scenes stay. `just web-player-smoke` passed 44 Chromium tests. Recognizable ports, not sealed C++ parity. Validated in Phase 29: Sparky, Drawing, and full catalog.
 
@@ -267,6 +276,8 @@ The snapshots below describe their original phases, not current work or next ste
 | Hold the scalar deterministic compatibility baseline while chasing the ~300× gap | Correctness and determinism still beat unproven SIMD/parallel defaults; SIMD/parallel stay explicit opt-in | ✓ Held: no default SIMD or Rayon, `unsafe_code = "forbid"` |
 | Native is the C++ comparison; WASM/playground is a post-gate sanity check only | WASM vs C++ is not a fair pair; still record whether the playground improved | ✓ `just web-player-smoke` recorded; the note never compares WASM to `oracle-release` |
 | Treat v1.2 as a planning label, not a package or git release tag | Archive completion is not publication | Accepted 2026-09-21; same policy as v1.0 and v1.1 |
+| Port the twelve missing JavaScript testbed scenes in the existing player, then four original scenes | Recognizable behavior with honest credits; Fountain, Wave Machine, Water Wheel, and Liquid Timer stay | ✓ Shipped in v1.3; the catalog has 23 ready scenes |
+| Treat v1.3 as a planning label, not a package or git release tag | Archive completion is not publication | Accepted 2026-09-28; same policy as v1.0, v1.1, and v1.2 |
 
 ## Open Questions
 
@@ -298,4 +309,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-27 after Phase 32 Liquid motion bubbler. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-09-28 after v1.3 milestone. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
