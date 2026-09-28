@@ -18,6 +18,8 @@ export type AnimatedWebpEncoderOptions = {
   readonly framesPerSecond: number;
   readonly quality: number;
   readonly preset: string;
+  /** Executable used to encode frames. Tests pass a missing name. */
+  readonly command?: string;
 };
 
 export type AnimatedWebpEncoder = {
@@ -40,7 +42,7 @@ export async function startAnimatedWebpEncoder(
   const outputPath = join(directory, "preview.webp");
   const expectedBytes = options.width * options.height * 4;
   const expectedDurations = frameDurationsMs(options.frameCount, options.framesPerSecond);
-  const child = spawn("ffmpeg", ffmpegArguments(options, outputPath), {
+  const child = spawn(options.command ?? "ffmpeg", ffmpegArguments(options, outputPath), {
     stdio: ["pipe", "ignore", "pipe"],
   });
   const stdin = child.stdin;
@@ -57,6 +59,14 @@ export async function startAnimatedWebpEncoder(
     // A failed write kills ffmpeg. This catches that close so it does not
     // surface as an unhandled rejection.
   });
+  const spawnFailure = new Promise<never>((_, reject) => {
+    child.once("error", (error) => {
+      const failure = ffmpegSpawnError(error);
+      stdin.destroy(failure);
+      reject(failure);
+    });
+  });
+  void spawnFailure.catch(() => undefined);
 
   let written = 0;
   let settled = false;
@@ -86,7 +96,9 @@ export async function startAnimatedWebpEncoder(
         );
       }
       try {
-        await writeAll(stdin, Buffer.from(pixels));
+        const write = writeAll(stdin, Buffer.from(pixels));
+        void write.catch(() => undefined);
+        await Promise.race([write, spawnFailure]);
         written += 1;
       } catch (error) {
         return fail(error);
@@ -103,7 +115,7 @@ export async function startAnimatedWebpEncoder(
       }
       settled = true;
       stdin.end();
-      const code = await exitCode;
+      const code = await Promise.race([exitCode, spawnFailure]);
       if (code !== 0) {
         const detail = (await stderr).toString("utf8").trim().slice(-2000);
         await rm(directory, { recursive: true, force: true });
@@ -281,6 +293,13 @@ function writeAll(stream: Writable, chunk: Buffer): Promise<void> {
     stream.once("drain", onDrain);
     stream.once("error", onError);
   });
+}
+
+function ffmpegSpawnError(error: Error): Error {
+  if (isMissingExecutable(error)) {
+    return new Error("ffmpeg is required to record README WebP previews.");
+  }
+  return error;
 }
 
 function isMissingExecutable(error: unknown): boolean {

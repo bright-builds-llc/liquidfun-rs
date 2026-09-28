@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+
 import { describe, expect, it } from "vitest";
 
 import { startAnimatedWebpEncoder } from "../scripts/readme-svg/encode";
@@ -84,8 +86,36 @@ describe("muxAnimatedWebp", () => {
   });
 });
 
+const ffmpegAvailable = ffmpegIsAvailable();
+
+function ffmpegIsAvailable(): boolean {
+  const result = spawnSync("ffmpeg", ["-hide_banner", "-version"], { stdio: "ignore" });
+  return result.status === 0;
+}
+
 describe("startAnimatedWebpEncoder", () => {
-  it("records RGBA frames as one looping 60 fps WebP", async () => {
+  it("reports a missing encoder before the frame write hangs", async () => {
+    // Arrange
+    const encoder = await startAnimatedWebpEncoder({
+      width: 16,
+      height: 8,
+      frameCount: 1,
+      framesPerSecond: 60,
+      quality: 60,
+      preset: "drawing",
+      command: "ffmpeg-missing-for-test",
+    });
+    const pixels = Buffer.alloc(16 * 8 * 4, 255);
+
+    // Act
+    const write = encoder.writeFrame(pixels);
+
+    // Assert
+    await expect(write).rejects.toThrow("ffmpeg is required");
+    await encoder.abort();
+  });
+
+  it.skipIf(!ffmpegAvailable)("records RGBA frames as one looping 60 fps WebP", async () => {
     // Arrange
     const width = 16;
     const height = 8;
