@@ -17,7 +17,7 @@ export const DRUM_SPEED_TICKS = [
   DRUM_SPEED_MAX,
 ] as const;
 
-/** Live HUD spinner. Changing it does not rebuild the drum. */
+/** Live HUD slider with step buttons. Changing it does not rebuild the drum. */
 export const DRUM_SPEED_CONTROL: SceneControl = {
   id: "drum-speed",
   label: "Drum speed",

@@ -23,7 +23,8 @@ use self::geometry::{DRUM_CENTER, Quad, RIB_COUNT, SEGMENT_COUNT};
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.03;
+/// Fine water. This radius samples 3,000 particles across the fill box.
+const PARTICLE_RADIUS: f32 = 0.0106;
 const PARTICLE_DAMPING: f32 = 0.25;
 const MAXIMUM_PARTICLE_COUNT: usize = 4_096;
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
@@ -37,8 +38,8 @@ const DEFAULT_DRUM_RPM: u16 = 20;
 /// Fast spin. One step of wall motion stays inside the wall thickness.
 const MAX_DRUM_RPM: u16 = 48;
 /// Water box in the lower part of the drum, clear of the wall and the ribs.
-const FILL_HALF_WIDTH: f32 = 0.58;
-const FILL_HALF_HEIGHT: f32 = 0.36;
+const FILL_HALF_WIDTH: f32 = 0.60;
+const FILL_HALF_HEIGHT: f32 = 0.32;
 const FILL_CENTER: Vec2 = Vec2::new(0.0, -0.55);
 
 struct WashingMachineHooks {
@@ -212,6 +213,14 @@ impl SceneHooks for WashingMachineHooks {
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
         Ok(())
+    }
+
+    #[cfg(test)]
+    fn maybe_motor_angle(&self, world: &World) -> Option<f32> {
+        world
+            .body_snapshot(self.drum)
+            .ok()
+            .map(|snapshot| snapshot.angle())
     }
 
     fn apply_control(
