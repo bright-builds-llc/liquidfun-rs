@@ -179,6 +179,12 @@ change.
 
 [Animated SVG](docs/assets/readme/stacked-drip-10s.svg)
 
+#### [Washing Machine](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/washing-machine)
+
+[![Washing Machine simulation preview](docs/assets/readme/washing-machine-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/washing-machine)
+
+[Animated SVG](docs/assets/readme/washing-machine-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild

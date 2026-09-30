@@ -51,6 +51,7 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   "wave-tank": "/liquidfun-rs/#/scene/wave-tank",
   "liquid-bubbler": "/liquidfun-rs/#/scene/liquid-bubbler",
   "stacked-drip": "/liquidfun-rs/#/scene/stacked-drip",
+  "washing-machine": "/liquidfun-rs/#/scene/washing-machine",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {
@@ -476,6 +477,16 @@ export async function activateLabeledControl(
   if (maybeSelectValue !== undefined) {
     const labeled = await revealLabeledControl(page, control);
     await labeled.selectOption(maybeSelectValue);
+    return;
+  }
+
+  const spinbutton = page.getByRole("spinbutton", { name: control, exact: true });
+  if ((await spinbutton.count()) === 1 && (await spinbutton.isVisible())) {
+    const max = await spinbutton.getAttribute("max");
+    if (max === null) {
+      throw new Error(`spinner control ${control} is missing max`);
+    }
+    await spinbutton.fill(max);
     return;
   }
 

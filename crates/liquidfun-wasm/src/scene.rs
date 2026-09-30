@@ -29,6 +29,7 @@ mod sparky;
 mod stacked_drip;
 mod surface_tension;
 mod theo_jansen;
+mod washing_machine;
 mod water_wheel;
 mod wave_machine;
 mod wave_tank;
@@ -64,6 +65,7 @@ pub(crate) enum SceneId {
     WaveTank,
     LiquidBubbler,
     StackedDrip,
+    WashingMachine,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -91,6 +93,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "wave-tank" => Ok(SceneId::WaveTank),
         "liquid-bubbler" => Ok(SceneId::LiquidBubbler),
         "stacked-drip" => Ok(SceneId::StackedDrip),
+        "washing-machine" => Ok(SceneId::WashingMachine),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -225,6 +228,7 @@ pub(crate) fn build_scene(
         SceneId::WaveTank => wave_tank::build(&scene_presets),
         SceneId::LiquidBubbler => liquid_bubbler::build(&scene_presets),
         SceneId::StackedDrip => stacked_drip::build(&scene_presets),
+        SceneId::WashingMachine => washing_machine::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)

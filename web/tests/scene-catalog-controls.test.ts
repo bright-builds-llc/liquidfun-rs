@@ -5,6 +5,7 @@ import {
   GRAVITY_SLIDER_FORMER_HIGH,
   GRAVITY_SLIDER_MAX,
 } from "../src/catalog/gravity-slider";
+import { DRUM_SPEED_CONTROL } from "../src/catalog/washing-machine-speed";
 import {
   SCENES,
   maybeSceneById,
@@ -22,6 +23,7 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "shape",
   "softness",
+  "gravity",
   "gravity",
   "gravity",
   "gravity",
@@ -318,6 +320,12 @@ describe("scene catalog controls", () => {
         ["tray", "color", "speed"].includes(control.id),
       ),
     ).toBe(false);
+    const washingMachine = maybeSceneById("washing-machine");
+    expect(washingMachine?.controls).toEqual([
+      DRUM_SPEED_CONTROL,
+      GRAVITY_CONTROL,
+    ]);
+    expect(DRUM_SPEED_CONTROL.recreates).toBe(false);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 });

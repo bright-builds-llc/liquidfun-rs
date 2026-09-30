@@ -346,6 +346,19 @@ function WaveTankPreview() {
   );
 }
 
+function WashingMachinePreview() {
+  return (
+    <PreviewFrame>
+      <circle cx="80" cy="45" r="32" fill="none" stroke={RIGID} stroke-width="4" />
+      <line x1="57" y1="22" x2="69" y2="34" stroke={RIGID} stroke-width="4" />
+      <line x1="103" y1="22" x2="91" y2="34" stroke={RIGID} stroke-width="4" />
+      <line x1="57" y1="68" x2="69" y2="56" stroke={RIGID} stroke-width="4" />
+      <line x1="103" y1="68" x2="91" y2="56" stroke={RIGID} stroke-width="4" />
+      <ellipse cx="80" cy="58" rx="18" ry="10" fill={WATER} />
+    </PreviewFrame>
+  );
+}
+
 function StackedDripPreview() {
   const DRIP = "#40C4C4";
   return (
@@ -513,5 +526,7 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <LiquidBubblerPreview />;
     case "stacked-drip":
       return <StackedDripPreview />;
+    case "washing-machine":
+      return <WashingMachinePreview />;
   }
 }
