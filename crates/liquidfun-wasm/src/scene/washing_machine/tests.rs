@@ -3,7 +3,7 @@
 use std::f32::consts::TAU;
 
 use liquidfun::math::Vec2;
-use liquidfun::{BodyType, JointDef, World, WorldObservationLimits};
+use liquidfun::{JointDef, World, WorldObservationLimits};
 
 use super::super::SceneId;
 use super::geometry::INNER_RADIUS;
@@ -18,18 +18,14 @@ fn create_builds_a_partially_filled_drum() {
     let count = session.particle_count();
 
     // Assert
-    assert!(
-        count > 80,
-        "the lower drum must start with a visible fill (got {count})"
-    );
     session
         .capture_frame()
         .expect("the drum drawing must fit the frame lane");
 
     // Assert
-    assert!(
-        count > 80,
-        "the lower drum must start with a visible fill (got {count})"
+    assert_eq!(
+        count, 3000,
+        "the lower drum must start with 3000 particles (got {count})"
     );
     assert_eq!(
         session.rigid_shape_count(),
@@ -99,7 +95,9 @@ fn stopped_drum_stays_level() {
 
     // Act
     advance_steps(&mut session, 88);
-    let angle = session.read_particles(|world, _system| drum_angle(world));
+    let angle = session
+        .motor_angle()
+        .expect("the drum should report its angle");
 
     // Assert
     assert!(angle.abs() < 0.08, "0 rpm must hold the drum (got {angle})");
@@ -117,7 +115,9 @@ fn fast_spin_turns_the_drum_and_lifts_water() {
 
     // Act
     advance_steps(&mut session, 120);
-    let angle = session.read_particles(|world, _system| drum_angle(world));
+    let angle = session
+        .motor_angle()
+        .expect("the drum should report its angle");
     let (highest, farthest) = session.read_particles(|world, system| {
         (
             highest_particle(world, system),
@@ -149,20 +149,6 @@ fn advance_steps(session: &mut SessionCore, steps: u32) {
             .expect("the drum should keep stepping");
         remaining -= batch;
     }
-}
-
-fn drum_angle(world: &World) -> f32 {
-    let observation = world
-        .world_observation(WorldObservationLimits::reviewed())
-        .expect("reviewed observation should include the drum");
-    let dynamic: Vec<_> = observation
-        .bodies()
-        .iter()
-        .map(|body| body.snapshot())
-        .filter(|snapshot| snapshot.body_type() == BodyType::Dynamic)
-        .collect();
-    assert_eq!(dynamic.len(), 1, "exactly one dynamic drum");
-    dynamic[0].angle()
 }
 
 fn revolute_motor_speed(world: &World) -> f32 {

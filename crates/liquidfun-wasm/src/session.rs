@@ -406,6 +406,12 @@ impl SessionCore {
         read(&self.world, self.particle_system)
     }
 
+    /// Angle of a scene's motorized body, when it has one.
+    #[cfg(test)]
+    pub(crate) fn motor_angle(&self) -> Option<f32> {
+        self.hooks.maybe_motor_angle(&self.world)
+    }
+
     pub(crate) fn rigid_shape_count(&self) -> usize {
         let segment_count = self
             .hooks

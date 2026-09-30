@@ -163,6 +163,12 @@ pub(crate) trait SceneHooks {
         Ok(())
     }
 
+    /// Angle of a motorized body, when the scene has one.
+    #[cfg(test)]
+    fn maybe_motor_angle(&self, _world: &World) -> Option<f32> {
+        None
+    }
+
     fn apply_control(
         &mut self,
         world: &mut World,
