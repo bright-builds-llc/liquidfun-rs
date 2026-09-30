@@ -83,6 +83,9 @@ export function formatRangeValueText(value: string, unit: string): string {
   if (unit === "°") {
     return `${value} degrees`;
   }
+  if (unit === "rpm") {
+    return `${value} revolutions per minute`;
+  }
 
   return formatRangeReadout(value, unit);
 }
@@ -130,6 +133,27 @@ export function maybeMagnitudeForSliderPosition(
   const magnitude =
     control.min * Math.pow(control.max / control.min, ratio);
   return snapMagnitude(control, magnitude);
+}
+
+/** One step along a spinner or slider, clamped to the control and snapped. */
+export function maybeStepRangeValue(
+  control: Pick<RangeControl, "min" | "max" | "step">,
+  current: string,
+  direction: -1 | 1,
+): string | undefined {
+  const value = Number(current);
+  if (!Number.isFinite(value) || control.step <= 0) {
+    return undefined;
+  }
+
+  const next = Math.min(
+    control.max,
+    Math.max(control.min, value + direction * control.step),
+  );
+  return maybeParseRangeControlValue(
+    control,
+    next.toFixed(stepDecimalPlaces(control.step)),
+  );
 }
 
 /** Tick marks positioned on the same scale as the thumb. */

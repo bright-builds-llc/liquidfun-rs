@@ -81,6 +81,49 @@
   background: currentColor;
 }
 
+.scene-control-spinner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 16rem;
+  max-width: 100%;
+}
+
+.scene-control-number {
+  width: 6.5rem;
+  min-block-size: 44px;
+  padding: 0 var(--space-sm);
+  color: #F4F7FA;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  background: #0B0F14;
+  border: 1px solid #2A3441;
+  border-radius: 12px;
+  color-scheme: dark;
+  appearance: textfield;
+}
+
+.scene-control-number::-webkit-outer-spin-button,
+.scene-control-number::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.scene-control-number:focus-visible {
+  outline: 2px solid #4DA3FF;
+  outline-offset: 4px;
+}
+
+.scene-control-number:disabled {
+  opacity: 0.55;
+}
+
+.scene-control-step {
+  width: 44px;
+  padding: 0;
+}
+
 .construction-reset-hint {
   color: #A9B4C0;
   font-size: 14px;

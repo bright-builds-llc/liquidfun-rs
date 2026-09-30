@@ -51,6 +51,7 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   "wave-tank": "/liquidfun-rs/#/scene/wave-tank",
   "liquid-bubbler": "/liquidfun-rs/#/scene/liquid-bubbler",
   "stacked-drip": "/liquidfun-rs/#/scene/stacked-drip",
+  "washing-machine": "/liquidfun-rs/#/scene/washing-machine",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {
@@ -485,7 +486,7 @@ export async function activateLabeledControl(
   }
   if ((await labeled.count()) === 1 && (await labeled.first().isVisible())) {
     const maybeType = await labeled.first().getAttribute("type");
-    if (maybeType === "range") {
+    if (maybeType === "range" || maybeType === "number") {
       const max = await labeled.first().getAttribute("max");
       if (max === null) {
         throw new Error(`range control ${control} is missing max`);

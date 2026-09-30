@@ -1,5 +1,6 @@
 import {
   THEO_JANSEN_VIEW_BOUNDS,
+  WASHING_MACHINE_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
   worldBoundsForScene,
   type SceneId,
@@ -71,6 +72,7 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   "wave-tank": { minX: -0.12, minY: -0.28, maxX: 1.52, maxY: 1.02 },
   "liquid-bubbler": { minX: -0.71, minY: -0.16, maxX: 1.12, maxY: 1.98 },
   "stacked-drip": { minX: -0.86, minY: -0.16, maxX: 1.68, maxY: 3.28 },
+  "washing-machine": WASHING_MACHINE_VIEW_BOUNDS,
 };
 
 /** World rectangle fitted for one scene at the canvas's current aspect. */

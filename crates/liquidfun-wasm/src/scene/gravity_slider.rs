@@ -119,7 +119,7 @@ mod tests {
         let ids = all_scene_ids();
 
         // Act / Assert
-        let mut seen = [false; 23];
+        let mut seen = [false; 24];
         for id in ids {
             seen[variant_index(id)] = true;
             let low = build_scene(id, &[("gravity".to_owned(), "2".to_owned())])
@@ -142,7 +142,7 @@ mod tests {
             assert!(rejected.is_err(), "{id:?} must reject gravity 1");
         }
         assert_eq!(
-            seen, [true; 23],
+            seen, [true; 24],
             "every SceneId variant must be built with the gravity slider"
         );
     }
@@ -183,10 +183,11 @@ mod tests {
             SceneId::WaveTank => 20,
             SceneId::LiquidBubbler => 21,
             SceneId::StackedDrip => 22,
+            SceneId::WashingMachine => 23,
         }
     }
 
-    fn all_scene_ids() -> [SceneId; 23] {
+    fn all_scene_ids() -> [SceneId; 24] {
         [
             SceneId::DamBreak,
             SceneId::Fountain,
@@ -211,6 +212,7 @@ mod tests {
             SceneId::WaveTank,
             SceneId::LiquidBubbler,
             SceneId::StackedDrip,
+            SceneId::WashingMachine,
         ]
     }
 }

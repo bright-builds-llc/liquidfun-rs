@@ -12,6 +12,7 @@ import {
   initialRangeValue,
   maybeMagnitudeForSliderPosition,
   maybeParseRangeControlValue,
+  maybeStepRangeValue,
   rangeTickMarks,
   sliderPositionForMagnitude,
   LOG_SLIDER_POSITION_MAX,
@@ -388,6 +389,19 @@ describe("Dam Break gravity slider", () => {
     expect(readout).toBe("9 °");
     expect(spoken).toBe("9 degrees");
   });
+
+  it("speaks drum speed in revolutions per minute", () => {
+    // Arrange
+    const magnitude = "20";
+
+    // Act
+    const readout = formatRangeReadout(magnitude, "rpm");
+    const spoken = formatRangeValueText(magnitude, "rpm");
+
+    // Assert
+    expect(readout).toBe("20 rpm");
+    expect(spoken).toBe("20 revolutions per minute");
+  });
 });
 
 describe("sceneControlsForSurface", () => {
@@ -409,5 +423,34 @@ describe("sceneControlsForSurface", () => {
       "wave-tilt",
     ]);
     expect(panel.map((control) => control.id)).toEqual(["gravity"]);
+  });
+
+  it("keeps Drum speed on the HUD and steps it by one rpm", () => {
+    // Arrange
+    const maybeScene = maybeSceneById("washing-machine");
+    expect(maybeScene).toBeDefined();
+    if (maybeScene === undefined) {
+      return;
+    }
+    const maybeDrum = maybeScene.controls.find(
+      (control) => control.id === "drum-speed",
+    );
+    expect(maybeDrum?.kind).toBe("range");
+    if (maybeDrum === undefined || maybeDrum.kind !== "range") {
+      return;
+    }
+
+    // Act
+    const hud = sceneControlsForSurface(maybeScene.controls, "hud");
+    const panel = sceneControlsForSurface(maybeScene.controls, "panel");
+    const faster = maybeStepRangeValue(maybeDrum, "20", 1);
+    const slower = maybeStepRangeValue(maybeDrum, "0", -1);
+
+    // Assert
+    expect(hud.map((control) => control.id)).toEqual(["drum-speed"]);
+    expect(panel.map((control) => control.id)).toEqual(["gravity"]);
+    expect(maybeDrum.widget).toBe("spinner");
+    expect(faster).toBe("21");
+    expect(slower).toBe("0");
   });
 });

@@ -33,6 +33,7 @@ import {
   runtimePreset,
   sceneSource,
 } from "./scene-record-shared";
+import { DRUM_SPEED_CONTROL } from "./washing-machine-speed";
 import {
   WAVE_MACHINE_SPEED_CONTROL,
   WAVE_MACHINE_TILT_CONTROL,
@@ -74,6 +75,19 @@ export const WAVE_MACHINE_VIEW_BOUNDS = {
  * a 12 m frame lets it leave immediately. This rectangle keeps the machine,
  * the slab, and a stretch of ground balls in view at the start.
  */
+/**
+ * Camera frame for the washing machine, in meters.
+ *
+ * The drum wall runs out to about 1.48 m. This square leaves a slim margin
+ * so the spinning wall stays on the canvas.
+ */
+export const WASHING_MACHINE_VIEW_BOUNDS = {
+  minX: -1.68,
+  minY: -1.68,
+  maxX: 1.68,
+  maxY: 1.68,
+} as const;
+
 export const THEO_JANSEN_VIEW_BOUNDS = {
   minX: -24,
   minY: -0.5,
@@ -534,6 +548,21 @@ export const SCENES: readonly SceneRecord[] = [
     viewBounds: { minX: -0.86, minY: -0.16, maxX: 1.68, maxY: 2.18 },
     credits: {
       implementationPath: "crates/liquidfun-wasm/src/scene/stacked_drip.rs",
+      inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "washing-machine",
+    title: "Washing Machine",
+    ready: true,
+    description:
+      "Watch ribs on a spinning drum carry a partial fill of water around the circle. This is an original experimental scene.",
+    interactionHint:
+      "Use Drum speed to change how fast the drum turns. It starts at 20 rpm. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([DRUM_SPEED_CONTROL]),
+    viewBounds: WASHING_MACHINE_VIEW_BOUNDS,
+    credits: {
+      implementationPath: sceneSource("washing_machine.rs"),
       inspiration: [SHOWCASE],
     },
   },

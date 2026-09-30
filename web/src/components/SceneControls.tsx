@@ -12,6 +12,7 @@ import {
   sliderPositionForMagnitude,
 } from "./range-control";
 import { CONSTRUCTION_RESET_HINT, initialPresetValue } from "./scene-controls";
+import { SpinnerControl } from "./SpinnerControl";
 
 export { CONSTRUCTION_RESET_HINT, constructionHintVisible } from "./scene-controls";
 
@@ -277,6 +278,16 @@ export function SceneControls(props: SceneControlsProps) {
           if (control.kind === "preset") {
             return (
               <PresetControl
+                control={control}
+                disabled={props.disabled}
+                maybeValues={props.maybeValues}
+                onApply={props.onApplyControl}
+              />
+            );
+          }
+          if (control.kind === "range" && control.widget === "spinner") {
+            return (
+              <SpinnerControl
                 control={control}
                 disabled={props.disabled}
                 maybeValues={props.maybeValues}

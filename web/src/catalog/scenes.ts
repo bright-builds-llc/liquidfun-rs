@@ -3,6 +3,7 @@ import {
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
   THEO_JANSEN_VIEW_BOUNDS,
+  WASHING_MACHINE_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
 } from "./scene-records";
 
@@ -30,6 +31,7 @@ export const SCENE_IDS = [
   "wave-tank",
   "liquid-bubbler",
   "stacked-drip",
+  "washing-machine",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -54,8 +56,10 @@ export type SceneControl =
       readonly unit: string;
       readonly scale: "linear" | "logarithmic";
       readonly ticks: readonly number[];
-      /** `hud` draws the slider above the play row. Other controls stay in the panel. */
+      /** `hud` draws the control above the play row. Other controls stay in the panel. */
       readonly surface?: "hud";
+      /** `spinner` draws step buttons. Omitted controls draw a slider. */
+      readonly widget?: "slider" | "spinner";
     }
   | {
       readonly id: string;
@@ -89,6 +93,7 @@ export {
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
   THEO_JANSEN_VIEW_BOUNDS,
+  WASHING_MACHINE_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
 };
 

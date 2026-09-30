@@ -51,6 +51,7 @@ const POINTER_CONTROL: Readonly<
   "theo-jansen": { gesture: "click", control: "Motor direction" },
   "wave-machine": { gesture: "click", control: "Wave speed" },
   "drawing-particles": { gesture: "drag", control: "Material" },
+  "washing-machine": { gesture: "click", control: "Drum speed" },
 };
 
 const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter(

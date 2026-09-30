@@ -270,6 +270,15 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
   min-block-size: 24px;
 }
 
+.canvas-hud-slider .scene-control-spinner {
+  width: 100%;
+}
+
+.canvas-hud-slider .scene-control-number {
+  flex: 1;
+  width: auto;
+}
+
 .canvas-hud-slider .scene-control-ticks {
   height: 0.85rem;
   margin-top: -0.15rem;
