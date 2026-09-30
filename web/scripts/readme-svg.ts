@@ -40,7 +40,7 @@ async function main(): Promise<void> {
   let svgCount = 0;
   let webpCount = 0;
 
-  for (const plan of README_SVG_PLANS) {
+  for (const plan of plansToRecord()) {
     const request = readmeSvgRequest(plan);
     const written = await writeScene(generated, plan, request);
     if (written.svgChanged) {
@@ -59,6 +59,20 @@ async function main(): Promise<void> {
   const summary = previewSummary(svgCount, webpCount, readmeChanged);
   note(summary);
   await appendLog(summary);
+}
+
+/** Optional scene id argument records one plan. The gallery still lists every plan. */
+function plansToRecord(): readonly ReadmeSvgPlan[] {
+  const maybeSceneId = process.argv[2];
+  if (maybeSceneId === undefined) {
+    return README_SVG_PLANS;
+  }
+
+  const plans = README_SVG_PLANS.filter((plan) => plan.id === maybeSceneId);
+  if (plans.length === 0) {
+    throw new Error(`Unknown README scene id ${maybeSceneId}.`);
+  }
+  return plans;
 }
 
 function previewSummary(svgCount: number, webpCount: number, readmeChanged: boolean): string {

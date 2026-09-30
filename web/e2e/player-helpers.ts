@@ -480,13 +480,23 @@ export async function activateLabeledControl(
     return;
   }
 
+  const spinbutton = page.getByRole("spinbutton", { name: control, exact: true });
+  if ((await spinbutton.count()) === 1 && (await spinbutton.isVisible())) {
+    const max = await spinbutton.getAttribute("max");
+    if (max === null) {
+      throw new Error(`spinner control ${control} is missing max`);
+    }
+    await spinbutton.fill(max);
+    return;
+  }
+
   const labeled = page.getByLabel(control);
   if ((await labeled.count()) === 0 || !(await labeled.first().isVisible())) {
     await openSceneControls(page);
   }
   if ((await labeled.count()) === 1 && (await labeled.first().isVisible())) {
     const maybeType = await labeled.first().getAttribute("type");
-    if (maybeType === "range" || maybeType === "number") {
+    if (maybeType === "range") {
       const max = await labeled.first().getAttribute("max");
       if (max === null) {
         throw new Error(`range control ${control} is missing max`);

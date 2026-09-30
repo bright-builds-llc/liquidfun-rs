@@ -26,9 +26,18 @@ const RIB_PHASE: f32 = TAU / 8.0;
 pub(super) type Quad = [Vec2; 4];
 
 pub(super) fn wall_quads() -> [Quad; SEGMENT_COUNT] {
+    ring_quads(true)
+}
+
+/// Closed inner and outer chords. Fixtures overlap; this ring is only for drawing.
+pub(super) fn outline_wall_quads() -> [Quad; SEGMENT_COUNT] {
+    ring_quads(false)
+}
+
+fn ring_quads(overlap_seams: bool) -> [Quad; SEGMENT_COUNT] {
     let mut quads = [[Vec2::ZERO; 4]; SEGMENT_COUNT];
     for (index, quad) in quads.iter_mut().enumerate() {
-        *quad = wall_quad(index);
+        *quad = wall_quad(index, overlap_seams);
     }
     quads
 }
@@ -41,10 +50,10 @@ pub(super) fn rib_quads() -> [Quad; RIB_COUNT] {
     quads
 }
 
-fn wall_quad(index: usize) -> Quad {
+fn wall_quad(index: usize, overlap_seams: bool) -> Quad {
     let step = TAU / f32::from(u16_index(SEGMENT_COUNT));
-    // Neighboring facets overlap so a particle cannot slip out along a seam.
-    let overlap = step * 0.45;
+    // Neighboring fixtures overlap so a particle cannot slip out along a seam.
+    let overlap = if overlap_seams { step * 0.45 } else { 0.0 };
     let start = step * f32::from(u16_index(index)) - overlap;
     let end = start + step + overlap * 2.0;
     [

@@ -88,7 +88,7 @@ fn build_washing_machine() -> Result<BuiltScene, SceneError> {
         hooks: Box::new(WashingMachineHooks {
             drum,
             joint,
-            wall_quads,
+            wall_quads: geometry::outline_wall_quads(),
             rib_quads,
         }),
     })
@@ -256,8 +256,15 @@ impl SceneHooks for WashingMachineHooks {
             .body_snapshot(self.drum)
             .map_err(|_error| SessionError::FrameCaptureFailed)?
             .transform();
-        let mut segments = Vec::with_capacity((SEGMENT_COUNT + RIB_COUNT) * 4);
-        for quad in self.wall_quads.iter().chain(self.rib_quads.iter()) {
+        // The frame lane holds 64 segments. Draw each wall facet's inner and
+        // outer chords, and every rib edge. Radial wall edges stay fixtures
+        // only, so the drum still captures.
+        let mut segments = Vec::with_capacity(SEGMENT_COUNT * 2 + RIB_COUNT * 4);
+        for quad in &self.wall_quads {
+            push_edge(&mut segments, transform, quad, 0, 1);
+            push_edge(&mut segments, transform, quad, 2, 3);
+        }
+        for quad in &self.rib_quads {
             push_quad(&mut segments, transform, quad);
         }
         Ok(segments)
@@ -269,18 +276,22 @@ impl SceneHooks for WashingMachineHooks {
 }
 
 fn push_quad(segments: &mut Vec<RigidSegment>, transform: Transform, quad: &Quad) {
-    let world_corners = [
-        transform.apply(quad[0]),
-        transform.apply(quad[1]),
-        transform.apply(quad[2]),
-        transform.apply(quad[3]),
-    ];
     for index in 0..4 {
-        segments.push(RigidSegment {
-            start: world_corners[index],
-            end: world_corners[(index + 1) % 4],
-        });
+        push_edge(segments, transform, quad, index, (index + 1) % 4);
     }
+}
+
+fn push_edge(
+    segments: &mut Vec<RigidSegment>,
+    transform: Transform,
+    quad: &Quad,
+    start: usize,
+    end: usize,
+) {
+    segments.push(RigidSegment {
+        start: transform.apply(quad[start]),
+        end: transform.apply(quad[end]),
+    });
 }
 
 #[cfg(test)]

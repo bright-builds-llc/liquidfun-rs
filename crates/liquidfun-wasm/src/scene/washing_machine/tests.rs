@@ -22,9 +22,19 @@ fn create_builds_a_partially_filled_drum() {
         count > 80,
         "the lower drum must start with a visible fill (got {count})"
     );
+    session
+        .capture_frame()
+        .expect("the drum drawing must fit the frame lane");
+
+    // Assert
     assert!(
-        session.rigid_shape_count() >= 28,
-        "the wall facets and four ribs must be drawable"
+        count > 80,
+        "the lower drum must start with a visible fill (got {count})"
+    );
+    assert_eq!(
+        session.rigid_shape_count(),
+        64,
+        "inner and outer wall chords plus four ribs use the frame lane"
     );
 }
 
@@ -103,7 +113,7 @@ fn fast_spin_turns_the_drum_and_lifts_water() {
     session
         .apply_control("drum-speed", "48")
         .expect("48 rpm is the spinner maximum");
-    let starting_top = session.read_particles(|world, system| highest_particle(world, system));
+    let starting_top = session.read_particles(highest_particle);
 
     // Act
     advance_steps(&mut session, 120);
@@ -185,7 +195,7 @@ fn highest_particle(world: &World, system: liquidfun::ParticleSystemId) -> f32 {
 fn farthest_particle(world: &World, system: liquidfun::ParticleSystemId) -> f32 {
     particle_positions(world, system)
         .into_iter()
-        .map(|position| position.length())
+        .map(Vec2::length)
         .fold(0.0, f32::max)
 }
 
