@@ -5,8 +5,11 @@ import {
   formatRangeReadout,
   formatRangeValueText,
   initialRangeValue,
+  maybeMagnitudeForSliderPosition,
   maybeParseRangeControlValue,
   maybeStepRangeValue,
+  sliderBounds,
+  sliderPositionForMagnitude,
 } from "./range-control";
 
 type SpinnerRange = Extract<SceneControl, { kind: "range" }>;
@@ -18,12 +21,23 @@ export function SpinnerControl(props: {
   readonly onApply: (name: string, value: string) => void;
 }): JSX.Element {
   const inputId = `scene-control-${props.control.id}`;
+  const bounds = sliderBounds(props.control);
   const initialValue = initialRangeValue(props.control, props.maybeValues);
   const [pendingValue, setPendingValue] = createSignal(initialValue);
+  const [sliderPosition, setSliderPosition] = createSignal(
+    sliderPositionForMagnitude(props.control, Number(initialValue)),
+  );
   let committedValue = initialValue;
 
-  function commitMagnitude(magnitude: string): void {
+  function showMagnitude(magnitude: string): void {
     setPendingValue(magnitude);
+    setSliderPosition(
+      sliderPositionForMagnitude(props.control, Number(magnitude)),
+    );
+  }
+
+  function commitMagnitude(magnitude: string): void {
+    showMagnitude(magnitude);
     if (magnitude === committedValue) {
       return;
     }
@@ -32,20 +46,29 @@ export function SpinnerControl(props: {
     props.onApply(props.control.id, magnitude);
   }
 
-  function onTyped(raw: string): void {
-    setPendingValue(raw);
-    const maybeMagnitude = maybeParseRangeControlValue(props.control, raw);
-    if (maybeMagnitude === undefined || props.control.recreates) {
+  function onRangeInput(position: string): void {
+    const maybeMagnitude = maybeMagnitudeForSliderPosition(
+      props.control,
+      position,
+    );
+    if (maybeMagnitude === undefined) {
       return;
     }
 
-    commitMagnitude(maybeMagnitude);
+    setSliderPosition(Number(position));
+    setPendingValue(maybeMagnitude);
+    if (!props.control.recreates) {
+      commitMagnitude(maybeMagnitude);
+    }
   }
 
-  function onCommit(raw: string): void {
-    const maybeMagnitude = maybeParseRangeControlValue(props.control, raw);
+  function onRangeCommit(position: string): void {
+    const maybeMagnitude = maybeMagnitudeForSliderPosition(
+      props.control,
+      position,
+    );
     if (maybeMagnitude === undefined) {
-      setPendingValue(committedValue);
+      showMagnitude(committedValue);
       return;
     }
 
@@ -95,14 +118,13 @@ export function SpinnerControl(props: {
           </button>
           <input
             id={inputId}
-            class="scene-control-number"
-            type="number"
-            inputMode="numeric"
-            min={props.control.min}
-            max={props.control.max}
-            step={props.control.step}
+            class="scene-control-range"
+            type="range"
+            min={bounds.min}
+            max={bounds.max}
+            step={bounds.step}
             disabled={props.disabled}
-            value={pendingValue()}
+            value={sliderPosition()}
             aria-valuemin={props.control.min}
             aria-valuemax={props.control.max}
             aria-valuenow={Number(parsedValue())}
@@ -110,8 +132,8 @@ export function SpinnerControl(props: {
               parsedValue(),
               props.control.unit,
             )}
-            onInput={(event) => onTyped(event.currentTarget.value)}
-            onChange={(event) => onCommit(event.currentTarget.value)}
+            onInput={(event) => onRangeInput(event.currentTarget.value)}
+            onChange={(event) => onRangeCommit(event.currentTarget.value)}
           />
           <button
             class="scene-control-step"

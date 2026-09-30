@@ -480,6 +480,16 @@ export async function activateLabeledControl(
     return;
   }
 
+  const slider = page.getByRole("slider", { name: control, exact: true });
+  if ((await slider.count()) === 1 && (await slider.isVisible())) {
+    const max = await slider.getAttribute("max");
+    if (max === null) {
+      throw new Error(`slider control ${control} is missing max`);
+    }
+    await slider.fill(max);
+    return;
+  }
+
   const spinbutton = page.getByRole("spinbutton", { name: control, exact: true });
   if ((await spinbutton.count()) === 1 && (await spinbutton.isVisible())) {
     const max = await spinbutton.getAttribute("max");

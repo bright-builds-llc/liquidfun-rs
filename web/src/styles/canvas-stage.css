@@ -274,9 +274,8 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
   width: 100%;
 }
 
-.canvas-hud-slider .scene-control-number {
-  flex: 1;
-  width: auto;
+.canvas-hud-slider .scene-control-spinner .scene-control-range {
+  min-block-size: 44px;
 }
 
 .canvas-hud-slider .scene-control-ticks {
