@@ -63,6 +63,9 @@ function createShell(): SceneRuntime {
     DEFAULT_RENDERED_PARTICLE_LIMIT,
   );
   const [panEnabled, setPanEnabled] = createSignal(false);
+  const [maybePixelsPerMeter, setMaybePixelsPerMeter] = createSignal<
+    number | undefined
+  >();
   const [tiltGravityEnabled, setTiltGravityEnabled] = createSignal(false);
   const [tiltDebug, setTiltDebug] = createSignal({ kind: "idle" as const });
   const releaseVisualViewport = canvasStage
@@ -108,6 +111,8 @@ function createShell(): SceneRuntime {
     setMaxRenderedParticles,
     panEnabled,
     setPanEnabled,
+    maybePixelsPerMeter,
+    setMaybePixelsPerMeter,
     tiltGravityEnabled,
     setTiltGravityEnabled,
     tiltDebug,

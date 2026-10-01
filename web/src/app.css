@@ -69,7 +69,8 @@ html[data-demo-media-capture="true"] [data-slot="drawer-overlay"],
 html[data-demo-media-capture="true"] .canvas-hud-stats,
 html[data-demo-media-capture="true"] .canvas-hud-title,
 html[data-demo-media-capture="true"] .canvas-hud-bottom,
-html[data-demo-media-capture="true"] .canvas-hud-corner {
+html[data-demo-media-capture="true"] .canvas-hud-corner,
+html[data-demo-media-capture="true"] .scale-legend {
   visibility: hidden;
 }
 .site-header h1 {

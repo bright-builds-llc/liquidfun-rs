@@ -94,6 +94,20 @@ Landscape viewports and wide README exports keep `worldBoundsForScene` through
 and `web/tests/portrait-bounds.test.ts` checks that each portrait frame fills
 the phone.
 
+### Playground scale legend
+
+Every playground scenario shows the shared world-scale legend. It is player
+chrome, not a per-scene option: `ScaleLegend` sits at the bottom-right of the
+canvas hub and the desktop viewport. The bar is one Google Maps-style tick.
+Its length is the largest 1, 2, or 5 times a power of ten that fits the maximum
+bar width at the current camera scale. World length is meters, and the label
+switches among millimeters, centimeters, meters, and kilometers. Zoom and
+viewport changes republish `maybePixelsPerMeter` so the tick stays in that
+scene's reference frame. Do not add a scene that hides the legend, skips the
+camera-scale publish, or treats world distance as a unit other than meters.
+`web/tests/scale-legend.test.ts` checks the snap and that both layouts render
+the legend.
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project

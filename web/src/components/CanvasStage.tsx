@@ -3,6 +3,7 @@ import { Show, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 import type { TiltDebug } from "../input/tilt-gravity";
 import type { PlayerStatus } from "../player/view";
 import { GravityArrow } from "./GravityArrow";
+import { ScaleLegend } from "./ScaleLegend";
 import { GitHubSourceLink } from "./SiteHeader";
 import { ViewportTools } from "./ViewportTools";
 import {
@@ -41,6 +42,7 @@ export type CanvasHudProps = PlaybackButtonsProps & {
   readonly statusLabel: string;
   readonly fpsTicks: readonly FpsTick[];
   readonly panEnabled: boolean;
+  readonly maybePixelsPerMeter: number | undefined;
   readonly onZoomIn: () => void;
   readonly onZoomOut: () => void;
   readonly onResetZoom: () => void;
@@ -126,7 +128,7 @@ export function PlaybackButtons(props: PlaybackButtonsProps) {
   );
 }
 
-/** Title, status, transport, zoom, debug, and accelerometer controls over the canvas. */
+/** Title, status, transport, scale, zoom, debug, and accelerometer controls over the canvas. */
 export function CanvasHud(props: CanvasHudProps) {
   return (
     <>
@@ -165,14 +167,17 @@ export function CanvasHud(props: CanvasHudProps) {
               onRetry={props.onRetry}
             />
           </div>
-          <ViewportTools
-            showFullscreen={false}
-            panEnabled={props.panEnabled}
-            onZoomIn={props.onZoomIn}
-            onZoomOut={props.onZoomOut}
-            onResetZoom={props.onResetZoom}
-            onPanEnabledChange={props.onPanEnabledChange}
-          />
+          <div class="canvas-hud-trailing">
+            <ScaleLegend maybePixelsPerMeter={props.maybePixelsPerMeter} />
+            <ViewportTools
+              showFullscreen={false}
+              panEnabled={props.panEnabled}
+              onZoomIn={props.onZoomIn}
+              onZoomOut={props.onZoomOut}
+              onResetZoom={props.onResetZoom}
+              onPanEnabledChange={props.onPanEnabledChange}
+            />
+          </div>
         </div>
       </div>
       <div class="canvas-hud-corner">

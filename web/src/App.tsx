@@ -17,6 +17,7 @@ export function App() {
       densityShading={session.appearance.densityShading}
       renderedParticleDraft={session.renderedParticleDraft}
       panEnabled={session.panEnabled}
+      maybePixelsPerMeter={session.maybePixelsPerMeter}
       tiltGravityEnabled={session.tiltGravityEnabled}
       tiltDebug={session.tiltDebug}
       debugEnabled={session.debugEnabled}

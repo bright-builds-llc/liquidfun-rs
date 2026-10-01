@@ -52,6 +52,7 @@ export type FrameLoopDeps = {
   setFpsTicks: (
     updater: (ticks: readonly FpsTick[]) => readonly FpsTick[],
   ) => void;
+  setMaybePixelsPerMeter: (pixelsPerMeter: number | undefined) => void;
   setView: (view: PlayerView) => void;
 };
 
@@ -245,8 +246,10 @@ export function connectResizeObserver(
       );
       clock.maybeCamera = resizedCamera;
       if (resizedCamera === undefined) {
+        deps.setMaybePixelsPerMeter(undefined);
         return;
       }
+      deps.setMaybePixelsPerMeter(resizedCamera.scale);
       if (deps.maybeSession() === undefined && maybeReadyId !== undefined) {
         deps.startScene(maybeReadyId);
         return;
