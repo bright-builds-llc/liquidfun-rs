@@ -16,9 +16,7 @@ use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, Sc
 use crate::session::SessionError;
 
 mod elevator_motion;
-mod elevator_plate;
 use elevator_motion::{plate_local_corners, scheduled_plate_offset, scheduled_plate_speed};
-use elevator_plate::{attach_plate_fixtures, push_plate_segments};
 
 /// Finer than the original 0.025 m drip. The default stride then fills the upper chamber with 3,000 particles.
 const PARTICLE_RADIUS: f32 = 0.008;
@@ -38,8 +36,8 @@ const PADDLE_HALF_WIDTH: f32 = 0.028;
 const WHEEL_DENSITY: f32 = 0.03;
 const ANGULAR_DAMPING: f32 = 0.05;
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
-/// Reaches both shaft faces, leaving about a 1 mm seam.
-const PLATE_HALF_WIDTH: f32 = 0.198;
+/// Runs up to both shaft faces. The slanted top stays open so liquid can slide off.
+const PLATE_HALF_WIDTH: f32 = 0.1993;
 const PLATE_HALF_HEIGHT: f32 = 0.02;
 const PLATE_SLANT: f32 = TAU * 2.0 / 360.0;
 const PLATE_CENTER: Vec2 = Vec2::new(0.76, 0.047);
@@ -392,7 +390,15 @@ fn create_plate(world: &mut World) -> Result<BodyId, SceneError> {
     let plate = world
         .create_body(&definition)
         .map_err(|_error| SceneError::Body)?;
-    attach_plate_fixtures(world, plate)?;
+    attach_box(
+        world,
+        plate,
+        PLATE_HALF_WIDTH,
+        PLATE_HALF_HEIGHT,
+        Vec2::ZERO,
+        PLATE_DENSITY,
+        PLATE_SLANT,
+    )?;
     Ok(plate)
 }
 
@@ -587,7 +593,15 @@ impl SceneHooks for LiquidBubblerHooks {
             .body_snapshot(self.plate)
             .map_err(|_error| SessionError::FrameCaptureFailed)?
             .transform();
-        push_plate_segments(&mut segments, plate_transform);
+        let plate_corners = plate_local_corners();
+        for index in 0..plate_corners.len() {
+            push_transformed_segment(
+                &mut segments,
+                plate_transform,
+                plate_corners[index],
+                plate_corners[(index + 1) % plate_corners.len()],
+            );
+        }
         Ok(segments)
     }
 

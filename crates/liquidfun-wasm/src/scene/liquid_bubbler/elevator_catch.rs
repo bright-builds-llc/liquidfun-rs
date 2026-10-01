@@ -1,4 +1,4 @@
-//! The deck fills the shaft, and side lips keep liquid from slipping off the seams.
+//! The deck crosses the shaft faces, and the lowered divider spills liquid onto it.
 
 use liquidfun::JointKind;
 use liquidfun::WorldObservationLimits;
@@ -26,52 +26,15 @@ fn plate_spans_the_shaft_under_a_lower_divider() {
 
     // Assert
     assert!(
-        left_gap > 0.0 && left_gap < super::super::PARTICLE_RADIUS * 0.5,
-        "{left_gap}"
+        left_gap > 0.0 && left_gap < 0.001,
+        "the deck should meet the left face, gap {left_gap}"
     );
     assert!(
-        right_gap > 0.0 && right_gap < super::super::PARTICLE_RADIUS * 0.5,
-        "{right_gap}"
+        right_gap > 0.0 && right_gap < 0.001,
+        "the deck should meet the right face, gap {right_gap}"
     );
     assert!(super::super::DIVIDER_BOTTOM_Y > deck_top + super::super::PLATE_CENTER.y);
     assert!(super::super::DIVIDER_BOTTOM_Y < 0.22);
-    let cheeks = super::super::elevator_plate::cheek_world_corners(0.0);
-    let left_outer = cheeks[0]
-        .iter()
-        .fold(f32::MAX, |bound, corner| bound.min(corner.x));
-    let left_top = cheeks[0]
-        .iter()
-        .fold(f32::MIN, |bound, corner| bound.max(corner.y));
-    let right_outer = cheeks[1]
-        .iter()
-        .fold(f32::MIN, |bound, corner| bound.max(corner.x));
-    let right_top = cheeks[1]
-        .iter()
-        .fold(f32::MIN, |bound, corner| bound.max(corner.y));
-    assert!(
-        left_outer > 0.56 + super::super::PARTICLE_RADIUS,
-        "the left lip leaves the spillway a gutter, outer {left_outer}"
-    );
-    assert!(
-        left_outer < 0.60,
-        "the left lip stays near the seam, outer {left_outer}"
-    );
-    assert!(left_top > deck_top + super::super::PLATE_CENTER.y);
-    assert!(
-        right_outer < 0.96,
-        "the right lip stays inside the shaft, outer {right_outer}"
-    );
-    assert!(
-        right_outer > 0.94,
-        "the right lip reaches the seam, outer {right_outer}"
-    );
-    assert!(right_top > deck_top + super::super::PLATE_CENTER.y);
-
-    let session =
-        SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
-    session
-        .capture_frame()
-        .expect("the side lips should fit the rigid-segment budget");
 }
 
 #[test]
