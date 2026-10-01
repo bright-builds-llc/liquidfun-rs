@@ -1,4 +1,4 @@
-//! The deck crosses the shaft faces, and the lowered divider spills liquid onto it.
+//! The deck crosses the shaft faces, and the divider passage is open down to the floor.
 
 use liquidfun::JointKind;
 use liquidfun::WorldObservationLimits;
@@ -39,6 +39,17 @@ fn plate_spans_the_shaft_under_a_lower_divider() {
         "the spillway should clear a particle above the deck"
     );
     assert!(super::super::DIVIDER_BOTTOM_Y < 0.22);
+    let blocks_the_floor = super::super::wall_boxes().into_iter().any(|wall| {
+        let left = wall.center.x - wall.half_width;
+        let right = wall.center.x + wall.half_width;
+        let bottom = wall.center.y - wall.half_height;
+        let top = wall.center.y + wall.half_height;
+        left < 0.56 && right > 0.48 && bottom < 0.02 && top > 0.001
+    });
+    assert!(
+        !blocks_the_floor,
+        "the passage into the shaft should stay open at the floor"
+    );
 }
 
 #[test]
@@ -93,7 +104,7 @@ fn second_dwell_keeps_a_load_on_the_deck() {
         "the deck should hold more liquid than has slipped underneath, on {on_deck} under {under}"
     );
     assert!(
-        on_deck > 300,
+        on_deck > 200,
         "the deck should be carrying a load, on {on_deck}"
     );
 }

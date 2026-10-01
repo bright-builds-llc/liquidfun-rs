@@ -45,7 +45,7 @@ const PLATE_DENSITY: f32 = 1.0;
 const WALL_TOP_Y: f32 = 2.40;
 const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
 const WALL_CENTER_Y: f32 = WALL_HALF_HEIGHT;
-/// Opens the spillway about one particle diameter above the seated deck.
+/// Top of the open passage into the shaft, about one particle diameter above the seated deck.
 const DIVIDER_BOTTOM_Y: f32 = 0.10;
 const DIVIDER_TOP_Y: f32 = 2.00;
 const DIVIDER_HALF_HEIGHT: f32 = (DIVIDER_TOP_Y - DIVIDER_BOTTOM_Y) * 0.5;
@@ -268,12 +268,7 @@ fn shelf_boxes() -> [BoxSpec; LEVEL_COUNT * 2] {
 }
 
 fn wall_boxes() -> Vec<BoxSpec> {
-    let mut walls = chamber_boxes()
-        .into_iter()
-        .chain(shelf_boxes())
-        .collect::<Vec<_>>();
-    walls.push(span_box(0.48, 0.56, 0.0, 0.050));
-    walls
+    chamber_boxes().into_iter().chain(shelf_boxes()).collect()
 }
 
 fn span_box(left: f32, right: f32, bottom: f32, top: f32) -> BoxSpec {
