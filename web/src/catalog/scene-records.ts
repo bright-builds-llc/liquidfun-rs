@@ -556,7 +556,7 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Washing Machine",
     ready: true,
     description:
-      "Watch ribs on a spinning drum carry a partial fill of water around the circle. This is an original experimental scene.",
+      "Watch ribs on a spinning drum tumble water and a few elastic pieces of clothing. This is an original experimental scene.",
     interactionHint:
       "Use Drum speed to change how fast the drum turns. It starts at 20 rpm. Labeled controls also work from the keyboard.",
     controls: withGravitySlider([DRUM_SPEED_CONTROL]),
