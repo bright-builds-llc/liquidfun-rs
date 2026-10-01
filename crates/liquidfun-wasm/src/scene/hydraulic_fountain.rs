@@ -1,9 +1,9 @@
 //! Hydraulic fountain: two kinematic plates squeeze a pool through the gap between them.
 //!
 //! The plates wait above the water, accelerate downward, pause, then rise slowly so the
-//! water can drain back through the hole. Thick outer cheeks leave that gap as the only
-//! outlet, and each lid leans two degrees toward the hole. The gap slider moves the inner
-//! edges while the cheeks stay against the walls.
+//! water can drain back through the hole. Thick outer cheeks cover the side walls, so that
+//! gap is the only outlet, and each lid leans two degrees toward the hole. The gap slider
+//! moves the inner edges while those cheeks stay across the walls.
 
 use std::f32::consts::TAU;
 
@@ -50,13 +50,13 @@ const GAP_TENTHS_MAX: i16 = 30;
 const GAP_TENTHS_DEFAULT: i16 = 30;
 #[cfg(test)]
 const GAP_HALF_WIDTH: f32 = 0.015;
-/// Wider than `LINEAR_SLOP` and narrower than a particle diameter.
-const SIDE_CLEARANCE: f32 = 0.008;
 const SLAB_HALF_HEIGHT: f32 = 0.09;
 const CHEEK_THICKNESS: f32 = 0.16;
 const CHEEK_DROP: f32 = 0.06;
 const CHEEK_RISE: f32 = 0.06;
-const PLATE_OUTER_X: f32 = INNER_HALF_WIDTH - SIDE_CLEARANCE;
+/// Outer face of a side wall. The plates end here, so they cover the wall.
+const WALL_OUTER_X: f32 = INNER_HALF_WIDTH + 2.0 * WALL_HALF_THICKNESS;
+const PLATE_OUTER_X: f32 = WALL_OUTER_X;
 const POOL_BOTTOM_Y: f32 = 0.03;
 const POOL_TOP_Y: f32 = POOL_BOTTOM_Y + ROW_GAPS * POOL_STRIDE;
 const AIR_GAP: f32 = 0.4;

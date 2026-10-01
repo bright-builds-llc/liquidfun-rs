@@ -406,8 +406,8 @@ function HydraulicFountainPreview() {
       <line x1="20" y1="78" x2="140" y2="78" stroke={RIGID} stroke-width="8" />
       <line x1="140" y1="12" x2="140" y2="78" stroke={RIGID} stroke-width="8" />
       <rect x="28" y="56" width="104" height="18" fill={WATER} />
-      <polygon points="28,50 72,54 72,40 28,32" fill={RIGID} />
-      <polygon points="132,50 88,54 88,40 132,32" fill={RIGID} />
+      <polygon points="16,50 72,54 72,40 16,32" fill={RIGID} />
+      <polygon points="144,50 88,54 88,40 144,32" fill={RIGID} />
       <rect x="72" y="14" width="16" height="40" fill={WATER} />
     </PreviewFrame>
   );

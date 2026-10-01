@@ -4,9 +4,9 @@ use liquidfun::{BodyType, WorldObservationLimits};
 
 use super::{
     ASCEND_SPEED, CHEEK_HALF_HEIGHT, CYCLE, DESCEND_DURATION, GAP_HALF_WIDTH, GAP_TENTHS_DEFAULT,
-    HOLD_HIGH, HOLD_LOW, INNER_HALF_WIDTH, PEAK_DESCEND_SPEED, PLATE_OUTER_X, POOL_TOP_Y,
-    PRESSED_CENTER_Y, RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, SIM_DT, SLAB_HALF_HEIGHT,
-    SLOPE_ANGLE, build, gap_half_from_tenths, plate_center_x, plate_velocity, scheduled_center_y,
+    HOLD_HIGH, HOLD_LOW, PEAK_DESCEND_SPEED, PLATE_OUTER_X, POOL_TOP_Y, PRESSED_CENTER_Y,
+    RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, SIM_DT, SLAB_HALF_HEIGHT, SLOPE_ANGLE, WALL_OUTER_X,
+    build, gap_half_from_tenths, plate_center_x, plate_velocity, scheduled_center_y,
     slab_half_width, slope_polygon,
 };
 use crate::ProofFrame;
@@ -299,10 +299,10 @@ fn the_press_drives_a_jet_through_the_gap() {
             .filter(|position| position.y > plate_top + 0.05 && position.x.abs() < GAP_HALF_WIDTH)
             .count();
         // A 3 cm hole is only a little wider than one particle, so water also climbs
-        // the lids. This count is particles that leave the tank past the inner walls.
+        // the lids. This count is particles that get past the outer face of the walls.
         let side = positions
             .iter()
-            .filter(|position| position.y > plate_top + 0.05 && position.x.abs() > INNER_HALF_WIDTH)
+            .filter(|position| position.y > plate_top + 0.05 && position.x.abs() > PLATE_OUTER_X)
             .count();
         if jet >= best_jet {
             best_jet = jet;
@@ -458,12 +458,16 @@ fn assert_plate_gap(centers: &[f32], gap_half: f32) {
         "right plate center {right}, expected {center}"
     );
     assert!(
+        (PLATE_OUTER_X - WALL_OUTER_X).abs() < 1.0e-4,
+        "each plate reaches the outer face of the side wall"
+    );
+    assert!(
         (left - slab_half + PLATE_OUTER_X).abs() < 1.0e-4,
-        "the left cheek stays on the wall"
+        "the left plate covers the side wall"
     );
     assert!(
         (right + slab_half - PLATE_OUTER_X).abs() < 1.0e-4,
-        "the right cheek stays on the wall"
+        "the right plate covers the side wall"
     );
     assert!((left + slab_half + gap_half).abs() < 1.0e-4);
     assert!((right - slab_half - gap_half).abs() < 1.0e-4);
