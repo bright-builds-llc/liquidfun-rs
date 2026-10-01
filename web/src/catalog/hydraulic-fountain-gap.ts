@@ -1,17 +1,13 @@
 import type { SceneControl } from "./scenes";
 
-/** Narrowest opening that still lets the squeezed water through. */
-export const GAP_CENTIMETERS_MIN = 5;
-/** Widest opening that still leaves a plate sealed against each wall. */
-export const GAP_CENTIMETERS_MAX = 80;
-export const GAP_CENTIMETERS_STEP = 1;
-/** Authored opening between the two platforms. */
-export const GAP_CENTIMETERS_DEFAULT = 20;
-export const GAP_CENTIMETERS_TICKS = [
-  GAP_CENTIMETERS_MIN,
-  GAP_CENTIMETERS_DEFAULT,
-  GAP_CENTIMETERS_MAX,
-] as const;
+/** Narrowest opening on the slider. */
+export const GAP_CENTIMETERS_MIN = 0.5;
+/** Widest opening. A particle is 2.5 cm across, so this is the setting that still lets water through. */
+export const GAP_CENTIMETERS_MAX = 3;
+export const GAP_CENTIMETERS_STEP = 0.1;
+/** Starts at the wide end so the squeeze still has a hole. */
+export const GAP_CENTIMETERS_DEFAULT = 3;
+export const GAP_CENTIMETERS_TICKS = [0.5, 1.5, 3] as const;
 
 /** Live HUD slider. Changing it moves the platforms and does not rebuild the pool. */
 export const GAP_CONTROL: SceneControl = {

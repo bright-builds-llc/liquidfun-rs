@@ -3,11 +3,11 @@ use liquidfun::math::Vec2;
 use liquidfun::{BodyType, WorldObservationLimits};
 
 use super::{
-    ASCEND_SPEED, CYCLE, DESCEND_DURATION, GAP_CENTIMETERS_DEFAULT, GAP_HALF_WIDTH, HOLD_HIGH,
-    HOLD_LOW, INNER_HALF_WIDTH, PEAK_DESCEND_SPEED, PLATE_OUTER_X, POOL_TOP_Y, PRESSED_CENTER_Y,
-    RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, SIM_DT, SLAB_HALF_HEIGHT, SLOPE_ANGLE, build,
-    gap_half_from_centimeters, plate_center_x, plate_velocity, scheduled_center_y, slab_half_width,
-    slope_polygon,
+    ASCEND_SPEED, CHEEK_HALF_HEIGHT, CYCLE, DESCEND_DURATION, GAP_HALF_WIDTH, GAP_TENTHS_DEFAULT,
+    HOLD_HIGH, HOLD_LOW, INNER_HALF_WIDTH, PEAK_DESCEND_SPEED, PLATE_OUTER_X, POOL_TOP_Y,
+    PRESSED_CENTER_Y, RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, SIM_DT, SLAB_HALF_HEIGHT,
+    SLOPE_ANGLE, build, gap_half_from_tenths, plate_center_x, plate_velocity, scheduled_center_y,
+    slab_half_width, slope_polygon,
 };
 use crate::ProofFrame;
 use crate::scene::{SceneId, build_scene};
@@ -174,15 +174,15 @@ fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
     // Arrange
     let mut session = SessionCore::create(SceneId::HydraulicFountain)
         .expect("hydraulic fountain should construct");
-    let authored = gap_half_from_centimeters(GAP_CENTIMETERS_DEFAULT);
+    let authored = gap_half_from_tenths(GAP_TENTHS_DEFAULT);
 
     // Act
-    let too_narrow = session.apply_control("gap", "4");
-    let padded = session.apply_control("gap", "020");
-    let wide = session.apply_control("gap", "80");
+    let too_narrow = session.apply_control("gap", "0.4");
+    let padded = session.apply_control("gap", "0.50");
+    let wide = session.apply_control("gap", "3.0");
     let wide_centers = plate_center_xs(&session);
     let wide_ys = plate_center_ys(&session);
-    let narrow = session.apply_control("gap", "5");
+    let narrow = session.apply_control("gap", "0.5");
     let narrow_centers = plate_center_xs(&session);
     advance_steps(&mut session, 30);
     let held_centers = plate_center_xs(&session);
@@ -194,11 +194,11 @@ fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
     assert_eq!(authored.to_bits(), GAP_HALF_WIDTH.to_bits());
     assert_eq!(too_narrow, Err(SessionError::UnknownControl));
     assert_eq!(padded, Err(SessionError::UnknownControl));
-    assert!(wide.is_ok(), "80 cm is the widest opening");
-    assert!(narrow.is_ok(), "5 cm is the narrowest opening");
-    assert_plate_gap(&wide_centers, gap_half_from_centimeters(80));
-    assert_plate_gap(&narrow_centers, gap_half_from_centimeters(5));
-    assert_plate_gap(&held_centers, gap_half_from_centimeters(5));
+    assert!(wide.is_ok(), "3.0 cm is the widest opening");
+    assert!(narrow.is_ok(), "0.5 cm is the narrowest opening");
+    assert_plate_gap(&wide_centers, gap_half_from_tenths(30));
+    assert_plate_gap(&narrow_centers, gap_half_from_tenths(5));
+    assert_plate_gap(&held_centers, gap_half_from_tenths(5));
     assert!(
         wide_ys
             .iter()
@@ -206,6 +206,25 @@ fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
         "changing the gap keeps the plates at their current height"
     );
     assert_eq!(count, PARTICLE_COUNT);
+}
+
+#[test]
+fn the_press_stops_just_above_the_floor() {
+    // Arrange
+    let cheek_bottom = PRESSED_CENTER_Y - CHEEK_HALF_HEIGHT;
+
+    // Act
+    let clearance = cheek_bottom - 0.0;
+
+    // Assert
+    assert!(
+        clearance > 0.0,
+        "the cheeks should stay above the floor, bottom {cheek_bottom}"
+    );
+    assert!(
+        clearance < 0.02,
+        "the cheeks should end close to the floor, clearance {clearance}"
+    );
 }
 
 #[test]
@@ -279,11 +298,11 @@ fn the_press_drives_a_jet_through_the_gap() {
             .iter()
             .filter(|position| position.y > plate_top + 0.05 && position.x.abs() < GAP_HALF_WIDTH)
             .count();
+        // A 3 cm hole is only a little wider than one particle, so water also climbs
+        // the lids. This count is particles that leave the tank past the inner walls.
         let side = positions
             .iter()
-            .filter(|position| {
-                position.y > plate_top + 0.05 && position.x.abs() > INNER_HALF_WIDTH - 0.5
-            })
+            .filter(|position| position.y > plate_top + 0.05 && position.x.abs() > INNER_HALF_WIDTH)
             .count();
         if jet >= best_jet {
             best_jet = jet;
@@ -315,7 +334,7 @@ fn the_press_drives_a_jet_through_the_gap() {
     );
     assert!(
         best_side * 2 <= best_jet,
-        "side spray should stay smaller than the middle jet; jet {best_jet}, side {best_side}"
+        "water past the walls should stay smaller than the middle jet; jet {best_jet}, side {best_side}"
     );
 }
 
