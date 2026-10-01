@@ -61,7 +61,7 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   "stacked-drip":
     "Watch colored liquid drain through three tipping trays. This is an original experimental scene.",
   "washing-machine":
-    "Watch ribs on a spinning drum tumble water and a few elastic pieces of clothing. This is an original experimental scene.",
+    "Watch ribs on a spinning drum tumble water and a few elastic socks. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
