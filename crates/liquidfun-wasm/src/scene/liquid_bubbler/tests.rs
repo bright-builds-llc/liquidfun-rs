@@ -5,6 +5,9 @@ use super::build;
 use crate::scene::{SceneId, build_scene};
 use crate::session::{SessionCore, SessionError};
 
+#[path = "elevator_catch.rs"]
+mod elevator_catch;
+
 const CHAMBER_LEFT: f32 = -0.55;
 const DIVIDER_INNER_X: f32 = 0.48;
 const SHAFT_WALL_X: f32 = 0.56;

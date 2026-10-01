@@ -41,17 +41,19 @@ const ANGULAR_DAMPING: f32 = 0.05;
 /// Rests one polygon-skin pair above the floor so a flush contact does not
 /// pop the plate off translation 0 during the dwell.
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
-const PLATE_HALF_WIDTH: f32 = 0.18;
+/// Spans the shaft down to a gap smaller than one particle on each side.
+const PLATE_HALF_WIDTH: f32 = 0.187;
 const PLATE_HALF_HEIGHT: f32 = 0.02;
 /// Two degrees, downhill toward the left chamber.
 const PLATE_SLANT: f32 = TAU * 2.0 / 360.0;
-/// Lifted so the slanted low corner keeps the floor gap. 0.18 * sin(2°) is about 0.0063 m.
+/// Lifted so the slanted low corner keeps the floor gap. 0.187 * sin(2°) is about 0.0065 m.
 const PLATE_CENTER: Vec2 = Vec2::new(0.76, 0.047);
 const PLATE_DENSITY: f32 = 1.0;
 const WALL_TOP_Y: f32 = 2.40;
 const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
 const WALL_CENTER_Y: f32 = WALL_HALF_HEIGHT;
-const DIVIDER_BOTTOM_Y: f32 = 0.22;
+/// Just above the resting deck, so liquid cannot stream past the plate's left side.
+const DIVIDER_BOTTOM_Y: f32 = 0.08;
 /// Above the starting pool, so the drip cannot skip the shelves into the shaft.
 const DIVIDER_TOP_Y: f32 = 2.00;
 const DIVIDER_HALF_HEIGHT: f32 = (DIVIDER_TOP_Y - DIVIDER_BOTTOM_Y) * 0.5;

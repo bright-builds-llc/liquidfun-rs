@@ -382,7 +382,7 @@ function LiquidBubblerPreview() {
       <line x1="28" y1="14" x2="28" y2="78" stroke={RIGID} stroke-width="3" />
       <line x1="28" y1="78" x2="132" y2="78" stroke={RIGID} stroke-width="3" />
       <line x1="132" y1="14" x2="132" y2="78" stroke={RIGID} stroke-width="3" />
-      <line x1="104" y1="20" x2="104" y2="68" stroke={RIGID} stroke-width="3" />
+      <line x1="104" y1="20" x2="104" y2="73" stroke={RIGID} stroke-width="3" />
       <line x1="46" y1="32" x2="104" y2="32" stroke={RIGID} stroke-width="3" />
       <line x1="28" y1="50" x2="80" y2="50" stroke={RIGID} stroke-width="3" />
       <line x1="94" y1="50" x2="104" y2="50" stroke={RIGID} stroke-width="3" />
@@ -394,7 +394,7 @@ function LiquidBubblerPreview() {
       <line x1="83" y1="59" x2="91" y2="59" stroke={RIGID} stroke-width="1.5" />
       <circle cx="37" cy="73" r="4" fill="none" stroke={RIGID} stroke-width="2" />
       <line x1="37" y1="69" x2="37" y2="77" stroke={RIGID} stroke-width="1.5" />
-      <line x1="110" y1="74.6" x2="126" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="106" y1="74.8" x2="130" y2="74" stroke={RIGID} stroke-width="3" />
     </PreviewFrame>
   );
 }
