@@ -34,9 +34,9 @@ export const FLOW_RATE_CONTROL: SceneControl = {
   ticks: FLOW_RATE_TICKS,
 };
 
-/** Reverse. The valve is flipped so the ramps hold water back. */
+/** Reverse. The valve is flipped so the curved heads hold water back. */
 export const FLOW_DIRECTION_MIN = -1;
-/** Forward. Water slides off the ramps and falls through. */
+/** Forward. Water falls through the straight tube. */
 export const FLOW_DIRECTION_MAX = 1;
 export const FLOW_DIRECTION_STEP = 2;
 export const FLOW_DIRECTION_DEFAULT = FLOW_DIRECTION_MAX;

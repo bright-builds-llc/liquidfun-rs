@@ -349,15 +349,30 @@ function WaveTankPreview() {
 function TeslaValvePreview() {
   return (
     <PreviewFrame>
-      <line x1="68" y1="8" x2="68" y2="82" stroke={RIGID} stroke-width="3" />
-      <line x1="92" y1="8" x2="92" y2="82" stroke={RIGID} stroke-width="3" />
-      <line x1="68" y1="22" x2="86" y2="32" stroke={RIGID} stroke-width="3" />
-      <line x1="92" y1="40" x2="74" y2="50" stroke={RIGID} stroke-width="3" />
-      <line x1="68" y1="58" x2="86" y2="68" stroke={RIGID} stroke-width="3" />
-      <circle cx="80" cy="14" r="3" fill={WATER} />
-      <circle cx="80" cy="28" r="3" fill={WATER} />
-      <circle cx="78" cy="44" r="3" fill={WATER} />
-      <circle cx="82" cy="62" r="3" fill={WATER} />
+      <polyline points="112,8 112,82" fill="none" stroke={RIGID} stroke-width="2.5" />
+      <polyline points="96,8 96,24" fill="none" stroke={RIGID} stroke-width="2.5" />
+      <polyline
+        points="96,26 82,28 68,36 60,50 64,62 80,70 98,76"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="2.5"
+      />
+      <polyline
+        points="84,40 74,48 80,58 98,68"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="2.5"
+      />
+      <polyline
+        points="96,54 82,58 70,66 64,76 78,84"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="2.5"
+      />
+      <circle cx="104" cy="16" r="2.4" fill={WATER} />
+      <circle cx="104" cy="34" r="2.4" fill={WATER} />
+      <circle cx="104" cy="58" r="2.4" fill={WATER} />
+      <circle cx="105" cy="74" r="2.4" fill={WATER} />
     </PreviewFrame>
   );
 }

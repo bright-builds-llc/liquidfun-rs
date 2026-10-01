@@ -5,7 +5,7 @@ use liquidfun::math::Vec2;
 use super::super::SceneId;
 use super::geometry::{
     DRAIN_HALF_WIDTH, DRAIN_TOP_Y, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y,
-    collision_quads, outlines,
+    collision_quads, forward_tube_returns, mirror_y, outline_segments,
 };
 use crate::session::SessionCore;
 
@@ -46,29 +46,29 @@ fn wall_corners_stay_inside_the_catalog_frame() {
 }
 
 #[test]
-fn reverse_ramps_slope_away_from_the_forward_lip() {
+fn curved_heads_turn_back_into_the_main_tube() {
     // Arrange
-    let forward = collision_quads(true);
-    let reverse = collision_quads(false);
-    let forward_ramp = forward[4];
-    let reverse_ramp = reverse[4];
+    let returns = forward_tube_returns();
 
-    // Act
-    let forward_closed_y = edge_y(&forward_ramp, 0, 3);
-    let forward_lip_y = edge_y(&forward_ramp, 1, 2);
-    let reverse_closed_y = edge_y(&reverse_ramp, 0, 3);
-    let reverse_lip_y = edge_y(&reverse_ramp, 1, 2);
-
-    // Assert
-    assert!(
-        forward_lip_y < forward_closed_y,
-        "forward water should slide down toward the lip"
-    );
-    assert!(
-        reverse_lip_y > reverse_closed_y,
-        "the flipped tooth should climb toward the old lip"
-    );
-    assert_eq!(outlines(&forward).len(), outlines(&reverse).len());
+    // Act / Assert
+    assert_eq!(returns.len(), 2);
+    for nozzle in returns {
+        assert!(
+            nozzle.tube.y < nozzle.curve.y,
+            "forward head should turn down into the tube"
+        );
+        assert!(
+            nozzle.tube.x > nozzle.curve.x,
+            "forward head should turn back toward the tube"
+        );
+        let flipped_curve = mirror_y(nozzle.curve);
+        let flipped_tube = mirror_y(nozzle.tube);
+        assert!(
+            flipped_tube.y > flipped_curve.y,
+            "flipped head should turn up into the tube"
+        );
+    }
+    assert_eq!(outline_segments(true).len(), outline_segments(false).len());
 }
 
 #[test]
@@ -181,8 +181,4 @@ fn positions(session: &SessionCore) -> Vec<Vec2> {
 
 fn in_drain(position: Vec2) -> bool {
     position.y < DRAIN_TOP_Y && position.x.abs() < DRAIN_HALF_WIDTH
-}
-
-fn edge_y(quad: &[Vec2; 4], start: usize, end: usize) -> f32 {
-    (quad[start].y + quad[end].y) * 0.5
 }

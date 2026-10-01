@@ -2,8 +2,9 @@
 //!
 //! A source at the top pours particles into the valve. A drain under the
 //! outlet destroys whatever gets through, so the conduit does not fill up.
-//! Forward leaves each ramp sloping toward its gap. Reverse flips the valve
-//! about a horizontal axis so those ramps slope into closed pockets.
+//! Forward leaves each curved head turning back downstream into the tube.
+//! Reverse flips the valve about a horizontal axis so those heads turn the
+//! water back upstream and hold it.
 
 mod geometry;
 
@@ -21,10 +22,10 @@ use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, Sc
 use crate::session::SessionError;
 use geometry::{
     DRAIN_CENTER, DRAIN_HALF_HEIGHT, DRAIN_HALF_WIDTH, MIRROR_Y, PARTICLE_RADIUS, SPAWN_XS,
-    SPAWN_Y, collision_quads, outlines,
+    SPAWN_Y, collision_quads, outline_segments,
 };
 
-/// Extra substeps so particles stay on the thin ramps.
+/// Extra substeps so particles stay inside the curved heads.
 pub(crate) const PARTICLE_ITERATIONS: u32 = 4;
 
 const FLOW_RATE_CONTROL: &str = "flow-rate";
@@ -77,7 +78,7 @@ fn build_tesla_valve() -> Result<BuiltScene, SceneError> {
             credit: 0.0,
             cursor: 0,
             valve_body,
-            segments: outlines(&quads),
+            segments: outline_segments(true),
         }),
     })
 }
@@ -213,7 +214,7 @@ fn flip_valve(
         .destroy_body(hooks.valve_body)
         .map_err(|_error| SessionError::SceneConstruction)?;
     hooks.valve_body = new_body;
-    hooks.segments = outlines(&quads);
+    hooks.segments = outline_segments(forward);
     hooks.forward = forward;
     hooks.credit = 0.0;
     Ok(())

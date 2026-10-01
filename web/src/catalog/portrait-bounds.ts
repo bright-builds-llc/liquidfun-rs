@@ -49,10 +49,10 @@ const WALLED_FALLING_BALL = {
  * clear of that chrome while the frame still fills the width.
  */
 const TESLA_VALVE_PORTRAIT = {
-  minX: -0.94,
-  minY: -1.02,
-  maxX: 0.94,
-  maxY: 3.4,
+  minX: -0.95,
+  minY: -1.04,
+  maxX: 0.85,
+  maxY: 3.25,
 } as const;
 
 /** Soup floor and slanted walls out to (±4, 3), plus a small margin. */
