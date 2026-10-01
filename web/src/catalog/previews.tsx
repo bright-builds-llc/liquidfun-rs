@@ -397,17 +397,13 @@ function LiquidBubblerPreview() {
 function HydraulicFountainPreview() {
   return (
     <PreviewFrame>
-      <line x1="28" y1="22" x2="28" y2="72" stroke={RIGID} stroke-width="3" />
-      <line x1="28" y1="72" x2="74" y2="72" stroke={RIGID} stroke-width="3" />
-      <line x1="86" y1="72" x2="132" y2="72" stroke={RIGID} stroke-width="3" />
-      <line x1="132" y1="22" x2="132" y2="72" stroke={RIGID} stroke-width="3" />
-      <line x1="80" y1="22" x2="80" y2="52" stroke={RIGID} stroke-width="3" />
-      <rect x="36" y="28" width="8" height="40" fill={RIGID} />
-      <circle cx="54" cy="64" r="3" fill={WATER} />
-      <circle cx="62" cy="62" r="3" fill={WATER} />
-      <circle cx="70" cy="64" r="3" fill={WATER} />
-      <circle cx="58" cy="56" r="3" fill={WATER} />
-      <circle cx="66" cy="54" r="3" fill={WATER} />
+      <line x1="24" y1="14" x2="24" y2="76" stroke={RIGID} stroke-width="3" />
+      <line x1="24" y1="76" x2="136" y2="76" stroke={RIGID} stroke-width="3" />
+      <line x1="136" y1="14" x2="136" y2="76" stroke={RIGID} stroke-width="3" />
+      <rect x="28" y="58" width="104" height="18" fill={WATER} />
+      <rect x="28" y="42" width="46" height="7" fill={RIGID} />
+      <rect x="86" y="42" width="46" height="7" fill={RIGID} />
+      <rect x="74" y="18" width="12" height="40" fill={WATER} />
     </PreviewFrame>
   );
 }
