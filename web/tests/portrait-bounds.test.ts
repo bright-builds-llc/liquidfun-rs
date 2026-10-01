@@ -296,7 +296,7 @@ describe("portrait scene frames", () => {
         { x: 0.52, y: 0.04 },
         { x: 0.48, y: -0.04 },
         { x: 0.52, y: 0.2 },
-      ],
+      ].map(({ x, y }) => ({ x: x / 1.4, y: y / 1.4 })),
       "hydraulic-fountain": [
         { x: -1.18, y: 0 },
         { x: 1.18, y: 0 },

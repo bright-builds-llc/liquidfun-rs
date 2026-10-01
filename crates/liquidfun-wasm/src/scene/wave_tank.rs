@@ -1,7 +1,8 @@
 //! Sinusoidal wave tank: a dynamic end platform lifts one end of a still pool.
 //!
 //! Motor speed is a sine of simulation time. Limits sit outside that stroke.
-//! The pool is one default water group, and the rest of the floor stays fixed.
+//! The pool is one meter wide, one default water group, and the rest of the
+//! floor stays fixed. Lengths keep the original 1.4 m layout at that scale.
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};
@@ -16,30 +17,34 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.025;
+/// Inner width from the near wall face to the far wall face.
+const POOL_WIDTH: f32 = 1.0;
+/// Uniform scale from the original 1.4 m pool onto [`POOL_WIDTH`].
+const LENGTH_SCALE: f32 = POOL_WIDTH / 1.4;
+const PARTICLE_RADIUS: f32 = 0.025 * LENGTH_SCALE;
 const PARTICLE_DAMPING: f32 = 0.2;
 const GROUP_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const SIM_DT: f32 = 1.0 / 60.0;
 const PERIOD: f32 = 2.0;
-const STROKE: f32 = 0.16;
+const STROKE: f32 = 0.16 * LENGTH_SCALE;
 const PEAK_SPEED: f32 = STROKE * std::f32::consts::TAU / (2.0 * PERIOD);
-const LIMIT_LOW: f32 = -0.02;
-const LIMIT_HIGH: f32 = STROKE + 0.02;
+const LIMIT_LOW: f32 = -0.02 * LENGTH_SCALE;
+const LIMIT_HIGH: f32 = STROKE + 0.02 * LENGTH_SCALE;
 const MAX_MOTOR_FORCE: f32 = 1.0e6;
 const PLATFORM_DENSITY: f32 = 1.0;
 const WALL_FRICTION: f32 = 0.2;
-const WALL_HALF_THICKNESS: f32 = 0.02;
-const PLATFORM_WIDTH: f32 = 0.50;
-const CHANNEL_LENGTH: f32 = 0.90;
-const WATER_DEPTH: f32 = 0.32;
-const ANCHOR_X: f32 = 0.50;
+const WALL_HALF_THICKNESS: f32 = 0.02 * LENGTH_SCALE;
+const PLATFORM_WIDTH: f32 = 0.50 * LENGTH_SCALE;
+const CHANNEL_LENGTH: f32 = 0.90 * LENGTH_SCALE;
+const WATER_DEPTH: f32 = 0.32 * LENGTH_SCALE;
+const ANCHOR_X: f32 = 0.50 * LENGTH_SCALE;
 const ANCHOR: Vec2 = Vec2::new(ANCHOR_X, 0.0);
 const NEAR_WALL_INNER_X: f32 = 0.0;
 const FAR_WALL_INNER_X: f32 = ANCHOR_X + CHANNEL_LENGTH;
 const FLOOR_TOP_Y: f32 = 0.0;
-const WALL_TOP_Y: f32 = 0.90;
-const FILL_INSET: f32 = 0.06;
+const WALL_TOP_Y: f32 = 0.90 * LENGTH_SCALE;
+const FILL_INSET: f32 = 0.06 * LENGTH_SCALE;
 const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
 const SLAB_LEFT_LOCAL_X: f32 = NEAR_WALL_INNER_X + WALL_HALF_THICKNESS - ANCHOR_X;
 const PLATFORM_RIGHT_LOCAL_X: f32 = SLAB_LEFT_LOCAL_X + PLATFORM_WIDTH;
@@ -49,8 +54,11 @@ const SLAB_CENTER: Vec2 = Vec2::new(
     -WALL_HALF_THICKNESS,
 );
 const SLAB_HALF_WIDTH: f32 = (SLAB_RIGHT_LOCAL_X - SLAB_LEFT_LOCAL_X) * 0.5;
-const FACE_CENTER: Vec2 = Vec2::new(PLATFORM_RIGHT_LOCAL_X - WALL_HALF_THICKNESS, -0.08);
-const FACE_HALF_HEIGHT: f32 = 0.12;
+const FACE_CENTER: Vec2 = Vec2::new(
+    PLATFORM_RIGHT_LOCAL_X - WALL_HALF_THICKNESS,
+    -0.08 * LENGTH_SCALE,
+);
+const FACE_HALF_HEIGHT: f32 = 0.12 * LENGTH_SCALE;
 
 const WALL_SEGMENTS: [RigidSegment; 3] = [
     RigidSegment {

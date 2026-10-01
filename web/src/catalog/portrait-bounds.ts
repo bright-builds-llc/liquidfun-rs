@@ -69,7 +69,12 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   "drawing-particles": { minX: -4.2, minY: -2.2, maxX: 4.2, maxY: 6.2 },
   sparky: { minX: -22, minY: -1, maxX: 22, maxY: 42 },
   "hydraulic-fountain": { minX: -1.3, minY: -0.15, maxX: 1.3, maxY: 1.6 },
-  "wave-tank": { minX: -0.12, minY: -0.28, maxX: 1.52, maxY: 1.02 },
+  "wave-tank": {
+    minX: -0.12 / 1.4,
+    minY: -0.28 / 1.4,
+    maxX: 1.52 / 1.4,
+    maxY: 1.02 / 1.4,
+  },
   "liquid-bubbler": { minX: -0.71, minY: -0.16, maxX: 1.12, maxY: 1.98 },
   "stacked-drip": { minX: -0.86, minY: -0.16, maxX: 1.68, maxY: 3.28 },
   "washing-machine": WASHING_MACHINE_VIEW_BOUNDS,

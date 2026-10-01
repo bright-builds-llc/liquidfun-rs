@@ -1,3 +1,4 @@
+use liquidfun::collision::Shape;
 use liquidfun::math::Vec2;
 use liquidfun::{BodyType, JointDef, JointKind, WorldObservationLimits};
 
@@ -5,8 +6,10 @@ use super::build;
 use crate::scene::{SceneId, build_scene};
 use crate::session::{SessionCore, SessionError};
 
-const FAR_WINDOW_MIN_X: f32 = 1.20;
-const PARTICLE_DIAMETER: f32 = 0.05;
+const LENGTH_SCALE: f32 = 1.0 / 1.4;
+const FAR_WINDOW_MIN_X: f32 = 1.20 * LENGTH_SCALE;
+const PARTICLE_RADIUS: f32 = 0.025 * LENGTH_SCALE;
+const PARTICLE_DIAMETER: f32 = 2.0 * PARTICLE_RADIUS;
 
 #[test]
 fn pool_starts_as_a_still_band() {
@@ -45,6 +48,77 @@ fn pool_starts_as_a_still_band() {
     assert!(
         (pool_top - far_top).abs() <= PARTICLE_DIAMETER,
         "the far surface starts within one diameter of the pool surface"
+    );
+}
+
+#[test]
+fn pool_is_one_meter_wide() {
+    // Arrange
+    let session = SessionCore::create(SceneId::WaveTank).expect("wave tank should construct");
+
+    // Act
+    let (near_inner_x, far_inner_x) = session.read_particles(|world, _system| {
+        let observation = world
+            .world_observation(WorldObservationLimits::reviewed())
+            .expect("reviewed observation should include the walls");
+        let wall_spans: Vec<(f32, f32)> = observation
+            .bodies()
+            .iter()
+            .filter(|body| body.snapshot().body_type() == BodyType::Static)
+            .flat_map(|body| {
+                let body_id = body.id();
+                let transform = body.snapshot().transform();
+                observation
+                    .fixtures()
+                    .iter()
+                    .filter(move |fixture| fixture.body() == body_id)
+                    .filter_map(move |fixture| {
+                        let Shape::Polygon(polygon) = fixture.snapshot().shape() else {
+                            return None;
+                        };
+                        let mut vertices = polygon
+                            .vertices()
+                            .iter()
+                            .map(|vertex| transform.apply(*vertex).x);
+                        let first = vertices.next()?;
+                        let (min_x, max_x) = vertices.fold((first, first), |(min_x, max_x), x| {
+                            (min_x.min(x), max_x.max(x))
+                        });
+                        (max_x - min_x < 0.1).then_some((min_x, max_x))
+                    })
+            })
+            .collect();
+        assert_eq!(
+            wall_spans.len(),
+            2,
+            "the pool has a near wall and a far wall"
+        );
+        let near_inner_x = wall_spans
+            .iter()
+            .map(|(_lower_x, upper_x)| *upper_x)
+            .min_by(f32::total_cmp)
+            .expect("the near wall should have an inner face");
+        let far_inner_x = wall_spans
+            .iter()
+            .map(|(lower_x, _upper_x)| *lower_x)
+            .max_by(f32::total_cmp)
+            .expect("the far wall should have an inner face");
+        (near_inner_x, far_inner_x)
+    });
+
+    // Assert
+    let width = far_inner_x - near_inner_x;
+    assert!(
+        near_inner_x.abs() <= 1.0e-6,
+        "the near wall should sit at x = 0, was {near_inner_x}"
+    );
+    assert!(
+        (far_inner_x - 1.0).abs() <= 1.0e-6,
+        "the far wall should sit at x = 1, was {far_inner_x}"
+    );
+    assert!(
+        (width - 1.0).abs() <= 1.0e-6,
+        "the pool should be 1 m wide, was {width}"
     );
 }
 
@@ -236,8 +310,7 @@ fn source_writes_a_prismatic_sine() {
     assert!(!source.contains("with_destruction_by_age"));
 }
 
-const PARTICLE_RADIUS: f32 = 0.025;
-const STROKE: f32 = 0.16;
+const STROKE: f32 = 0.16 * LENGTH_SCALE;
 const PERIOD: f32 = 2.0;
 const SIM_DT: f32 = 1.0 / 60.0;
 const PEAK_SPEED: f32 = STROKE * std::f32::consts::TAU / (2.0 * PERIOD);

@@ -513,10 +513,10 @@ export const SCENES: readonly SceneRecord[] = [
     interactionHint: WATCH_FIRST_HINT,
     controls: withGravitySlider([]),
     viewBounds: {
-      minX: -0.12,
-      minY: -0.28,
-      maxX: 1.52,
-      maxY: 1.02,
+      minX: -0.12 / 1.4,
+      minY: -0.28 / 1.4,
+      maxX: 1.52 / 1.4,
+      maxY: 1.02 / 1.4,
     },
     credits: {
       implementationPath: "crates/liquidfun-wasm/src/scene/wave_tank.rs",
