@@ -16,7 +16,8 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.025;
+/// Finer than the original 0.025 m drip. The default stride then fills the upper chamber with 3,000 particles.
+const PARTICLE_RADIUS: f32 = 0.008;
 const PARTICLE_DAMPING: f32 = 0.2;
 const DRIP_COLOR: ParticleColor = ParticleColor::new(242, 176, 64, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
@@ -63,11 +64,12 @@ const MAX_MOTOR_FORCE: f32 = 1.0e6;
 const LEFT_CHAMBER_INNER_X: f32 = -0.55;
 const DIVIDER_LEFT_X: f32 = 0.48;
 
+/// Upper-chamber block. Its edges sit between sampling rows so the default grid is 75 by 40.
 const WATER_POLYGON: [Vec2; 4] = [
-    Vec2::new(-0.48, 1.58),
-    Vec2::new(0.40, 1.58),
-    Vec2::new(0.40, 1.86),
-    Vec2::new(-0.48, 1.86),
+    Vec2::new(-0.486, 1.506),
+    Vec2::new(0.414, 1.506),
+    Vec2::new(0.414, 1.986),
+    Vec2::new(-0.486, 1.986),
 ];
 
 const PADDLE_POLYGONS: [[Vec2; 4]; 4] = [
@@ -147,6 +149,8 @@ const _: () = {
     assert!(PADDLE_OUTER - PADDLE_INNER >= 0.05);
     assert!(PADDLE_HALF_WIDTH * 2.0 >= 0.05);
     assert!(WATER_POLYGON[0].y > top.shelf_top);
+    assert!(WATER_POLYGON[0].x > LEFT_CHAMBER_INNER_X);
+    assert!(WATER_POLYGON[1].x < DIVIDER_LEFT_X);
     assert!(WATER_POLYGON[2].y + PARTICLE_RADIUS < DIVIDER_TOP_Y);
     assert!(PLATE_CENTER.y + PLATE_HALF_HEIGHT + STROKE > DIVIDER_TOP_Y);
 };
