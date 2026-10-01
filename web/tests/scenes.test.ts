@@ -57,7 +57,7 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   "wave-tank":
     "Watch a still pool whose end platform rises and falls and sends a wave toward the far wall. This is an original experimental scene.",
   "liquid-bubbler":
-    "Watch colored liquid drip through a narrow waist and turn a small wheel. This is an original experimental scene.",
+    "Watch colored liquid drip through three shelves and turn a small wheel under each hole. This is an original experimental scene.",
   "stacked-drip":
     "Watch colored liquid drain through three tipping trays. This is an original experimental scene.",
   "washing-machine":

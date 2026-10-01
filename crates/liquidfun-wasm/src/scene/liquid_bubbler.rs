@@ -1,7 +1,7 @@
-//! Liquid Bubbler: colored water drips through a static waist and turns a motor-off wheel.
+//! Liquid Bubbler: colored water works down three shelves and turns a small wheel under each hole.
 //!
-//! A side-shaft plate stays down through the opening, then creeps upward to return the liquid.
-//! Water Wheel stays the jet-driven wheel.
+//! The holes alternate sides, so the liquid has to cross each shelf. A side-shaft plate stays
+//! down through that cascade, then rises to return the liquid. Water Wheel stays the jet-driven wheel.
 
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};
@@ -23,14 +23,15 @@ const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const SIM_DT: f32 = 1.0 / 60.0;
 const WALL_HALF: f32 = 0.04;
 const WALL_FRICTION: f32 = 0.2;
-const WAIST_GAP: f32 = 0.14;
-const WAIST_BOTTOM: f32 = 0.90;
-const WAIST_TOP: f32 = 0.98;
-const HUB: Vec2 = Vec2::new(0.0, 0.40);
-const HUB_RADIUS: f32 = 0.12;
-const PADDLE_INNER: f32 = 0.12;
-const PADDLE_OUTER: f32 = 0.32;
-const PADDLE_HALF_WIDTH: f32 = 0.035;
+const LEVEL_COUNT: usize = 3;
+const SHELF_THICKNESS: f32 = 0.08;
+const SHELF_HALF_HEIGHT: f32 = SHELF_THICKNESS * 0.5;
+const HOLE_HALF_WIDTH: f32 = 0.10;
+const HUB_RADIUS: f32 = 0.05;
+const PADDLE_INNER: f32 = 0.05;
+/// Long enough that each paddle edge stays above the polygon weld threshold.
+const PADDLE_OUTER: f32 = 0.11;
+const PADDLE_HALF_WIDTH: f32 = 0.028;
 const WHEEL_DENSITY: f32 = 0.03;
 const ANGULAR_DAMPING: f32 = 0.05;
 /// Rests one polygon-skin pair above the floor so a flush contact does not
@@ -40,8 +41,18 @@ const PLATE_HALF_WIDTH: f32 = 0.18;
 const PLATE_HALF_HEIGHT: f32 = 0.02;
 const PLATE_CENTER: Vec2 = Vec2::new(0.76, PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE);
 const PLATE_DENSITY: f32 = 1.0;
-const STROKE: f32 = 1.80;
-const PLATE_SPEED: f32 = 0.15;
+const WALL_TOP_Y: f32 = 2.40;
+const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
+const WALL_CENTER_Y: f32 = WALL_HALF_HEIGHT;
+const DIVIDER_BOTTOM_Y: f32 = 0.22;
+/// Above the starting pool, so the drip cannot skip the shelves into the shaft.
+const DIVIDER_TOP_Y: f32 = 2.00;
+const DIVIDER_HALF_HEIGHT: f32 = (DIVIDER_TOP_Y - DIVIDER_BOTTOM_Y) * 0.5;
+const DIVIDER_CENTER_Y: f32 = (DIVIDER_BOTTOM_Y + DIVIDER_TOP_Y) * 0.5;
+/// Long enough that the raised plate still clears the taller divider.
+const STROKE: f32 = 2.20;
+/// Four times the original 0.15 m/s cruise.
+const PLATE_SPEED: f32 = 0.15 * 4.0;
 const DWELL: f32 = 3.0;
 const RISE_SECONDS: f32 = STROKE / PLATE_SPEED;
 const CYCLE: f32 = DWELL + RISE_SECONDS + RISE_SECONDS;
@@ -49,21 +60,14 @@ const LIMIT_LOW: f32 = -0.02;
 const LIMIT_HIGH: f32 = STROKE + 0.02;
 const MAX_MOTOR_FORCE: f32 = 1.0e6;
 
-const GAP_HALF: f32 = WAIST_GAP * 0.5;
 const LEFT_CHAMBER_INNER_X: f32 = -0.55;
 const DIVIDER_LEFT_X: f32 = 0.48;
-const LIP_HALF_HEIGHT: f32 = (WAIST_TOP - WAIST_BOTTOM) * 0.5;
-const LIP_CENTER_Y: f32 = (WAIST_BOTTOM + WAIST_TOP) * 0.5;
-const LEFT_LIP_HALF_WIDTH: f32 = (-GAP_HALF - LEFT_CHAMBER_INNER_X) * 0.5;
-const LEFT_LIP_CENTER_X: f32 = (LEFT_CHAMBER_INNER_X - GAP_HALF) * 0.5;
-const RIGHT_LIP_HALF_WIDTH: f32 = (DIVIDER_LEFT_X - GAP_HALF) * 0.5;
-const RIGHT_LIP_CENTER_X: f32 = (GAP_HALF + DIVIDER_LEFT_X) * 0.5;
 
 const WATER_POLYGON: [Vec2; 4] = [
-    Vec2::new(-0.48, 1.12),
-    Vec2::new(0.40, 1.12),
-    Vec2::new(0.40, 1.50),
-    Vec2::new(-0.48, 1.50),
+    Vec2::new(-0.48, 1.58),
+    Vec2::new(0.40, 1.58),
+    Vec2::new(0.40, 1.86),
+    Vec2::new(-0.48, 1.86),
 ];
 
 const PADDLE_POLYGONS: [[Vec2; 4]; 4] = [
@@ -107,17 +111,80 @@ const PLATE_LOCAL_CORNERS: [Vec2; 4] = [
     Vec2::new(-PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
 ];
 
+/// One horizontal shelf, the gap the liquid must find, and the spinner under that gap.
+#[derive(Clone, Copy)]
+struct Level {
+    shelf_top: f32,
+    hole_center_x: f32,
+    spinner_center: Vec2,
+}
+
+impl Level {
+    const fn shelf_bottom(self) -> f32 {
+        self.shelf_top - SHELF_THICKNESS
+    }
+
+    const fn hole_left(self) -> f32 {
+        self.hole_center_x - HOLE_HALF_WIDTH
+    }
+
+    const fn hole_right(self) -> f32 {
+        self.hole_center_x + HOLE_HALF_WIDTH
+    }
+}
+
+const _: () = {
+    let top = LEVELS[0];
+    let middle = LEVELS[1];
+    let bottom = LEVELS[2];
+    assert!(top.shelf_bottom() > middle.shelf_top);
+    assert!(middle.shelf_bottom() > bottom.shelf_top);
+    assert!(top.spinner_center.y + PADDLE_OUTER < top.shelf_bottom());
+    assert!(middle.spinner_center.y + PADDLE_OUTER < middle.shelf_bottom());
+    assert!(bottom.spinner_center.y + PADDLE_OUTER < bottom.shelf_bottom());
+    assert!(top.hole_left() > LEFT_CHAMBER_INNER_X);
+    assert!(bottom.hole_right() < DIVIDER_LEFT_X);
+    assert!(PADDLE_OUTER - PADDLE_INNER >= 0.05);
+    assert!(PADDLE_HALF_WIDTH * 2.0 >= 0.05);
+    assert!(WATER_POLYGON[0].y > top.shelf_top);
+    assert!(WATER_POLYGON[2].y + PARTICLE_RADIUS < DIVIDER_TOP_Y);
+    assert!(PLATE_CENTER.y + PLATE_HALF_HEIGHT + STROKE > DIVIDER_TOP_Y);
+};
+
+const LEVELS: [Level; LEVEL_COUNT] = [
+    Level {
+        shelf_top: 1.49,
+        hole_center_x: -0.32,
+        spinner_center: Vec2::new(-0.32, 1.23),
+    },
+    Level {
+        shelf_top: 1.05,
+        hole_center_x: 0.18,
+        spinner_center: Vec2::new(0.18, 0.79),
+    },
+    Level {
+        shelf_top: 0.61,
+        hole_center_x: -0.32,
+        spinner_center: Vec2::new(-0.32, 0.35),
+    },
+];
+
+#[derive(Clone, Copy)]
 struct BoxSpec {
     half_width: f32,
     half_height: f32,
     center: Vec2,
 }
 
+struct SpinnerRig {
+    revolute: JointId,
+    body: BodyId,
+}
+
 struct LiquidBubblerHooks {
     elapsed: f32,
-    revolute: JointId,
+    spinners: [SpinnerRig; LEVEL_COUNT],
     prismatic: JointId,
-    wheel: BodyId,
     plate: BodyId,
 }
 
@@ -139,8 +206,7 @@ fn build_liquid_bubbler() -> Result<BuiltScene, SceneError> {
         .map_err(|_error| SceneError::Body)?;
     attach_wall_boxes(&mut world, ground)?;
 
-    let wheel = create_wheel(&mut world)?;
-    let revolute = pin_wheel(&mut world, ground, wheel)?;
+    let spinners = create_spinners(&mut world, ground)?;
     let plate = create_plate(&mut world)?;
     let prismatic = create_plate_joint(&mut world, ground, plate)?;
     let particle_system = create_water_group(&mut world)?;
@@ -151,20 +217,19 @@ fn build_liquid_bubbler() -> Result<BuiltScene, SceneError> {
         particle_radius: PARTICLE_RADIUS,
         hooks: Box::new(LiquidBubblerHooks {
             elapsed: 0.0,
-            revolute,
+            spinners,
             prismatic,
-            wheel,
             plate,
         }),
     })
 }
 
-fn wall_boxes() -> [BoxSpec; 6] {
+fn chamber_boxes() -> [BoxSpec; 4] {
     [
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 0.95,
-            center: Vec2::new(-0.59, 0.95),
+            half_height: WALL_HALF_HEIGHT,
+            center: Vec2::new(-0.59, WALL_CENTER_Y),
         },
         BoxSpec {
             half_width: 0.835,
@@ -173,25 +238,38 @@ fn wall_boxes() -> [BoxSpec; 6] {
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 0.95,
-            center: Vec2::new(1.00, 0.95),
+            half_height: WALL_HALF_HEIGHT,
+            center: Vec2::new(1.00, WALL_CENTER_Y),
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 0.70,
-            center: Vec2::new(0.52, 0.92),
-        },
-        BoxSpec {
-            half_width: LEFT_LIP_HALF_WIDTH,
-            half_height: LIP_HALF_HEIGHT,
-            center: Vec2::new(LEFT_LIP_CENTER_X, LIP_CENTER_Y),
-        },
-        BoxSpec {
-            half_width: RIGHT_LIP_HALF_WIDTH,
-            half_height: LIP_HALF_HEIGHT,
-            center: Vec2::new(RIGHT_LIP_CENTER_X, LIP_CENTER_Y),
+            half_height: DIVIDER_HALF_HEIGHT,
+            center: Vec2::new(0.52, DIVIDER_CENTER_Y),
         },
     ]
+}
+
+fn shelf_boxes() -> [BoxSpec; LEVEL_COUNT * 2] {
+    std::array::from_fn(|index| {
+        let level = LEVELS[index / 2];
+        if index % 2 == 0 {
+            lip_box(LEFT_CHAMBER_INNER_X, level.hole_left(), level.shelf_top)
+        } else {
+            lip_box(level.hole_right(), DIVIDER_LEFT_X, level.shelf_top)
+        }
+    })
+}
+
+fn lip_box(left: f32, right: f32, shelf_top: f32) -> BoxSpec {
+    BoxSpec {
+        half_width: (right - left) * 0.5,
+        half_height: SHELF_HALF_HEIGHT,
+        center: Vec2::new((left + right) * 0.5, shelf_top - SHELF_HALF_HEIGHT),
+    }
+}
+
+fn wall_boxes() -> Vec<BoxSpec> {
+    chamber_boxes().into_iter().chain(shelf_boxes()).collect()
 }
 
 fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError> {
@@ -208,23 +286,39 @@ fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError
     Ok(())
 }
 
-fn create_wheel(world: &mut World) -> Result<BodyId, SceneError> {
-    let definition = BodyDef::new(BodyType::Dynamic, HUB, 0.0, true)
+fn create_spinners(
+    world: &mut World,
+    ground: BodyId,
+) -> Result<[SpinnerRig; LEVEL_COUNT], SceneError> {
+    let mut built = Vec::with_capacity(LEVEL_COUNT);
+    for level in LEVELS {
+        built.push(create_spinner(world, ground, level.spinner_center)?);
+    }
+    built.try_into().map_err(|_built| SceneError::Body)
+}
+
+fn create_spinner(
+    world: &mut World,
+    ground: BodyId,
+    center: Vec2,
+) -> Result<SpinnerRig, SceneError> {
+    let definition = BodyDef::new(BodyType::Dynamic, center, 0.0, true)
         .map_err(|_error| SceneError::Body)?
         .with_angular_damping(ANGULAR_DAMPING)
         .map_err(|_error| SceneError::Body)?
         .with_sleeping_allowed(false);
-    let wheel = world
+    let body = world
         .create_body(&definition)
         .map_err(|_error| SceneError::Body)?;
-    attach_hub(world, wheel)?;
+    attach_hub(world, body)?;
     for vertices in PADDLE_POLYGONS {
-        attach_paddle(world, wheel, &vertices)?;
+        attach_paddle(world, body, &vertices)?;
     }
-    Ok(wheel)
+    let revolute = pin_spinner(world, ground, body, center)?;
+    Ok(SpinnerRig { revolute, body })
 }
 
-fn attach_hub(world: &mut World, wheel: BodyId) -> Result<(), SceneError> {
+fn attach_hub(world: &mut World, spinner: BodyId) -> Result<(), SceneError> {
     let circle = CircleShape::new(Vec2::ZERO, HUB_RADIUS).map_err(|_error| SceneError::Geometry)?;
     let definition = FixtureDef::new(
         Shape::from(circle),
@@ -236,12 +330,16 @@ fn attach_hub(world: &mut World, wheel: BodyId) -> Result<(), SceneError> {
     )
     .map_err(|_error| SceneError::Fixture)?;
     world
-        .create_fixture(wheel, &definition)
+        .create_fixture(spinner, &definition)
         .map_err(|_error| SceneError::Fixture)?;
     Ok(())
 }
 
-fn attach_paddle(world: &mut World, wheel: BodyId, vertices: &[Vec2; 4]) -> Result<(), SceneError> {
+fn attach_paddle(
+    world: &mut World,
+    spinner: BodyId,
+    vertices: &[Vec2; 4],
+) -> Result<(), SceneError> {
     let polygon = PolygonShape::new(vertices).map_err(|_error| SceneError::Geometry)?;
     let definition = FixtureDef::new(
         Shape::from(polygon),
@@ -253,15 +351,20 @@ fn attach_paddle(world: &mut World, wheel: BodyId, vertices: &[Vec2; 4]) -> Resu
     )
     .map_err(|_error| SceneError::Fixture)?;
     world
-        .create_fixture(wheel, &definition)
+        .create_fixture(spinner, &definition)
         .map_err(|_error| SceneError::Fixture)?;
     Ok(())
 }
 
-fn pin_wheel(world: &mut World, ground: BodyId, wheel: BodyId) -> Result<JointId, SceneError> {
-    let joint = RevoluteJointDef::new(ground, wheel)
+fn pin_spinner(
+    world: &mut World,
+    ground: BodyId,
+    spinner: BodyId,
+    center: Vec2,
+) -> Result<JointId, SceneError> {
+    let joint = RevoluteJointDef::new(ground, spinner)
         .map_err(|_error| SceneError::Body)?
-        .with_frame(HUB, Vec2::ZERO, 0.0)
+        .with_frame(center, Vec2::ZERO, 0.0)
         .map_err(|_error| SceneError::Body)?;
     world
         .create_joint(JointDef::from(joint))
@@ -405,9 +508,11 @@ impl SceneHooks for LiquidBubblerHooks {
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
         self.elapsed += SIM_DT;
-        world
-            .revolute_joint_angle(self.revolute)
-            .map_err(|_error| SessionError::StepFailed)?;
+        for spinner in &self.spinners {
+            world
+                .revolute_joint_angle(spinner.revolute)
+                .map_err(|_error| SessionError::StepFailed)?;
+        }
         world
             .set_prismatic_motor_speed(self.prismatic, scheduled_plate_speed(self.elapsed))
             .map_err(|_error| SessionError::StepFailed)
@@ -454,12 +559,14 @@ impl SceneHooks for LiquidBubblerHooks {
             );
         }
 
-        let wheel_transform = world
-            .body_snapshot(self.wheel)
-            .map_err(|_error| SessionError::FrameCaptureFailed)?
-            .transform();
-        for (start, end) in PADDLE_CENTERLINES {
-            push_transformed_segment(&mut segments, wheel_transform, start, end);
+        for spinner in &self.spinners {
+            let transform = world
+                .body_snapshot(spinner.body)
+                .map_err(|_error| SessionError::FrameCaptureFailed)?
+                .transform();
+            for (start, end) in PADDLE_CENTERLINES {
+                push_transformed_segment(&mut segments, transform, start, end);
+            }
         }
 
         let plate_transform = world
@@ -478,11 +585,15 @@ impl SceneHooks for LiquidBubblerHooks {
     }
 
     fn collect_circles(&self, world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
-        let transform = world
-            .body_snapshot(self.wheel)
-            .map_err(|_error| SessionError::FrameCaptureFailed)?
-            .transform();
-        Ok(vec![(transform.apply(Vec2::ZERO), HUB_RADIUS)])
+        let mut circles = Vec::with_capacity(self.spinners.len());
+        for spinner in &self.spinners {
+            let transform = world
+                .body_snapshot(spinner.body)
+                .map_err(|_error| SessionError::FrameCaptureFailed)?
+                .transform();
+            circles.push((transform.apply(Vec2::ZERO), HUB_RADIUS));
+        }
+        Ok(circles)
     }
 }
 
