@@ -53,6 +53,8 @@ export type SceneRuntime = {
   setMaxRenderedParticles: Setter<number>;
   panEnabled: Accessor<boolean>;
   setPanEnabled: Setter<boolean>;
+  maybePixelsPerMeter: Accessor<number | undefined>;
+  setMaybePixelsPerMeter: Setter<number | undefined>;
   tiltGravityEnabled: Accessor<boolean>;
   setTiltGravityEnabled: Setter<boolean>;
   tiltDebug: Accessor<TiltDebug>;

@@ -33,6 +33,7 @@ export type PlaygroundStageProps = {
   readonly densityShading: () => boolean;
   readonly renderedParticleDraft: () => string;
   readonly panEnabled: () => boolean;
+  readonly maybePixelsPerMeter: () => number | undefined;
   readonly tiltGravityEnabled: () => boolean;
   readonly tiltDebug: () => TiltDebug;
   readonly debugEnabled: () => boolean;
@@ -159,6 +160,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
               renderedParticleDraft={props.renderedParticleDraft()}
               onRenderedParticleDraft={props.onRenderedParticleDraft}
               panEnabled={props.panEnabled()}
+              maybePixelsPerMeter={props.maybePixelsPerMeter()}
               onZoomIn={props.onZoomIn}
               onZoomOut={props.onZoomOut}
               onResetZoom={props.onResetZoom}

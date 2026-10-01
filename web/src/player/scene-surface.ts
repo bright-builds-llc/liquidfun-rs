@@ -74,6 +74,7 @@ function refreshCamera(session: SceneRuntime): void {
     session.clock.cameraView,
     session.clock.worldBounds,
   );
+  session.setMaybePixelsPerMeter(session.clock.maybeCamera.scale);
 }
 
 function changeRenderedParticleDraft(session: SceneRuntime, raw: string): void {

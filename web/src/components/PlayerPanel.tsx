@@ -22,6 +22,7 @@ import { formatTiltDebug, type TiltDebug } from "../input/tilt-gravity";
 import { DebugReadout } from "./DebugReadout";
 import { GravityArrow } from "./GravityArrow";
 import type { FpsTick } from "./fps-meter";
+import { ScaleLegend } from "./ScaleLegend";
 import { ViewportTools } from "./ViewportTools";
 import { CanvasHud, PlaybackButtons, SceneControlsSheet } from "./CanvasStage";
 import {
@@ -57,6 +58,7 @@ export type PlayerPanelProps = {
   readonly renderedParticleDraft: string;
   readonly onRenderedParticleDraft: (raw: string) => void;
   readonly panEnabled: boolean;
+  readonly maybePixelsPerMeter: number | undefined;
   readonly tiltGravityEnabled: boolean;
   readonly tiltDebug: TiltDebug;
   readonly onTiltGravityEnabledChange: (enabled: boolean) => void;
@@ -211,14 +213,17 @@ function PlayerPanelLayout(layoutProps: {
           <Show
             when={layoutProps.canvasStage}
             fallback={
-              <ViewportTools
-                showFullscreen
-                panEnabled={props.panEnabled}
-                onZoomIn={props.onZoomIn}
-                onZoomOut={props.onZoomOut}
-                onResetZoom={props.onResetZoom}
-                onPanEnabledChange={props.onPanEnabledChange}
-              />
+              <>
+                <ScaleLegend maybePixelsPerMeter={props.maybePixelsPerMeter} />
+                <ViewportTools
+                  showFullscreen
+                  panEnabled={props.panEnabled}
+                  onZoomIn={props.onZoomIn}
+                  onZoomOut={props.onZoomOut}
+                  onResetZoom={props.onResetZoom}
+                  onPanEnabledChange={props.onPanEnabledChange}
+                />
+              </>
             }
           >
             <CanvasHud
@@ -232,6 +237,7 @@ function PlayerPanelLayout(layoutProps: {
               onReset={props.onReset}
               onRetry={props.onRetry}
               panEnabled={props.panEnabled}
+              maybePixelsPerMeter={props.maybePixelsPerMeter}
               onZoomIn={props.onZoomIn}
               onZoomOut={props.onZoomOut}
               onResetZoom={props.onResetZoom}

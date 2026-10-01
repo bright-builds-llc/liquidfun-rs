@@ -75,14 +75,14 @@ html[data-canvas-stage="true"] .canvas-hud-stats .debug-readout {
   left: auto;
   z-index: auto;
   width: min(220px, calc(100vw - max(16px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))));
-  /* Demos offset, fps, toggle, and the bottom transport. */
+  /* Demos offset, fps, toggle, scale legend, and the bottom transport. */
   min-height: 0;
   max-height: calc(
     var(--visual-viewport-height, 100dvh)
     - max(8px, env(safe-area-inset-top, 0px))
     - 52px
     - 88px
-    - 60px
+    - 88px
     - max(8px, env(safe-area-inset-bottom, 0px))
   );
   overflow: auto;
@@ -97,7 +97,7 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
     - max(8px, env(safe-area-inset-top, 0px))
     - 52px
     - 88px
-    - 180px
+    - 208px
     - max(8px, env(safe-area-inset-bottom, 0px))
   );
 }
@@ -291,6 +291,15 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
 
 .canvas-hud-slider .scene-control-tick-mark {
   height: 3px;
+}
+
+.canvas-hud-trailing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-left: auto;
+  pointer-events: none;
 }
 
 .canvas-transport,

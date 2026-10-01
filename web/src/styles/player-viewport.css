@@ -72,6 +72,45 @@ canvas.canvas-panning {
 canvas.canvas-panning:active {
   cursor: grabbing;
 }
+.viewport-frame > .scale-legend {
+  position: absolute;
+  right: 8px;
+  bottom: 60px;
+  z-index: 2;
+}
+
+.scale-legend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.scale-legend-label {
+  color: #F4F7FA;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-shadow:
+    0 0 2px #0B0F14,
+    0 1px 1px #0B0F14,
+    1px 0 1px #0B0F14,
+    -1px 0 1px #0B0F14;
+}
+
+.scale-legend-bar {
+  box-sizing: border-box;
+  height: 8px;
+  border-right: 2px solid #F4F7FA;
+  border-bottom: 2px solid #F4F7FA;
+  border-left: 2px solid #F4F7FA;
+  filter: drop-shadow(0 0 1px #0B0F14) drop-shadow(0 0 1px #0B0F14);
+}
+
 .viewport-tools {
   position: absolute;
   right: 8px;

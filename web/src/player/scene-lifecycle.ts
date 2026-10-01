@@ -56,6 +56,7 @@ function abandonScene(session: SceneRuntime): void {
   session.maybeParticleCanvas = undefined;
   session.maybeContext = undefined;
   session.clock.maybeCamera = undefined;
+  session.setMaybePixelsPerMeter(undefined);
   session.clock.maybePreviousFrame = undefined;
   session.setMaybeDebugFrame(undefined);
   session.setStepsThisFrame(0);
@@ -89,6 +90,7 @@ function frameDeps(session: SceneRuntime): FrameLoopDeps {
     setMaybeDebugFrame: session.setMaybeDebugFrame,
     setStepsThisFrame: session.setStepsThisFrame,
     setFpsTicks: session.setFpsTicks,
+    setMaybePixelsPerMeter: session.setMaybePixelsPerMeter,
     setView: session.setView,
   };
 }

@@ -82,9 +82,10 @@ export type SceneRecord = {
   readonly controls: readonly SceneControl[];
   readonly credits: SceneCredits;
   /**
-   * World rectangle fitted to the canvas.
+   * World rectangle fitted to the canvas, in meters.
    *
-   * Omitted scenes use the shared 12 m by 9 m frame.
+   * Omitted scenes use the shared 12 m by 9 m frame. The player scale legend
+   * reads this frame for every scene.
    */
   readonly viewBounds?: WorldBounds;
 };
