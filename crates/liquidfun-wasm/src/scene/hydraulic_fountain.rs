@@ -19,13 +19,14 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.0125;
-const PARTICLE_COLUMNS: usize = 200;
-const PARTICLE_ROWS: usize = 16;
-const COLUMN_GAPS: f32 = 199.0;
-const ROW_GAPS: f32 = 15.0;
+/// Three times the previous 1.25 cm radius. The pool still holds 3,200 particles.
+const PARTICLE_RADIUS: f32 = 0.0125 * 3.0;
+const PARTICLE_COLUMNS: usize = 80;
+const PARTICLE_ROWS: usize = 40;
+const COLUMN_GAPS: f32 = (PARTICLE_COLUMNS - 1) as f32;
+const ROW_GAPS: f32 = (PARTICLE_ROWS - 1) as f32;
 /// Rest spacing is three quarters of the particle diameter, so the pool does not collapse.
-const POOL_STRIDE: f32 = 0.01875;
+const POOL_STRIDE: f32 = PARTICLE_RADIUS * 2.0 * 0.75;
 const PARTICLE_DAMPING: f32 = 0.2;
 const PRESSURE_STRENGTH: f32 = 0.25;
 const GROUP_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
@@ -42,14 +43,15 @@ const WALL_HALF_THICKNESS: f32 = 0.1;
 const POOL_HALF_SPAN: f32 = COLUMN_GAPS * POOL_STRIDE * 0.5;
 const INNER_HALF_WIDTH: f32 = POOL_HALF_SPAN + 0.06;
 const FLOOR_TOP_Y: f32 = 0.0;
-const WALL_TOP_Y: f32 = 2.1;
+/// Above the raised cheeks, so the plates stay inside the tank.
+const WALL_TOP_Y: f32 = 3.05;
 const GAP_CONTROL: &str = "gap";
-/// Opening in tenths of a centimeter: 5 is 0.5 cm and 30 is 3.0 cm.
-const GAP_TENTHS_MIN: i16 = 5;
-const GAP_TENTHS_MAX: i16 = 30;
-const GAP_TENTHS_DEFAULT: i16 = 30;
+/// Opening in tenths of a centimeter: 15 is 1.5 cm and 90 is 9.0 cm.
+const GAP_TENTHS_MIN: i16 = 15;
+const GAP_TENTHS_MAX: i16 = 90;
+const GAP_TENTHS_DEFAULT: i16 = 90;
 #[cfg(test)]
-const GAP_HALF_WIDTH: f32 = 0.015;
+const GAP_HALF_WIDTH: f32 = 0.045;
 const SLAB_HALF_HEIGHT: f32 = 0.09;
 const CHEEK_THICKNESS: f32 = 0.16;
 const CHEEK_DROP: f32 = 0.06;
