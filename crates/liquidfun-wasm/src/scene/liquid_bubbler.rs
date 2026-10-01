@@ -1,13 +1,9 @@
-//! Liquid Bubbler: colored water works down three shelves and turns a small wheel under each hole.
-//!
-//! The holes alternate sides, so the liquid has to cross each shelf. A side-shaft plate stays
-//! down through that cascade, rises, and pauses on a two-degree slant so the liquid can slide
-//! back into the chamber. Water Wheel stays the jet-driven wheel.
+//! Liquid Bubbler: colored water crosses three shelves, then a slanted shaft plate lifts it.
 
 use std::f32::consts::TAU;
 
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
-use liquidfun::math::{Rotation, Transform, Vec2};
+use liquidfun::math::{Transform, Vec2};
 use liquidfun::particle::{
     ParticleColor, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
 };
@@ -19,6 +15,9 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
+mod elevator_motion;
+use elevator_motion::{plate_local_corners, scheduled_plate_offset, scheduled_plate_speed};
+
 /// Finer than the original 0.025 m drip. The default stride then fills the upper chamber with 3,000 particles.
 const PARTICLE_RADIUS: f32 = 0.008;
 const PARTICLE_DAMPING: f32 = 0.2;
@@ -29,41 +28,29 @@ const WALL_HALF: f32 = 0.04;
 const WALL_FRICTION: f32 = 0.2;
 const LEVEL_COUNT: usize = 3;
 const SHELF_THICKNESS: f32 = 0.08;
-const SHELF_HALF_HEIGHT: f32 = SHELF_THICKNESS * 0.5;
 const HOLE_HALF_WIDTH: f32 = 0.10;
 const HUB_RADIUS: f32 = 0.05;
 const PADDLE_INNER: f32 = 0.05;
-/// Long enough that each paddle edge stays above the polygon weld threshold.
 const PADDLE_OUTER: f32 = 0.11;
 const PADDLE_HALF_WIDTH: f32 = 0.028;
 const WHEEL_DENSITY: f32 = 0.03;
 const ANGULAR_DAMPING: f32 = 0.05;
-/// Rests one polygon-skin pair above the floor so a flush contact does not
-/// pop the plate off translation 0 during the dwell.
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
-/// Spans the shaft down to a gap smaller than one particle on each side.
-const PLATE_HALF_WIDTH: f32 = 0.187;
+const PLATE_HALF_WIDTH: f32 = 0.190;
 const PLATE_HALF_HEIGHT: f32 = 0.02;
-/// Two degrees, downhill toward the left chamber.
 const PLATE_SLANT: f32 = TAU * 2.0 / 360.0;
-/// Lifted so the slanted low corner keeps the floor gap. 0.187 * sin(2°) is about 0.0065 m.
 const PLATE_CENTER: Vec2 = Vec2::new(0.76, 0.047);
 const PLATE_DENSITY: f32 = 1.0;
 const WALL_TOP_Y: f32 = 2.40;
 const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
 const WALL_CENTER_Y: f32 = WALL_HALF_HEIGHT;
-/// Just above the resting deck, so liquid cannot stream past the plate's left side.
-const DIVIDER_BOTTOM_Y: f32 = 0.08;
-/// Above the starting pool, so the drip cannot skip the shelves into the shaft.
+const DIVIDER_BOTTOM_Y: f32 = 0.074;
 const DIVIDER_TOP_Y: f32 = 2.00;
 const DIVIDER_HALF_HEIGHT: f32 = (DIVIDER_TOP_Y - DIVIDER_BOTTOM_Y) * 0.5;
 const DIVIDER_CENTER_Y: f32 = (DIVIDER_BOTTOM_Y + DIVIDER_TOP_Y) * 0.5;
-/// Long enough that the raised plate still clears the taller divider.
 const STROKE: f32 = 2.20;
-/// Four times the original 0.15 m/s cruise.
 const PLATE_SPEED: f32 = 0.15 * 4.0;
 const DWELL: f32 = 3.0;
-/// Pause at the top so the load can slide off the slant.
 const TOP_DWELL: f32 = 3.0;
 const RISE_SECONDS: f32 = STROKE / PLATE_SPEED;
 const CYCLE: f32 = DWELL + RISE_SECONDS + TOP_DWELL + RISE_SECONDS;
@@ -74,7 +61,6 @@ const MAX_MOTOR_FORCE: f32 = 1.0e6;
 const LEFT_CHAMBER_INNER_X: f32 = -0.55;
 const DIVIDER_LEFT_X: f32 = 0.48;
 
-/// Upper-chamber block. Its edges sit between sampling rows so the default grid is 75 by 40.
 const WATER_POLYGON: [Vec2; 4] = [
     Vec2::new(-0.486, 1.506),
     Vec2::new(0.414, 1.506),
@@ -115,17 +101,6 @@ const PADDLE_CENTERLINES: [(Vec2, Vec2); 4] = [
     (Vec2::new(-PADDLE_OUTER, 0.0), Vec2::new(-PADDLE_INNER, 0.0)),
     (Vec2::new(0.0, -PADDLE_OUTER), Vec2::new(0.0, -PADDLE_INNER)),
 ];
-
-fn plate_local_corners() -> [Vec2; 4] {
-    let rotation = Rotation::from_angle(PLATE_SLANT);
-    [
-        Vec2::new(-PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
-        Vec2::new(PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
-        Vec2::new(PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
-        Vec2::new(-PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
-    ]
-    .map(|corner| rotation.apply(corner))
-}
 
 /// One horizontal shelf, the gap the liquid must find, and the spinner under that gap.
 #[derive(Clone, Copy)]
@@ -273,23 +248,38 @@ fn shelf_boxes() -> [BoxSpec; LEVEL_COUNT * 2] {
     std::array::from_fn(|index| {
         let level = LEVELS[index / 2];
         if index % 2 == 0 {
-            lip_box(LEFT_CHAMBER_INNER_X, level.hole_left(), level.shelf_top)
+            span_box(
+                LEFT_CHAMBER_INNER_X,
+                level.hole_left(),
+                level.shelf_bottom(),
+                level.shelf_top,
+            )
         } else {
-            lip_box(level.hole_right(), DIVIDER_LEFT_X, level.shelf_top)
+            span_box(
+                level.hole_right(),
+                DIVIDER_LEFT_X,
+                level.shelf_bottom(),
+                level.shelf_top,
+            )
         }
     })
 }
 
-fn lip_box(left: f32, right: f32, shelf_top: f32) -> BoxSpec {
-    BoxSpec {
-        half_width: (right - left) * 0.5,
-        half_height: SHELF_HALF_HEIGHT,
-        center: Vec2::new((left + right) * 0.5, shelf_top - SHELF_HALF_HEIGHT),
-    }
+fn wall_boxes() -> Vec<BoxSpec> {
+    let mut walls = chamber_boxes()
+        .into_iter()
+        .chain(shelf_boxes())
+        .collect::<Vec<_>>();
+    walls.push(span_box(0.48, 0.56, 0.0, 0.050));
+    walls
 }
 
-fn wall_boxes() -> Vec<BoxSpec> {
-    chamber_boxes().into_iter().chain(shelf_boxes()).collect()
+fn span_box(left: f32, right: f32, bottom: f32, top: f32) -> BoxSpec {
+    BoxSpec {
+        half_width: (right - left) * 0.5,
+        half_height: (top - bottom) * 0.5,
+        center: Vec2::new((left + right) * 0.5, (bottom + top) * 0.5),
+    }
 }
 
 fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError> {
@@ -481,19 +471,6 @@ fn create_water_group(world: &mut World) -> Result<ParticleSystemId, SceneError>
     Ok(system)
 }
 
-fn scheduled_plate_speed(elapsed: f32) -> f32 {
-    let phase = elapsed.rem_euclid(CYCLE);
-    let rise_end = DWELL + RISE_SECONDS;
-    let top_end = rise_end + TOP_DWELL;
-    if phase < DWELL || (phase >= rise_end && phase < top_end) {
-        0.0
-    } else if phase < rise_end {
-        PLATE_SPEED
-    } else {
-        -PLATE_SPEED
-    }
-}
-
 fn push_box_outline(
     segments: &mut Vec<RigidSegment>,
     center: Vec2,
@@ -540,6 +517,23 @@ impl SceneHooks for LiquidBubblerHooks {
         }
         world
             .set_prismatic_motor_speed(self.prismatic, scheduled_plate_speed(self.elapsed))
+            .map_err(|_error| SessionError::StepFailed)
+    }
+
+    fn on_after_step(
+        &mut self,
+        world: &mut World,
+        _system: ParticleSystemId,
+        _transitions: &[liquidfun::ContactTransition],
+    ) -> Result<(), SessionError> {
+        // Contact with the lowered wall can nudge the deck. Put it back on the schedule.
+        let offset = scheduled_plate_offset(self.elapsed);
+        world
+            .set_body_transform(
+                self.plate,
+                Vec2::new(PLATE_CENTER.x, PLATE_CENTER.y + offset),
+                0.0,
+            )
             .map_err(|_error| SessionError::StepFailed)
     }
 
