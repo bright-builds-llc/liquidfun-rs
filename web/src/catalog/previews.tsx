@@ -402,13 +402,13 @@ function LiquidBubblerPreview() {
 function HydraulicFountainPreview() {
   return (
     <PreviewFrame>
-      <line x1="24" y1="14" x2="24" y2="76" stroke={RIGID} stroke-width="3" />
-      <line x1="24" y1="76" x2="136" y2="76" stroke={RIGID} stroke-width="3" />
-      <line x1="136" y1="14" x2="136" y2="76" stroke={RIGID} stroke-width="3" />
-      <rect x="28" y="58" width="104" height="18" fill={WATER} />
-      <rect x="28" y="42" width="46" height="7" fill={RIGID} />
-      <rect x="86" y="42" width="46" height="7" fill={RIGID} />
-      <rect x="74" y="18" width="12" height="40" fill={WATER} />
+      <line x1="20" y1="12" x2="20" y2="78" stroke={RIGID} stroke-width="8" />
+      <line x1="20" y1="78" x2="140" y2="78" stroke={RIGID} stroke-width="8" />
+      <line x1="140" y1="12" x2="140" y2="78" stroke={RIGID} stroke-width="8" />
+      <rect x="28" y="56" width="104" height="18" fill={WATER} />
+      <polygon points="28,50 72,54 72,40 28,32" fill={RIGID} />
+      <polygon points="132,50 88,54 88,40 132,32" fill={RIGID} />
+      <rect x="72" y="14" width="16" height="40" fill={WATER} />
     </PreviewFrame>
   );
 }

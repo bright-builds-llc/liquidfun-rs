@@ -33,6 +33,7 @@ import {
   runtimePreset,
   sceneSource,
 } from "./scene-record-shared";
+import { GAP_CONTROL } from "./hydraulic-fountain-gap";
 import { DRUM_SPEED_CONTROL } from "./washing-machine-speed";
 import {
   WAVE_MACHINE_SPEED_CONTROL,
@@ -489,14 +490,15 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Hydraulic Fountain",
     ready: true,
     description:
-      "Watch two raised platforms slam down onto a pool and shoot a jet of water up through the gap between them. This is an original experimental scene.",
-    interactionHint: WATCH_FIRST_HINT,
-    controls: withGravitySlider([]),
+      "Watch two raised platforms ease down into a pool, pause, and squeeze a jet of water up through the gap between them. This is an original experimental scene.",
+    interactionHint:
+      "Use Gap to set the opening between the platforms. It starts at 20 cm. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([GAP_CONTROL]),
     viewBounds: {
-      minX: -1.28,
-      minY: -0.18,
-      maxX: 1.28,
-      maxY: 3.05,
+      minX: -2.28,
+      minY: -0.32,
+      maxX: 2.28,
+      maxY: 2.3,
     },
     credits: {
       implementationPath:

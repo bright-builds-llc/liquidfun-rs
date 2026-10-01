@@ -1,19 +1,26 @@
+use liquidfun::collision::PolygonShape;
+use liquidfun::math::Vec2;
 use liquidfun::{BodyType, WorldObservationLimits};
 
 use super::{
-    ASCEND_SPEED, DESCEND_SPEED, DESCEND_WINDOW, FILL_BOTTOM_Y, GAP_HALF_WIDTH, HOLD_HIGH,
-    HOLD_LOW, PRESSED_CENTER_Y, RAISED_BOTTOM_Y, RAISED_CENTER_Y, SIM_DT, WATER_DEPTH, build,
-    plate_velocity,
+    ASCEND_SPEED, CYCLE, DESCEND_DURATION, GAP_CENTIMETERS_DEFAULT, GAP_HALF_WIDTH, HOLD_HIGH,
+    HOLD_LOW, INNER_HALF_WIDTH, PEAK_DESCEND_SPEED, PLATE_OUTER_X, POOL_TOP_Y, PRESSED_CENTER_Y,
+    RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, SIM_DT, SLAB_HALF_HEIGHT, SLOPE_ANGLE, build,
+    gap_half_from_centimeters, plate_center_x, plate_velocity, scheduled_center_y, slab_half_width,
+    slope_polygon,
 };
 use crate::ProofFrame;
 use crate::scene::{SceneId, build_scene};
 use crate::session::{SessionCore, SessionError};
 
-const WATER_TOP_Y: f32 = FILL_BOTTOM_Y + WATER_DEPTH;
-const JET_CLEARANCE_Y: f32 = RAISED_BOTTOM_Y;
+const PARTICLE_COUNT: usize = 3_200;
+const HOLD_HIGH_STEPS: u32 = 180;
+const DESCEND_STEPS_BEFORE_SAMPLE: u32 = 60;
+const JET_SAMPLE_STEPS: u32 = 80;
+const PLATE_SEGMENT_FLOATS: usize = 108;
 
 #[test]
-fn fresh_build_places_the_pool_under_raised_plates() {
+fn fresh_build_places_3200_particles_under_raised_plates() {
     // Arrange
     let session = SessionCore::create(SceneId::HydraulicFountain)
         .expect("hydraulic fountain should construct");
@@ -23,11 +30,11 @@ fn fresh_build_places_the_pool_under_raised_plates() {
     let plate_ys = plate_center_ys(&session);
 
     // Assert
-    assert!(positions.len() > 100, "the pool should start with water");
+    assert_eq!(positions.len(), PARTICLE_COUNT);
     assert!(
         positions
             .iter()
-            .all(|position| position.y <= WATER_TOP_Y + 0.02),
+            .all(|position| position.y <= POOL_TOP_Y + 0.02),
         "the pool starts below the raised plates"
     );
     assert!(
@@ -71,37 +78,78 @@ fn plates_are_kinematic() {
 }
 
 #[test]
-fn motor_schedule_holds_then_snaps_down() {
+fn descent_eases_in_and_peaks_under_the_tunnel_limit() {
     // Arrange
-    let raised = RAISED_CENTER_Y;
-    let during_hold = SIM_DT;
-    let during_descent = HOLD_HIGH + SIM_DT;
+    let early = HOLD_HIGH + SIM_DT;
+    let late = HOLD_HIGH + DESCEND_DURATION - SIM_DT;
 
     // Act
-    let hold_speed = plate_velocity(during_hold, raised);
-    let descend_speed = plate_velocity(during_descent, raised);
-    let seated_speed = plate_velocity(during_descent, PRESSED_CENTER_Y);
+    let early_speed = plate_velocity(early, scheduled_center_y(early - SIM_DT));
+    let late_speed = plate_velocity(late, scheduled_center_y(late - SIM_DT));
 
     // Assert
-    assert_eq!(hold_speed.to_bits(), 0.0_f32.to_bits());
-    assert_eq!(descend_speed.to_bits(), (-DESCEND_SPEED).to_bits());
-    assert_eq!(seated_speed.to_bits(), 0.0_f32.to_bits());
+    assert!(early_speed < 0.0, "the drop starts downward");
+    assert!(
+        late_speed < early_speed,
+        "the drop accelerates, early {early_speed}, late {late_speed}"
+    );
+    assert!(
+        early_speed.abs() < late_speed.abs() * 0.25,
+        "the first drop step is much slower than the end"
+    );
+    assert!(
+        late_speed.abs() <= PEAK_DESCEND_SPEED + 0.02,
+        "the press peaks near {PEAK_DESCEND_SPEED}, got {late_speed}"
+    );
 }
 
 #[test]
-fn motor_schedule_holds_the_squeeze_then_lifts() {
+fn cycle_pauses_then_rises_slowly() {
     // Arrange
-    let pressed = PRESSED_CENTER_Y;
-    let during_hold_low = HOLD_HIGH + DESCEND_WINDOW + SIM_DT;
-    let during_ascent = HOLD_HIGH + DESCEND_WINDOW + HOLD_LOW + SIM_DT;
+    let bottom = HOLD_HIGH + DESCEND_DURATION + HOLD_LOW * 0.5;
+    let ascent = HOLD_HIGH + DESCEND_DURATION + HOLD_LOW + SIM_DT;
+    let top = SIM_DT;
+    let repeated_top = CYCLE + SIM_DT;
 
     // Act
-    let hold_speed = plate_velocity(during_hold_low, pressed);
-    let lift_speed = plate_velocity(during_ascent, pressed);
+    let bottom_speed = plate_velocity(bottom, PRESSED_CENTER_Y);
+    let rise_speed = plate_velocity(ascent, scheduled_center_y(ascent - SIM_DT));
+    let top_speed = plate_velocity(top, RAISED_CENTER_Y);
+    let repeated_speed = plate_velocity(repeated_top, RAISED_CENTER_Y);
 
     // Assert
-    assert_eq!(hold_speed.to_bits(), 0.0_f32.to_bits());
-    assert_eq!(lift_speed.to_bits(), ASCEND_SPEED.to_bits());
+    assert_eq!(bottom_speed.to_bits(), 0.0_f32.to_bits());
+    assert!(
+        (rise_speed - ASCEND_SPEED).abs() < 1.0e-4,
+        "the rise should be the slow linear speed, got {rise_speed}"
+    );
+    assert!(
+        rise_speed < PEAK_DESCEND_SPEED * 0.5,
+        "the rise stays slower than the press"
+    );
+    assert_eq!(top_speed.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(repeated_speed.to_bits(), 0.0_f32.to_bits());
+}
+
+#[test]
+fn platform_lids_slope_down_toward_the_gap() {
+    // Arrange
+    let left = slope_polygon(1.0, GAP_HALF_WIDTH).expect("left lid should build");
+    let right = slope_polygon(-1.0, GAP_HALF_WIDTH).expect("right lid should build");
+
+    // Act
+    let left_angle = downhill_angle(&left, 1.0);
+    let right_angle = downhill_angle(&right, -1.0);
+
+    // Assert
+    assert!(
+        (left_angle - SLOPE_ANGLE).abs() < 1.0e-4,
+        "left lid angle {left_angle}"
+    );
+    assert!(
+        (right_angle - SLOPE_ANGLE).abs() < 1.0e-4,
+        "right lid angle {right_angle}"
+    );
 }
 
 #[test]
@@ -119,6 +167,45 @@ fn controls_and_pointer_stay_watch_first() {
     assert_eq!(period, Err(SessionError::UnknownControl));
     assert_eq!(aim, Err(SessionError::UnknownControl));
     assert_eq!(pointer, Ok(()));
+}
+
+#[test]
+fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::HydraulicFountain)
+        .expect("hydraulic fountain should construct");
+    let authored = gap_half_from_centimeters(GAP_CENTIMETERS_DEFAULT);
+
+    // Act
+    let too_narrow = session.apply_control("gap", "4");
+    let padded = session.apply_control("gap", "020");
+    let wide = session.apply_control("gap", "80");
+    let wide_centers = plate_center_xs(&session);
+    let wide_ys = plate_center_ys(&session);
+    let narrow = session.apply_control("gap", "5");
+    let narrow_centers = plate_center_xs(&session);
+    advance_steps(&mut session, 30);
+    let held_centers = plate_center_xs(&session);
+    let count = session
+        .live_particle_count()
+        .expect("the gap slider should leave the water in place");
+
+    // Assert
+    assert_eq!(authored.to_bits(), GAP_HALF_WIDTH.to_bits());
+    assert_eq!(too_narrow, Err(SessionError::UnknownControl));
+    assert_eq!(padded, Err(SessionError::UnknownControl));
+    assert!(wide.is_ok(), "80 cm is the widest opening");
+    assert!(narrow.is_ok(), "5 cm is the narrowest opening");
+    assert_plate_gap(&wide_centers, gap_half_from_centimeters(80));
+    assert_plate_gap(&narrow_centers, gap_half_from_centimeters(5));
+    assert_plate_gap(&held_centers, gap_half_from_centimeters(5));
+    assert!(
+        wide_ys
+            .iter()
+            .all(|center_y| center_y.to_bits() == RAISED_CENTER_Y.to_bits()),
+        "changing the gap keeps the plates at their current height"
+    );
+    assert_eq!(count, PARTICLE_COUNT);
 }
 
 #[test]
@@ -140,6 +227,7 @@ fn pointer_up_leaves_the_live_count_unchanged() {
 
     // Assert
     assert_eq!(after, before);
+    assert_eq!(after, PARTICLE_COUNT);
 }
 
 #[test]
@@ -169,11 +257,13 @@ fn the_press_drives_a_jet_through_the_gap() {
         .expect("the pool should start with water");
 
     // Act
-    advance_steps(&mut session, 16);
+    advance_steps(&mut session, HOLD_HIGH_STEPS);
     let held_ys = plate_center_ys(&session);
+    advance_steps(&mut session, DESCEND_STEPS_BEFORE_SAMPLE);
+    let mut best_jet = 0_usize;
+    let mut best_side = 0_usize;
     let mut best_crest = f32::MIN;
-    let mut best_jet_count = 0_usize;
-    let mut remaining = 120_u32;
+    let mut remaining = JET_SAMPLE_STEPS;
     while remaining > 0 {
         let batch = remaining.min(4);
         session
@@ -181,29 +271,36 @@ fn the_press_drives_a_jet_through_the_gap() {
             .expect("the squeeze should keep stepping");
         remaining -= batch;
         let positions = particle_positions(&session);
-        let crest = gap_crest(&positions);
-        let jet_count = positions
+        let plate_top = plate_center_ys(&session)
+            .into_iter()
+            .fold(0.0_f32, f32::max)
+            + SLAB_HALF_HEIGHT;
+        let jet = positions
+            .iter()
+            .filter(|position| position.y > plate_top + 0.05 && position.x.abs() < GAP_HALF_WIDTH)
+            .count();
+        let side = positions
             .iter()
             .filter(|position| {
-                position.y > JET_CLEARANCE_Y && position.x.abs() < GAP_HALF_WIDTH + 0.02
+                position.y > plate_top + 0.05 && position.x.abs() > INNER_HALF_WIDTH - 0.5
             })
             .count();
-        best_crest = best_crest.max(crest);
-        best_jet_count = best_jet_count.max(jet_count);
+        if jet >= best_jet {
+            best_jet = jet;
+            best_side = side;
+        }
+        best_crest = best_crest.max(gap_crest(&positions));
     }
     let pressed_ys = plate_center_ys(&session);
     let end_count = session
         .live_particle_count()
         .expect("the squeezed water should still be live");
-    let jet_count = best_jet_count;
-    let crest = best_crest;
-
     // Assert
     assert!(
         held_ys
             .iter()
             .all(|center_y| (center_y - RAISED_CENTER_Y).abs() < 0.02),
-        "the plates wait in the air before the snap, centers were {held_ys:?}"
+        "the plates wait in the air, centers were {held_ys:?}"
     );
     assert!(
         pressed_ys
@@ -213,8 +310,12 @@ fn the_press_drives_a_jet_through_the_gap() {
     );
     assert_eq!(end_count, start_count, "the squeeze keeps the same water");
     assert!(
-        jet_count >= 8,
-        "the gap should throw a jet above the raised plate line; crest {crest}, count {jet_count}"
+        best_jet >= 8,
+        "the gap should throw a jet above the lids; crest {best_crest}, jet {best_jet}, side {best_side}, plates {pressed_ys:?}, count {end_count}"
+    );
+    assert!(
+        best_side * 2 <= best_jet,
+        "side spray should stay smaller than the middle jet; jet {best_jet}, side {best_side}"
     );
 }
 
@@ -233,11 +334,11 @@ fn rebuild_restores_the_raised_plates_and_pool() {
     let plate_ys = plate_center_ys(&rebuilt);
 
     // Assert
-    assert!(positions.len() > 100, "rebuild places the pool again");
+    assert_eq!(positions.len(), PARTICLE_COUNT);
     assert!(
         positions
             .iter()
-            .all(|position| position.y <= WATER_TOP_Y + 0.02),
+            .all(|position| position.y <= POOL_TOP_Y + 0.02),
         "rebuild puts the water back in the pool"
     );
     assert!(
@@ -256,35 +357,109 @@ fn captured_frame_draws_the_moving_plates() {
     let initial_bottom = lowest_plate_edge_y(&session);
 
     // Act
-    advance_steps(&mut session, 52);
+    advance_steps(&mut session, HOLD_HIGH_STEPS + 70);
     let later_bottom = lowest_plate_edge_y(&session);
 
     // Assert
     assert!(
-        (initial_bottom - RAISED_BOTTOM_Y).abs() < 0.02,
-        "the first frame draws the raised plate bottoms at {initial_bottom}"
+        (initial_bottom - RAISED_CHEEK_BOTTOM_Y).abs() < 0.02,
+        "the first frame draws the raised cheek bottoms at {initial_bottom}"
     );
     assert!(
         later_bottom < initial_bottom - 0.2,
-        "the drawn plates move down toward the pool"
+        "the drawn plates accelerate down toward the pool"
     );
 }
 
-fn gap_crest(positions: &[liquidfun::math::Vec2]) -> f32 {
+fn downhill_angle(polygon: &PolygonShape, toward_gap: f32) -> f32 {
+    let (first, second) = highest_vertices(polygon);
+    let (outer, gap) = if first.x * toward_gap < second.x * toward_gap {
+        (first, second)
+    } else {
+        (second, first)
+    };
+    let run = (gap.x - outer.x) * toward_gap;
+    let drop = outer.y - gap.y;
+    drop.atan2(run)
+}
+
+fn highest_vertices(polygon: &PolygonShape) -> (Vec2, Vec2) {
+    let mut vertices = polygon.vertices().iter();
+    let first = vertices.next().copied().expect("a lid has vertices");
+    let second = vertices.next().copied().expect("a lid has a second vertex");
+    let (mut highest, mut next_highest) = if second.y > first.y {
+        (second, first)
+    } else {
+        (first, second)
+    };
+    for vertex in vertices {
+        if vertex.y > highest.y {
+            next_highest = highest;
+            highest = *vertex;
+        } else if vertex.y > next_highest.y {
+            next_highest = *vertex;
+        }
+    }
+    (highest, next_highest)
+}
+
+fn gap_crest(positions: &[Vec2]) -> f32 {
     positions
         .iter()
-        .filter(|position| position.x.abs() < GAP_HALF_WIDTH + 0.02)
+        .filter(|position| position.x.abs() < GAP_HALF_WIDTH)
         .map(|position| position.y)
         .fold(f32::MIN, f32::max)
 }
 
-fn particle_positions(session: &SessionCore) -> Vec<liquidfun::math::Vec2> {
+fn particle_positions(session: &SessionCore) -> Vec<Vec2> {
     session.read_particles(|world, system| {
         world
             .particle_system_view(system)
             .expect("the water system should be live")
             .positions()
             .to_vec()
+    })
+}
+
+fn assert_plate_gap(centers: &[f32], gap_half: f32) {
+    assert_eq!(centers.len(), 2, "both plates stay in the tank");
+    let mut ordered = centers.to_vec();
+    ordered.sort_by(f32::total_cmp);
+    let left = ordered[0];
+    let right = ordered[1];
+    let center = plate_center_x(gap_half);
+    let slab_half = slab_half_width(gap_half);
+    assert!(
+        (left + center).abs() < 1.0e-4,
+        "left plate center {left}, expected {}",
+        -center
+    );
+    assert!(
+        (right - center).abs() < 1.0e-4,
+        "right plate center {right}, expected {center}"
+    );
+    assert!(
+        (left - slab_half + PLATE_OUTER_X).abs() < 1.0e-4,
+        "the left cheek stays on the wall"
+    );
+    assert!(
+        (right + slab_half - PLATE_OUTER_X).abs() < 1.0e-4,
+        "the right cheek stays on the wall"
+    );
+    assert!((left + slab_half + gap_half).abs() < 1.0e-4);
+    assert!((right - slab_half - gap_half).abs() < 1.0e-4);
+}
+
+fn plate_center_xs(session: &SessionCore) -> Vec<f32> {
+    session.read_particles(|world, _system| {
+        world
+            .world_observation(WorldObservationLimits::reviewed())
+            .expect("reviewed observation should include the plates")
+            .bodies()
+            .iter()
+            .filter(|body| body.snapshot().body_type() == BodyType::Kinematic)
+            .map(|body| body.snapshot().transform().position().x)
+            .collect()
     })
 }
 
@@ -305,8 +480,8 @@ fn lowest_plate_edge_y(session: &SessionCore) -> f32 {
     let segments = capture(session).rigid_segments();
     assert_eq!(
         segments.len(),
-        44,
-        "three wall segments and eight plate edges"
+        PLATE_SEGMENT_FLOATS,
+        "three wall segments plus the slab, cheek, and lid of each plate"
     );
     segments
         .chunks(4)

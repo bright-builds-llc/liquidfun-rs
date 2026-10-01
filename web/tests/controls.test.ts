@@ -390,6 +390,19 @@ describe("Dam Break gravity slider", () => {
     expect(spoken).toBe("9 degrees");
   });
 
+  it("speaks a platform gap in centimeters", () => {
+    // Arrange
+    const magnitude = "20";
+
+    // Act
+    const readout = formatRangeReadout(magnitude, "cm");
+    const spoken = formatRangeValueText(magnitude, "cm");
+
+    // Assert
+    expect(readout).toBe("20 cm");
+    expect(spoken).toBe("20 centimeters");
+  });
+
   it("speaks drum speed in revolutions per minute", () => {
     // Arrange
     const magnitude = "20";
