@@ -295,8 +295,11 @@ describe("scene catalog controls", () => {
     expect(sparky?.controls).toEqual([GRAVITY_CONTROL]);
     const hydraulicFountain = maybeSceneById("hydraulic-fountain");
     expect(hydraulicFountain?.controls).toEqual([GAP_CONTROL, GRAVITY_CONTROL]);
+    expect(GAP_CONTROL.kind).toBe("range");
     expect(GAP_CONTROL.recreates).toBe(false);
-    expect(GAP_CONTROL.surface).toBe("hud");
+    if (GAP_CONTROL.kind === "range") {
+      expect(GAP_CONTROL.surface).toBe("hud");
+    }
     expect(
       (hydraulicFountain?.controls ?? []).some((control) =>
         ["period", "stroke", "aim", "emission", "launch"].includes(control.id),
