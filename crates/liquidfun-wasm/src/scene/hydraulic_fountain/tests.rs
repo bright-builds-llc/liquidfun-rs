@@ -3,11 +3,11 @@ use liquidfun::math::Vec2;
 use liquidfun::{BodyType, WorldObservationLimits};
 
 use super::{
-    ASCEND_SPEED, CHEEK_HALF_HEIGHT, CYCLE, DESCEND_DURATION, GAP_HALF_WIDTH, GAP_TENTHS_DEFAULT,
-    HOLD_HIGH, HOLD_LOW, PEAK_DESCEND_SPEED, PLATE_OUTER_X, POOL_TOP_Y, PRESSED_CENTER_Y,
-    RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, SIM_DT, SLAB_HALF_HEIGHT, SLOPE_ANGLE, WALL_OUTER_X,
-    build, gap_half_from_tenths, plate_center_x, plate_velocity, scheduled_center_y,
-    slab_half_width, slope_polygon,
+    ASCEND_SPEED, CHEEK_HALF_HEIGHT, CHEEK_RISE, CYCLE, DESCEND_DURATION, GAP_HALF_WIDTH,
+    GAP_TENTHS_DEFAULT, HOLD_HIGH, HOLD_LOW, PARTICLE_RADIUS, PEAK_DESCEND_SPEED, PLATE_OUTER_X,
+    POOL_TOP_Y, PRESSED_CENTER_Y, RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, RAISED_SLAB_BOTTOM_Y,
+    SIM_DT, SLAB_HALF_HEIGHT, SLOPE_ANGLE, WALL_OUTER_X, WALL_TOP_Y, build, gap_half_from_tenths,
+    plate_center_x, plate_velocity, scheduled_center_y, slab_half_width, slope_polygon,
 };
 use crate::ProofFrame;
 use crate::scene::{SceneId, build_scene};
@@ -18,6 +18,22 @@ const HOLD_HIGH_STEPS: u32 = 180;
 const DESCEND_STEPS_BEFORE_SAMPLE: u32 = 60;
 const JET_SAMPLE_STEPS: u32 = 80;
 const PLATE_SEGMENT_FLOATS: usize = 108;
+
+#[test]
+fn particles_are_three_times_the_previous_radius() {
+    // Arrange / Act
+    let super::super::BuiltScene {
+        particle_radius, ..
+    } = build(&[]).expect("hydraulic fountain should construct");
+
+    // Assert
+    assert_eq!(
+        particle_radius.to_bits(),
+        PARTICLE_RADIUS.to_bits(),
+        "the pool uses the enlarged radius"
+    );
+    assert_eq!(particle_radius.to_bits(), (0.0125_f32 * 3.0).to_bits());
+}
 
 #[test]
 fn fresh_build_places_3200_particles_under_raised_plates() {
@@ -101,6 +117,10 @@ fn descent_eases_in_and_peaks_under_the_tunnel_limit() {
         late_speed.abs() <= PEAK_DESCEND_SPEED + 0.02,
         "the press peaks near {PEAK_DESCEND_SPEED}, got {late_speed}"
     );
+    assert!(
+        PEAK_DESCEND_SPEED < PARTICLE_RADIUS * 2.0 / SIM_DT,
+        "the press stays under one particle diameter per step"
+    );
 }
 
 #[test]
@@ -177,12 +197,12 @@ fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
     let authored = gap_half_from_tenths(GAP_TENTHS_DEFAULT);
 
     // Act
-    let too_narrow = session.apply_control("gap", "0.4");
-    let padded = session.apply_control("gap", "0.50");
-    let wide = session.apply_control("gap", "3.0");
+    let too_narrow = session.apply_control("gap", "1.4");
+    let padded = session.apply_control("gap", "1.50");
+    let wide = session.apply_control("gap", "9.0");
     let wide_centers = plate_center_xs(&session);
     let wide_ys = plate_center_ys(&session);
-    let narrow = session.apply_control("gap", "0.5");
+    let narrow = session.apply_control("gap", "1.5");
     let narrow_centers = plate_center_xs(&session);
     advance_steps(&mut session, 30);
     let held_centers = plate_center_xs(&session);
@@ -194,11 +214,11 @@ fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
     assert_eq!(authored.to_bits(), GAP_HALF_WIDTH.to_bits());
     assert_eq!(too_narrow, Err(SessionError::UnknownControl));
     assert_eq!(padded, Err(SessionError::UnknownControl));
-    assert!(wide.is_ok(), "3.0 cm is the widest opening");
-    assert!(narrow.is_ok(), "0.5 cm is the narrowest opening");
-    assert_plate_gap(&wide_centers, gap_half_from_tenths(30));
-    assert_plate_gap(&narrow_centers, gap_half_from_tenths(5));
-    assert_plate_gap(&held_centers, gap_half_from_tenths(5));
+    assert!(wide.is_ok(), "9.0 cm is the widest opening");
+    assert!(narrow.is_ok(), "1.5 cm is the narrowest opening");
+    assert_plate_gap(&wide_centers, gap_half_from_tenths(90));
+    assert_plate_gap(&narrow_centers, gap_half_from_tenths(15));
+    assert_plate_gap(&held_centers, gap_half_from_tenths(15));
     assert!(
         wide_ys
             .iter()
@@ -206,6 +226,51 @@ fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
         "changing the gap keeps the plates at their current height"
     );
     assert_eq!(count, PARTICLE_COUNT);
+}
+
+#[test]
+fn walls_rise_above_the_raised_cheeks() {
+    // Arrange
+    let cheek_top = RAISED_SLAB_BOTTOM_Y + SLAB_HALF_HEIGHT * 2.0 + CHEEK_RISE;
+
+    // Act
+    let freeboard = WALL_TOP_Y - cheek_top;
+
+    // Assert
+    assert!(
+        freeboard > 0.1,
+        "the walls should clear the raised cheeks, freeboard {freeboard}"
+    );
+}
+
+#[test]
+fn the_waiting_pool_stays_in_the_basin() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::HydraulicFountain)
+        .expect("hydraulic fountain should construct");
+
+    // Act
+    advance_steps(&mut session, 90);
+    let positions = particle_positions(&session);
+    let risen = positions
+        .iter()
+        .filter(|position| position.y > POOL_TOP_Y + 0.4)
+        .count();
+    let outside = positions
+        .iter()
+        .filter(|position| position.x.abs() > PLATE_OUTER_X)
+        .count();
+
+    // Assert
+    assert!(
+        risen < 80,
+        "the pool should stay down while the plates wait, {risen} particles rose"
+    );
+    assert_eq!(
+        outside, 0,
+        "water should stay inside the walls while the plates wait"
+    );
+    assert_eq!(positions.len(), PARTICLE_COUNT);
 }
 
 #[test]
@@ -298,7 +363,7 @@ fn the_press_drives_a_jet_through_the_gap() {
             .iter()
             .filter(|position| position.y > plate_top + 0.05 && position.x.abs() < GAP_HALF_WIDTH)
             .count();
-        // A 3 cm hole is only a little wider than one particle, so water also climbs
+        // A 9 cm hole is only a little wider than one particle, so water also climbs
         // the lids. This count is particles that get past the outer face of the walls.
         let side = positions
             .iter()
@@ -474,29 +539,46 @@ fn assert_plate_gap(centers: &[f32], gap_half: f32) {
 }
 
 fn plate_center_xs(session: &SessionCore) -> Vec<f32> {
-    session.read_particles(|world, _system| {
-        world
-            .world_observation(WorldObservationLimits::reviewed())
-            .expect("reviewed observation should include the plates")
-            .bodies()
-            .iter()
-            .filter(|body| body.snapshot().body_type() == BodyType::Kinematic)
-            .map(|body| body.snapshot().transform().position().x)
-            .collect()
-    })
+    let mut centers = long_horizontal_segments(session)
+        .into_iter()
+        .filter(|(_start_x, y, _end_x)| *y > 0.05)
+        .map(|(start_x, _y, end_x)| (start_x + end_x) * 0.5)
+        .collect::<Vec<_>>();
+    centers.sort_by(f32::total_cmp);
+    centers.dedup_by(|left, right| (*left - *right).abs() < 1.0e-4);
+    centers
 }
 
 fn plate_center_ys(session: &SessionCore) -> Vec<f32> {
-    session.read_particles(|world, _system| {
-        world
-            .world_observation(WorldObservationLimits::reviewed())
-            .expect("reviewed observation should include the plates")
-            .bodies()
-            .iter()
-            .filter(|body| body.snapshot().body_type() == BodyType::Kinematic)
-            .map(|body| body.snapshot().transform().position().y)
-            .collect()
-    })
+    let mut edge_ys = long_horizontal_segments(session)
+        .into_iter()
+        .filter(|(_start_x, y, _end_x)| *y > 0.05)
+        .map(|(_start_x, y, _end_x)| y)
+        .collect::<Vec<_>>();
+    edge_ys.sort_by(f32::total_cmp);
+    let top = edge_ys.last().copied().expect("each plate draws a slab");
+    let center_y = top - SLAB_HALF_HEIGHT;
+    vec![center_y, center_y]
+}
+
+fn long_horizontal_segments(session: &SessionCore) -> Vec<(f32, f32, f32)> {
+    capture(session)
+        .rigid_segments()
+        .chunks(4)
+        .filter_map(|segment| {
+            let start_x = segment[0];
+            let start_y = segment[1];
+            let end_x = segment[2];
+            let end_y = segment[3];
+            let horizontal = (start_y - end_y).abs() < 0.001;
+            let length = (start_x - end_x).abs();
+            if horizontal && length > 0.5 {
+                Some((start_x, start_y, end_x))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn lowest_plate_edge_y(session: &SessionCore) -> f32 {
