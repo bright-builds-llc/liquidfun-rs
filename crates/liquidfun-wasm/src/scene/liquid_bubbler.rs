@@ -1,10 +1,13 @@
 //! Liquid Bubbler: colored water works down three shelves and turns a small wheel under each hole.
 //!
 //! The holes alternate sides, so the liquid has to cross each shelf. A side-shaft plate stays
-//! down through that cascade, then rises to return the liquid. Water Wheel stays the jet-driven wheel.
+//! down through that cascade, rises, and pauses on a two-degree slant so the liquid can slide
+//! back into the chamber. Water Wheel stays the jet-driven wheel.
+
+use std::f32::consts::TAU;
 
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
-use liquidfun::math::{Transform, Vec2};
+use liquidfun::math::{Rotation, Transform, Vec2};
 use liquidfun::particle::{
     ParticleColor, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
 };
@@ -16,7 +19,8 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.025;
+/// Finer than the original 0.025 m drip. The default stride then fills the upper chamber with 3,000 particles.
+const PARTICLE_RADIUS: f32 = 0.008;
 const PARTICLE_DAMPING: f32 = 0.2;
 const DRIP_COLOR: ParticleColor = ParticleColor::new(242, 176, 64, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
@@ -39,7 +43,10 @@ const ANGULAR_DAMPING: f32 = 0.05;
 const PLATE_FLOOR_CLEARANCE: f32 = 2.0 * 0.01;
 const PLATE_HALF_WIDTH: f32 = 0.18;
 const PLATE_HALF_HEIGHT: f32 = 0.02;
-const PLATE_CENTER: Vec2 = Vec2::new(0.76, PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE);
+/// Two degrees, downhill toward the left chamber.
+const PLATE_SLANT: f32 = TAU * 2.0 / 360.0;
+/// Lifted so the slanted low corner keeps the floor gap. 0.18 * sin(2°) is about 0.0063 m.
+const PLATE_CENTER: Vec2 = Vec2::new(0.76, 0.047);
 const PLATE_DENSITY: f32 = 1.0;
 const WALL_TOP_Y: f32 = 2.40;
 const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
@@ -54,8 +61,10 @@ const STROKE: f32 = 2.20;
 /// Four times the original 0.15 m/s cruise.
 const PLATE_SPEED: f32 = 0.15 * 4.0;
 const DWELL: f32 = 3.0;
+/// Pause at the top so the load can slide off the slant.
+const TOP_DWELL: f32 = 3.0;
 const RISE_SECONDS: f32 = STROKE / PLATE_SPEED;
-const CYCLE: f32 = DWELL + RISE_SECONDS + RISE_SECONDS;
+const CYCLE: f32 = DWELL + RISE_SECONDS + TOP_DWELL + RISE_SECONDS;
 const LIMIT_LOW: f32 = -0.02;
 const LIMIT_HIGH: f32 = STROKE + 0.02;
 const MAX_MOTOR_FORCE: f32 = 1.0e6;
@@ -63,11 +72,12 @@ const MAX_MOTOR_FORCE: f32 = 1.0e6;
 const LEFT_CHAMBER_INNER_X: f32 = -0.55;
 const DIVIDER_LEFT_X: f32 = 0.48;
 
+/// Upper-chamber block. Its edges sit between sampling rows so the default grid is 75 by 40.
 const WATER_POLYGON: [Vec2; 4] = [
-    Vec2::new(-0.48, 1.58),
-    Vec2::new(0.40, 1.58),
-    Vec2::new(0.40, 1.86),
-    Vec2::new(-0.48, 1.86),
+    Vec2::new(-0.486, 1.506),
+    Vec2::new(0.414, 1.506),
+    Vec2::new(0.414, 1.986),
+    Vec2::new(-0.486, 1.986),
 ];
 
 const PADDLE_POLYGONS: [[Vec2; 4]; 4] = [
@@ -104,12 +114,16 @@ const PADDLE_CENTERLINES: [(Vec2, Vec2); 4] = [
     (Vec2::new(0.0, -PADDLE_OUTER), Vec2::new(0.0, -PADDLE_INNER)),
 ];
 
-const PLATE_LOCAL_CORNERS: [Vec2; 4] = [
-    Vec2::new(-PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
-    Vec2::new(PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
-    Vec2::new(PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
-    Vec2::new(-PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
-];
+fn plate_local_corners() -> [Vec2; 4] {
+    let rotation = Rotation::from_angle(PLATE_SLANT);
+    [
+        Vec2::new(-PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
+        Vec2::new(PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
+        Vec2::new(PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
+        Vec2::new(-PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
+    ]
+    .map(|corner| rotation.apply(corner))
+}
 
 /// One horizontal shelf, the gap the liquid must find, and the spinner under that gap.
 #[derive(Clone, Copy)]
@@ -147,8 +161,12 @@ const _: () = {
     assert!(PADDLE_OUTER - PADDLE_INNER >= 0.05);
     assert!(PADDLE_HALF_WIDTH * 2.0 >= 0.05);
     assert!(WATER_POLYGON[0].y > top.shelf_top);
+    assert!(WATER_POLYGON[0].x > LEFT_CHAMBER_INNER_X);
+    assert!(WATER_POLYGON[1].x < DIVIDER_LEFT_X);
     assert!(WATER_POLYGON[2].y + PARTICLE_RADIUS < DIVIDER_TOP_Y);
-    assert!(PLATE_CENTER.y + PLATE_HALF_HEIGHT + STROKE > DIVIDER_TOP_Y);
+    assert!(PLATE_SLANT > 0.0);
+    assert!(PLATE_CENTER.y + STROKE > DIVIDER_TOP_Y);
+    assert!(PLATE_CENTER.y >= PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE + PLATE_HALF_WIDTH * 0.035);
 };
 
 const LEVELS: [Level; LEVEL_COUNT] = [
@@ -281,6 +299,7 @@ fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError
             wall.half_height,
             wall.center,
             0.0,
+            0.0,
         )?;
     }
     Ok(())
@@ -385,6 +404,7 @@ fn create_plate(world: &mut World) -> Result<BodyId, SceneError> {
         PLATE_HALF_HEIGHT,
         Vec2::ZERO,
         PLATE_DENSITY,
+        PLATE_SLANT,
     )?;
     Ok(plate)
 }
@@ -415,8 +435,9 @@ fn attach_box(
     half_height: f32,
     center: Vec2,
     density: f32,
+    angle: f32,
 ) -> Result<(), SceneError> {
-    let polygon = PolygonShape::oriented_box(half_width, half_height, center, 0.0)
+    let polygon = PolygonShape::oriented_box(half_width, half_height, center, angle)
         .map_err(|_error| SceneError::Geometry)?;
     let definition = FixtureDef::new(
         Shape::from(polygon),
@@ -460,9 +481,11 @@ fn create_water_group(world: &mut World) -> Result<ParticleSystemId, SceneError>
 
 fn scheduled_plate_speed(elapsed: f32) -> f32 {
     let phase = elapsed.rem_euclid(CYCLE);
-    if phase < DWELL {
+    let rise_end = DWELL + RISE_SECONDS;
+    let top_end = rise_end + TOP_DWELL;
+    if phase < DWELL || (phase >= rise_end && phase < top_end) {
         0.0
-    } else if phase < DWELL + RISE_SECONDS {
+    } else if phase < rise_end {
         PLATE_SPEED
     } else {
         -PLATE_SPEED
@@ -573,12 +596,13 @@ impl SceneHooks for LiquidBubblerHooks {
             .body_snapshot(self.plate)
             .map_err(|_error| SessionError::FrameCaptureFailed)?
             .transform();
-        for index in 0..PLATE_LOCAL_CORNERS.len() {
+        let plate_corners = plate_local_corners();
+        for index in 0..plate_corners.len() {
             push_transformed_segment(
                 &mut segments,
                 plate_transform,
-                PLATE_LOCAL_CORNERS[index],
-                PLATE_LOCAL_CORNERS[(index + 1) % PLATE_LOCAL_CORNERS.len()],
+                plate_corners[index],
+                plate_corners[(index + 1) % plate_corners.len()],
             );
         }
         Ok(segments)

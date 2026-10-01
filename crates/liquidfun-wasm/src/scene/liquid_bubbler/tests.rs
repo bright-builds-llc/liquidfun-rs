@@ -12,9 +12,30 @@ const PROOF_BATCHES: usize = 30;
 const ANGLE_FLOOR: f32 = 0.05;
 const PLATE_TRANSLATION_LIMIT: f32 = 0.01;
 const SPEED_TOLERANCE: f32 = 1.0e-5;
-/// Same 0.15 m drop below the top of the stroke as the original one-second
-/// sample at 0.15 m/s, so the plate is still above the divider lip.
-const SPILL_SAMPLE_DROP: f32 = 0.15;
+
+#[test]
+fn reservoir_holds_three_thousand_finer_particles() {
+    // Arrange / Act
+    let session =
+        SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
+
+    // Assert
+    assert_eq!(
+        session.particle_count(),
+        3_000,
+        "the upper chamber should start with 3000 particles"
+    );
+    assert_eq!(
+        session
+            .live_particle_count()
+            .expect("the reservoir should be live"),
+        3_000
+    );
+    assert!(
+        super::PARTICLE_RADIUS < 0.025,
+        "particles should be finer than the original 0.025 m drip"
+    );
+}
 
 #[test]
 fn reservoir_starts_still_above_the_top_shelf() {
@@ -200,6 +221,58 @@ fn plate_speed_is_four_times_the_original_cruise() {
 
     // Assert
     assert_eq!(speed.to_bits(), (original_cruise * 4.0).to_bits());
+}
+
+#[test]
+fn plate_pauses_at_the_top_before_descending() {
+    // Arrange
+    let rise_end = super::DWELL + super::RISE_SECONDS;
+    let top_end = rise_end + super::TOP_DWELL;
+
+    // Act
+    let during_pause = super::scheduled_plate_speed(rise_end + 1.0);
+    let last_pause_step = super::scheduled_plate_speed(top_end - super::SIM_DT);
+    let descent = super::scheduled_plate_speed(top_end + super::SIM_DT);
+
+    // Assert
+    assert_eq!(during_pause.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(last_pause_step.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(descent.to_bits(), (-super::PLATE_SPEED).to_bits());
+    assert!(
+        super::TOP_DWELL >= 3.0,
+        "the top pause should last a few seconds"
+    );
+}
+
+#[test]
+fn plate_top_slants_two_degrees_toward_the_chamber() {
+    // Arrange
+    let expected = std::f32::consts::TAU * 2.0 / 360.0;
+    let corners = super::plate_local_corners();
+    let left_lip = corners[3];
+    let right_lip = corners[2];
+    let lowest = corners
+        .iter()
+        .map(|corner| corner.y)
+        .fold(f32::MAX, f32::min);
+
+    // Act
+    let slant = super::PLATE_SLANT;
+
+    // Assert
+    assert_eq!(
+        slant.to_bits(),
+        expected.to_bits(),
+        "the deck slants two degrees"
+    );
+    assert!(
+        left_lip.y < right_lip.y,
+        "the lip toward the chamber is the low side"
+    );
+    assert!(
+        super::PLATE_CENTER.y + lowest >= super::PLATE_FLOOR_CLEARANCE,
+        "the slanted low corner stays above the floor skin"
+    );
 }
 
 #[test]
@@ -443,7 +516,7 @@ fn advance_seconds(session: &mut SessionCore, seconds: f32) {
 }
 
 fn advance_return(session: &mut SessionCore) {
-    let seconds = super::DWELL + super::RISE_SECONDS + SPILL_SAMPLE_DROP / super::PLATE_SPEED;
+    let seconds = super::DWELL + super::RISE_SECONDS + super::TOP_DWELL;
     advance_seconds(session, seconds);
 }
 
