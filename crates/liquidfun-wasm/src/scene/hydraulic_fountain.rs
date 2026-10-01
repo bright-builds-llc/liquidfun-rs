@@ -1,7 +1,7 @@
-//! Periodic hydraulic fountain: a dynamic piston squeezes one water group through a throat.
+//! Hydraulic fountain: two kinematic plates slam into a pool and force a jet through their gap.
 //!
-//! Motor speed is a square wave of simulation time. Limits hold the stroke at each end.
-//! The fountain chamber starts empty, and the existing Fountain emitter is not reused.
+//! The plates wait above the water, drop together, hold the squeeze, then rise and repeat.
+//! The pool has no other outlet, so the displaced water leaves through the gap.
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};
@@ -9,65 +9,73 @@ use liquidfun::particle::{
     ParticleColor, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
 };
 use liquidfun::{
-    BodyDef, BodyId, BodyType, FixtureDef, JointDef, JointId, ParticleSystemDef, ParticleSystemId,
-    PrismaticJointDef, World,
+    BodyDef, BodyId, BodyType, FixtureDef, ParticleSystemDef, ParticleSystemId, World,
 };
 
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
 const PARTICLE_RADIUS: f32 = 0.025;
+const PARTICLE_DAMPING: f32 = 0.2;
+const PRESSURE_STRENGTH: f32 = 0.12;
 const GROUP_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const SIM_DT: f32 = 1.0 / 60.0;
-const ADVANCE_SPEED: f32 = 0.6;
-const STROKE: f32 = 0.35;
-const PERIOD: f32 = 2.0;
-const MAX_MOTOR_FORCE: f32 = 1.0e6;
-const PISTON_DENSITY: f32 = 1.0;
-const PISTON_CENTER_RETRACTED: Vec2 = Vec2::new(-0.90, 0.50);
-const PISTON_HALF_WIDTH: f32 = 0.04;
-const PISTON_HALF_HEIGHT: f32 = 0.45;
-const PISTON_LOCAL_CORNERS: [Vec2; 4] = [
-    Vec2::new(-PISTON_HALF_WIDTH, -PISTON_HALF_HEIGHT),
-    Vec2::new(PISTON_HALF_WIDTH, -PISTON_HALF_HEIGHT),
-    Vec2::new(PISTON_HALF_WIDTH, PISTON_HALF_HEIGHT),
-    Vec2::new(-PISTON_HALF_WIDTH, PISTON_HALF_HEIGHT),
-];
-const WALL_FRICTION: f32 = 0.2;
+// One step of this speed moves less than a particle diameter, so the plates
+// push the pool instead of tunneling through it.
+const DESCEND_SPEED: f32 = 2.4;
+const ASCEND_SPEED: f32 = 1.5;
+const HOLD_HIGH: f32 = 33.0 / 60.0;
+const HOLD_LOW: f32 = 75.0 / 60.0;
+const WALL_FRICTION: f32 = 0.05;
 const WALL_HALF_THICKNESS: f32 = 0.04;
-
-const WATER_POLYGON: [Vec2; 4] = [
-    Vec2::new(-0.78, 0.04),
-    Vec2::new(-0.16, 0.04),
-    Vec2::new(-0.16, 0.48),
-    Vec2::new(-0.78, 0.48),
+const INNER_HALF_WIDTH: f32 = 1.02;
+const FLOOR_TOP_Y: f32 = 0.0;
+const WALL_TOP_Y: f32 = 2.85;
+const GAP_HALF_WIDTH: f32 = 0.08;
+const SIDE_CLEARANCE: f32 = 0.01;
+const PLATE_HALF_HEIGHT: f32 = 0.055;
+const PLATE_OUTER_X: f32 = INNER_HALF_WIDTH - SIDE_CLEARANCE;
+const PLATE_INNER_X: f32 = GAP_HALF_WIDTH;
+const PLATE_HALF_WIDTH: f32 = (PLATE_OUTER_X - PLATE_INNER_X) * 0.5;
+const PLATE_CENTER_X: f32 = (PLATE_OUTER_X + PLATE_INNER_X) * 0.5;
+const PRESSED_BOTTOM_Y: f32 = 0.055;
+const RAISED_BOTTOM_Y: f32 = 1.22;
+const STROKE: f32 = RAISED_BOTTOM_Y - PRESSED_BOTTOM_Y;
+const RAISED_CENTER_Y: f32 = RAISED_BOTTOM_Y + PLATE_HALF_HEIGHT;
+const PRESSED_CENTER_Y: f32 = PRESSED_BOTTOM_Y + PLATE_HALF_HEIGHT;
+const DESCEND_WINDOW: f32 = STROKE / DESCEND_SPEED + 3.0 * SIM_DT;
+const ASCEND_WINDOW: f32 = STROKE / ASCEND_SPEED + 3.0 * SIM_DT;
+const CYCLE: f32 = HOLD_HIGH + DESCEND_WINDOW + HOLD_LOW + ASCEND_WINDOW;
+const FILL_INSET_X: f32 = 0.045;
+const FILL_BOTTOM_Y: f32 = 0.035;
+const WATER_DEPTH: f32 = 0.46;
+const PLATE_LOCAL_CORNERS: [Vec2; 4] = [
+    Vec2::new(-PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
+    Vec2::new(PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
+    Vec2::new(PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
+    Vec2::new(-PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
 ];
 
-/// Floor top, side inner faces, and the divider above the floor throat.
-const WALL_SEGMENTS: [RigidSegment; 4] = [
+/// Inner faces of the floor and the two side walls.
+const WALL_SEGMENTS: [RigidSegment; 3] = [
     RigidSegment {
-        start: Vec2::new(-1.18, 0.0),
-        end: Vec2::new(1.18, 0.0),
+        start: Vec2::new(-INNER_HALF_WIDTH, FLOOR_TOP_Y),
+        end: Vec2::new(INNER_HALF_WIDTH, FLOOR_TOP_Y),
     },
     RigidSegment {
-        start: Vec2::new(-1.14, 0.0),
-        end: Vec2::new(-1.14, 1.39),
+        start: Vec2::new(-INNER_HALF_WIDTH, FLOOR_TOP_Y),
+        end: Vec2::new(-INNER_HALF_WIDTH, WALL_TOP_Y),
     },
     RigidSegment {
-        start: Vec2::new(1.14, 0.0),
-        end: Vec2::new(1.14, 1.39),
-    },
-    RigidSegment {
-        start: Vec2::new(0.0, 0.12),
-        end: Vec2::new(0.0, 1.39),
+        start: Vec2::new(INNER_HALF_WIDTH, FLOOR_TOP_Y),
+        end: Vec2::new(INNER_HALF_WIDTH, WALL_TOP_Y),
     },
 ];
 
 struct HydraulicFountainHooks {
     elapsed: f32,
-    joint: JointId,
-    piston: BodyId,
+    plates: [BodyId; 2],
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -88,8 +96,10 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
         .map_err(|_error| SceneError::Body)?;
     attach_wall_boxes(&mut world, ground)?;
 
-    let piston = create_piston(&mut world)?;
-    let joint = create_piston_joint(&mut world, ground, piston)?;
+    let plates = [
+        create_plate(&mut world, -PLATE_CENTER_X)?,
+        create_plate(&mut world, PLATE_CENTER_X)?,
+    ];
     let particle_system = create_water_group(&mut world)?;
 
     Ok(BuiltScene {
@@ -98,78 +108,95 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
         particle_radius: PARTICLE_RADIUS,
         hooks: Box::new(HydraulicFountainHooks {
             elapsed: 0.0,
-            joint,
-            piston,
+            plates,
         }),
     })
 }
 
-fn scheduled_motor_speed(elapsed: f32) -> f32 {
-    let squeezing = elapsed % PERIOD < PERIOD * 0.5;
-    if squeezing {
-        ADVANCE_SPEED
-    } else {
-        -ADVANCE_SPEED
+enum PlateCommand {
+    Hold,
+    Move { target_y: f32, max_speed: f32 },
+}
+
+fn plate_command(elapsed: f32) -> PlateCommand {
+    let cycle = elapsed.rem_euclid(CYCLE);
+    if cycle < HOLD_HIGH {
+        return PlateCommand::Hold;
+    }
+    if cycle < HOLD_HIGH + DESCEND_WINDOW {
+        return PlateCommand::Move {
+            target_y: PRESSED_CENTER_Y,
+            max_speed: DESCEND_SPEED,
+        };
+    }
+    if cycle < HOLD_HIGH + DESCEND_WINDOW + HOLD_LOW {
+        return PlateCommand::Hold;
+    }
+    PlateCommand::Move {
+        target_y: RAISED_CENTER_Y,
+        max_speed: ASCEND_SPEED,
     }
 }
 
+fn plate_velocity(elapsed: f32, center_y: f32) -> f32 {
+    let PlateCommand::Move {
+        target_y,
+        max_speed,
+    } = plate_command(elapsed)
+    else {
+        return 0.0;
+    };
+    let delta = target_y - center_y;
+    let max_step = max_speed * SIM_DT;
+    delta.clamp(-max_step, max_step) / SIM_DT
+}
+
 fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError> {
+    let wall_half_height = WALL_TOP_Y * 0.5;
     let boxes = [
         (
-            1.18,
+            INNER_HALF_WIDTH + WALL_HALF_THICKNESS,
             WALL_HALF_THICKNESS,
             Vec2::new(0.0, -WALL_HALF_THICKNESS),
         ),
-        (WALL_HALF_THICKNESS, 0.695, Vec2::new(-1.18, 0.695)),
-        (WALL_HALF_THICKNESS, 0.695, Vec2::new(1.18, 0.695)),
-        (WALL_HALF_THICKNESS, 0.635, Vec2::new(0.0, 0.755)),
+        (
+            WALL_HALF_THICKNESS,
+            wall_half_height,
+            Vec2::new(-INNER_HALF_WIDTH - WALL_HALF_THICKNESS, wall_half_height),
+        ),
+        (
+            WALL_HALF_THICKNESS,
+            wall_half_height,
+            Vec2::new(INNER_HALF_WIDTH + WALL_HALF_THICKNESS, wall_half_height),
+        ),
     ];
     for (half_width, half_height, center) in boxes {
-        attach_box(world, ground, half_width, half_height, center, 0.0)?;
+        attach_box(world, ground, half_width, half_height, center)?;
     }
     Ok(())
 }
 
-fn create_piston(world: &mut World) -> Result<BodyId, SceneError> {
-    let definition = BodyDef::new(BodyType::Dynamic, PISTON_CENTER_RETRACTED, 0.0, true)
-        .map_err(|_error| SceneError::Body)?
-        .with_sleeping_allowed(false);
-    let piston = world
+fn create_plate(world: &mut World, center_x: f32) -> Result<BodyId, SceneError> {
+    let definition = BodyDef::new(
+        BodyType::Kinematic,
+        Vec2::new(center_x, RAISED_CENTER_Y),
+        0.0,
+        true,
+    )
+    .map_err(|_error| SceneError::Body)?
+    .with_sleeping_allowed(false)
+    .with_fixed_rotation(true);
+    let plate = world
         .create_body(&definition)
         .map_err(|_error| SceneError::Body)?;
     attach_box(
         world,
-        piston,
-        PISTON_HALF_WIDTH,
-        PISTON_HALF_HEIGHT,
+        plate,
+        PLATE_HALF_WIDTH,
+        PLATE_HALF_HEIGHT,
         Vec2::ZERO,
-        PISTON_DENSITY,
     )?;
-    Ok(piston)
-}
-
-fn create_piston_joint(
-    world: &mut World,
-    ground: BodyId,
-    piston: BodyId,
-) -> Result<JointId, SceneError> {
-    let definition = PrismaticJointDef::new(ground, piston)
-        .map_err(|_error| SceneError::Body)?
-        .with_collide_connected(true)
-        .with_frame(
-            PISTON_CENTER_RETRACTED,
-            Vec2::ZERO,
-            Vec2::new(1.0, 0.0),
-            0.0,
-        )
-        .map_err(|_error| SceneError::Body)?
-        .with_limits(true, 0.0, STROKE)
-        .map_err(|_error| SceneError::Body)?
-        .with_motor(true, ADVANCE_SPEED, MAX_MOTOR_FORCE)
-        .map_err(|_error| SceneError::Body)?;
-    world
-        .create_joint(JointDef::from(definition))
-        .map_err(|_error| SceneError::Body)
+    Ok(plate)
 }
 
 fn attach_box(
@@ -178,13 +205,12 @@ fn attach_box(
     half_width: f32,
     half_height: f32,
     center: Vec2,
-    density: f32,
 ) -> Result<(), SceneError> {
     let polygon = PolygonShape::oriented_box(half_width, half_height, center, 0.0)
         .map_err(|_error| SceneError::Geometry)?;
     let definition = FixtureDef::new(
         Shape::from(polygon),
-        density,
+        0.0,
         WALL_FRICTION,
         0.0,
         false,
@@ -197,16 +223,33 @@ fn attach_box(
     Ok(())
 }
 
+fn water_polygon() -> [Vec2; 4] {
+    let left = -INNER_HALF_WIDTH + FILL_INSET_X;
+    let right = INNER_HALF_WIDTH - FILL_INSET_X;
+    let top = FILL_BOTTOM_Y + WATER_DEPTH;
+    [
+        Vec2::new(left, FILL_BOTTOM_Y),
+        Vec2::new(right, FILL_BOTTOM_Y),
+        Vec2::new(right, top),
+        Vec2::new(left, top),
+    ]
+}
+
 fn create_water_group(world: &mut World) -> Result<ParticleSystemId, SceneError> {
     let system_definition = ParticleSystemDef::default()
         .with_radius(PARTICLE_RADIUS)
-        .map_err(|_error| SceneError::ParticleSystem)?;
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_damping(PARTICLE_DAMPING)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_pressure_strength(PRESSURE_STRENGTH)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_strict_contact_check(true);
     let system = world
         .create_particle_system_with_def(&system_definition)
         .map_err(|_error| SceneError::ParticleSystem)?;
 
     let filled =
-        Shape::from(PolygonShape::new(&WATER_POLYGON).map_err(|_error| SceneError::Geometry)?);
+        Shape::from(PolygonShape::new(&water_polygon()).map_err(|_error| SceneError::Geometry)?);
     let source =
         ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
     let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
@@ -226,9 +269,21 @@ impl SceneHooks for HydraulicFountainHooks {
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
         self.elapsed += SIM_DT;
-        world
-            .set_prismatic_motor_speed(self.joint, scheduled_motor_speed(self.elapsed))
-            .map_err(|_error| SessionError::StepFailed)
+        for plate in self.plates {
+            let center_y = world
+                .body_snapshot(plate)
+                .map_err(|_error| SessionError::StepFailed)?
+                .transform()
+                .position()
+                .y;
+            world
+                .set_body_linear_velocity(
+                    plate,
+                    Vec2::new(0.0, plate_velocity(self.elapsed, center_y)),
+                )
+                .map_err(|_error| SessionError::StepFailed)?;
+        }
+        Ok(())
     }
 
     fn apply_control(
@@ -263,16 +318,18 @@ impl SceneHooks for HydraulicFountainHooks {
 
     fn collect_segments(&self, world: &World) -> Result<Vec<RigidSegment>, SessionError> {
         let mut segments = WALL_SEGMENTS.to_vec();
-        let transform = world
-            .body_snapshot(self.piston)
-            .map_err(|_error| SessionError::FrameCaptureFailed)?
-            .transform();
-        let world_corners = PISTON_LOCAL_CORNERS.map(|corner| transform.apply(corner));
-        for index in 0..world_corners.len() {
-            segments.push(RigidSegment {
-                start: world_corners[index],
-                end: world_corners[(index + 1) % world_corners.len()],
-            });
+        for plate in self.plates {
+            let transform = world
+                .body_snapshot(plate)
+                .map_err(|_error| SessionError::FrameCaptureFailed)?
+                .transform();
+            let world_corners = PLATE_LOCAL_CORNERS.map(|corner| transform.apply(corner));
+            for index in 0..world_corners.len() {
+                segments.push(RigidSegment {
+                    start: world_corners[index],
+                    end: world_corners[(index + 1) % world_corners.len()],
+                });
+            }
         }
         Ok(segments)
     }

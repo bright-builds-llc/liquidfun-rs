@@ -489,14 +489,14 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Hydraulic Fountain",
     ready: true,
     description:
-      "Watch a timed piston squeeze one water reservoir so that liquid travels through a throat into the other chamber. This is an original experimental scene.",
+      "Watch two raised platforms slam down onto a pool and shoot a jet of water up through the gap between them. This is an original experimental scene.",
     interactionHint: WATCH_FIRST_HINT,
     controls: withGravitySlider([]),
     viewBounds: {
-      minX: -1.3,
-      minY: -0.15,
-      maxX: 1.3,
-      maxY: 1.6,
+      minX: -1.28,
+      minY: -0.18,
+      maxX: 1.28,
+      maxY: 3.05,
     },
     credits: {
       implementationPath:
