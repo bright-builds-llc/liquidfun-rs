@@ -27,10 +27,14 @@ use crate::session::SessionError;
 
 /// Radius that sampled 3,000 water particles at the default stride.
 const FILL_SAMPLE_RADIUS: f32 = 0.0106;
-/// Water and clothing share this radius, twice the previous fine-water size.
-const PARTICLE_RADIUS: f32 = FILL_SAMPLE_RADIUS * 2.0;
-/// Previous default stride, so the same fill box still holds 3,000 particles.
-const FILL_STRIDE: f32 = PARTICLE_STRIDE * (FILL_SAMPLE_RADIUS * 2.0);
+/// Size before the 0.6 scale. Doubling the fine-water radius kept the same fill.
+const UNSCALED_PARTICLE_RADIUS: f32 = FILL_SAMPLE_RADIUS * 2.0;
+/// Water and socks share this radius, 0.6 times the previous particle size.
+const PARTICLE_RADIUS: f32 = UNSCALED_PARTICLE_RADIUS * 0.6;
+/// Water grid from before the scale, so the fill box still holds 3,000 particles.
+const FILL_STRIDE: f32 = PARTICLE_STRIDE * UNSCALED_PARTICLE_RADIUS;
+/// Sock grid from before the scale, so each sock keeps the same particle count.
+const SOCK_STRIDE: f32 = PARTICLE_STRIDE * 2.0 * UNSCALED_PARTICLE_RADIUS;
 const PARTICLE_DAMPING: f32 = 0.25;
 /// Holds the clothes together while the water keeps its own flags.
 const CLOTH_ELASTIC_STRENGTH: f32 = 0.75;
@@ -220,6 +224,8 @@ fn create_sock(
         .with_group_flags(ParticleGroupFlags::SOLID)
         .with_color(color)
         .with_strength(CLOTH_GROUP_STRENGTH)
+        .map_err(|_error| SceneError::Particle)?
+        .with_stride(SOCK_STRIDE)
         .map_err(|_error| SceneError::Particle)?
         .with_transform(Transform::from_position_angle(ankle, angle))
         .map_err(|_error| SceneError::Particle)?;
