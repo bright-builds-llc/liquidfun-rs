@@ -41,7 +41,16 @@ const PLATE_HALF_WIDTH: f32 = 0.18;
 const PLATE_HALF_HEIGHT: f32 = 0.02;
 const PLATE_CENTER: Vec2 = Vec2::new(0.76, PLATE_HALF_HEIGHT + PLATE_FLOOR_CLEARANCE);
 const PLATE_DENSITY: f32 = 1.0;
-const STROKE: f32 = 1.80;
+const WALL_TOP_Y: f32 = 2.40;
+const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
+const WALL_CENTER_Y: f32 = WALL_HALF_HEIGHT;
+const DIVIDER_BOTTOM_Y: f32 = 0.22;
+/// Above the starting pool, so the drip cannot skip the shelves into the shaft.
+const DIVIDER_TOP_Y: f32 = 2.00;
+const DIVIDER_HALF_HEIGHT: f32 = (DIVIDER_TOP_Y - DIVIDER_BOTTOM_Y) * 0.5;
+const DIVIDER_CENTER_Y: f32 = (DIVIDER_BOTTOM_Y + DIVIDER_TOP_Y) * 0.5;
+/// Long enough that the raised plate still clears the taller divider.
+const STROKE: f32 = 2.20;
 /// Four times the original 0.15 m/s cruise.
 const PLATE_SPEED: f32 = 0.15 * 4.0;
 const DWELL: f32 = 3.0;
@@ -138,6 +147,8 @@ const _: () = {
     assert!(PADDLE_OUTER - PADDLE_INNER >= 0.05);
     assert!(PADDLE_HALF_WIDTH * 2.0 >= 0.05);
     assert!(WATER_POLYGON[0].y > top.shelf_top);
+    assert!(WATER_POLYGON[2].y + PARTICLE_RADIUS < DIVIDER_TOP_Y);
+    assert!(PLATE_CENTER.y + PLATE_HALF_HEIGHT + STROKE > DIVIDER_TOP_Y);
 };
 
 const LEVELS: [Level; LEVEL_COUNT] = [
@@ -217,8 +228,8 @@ fn chamber_boxes() -> [BoxSpec; 4] {
     [
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 0.95,
-            center: Vec2::new(-0.59, 0.95),
+            half_height: WALL_HALF_HEIGHT,
+            center: Vec2::new(-0.59, WALL_CENTER_Y),
         },
         BoxSpec {
             half_width: 0.835,
@@ -227,13 +238,13 @@ fn chamber_boxes() -> [BoxSpec; 4] {
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 0.95,
-            center: Vec2::new(1.00, 0.95),
+            half_height: WALL_HALF_HEIGHT,
+            center: Vec2::new(1.00, WALL_CENTER_Y),
         },
         BoxSpec {
             half_width: WALL_HALF,
-            half_height: 0.70,
-            center: Vec2::new(0.52, 0.92),
+            half_height: DIVIDER_HALF_HEIGHT,
+            center: Vec2::new(0.52, DIVIDER_CENTER_Y),
         },
     ]
 }

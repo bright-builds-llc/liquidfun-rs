@@ -44,10 +44,12 @@ fn reservoir_starts_still_above_the_top_shelf() {
         "a fresh drip has no particle velocity"
     );
     assert!(
-        positions
-            .iter()
-            .all(|position| position.y > shelf_top && position.x < DIVIDER_INNER_X),
-        "every particle starts above the top shelf and left of the divider"
+        positions.iter().all(|position| {
+            position.y > shelf_top
+                && position.y < super::DIVIDER_TOP_Y
+                && position.x < DIVIDER_INNER_X
+        }),
+        "every particle starts above the top shelf, below the spill lip, and left of the divider"
     );
     assert_eq!(angles.len(), super::LEVEL_COUNT);
     assert!(
@@ -350,10 +352,12 @@ fn rebuild_restores_the_reservoir() {
         "rebuild restores a still reservoir"
     );
     assert!(
-        positions
-            .iter()
-            .all(|position| position.y > shelf_top && position.x < DIVIDER_INNER_X),
-        "rebuild puts every particle back above the top shelf"
+        positions.iter().all(|position| {
+            position.y > shelf_top
+                && position.y < super::DIVIDER_TOP_Y
+                && position.x < DIVIDER_INNER_X
+        }),
+        "rebuild puts every particle back above the top shelf and below the spill lip"
     );
 }
 
