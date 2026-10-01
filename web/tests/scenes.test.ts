@@ -53,7 +53,7 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Paint into an empty vessel, including elastic paint that clumps instead of flowing like water.",
   sparky: "Watch colliding circles throw fading particle sparks.",
   "hydraulic-fountain":
-    "Watch a timed piston squeeze one water reservoir so that liquid travels through a throat into the other chamber. This is an original experimental scene.",
+    "Watch two raised platforms slam down onto a pool and shoot a jet of water up through the gap between them. This is an original experimental scene.",
   "wave-tank":
     "Watch a still pool whose end platform rises and falls and sends a wave toward the far wall. This is an original experimental scene.",
   "liquid-bubbler":
