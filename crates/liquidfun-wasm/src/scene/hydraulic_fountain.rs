@@ -2,7 +2,8 @@
 //!
 //! The plates wait above the water, accelerate downward, pause, then rise slowly so the
 //! water can drain back through the hole. Thick outer cheeks leave that gap as the only
-//! outlet, and each lid leans two degrees toward the hole.
+//! outlet, and each lid leans two degrees toward the hole. The gap slider moves the inner
+//! edges while the cheeks stay against the walls.
 
 use std::f32::consts::TAU;
 
@@ -42,6 +43,12 @@ const POOL_HALF_SPAN: f32 = COLUMN_GAPS * POOL_STRIDE * 0.5;
 const INNER_HALF_WIDTH: f32 = POOL_HALF_SPAN + 0.06;
 const FLOOR_TOP_Y: f32 = 0.0;
 const WALL_TOP_Y: f32 = 2.1;
+const GAP_CONTROL: &str = "gap";
+/// Full opening, in centimeters. Half of 20 cm is the authored `GAP_HALF_WIDTH`.
+const GAP_CENTIMETERS_MIN: i16 = 5;
+const GAP_CENTIMETERS_MAX: i16 = 80;
+const GAP_CENTIMETERS_DEFAULT: i16 = 20;
+#[cfg(test)]
 const GAP_HALF_WIDTH: f32 = 0.1;
 /// Wider than `LINEAR_SLOP` and narrower than a particle diameter.
 const SIDE_CLEARANCE: f32 = 0.008;
@@ -50,9 +57,6 @@ const CHEEK_THICKNESS: f32 = 0.16;
 const CHEEK_DROP: f32 = 0.06;
 const CHEEK_RISE: f32 = 0.06;
 const PLATE_OUTER_X: f32 = INNER_HALF_WIDTH - SIDE_CLEARANCE;
-const SLAB_WIDTH: f32 = PLATE_OUTER_X - GAP_HALF_WIDTH;
-const SLAB_HALF_WIDTH: f32 = SLAB_WIDTH * 0.5;
-const PLATE_CENTER_X: f32 = (PLATE_OUTER_X + GAP_HALF_WIDTH) * 0.5;
 const POOL_BOTTOM_Y: f32 = 0.03;
 const POOL_TOP_Y: f32 = POOL_BOTTOM_Y + ROW_GAPS * POOL_STRIDE;
 const AIR_GAP: f32 = 0.4;
@@ -74,7 +78,6 @@ const RAISED_CENTER_Y: f32 = RAISED_SLAB_BOTTOM_Y + SLAB_HALF_HEIGHT;
 const PRESSED_CENTER_Y: f32 = PRESSED_SLAB_BOTTOM_Y + SLAB_HALF_HEIGHT;
 const SLOPE_ANGLE: f32 = TAU / 180.0;
 const SLOPE_EDGE_INSET: f32 = 0.015;
-const SLOPE_HALF_LENGTH: f32 = SLAB_HALF_WIDTH - SLOPE_EDGE_INSET;
 const SLOPE_HALF_THICKNESS: f32 = 0.05;
 const SLOPE_OVERLAP: f32 = 0.012;
 
@@ -101,6 +104,7 @@ struct DrivenPlate {
 
 struct HydraulicFountainHooks {
     elapsed: f32,
+    gap_half: f32,
     plates: [DrivenPlate; 2],
 }
 
@@ -122,9 +126,10 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
         .map_err(|_error| SceneError::Body)?;
     attach_wall_boxes(&mut world, ground)?;
 
+    let gap_half = gap_half_from_centimeters(GAP_CENTIMETERS_DEFAULT);
     let plates = [
-        create_plate(&mut world, -PLATE_CENTER_X, 1.0)?,
-        create_plate(&mut world, PLATE_CENTER_X, -1.0)?,
+        create_plate(&mut world, 1.0, gap_half, RAISED_CENTER_Y)?,
+        create_plate(&mut world, -1.0, gap_half, RAISED_CENTER_Y)?,
     ];
     let particle_system = create_water_group(&mut world)?;
 
@@ -134,9 +139,34 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
         particle_radius: PARTICLE_RADIUS,
         hooks: Box::new(HydraulicFountainHooks {
             elapsed: 0.0,
+            gap_half,
             plates,
         }),
     })
+}
+
+fn slab_width(gap_half: f32) -> f32 {
+    PLATE_OUTER_X - gap_half
+}
+
+fn slab_half_width(gap_half: f32) -> f32 {
+    slab_width(gap_half) * 0.5
+}
+
+fn plate_center_x(gap_half: f32) -> f32 {
+    (PLATE_OUTER_X + gap_half) * 0.5
+}
+
+fn signed_center_x(toward_gap: f32, gap_half: f32) -> f32 {
+    -toward_gap * plate_center_x(gap_half)
+}
+
+fn slope_half_length(gap_half: f32) -> f32 {
+    slab_half_width(gap_half) - SLOPE_EDGE_INSET
+}
+
+fn gap_half_from_centimeters(centimeters: i16) -> f32 {
+    f32::from(centimeters) / 200.0
 }
 
 fn scheduled_center_y(elapsed: f32) -> f32 {
@@ -196,12 +226,13 @@ fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError
 
 fn create_plate(
     world: &mut World,
-    center_x: f32,
     toward_gap: f32,
+    gap_half: f32,
+    center_y: f32,
 ) -> Result<DrivenPlate, SceneError> {
     let definition = BodyDef::new(
         BodyType::Kinematic,
-        Vec2::new(center_x, RAISED_CENTER_Y),
+        Vec2::new(signed_center_x(toward_gap, gap_half), center_y),
         0.0,
         true,
     )
@@ -211,45 +242,44 @@ fn create_plate(
     let body = world
         .create_body(&definition)
         .map_err(|_error| SceneError::Body)?;
-    let slab = PolygonShape::oriented_box(SLAB_HALF_WIDTH, SLAB_HALF_HEIGHT, Vec2::ZERO, 0.0)
-        .map_err(|_error| SceneError::Geometry)?;
+    let slab =
+        PolygonShape::oriented_box(slab_half_width(gap_half), SLAB_HALF_HEIGHT, Vec2::ZERO, 0.0)
+            .map_err(|_error| SceneError::Geometry)?;
     attach_polygon(world, body, slab, PLATE_FRICTION)?;
     let cheek = PolygonShape::oriented_box(
         CHEEK_HALF_WIDTH,
         CHEEK_HALF_HEIGHT,
-        cheek_center(toward_gap),
+        cheek_center(toward_gap, gap_half),
         0.0,
     )
     .map_err(|_error| SceneError::Geometry)?;
     attach_polygon(world, body, cheek, PLATE_FRICTION)?;
-    attach_polygon(world, body, slope_polygon(toward_gap)?, PLATE_FRICTION)?;
+    attach_polygon(
+        world,
+        body,
+        slope_polygon(toward_gap, gap_half)?,
+        PLATE_FRICTION,
+    )?;
     Ok(DrivenPlate { body, toward_gap })
 }
 
-fn cheek_center(toward_gap: f32) -> Vec2 {
-    let outer_x = -toward_gap * SLAB_HALF_WIDTH;
+fn cheek_center(toward_gap: f32, gap_half: f32) -> Vec2 {
+    let outer_x = -toward_gap * slab_half_width(gap_half);
     Vec2::new(outer_x + toward_gap * CHEEK_HALF_WIDTH, CHEEK_CENTER_Y)
 }
 
-fn slope_polygon(toward_gap: f32) -> Result<PolygonShape, SceneError> {
+fn slope_polygon(toward_gap: f32, gap_half: f32) -> Result<PolygonShape, SceneError> {
     let angle = -toward_gap * SLOPE_ANGLE;
     let rotation = Rotation::from_angle(angle);
-    let gap_bottom = rotation.apply(Vec2::new(
-        toward_gap * SLOPE_HALF_LENGTH,
-        -SLOPE_HALF_THICKNESS,
-    ));
-    let overlap = SLAB_WIDTH * SLOPE_ANGLE.sin() + SLOPE_OVERLAP;
+    let half_length = slope_half_length(gap_half);
+    let gap_bottom = rotation.apply(Vec2::new(toward_gap * half_length, -SLOPE_HALF_THICKNESS));
+    let overlap = slab_width(gap_half) * SLOPE_ANGLE.sin() + SLOPE_OVERLAP;
     let lip = Vec2::new(
-        toward_gap * (SLAB_HALF_WIDTH - SLOPE_EDGE_INSET),
+        toward_gap * (slab_half_width(gap_half) - SLOPE_EDGE_INSET),
         SLAB_HALF_HEIGHT - overlap,
     );
-    PolygonShape::oriented_box(
-        SLOPE_HALF_LENGTH,
-        SLOPE_HALF_THICKNESS,
-        lip - gap_bottom,
-        angle,
-    )
-    .map_err(|_error| SceneError::Geometry)
+    PolygonShape::oriented_box(half_length, SLOPE_HALF_THICKNESS, lip - gap_bottom, angle)
+        .map_err(|_error| SceneError::Geometry)
 }
 
 fn attach_polygon(
@@ -337,12 +367,26 @@ impl SceneHooks for HydraulicFountainHooks {
 
     fn apply_control(
         &mut self,
-        _world: &mut World,
+        world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
-        _value: &str,
+        name: &str,
+        value: &str,
     ) -> Result<ControlEffect, SessionError> {
-        Err(SessionError::UnknownControl)
+        if name != GAP_CONTROL {
+            return Err(SessionError::UnknownControl);
+        }
+        let Some(centimeters) = parse_gap_centimeters(value) else {
+            return Err(SessionError::UnknownControl);
+        };
+        let gap_half = gap_half_from_centimeters(centimeters);
+        if gap_half.to_bits() == self.gap_half.to_bits() {
+            return Ok(ControlEffect::Live);
+        }
+        let left = replace_plate(world, &self.plates[0], gap_half)?;
+        let right = replace_plate(world, &self.plates[1], gap_half)?;
+        self.plates = [left, right];
+        self.gap_half = gap_half;
+        Ok(ControlEffect::Live)
     }
 
     fn apply_action(
@@ -372,12 +416,16 @@ impl SceneHooks for HydraulicFountainHooks {
                 .body_snapshot(plate.body)
                 .map_err(|_error| SessionError::FrameCaptureFailed)?
                 .transform();
-            push_loop(&mut segments, transform, &slab_corners());
-            push_loop(&mut segments, transform, &cheek_corners(plate.toward_gap));
+            push_loop(&mut segments, transform, &slab_corners(self.gap_half));
             push_loop(
                 &mut segments,
                 transform,
-                slope_polygon(plate.toward_gap)
+                &cheek_corners(plate.toward_gap, self.gap_half),
+            );
+            push_loop(
+                &mut segments,
+                transform,
+                slope_polygon(plate.toward_gap, self.gap_half)
                     .map_err(|_error| SessionError::FrameCaptureFailed)?
                     .vertices(),
             );
@@ -390,16 +438,51 @@ impl SceneHooks for HydraulicFountainHooks {
     }
 }
 
-fn slab_corners() -> [Vec2; 4] {
-    box_corners(Vec2::ZERO, SLAB_HALF_WIDTH, SLAB_HALF_HEIGHT)
+fn slab_corners(gap_half: f32) -> [Vec2; 4] {
+    box_corners(Vec2::ZERO, slab_half_width(gap_half), SLAB_HALF_HEIGHT)
 }
 
-fn cheek_corners(toward_gap: f32) -> [Vec2; 4] {
+fn cheek_corners(toward_gap: f32, gap_half: f32) -> [Vec2; 4] {
     box_corners(
-        cheek_center(toward_gap),
+        cheek_center(toward_gap, gap_half),
         CHEEK_HALF_WIDTH,
         CHEEK_HALF_HEIGHT,
     )
+}
+
+fn parse_gap_centimeters(value: &str) -> Option<i16> {
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if value.len() > 1 && value.starts_with('0') {
+        return None;
+    }
+    let centimeters = value.parse::<i16>().ok()?;
+    if !(GAP_CENTIMETERS_MIN..=GAP_CENTIMETERS_MAX).contains(&centimeters) {
+        return None;
+    }
+    Some(centimeters)
+}
+
+fn replace_plate(
+    world: &mut World,
+    plate: &DrivenPlate,
+    gap_half: f32,
+) -> Result<DrivenPlate, SessionError> {
+    let snapshot = world
+        .body_snapshot(plate.body)
+        .map_err(|_error| SessionError::StepFailed)?;
+    let center_y = snapshot.position().y;
+    let velocity_y = snapshot.linear_velocity().y;
+    world
+        .destroy_body(plate.body)
+        .map_err(|_error| SessionError::StepFailed)?;
+    let created = create_plate(world, plate.toward_gap, gap_half, center_y)
+        .map_err(|_error| SessionError::StepFailed)?;
+    world
+        .set_body_linear_velocity(created.body, Vec2::new(0.0, velocity_y))
+        .map_err(|_error| SessionError::StepFailed)?;
+    Ok(created)
 }
 
 fn box_corners(center: Vec2, half_width: f32, half_height: f32) -> [Vec2; 4] {

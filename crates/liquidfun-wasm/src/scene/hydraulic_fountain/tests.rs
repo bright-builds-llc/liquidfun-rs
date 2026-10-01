@@ -3,9 +3,10 @@ use liquidfun::math::Vec2;
 use liquidfun::{BodyType, WorldObservationLimits};
 
 use super::{
-    ASCEND_SPEED, CYCLE, DESCEND_DURATION, GAP_HALF_WIDTH, HOLD_HIGH, HOLD_LOW, INNER_HALF_WIDTH,
-    PEAK_DESCEND_SPEED, POOL_TOP_Y, PRESSED_CENTER_Y, RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y,
-    SIM_DT, SLAB_HALF_HEIGHT, SLOPE_ANGLE, build, plate_velocity, scheduled_center_y,
+    ASCEND_SPEED, CYCLE, DESCEND_DURATION, GAP_CENTIMETERS_DEFAULT, GAP_HALF_WIDTH, HOLD_HIGH,
+    HOLD_LOW, INNER_HALF_WIDTH, PEAK_DESCEND_SPEED, PLATE_OUTER_X, POOL_TOP_Y, PRESSED_CENTER_Y,
+    RAISED_CENTER_Y, RAISED_CHEEK_BOTTOM_Y, SIM_DT, SLAB_HALF_HEIGHT, SLOPE_ANGLE, build,
+    gap_half_from_centimeters, plate_center_x, plate_velocity, scheduled_center_y, slab_half_width,
     slope_polygon,
 };
 use crate::ProofFrame;
@@ -133,8 +134,8 @@ fn cycle_pauses_then_rises_slowly() {
 #[test]
 fn platform_lids_slope_down_toward_the_gap() {
     // Arrange
-    let left = slope_polygon(1.0).expect("left lid should build");
-    let right = slope_polygon(-1.0).expect("right lid should build");
+    let left = slope_polygon(1.0, GAP_HALF_WIDTH).expect("left lid should build");
+    let right = slope_polygon(-1.0, GAP_HALF_WIDTH).expect("right lid should build");
 
     // Act
     let left_angle = downhill_angle(&left, 1.0);
@@ -166,6 +167,45 @@ fn controls_and_pointer_stay_watch_first() {
     assert_eq!(period, Err(SessionError::UnknownControl));
     assert_eq!(aim, Err(SessionError::UnknownControl));
     assert_eq!(pointer, Ok(()));
+}
+
+#[test]
+fn gap_slider_moves_the_inner_edges_and_keeps_the_wall_seal() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::HydraulicFountain)
+        .expect("hydraulic fountain should construct");
+    let authored = gap_half_from_centimeters(GAP_CENTIMETERS_DEFAULT);
+
+    // Act
+    let too_narrow = session.apply_control("gap", "4");
+    let padded = session.apply_control("gap", "020");
+    let wide = session.apply_control("gap", "80");
+    let wide_centers = plate_center_xs(&session);
+    let wide_ys = plate_center_ys(&session);
+    let narrow = session.apply_control("gap", "5");
+    let narrow_centers = plate_center_xs(&session);
+    advance_steps(&mut session, 30);
+    let held_centers = plate_center_xs(&session);
+    let count = session
+        .live_particle_count()
+        .expect("the gap slider should leave the water in place");
+
+    // Assert
+    assert_eq!(authored.to_bits(), GAP_HALF_WIDTH.to_bits());
+    assert_eq!(too_narrow, Err(SessionError::UnknownControl));
+    assert_eq!(padded, Err(SessionError::UnknownControl));
+    assert!(wide.is_ok(), "80 cm is the widest opening");
+    assert!(narrow.is_ok(), "5 cm is the narrowest opening");
+    assert_plate_gap(&wide_centers, gap_half_from_centimeters(80));
+    assert_plate_gap(&narrow_centers, gap_half_from_centimeters(5));
+    assert_plate_gap(&held_centers, gap_half_from_centimeters(5));
+    assert!(
+        wide_ys
+            .iter()
+            .all(|center_y| center_y.to_bits() == RAISED_CENTER_Y.to_bits()),
+        "changing the gap keeps the plates at their current height"
+    );
+    assert_eq!(count, PARTICLE_COUNT);
 }
 
 #[test]
@@ -378,6 +418,48 @@ fn particle_positions(session: &SessionCore) -> Vec<Vec2> {
             .expect("the water system should be live")
             .positions()
             .to_vec()
+    })
+}
+
+fn assert_plate_gap(centers: &[f32], gap_half: f32) {
+    assert_eq!(centers.len(), 2, "both plates stay in the tank");
+    let mut ordered = centers.to_vec();
+    ordered.sort_by(f32::total_cmp);
+    let left = ordered[0];
+    let right = ordered[1];
+    let center = plate_center_x(gap_half);
+    let slab_half = slab_half_width(gap_half);
+    assert!(
+        (left + center).abs() < 1.0e-4,
+        "left plate center {left}, expected {}",
+        -center
+    );
+    assert!(
+        (right - center).abs() < 1.0e-4,
+        "right plate center {right}, expected {center}"
+    );
+    assert!(
+        (left - slab_half + PLATE_OUTER_X).abs() < 1.0e-4,
+        "the left cheek stays on the wall"
+    );
+    assert!(
+        (right + slab_half - PLATE_OUTER_X).abs() < 1.0e-4,
+        "the right cheek stays on the wall"
+    );
+    assert!((left + slab_half + gap_half).abs() < 1.0e-4);
+    assert!((right - slab_half - gap_half).abs() < 1.0e-4);
+}
+
+fn plate_center_xs(session: &SessionCore) -> Vec<f32> {
+    session.read_particles(|world, _system| {
+        world
+            .world_observation(WorldObservationLimits::reviewed())
+            .expect("reviewed observation should include the plates")
+            .bodies()
+            .iter()
+            .filter(|body| body.snapshot().body_type() == BodyType::Kinematic)
+            .map(|body| body.snapshot().transform().position().x)
+            .collect()
     })
 }
 

@@ -86,6 +86,9 @@ export function formatRangeValueText(value: string, unit: string): string {
   if (unit === "rpm") {
     return `${value} revolutions per minute`;
   }
+  if (unit === "cm") {
+    return `${value} centimeters`;
+  }
 
   return formatRangeReadout(value, unit);
 }

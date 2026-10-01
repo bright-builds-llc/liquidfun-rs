@@ -5,6 +5,7 @@ import {
   GRAVITY_SLIDER_FORMER_HIGH,
   GRAVITY_SLIDER_MAX,
 } from "../src/catalog/gravity-slider";
+import { GAP_CONTROL } from "../src/catalog/hydraulic-fountain-gap";
 import { DRUM_SPEED_CONTROL } from "../src/catalog/washing-machine-speed";
 import {
   SCENES,
@@ -293,7 +294,9 @@ describe("scene catalog controls", () => {
     ]);
     expect(sparky?.controls).toEqual([GRAVITY_CONTROL]);
     const hydraulicFountain = maybeSceneById("hydraulic-fountain");
-    expect(hydraulicFountain?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(hydraulicFountain?.controls).toEqual([GAP_CONTROL, GRAVITY_CONTROL]);
+    expect(GAP_CONTROL.recreates).toBe(false);
+    expect(GAP_CONTROL.surface).toBe("hud");
     expect(
       (hydraulicFountain?.controls ?? []).some((control) =>
         ["period", "stroke", "aim", "emission", "launch"].includes(control.id),
