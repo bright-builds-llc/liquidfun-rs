@@ -69,6 +69,10 @@ export function initialRangeValue(
 
 /** Visible magnitude, such as `10 m/s²`. */
 export function formatRangeReadout(value: string, unit: string): string {
+  if (unit === "direction") {
+    return directionReadout(value);
+  }
+
   return `${value} ${unit}`;
 }
 
@@ -89,8 +93,36 @@ export function formatRangeValueText(value: string, unit: string): string {
   if (unit === "cm") {
     return `${value} centimeters`;
   }
+  if (unit === "particles/s") {
+    return `${value} particles per second`;
+  }
+  if (unit === "direction") {
+    return directionSpoken(value);
+  }
 
   return formatRangeReadout(value, unit);
+}
+
+function directionReadout(value: string): string {
+  if (value === "1" || value === "1.0") {
+    return "Forward";
+  }
+  if (value === "-1" || value === "-1.0") {
+    return "Reverse";
+  }
+
+  return `${value} direction`;
+}
+
+function directionSpoken(value: string): string {
+  if (value === "1" || value === "1.0") {
+    return "forward, with the valve";
+  }
+  if (value === "-1" || value === "-1.0") {
+    return "reverse, against the valve";
+  }
+
+  return `${value} direction`;
 }
 
 /** Native range bounds. Logarithmic controls sample the exponent, not the magnitude. */
@@ -162,7 +194,7 @@ export function maybeStepRangeValue(
 /** Tick marks positioned on the same scale as the thumb. */
 export function rangeTickMarks(control: RangeControl): readonly RangeTick[] {
   return control.ticks.map((tick) => ({
-    label: formatTickLabel(tick, control.step),
+    label: formatTickLabel(tick, control.step, control.unit),
     ratio: tickRatio(control, tick),
   }));
 }
@@ -198,8 +230,13 @@ function snapMagnitude(control: RangeBounds, magnitude: number): string | undefi
   );
 }
 
-function formatTickLabel(tick: number, step: number): string {
-  return tick.toFixed(stepDecimalPlaces(step));
+function formatTickLabel(tick: number, step: number, unit: string): string {
+  const text = tick.toFixed(stepDecimalPlaces(step));
+  if (unit === "direction") {
+    return directionReadout(text);
+  }
+
+  return text;
 }
 
 function stepDecimalPlaces(step: number): number {

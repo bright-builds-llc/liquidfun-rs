@@ -67,6 +67,7 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   "liquid-bubbler": 0.40,
   "stacked-drip": 0.39,
   "washing-machine": 0.40,
+  "tesla-valve": 0.80,
 };
 
 function fittedFrameFraction(
@@ -357,6 +358,17 @@ describe("portrait scene frames", () => {
         { x: -0.636, y: 0.636 },
         { x: -0.636, y: -0.636 },
         { x: 0.636, y: -0.636 },
+      ],
+      "tesla-valve": [
+        { x: 0.02, y: 3.02 },
+        { x: 0.42, y: 3.02 },
+        { x: 0.42, y: 0.4 },
+        { x: -0.38, y: 2.03 },
+        { x: 0.12, y: 1.42 },
+        { x: 0.28, y: 1.5 },
+        { x: -0.38, y: 0.89 },
+        { x: 0.12, y: 0.28 },
+        { x: 0.28, y: 0.36 },
       ],
     } as const;
 

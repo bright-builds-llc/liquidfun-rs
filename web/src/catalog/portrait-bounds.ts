@@ -40,6 +40,21 @@ const WALLED_FALLING_BALL = {
   maxY: 8.8,
 } as const;
 
+/**
+ * Tesla valve portrait frame.
+ *
+ * The landscape frame is the valve itself. On a phone the flow sliders and
+ * transport sit on the bottom of the canvas, so this rectangle adds empty
+ * space below the drain and a little above the inlet. The valve then stays
+ * clear of that chrome while the frame still fills the width.
+ */
+const TESLA_VALVE_PORTRAIT = {
+  minX: -0.95,
+  minY: -1.04,
+  maxX: 0.85,
+  maxY: 3.25,
+} as const;
+
 /** Soup floor and slanted walls out to (±4, 3), plus a small margin. */
 const SOUP_BASIN = {
   minX: -4.2,
@@ -73,6 +88,7 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   "liquid-bubbler": { minX: -0.71, minY: -0.16, maxX: 1.12, maxY: 2.48 },
   "stacked-drip": { minX: -0.86, minY: -0.16, maxX: 1.68, maxY: 3.28 },
   "washing-machine": WASHING_MACHINE_VIEW_BOUNDS,
+  "tesla-valve": TESLA_VALVE_PORTRAIT,
 };
 
 /** World rectangle fitted for one scene at the canvas's current aspect. */

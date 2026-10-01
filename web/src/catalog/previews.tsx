@@ -346,6 +346,37 @@ function WaveTankPreview() {
   );
 }
 
+function TeslaValvePreview() {
+  return (
+    <PreviewFrame>
+      <polyline points="112,8 112,82" fill="none" stroke={RIGID} stroke-width="2.5" />
+      <polyline points="96,8 96,24" fill="none" stroke={RIGID} stroke-width="2.5" />
+      <polyline
+        points="96,26 82,28 68,36 60,50 64,62 80,70 98,76"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="2.5"
+      />
+      <polyline
+        points="84,40 74,48 80,58 98,68"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="2.5"
+      />
+      <polyline
+        points="96,54 82,58 70,66 64,76 78,84"
+        fill="none"
+        stroke={RIGID}
+        stroke-width="2.5"
+      />
+      <circle cx="104" cy="16" r="2.4" fill={WATER} />
+      <circle cx="104" cy="34" r="2.4" fill={WATER} />
+      <circle cx="104" cy="58" r="2.4" fill={WATER} />
+      <circle cx="105" cy="74" r="2.4" fill={WATER} />
+    </PreviewFrame>
+  );
+}
+
 function WashingMachinePreview() {
   return (
     <PreviewFrame>
@@ -529,5 +560,7 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <StackedDripPreview />;
     case "washing-machine":
       return <WashingMachinePreview />;
+    case "tesla-valve":
+      return <TeslaValvePreview />;
   }
 }

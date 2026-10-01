@@ -52,6 +52,7 @@ const POINTER_CONTROL: Readonly<
   "wave-machine": { gesture: "click", control: "Wave speed" },
   "drawing-particles": { gesture: "drag", control: "Material" },
   "washing-machine": { gesture: "click", control: "Drum speed" },
+  "tesla-valve": { gesture: "click", control: "Flow rate" },
 };
 
 const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter(

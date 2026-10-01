@@ -36,6 +36,10 @@ import {
 import { GAP_CONTROL } from "./hydraulic-fountain-gap";
 import { DRUM_SPEED_CONTROL } from "./washing-machine-speed";
 import {
+  FLOW_DIRECTION_CONTROL,
+  FLOW_RATE_CONTROL,
+} from "./tesla-valve-controls";
+import {
   WAVE_MACHINE_SPEED_CONTROL,
   WAVE_MACHINE_TILT_CONTROL,
 } from "./wave-machine-speed";
@@ -87,6 +91,21 @@ export const WASHING_MACHINE_VIEW_BOUNDS = {
   minY: -1.68,
   maxX: 1.68,
   maxY: 1.68,
+} as const;
+
+/**
+ * Camera frame for the Tesla valve, in meters.
+ *
+ * Keep in sync with `FRAME_*` in
+ * `crates/liquidfun-wasm/src/scene/tesla_valve/geometry.rs`. The tube and the
+ * curved heads run from the inlet near y = 3 down through the drain. This
+ * rectangle includes those walls with a small margin.
+ */
+export const TESLA_VALVE_VIEW_BOUNDS = {
+  minX: -0.7,
+  minY: -0.12,
+  maxX: 0.58,
+  maxY: 3.22,
 } as const;
 
 export const THEO_JANSEN_VIEW_BOUNDS = {
@@ -565,6 +584,21 @@ export const SCENES: readonly SceneRecord[] = [
     viewBounds: WASHING_MACHINE_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("washing_machine.rs"),
+      inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "tesla-valve",
+    title: "Tesla Valve",
+    ready: true,
+    description:
+      "Watch water fall through a Tesla valve. Forward follows the straight tube. Reverse flips the valve so each curved head turns the water back into the tube and holds it. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
+    interactionHint:
+      "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([FLOW_RATE_CONTROL, FLOW_DIRECTION_CONTROL]),
+    viewBounds: TESLA_VALVE_VIEW_BOUNDS,
+    credits: {
+      implementationPath: sceneSource("tesla_valve.rs"),
       inspiration: [SHOWCASE],
     },
   },
