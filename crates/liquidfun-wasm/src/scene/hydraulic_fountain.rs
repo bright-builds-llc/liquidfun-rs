@@ -1,10 +1,13 @@
-//! Hydraulic fountain: two kinematic plates slam into a pool and force a jet through their gap.
+//! Hydraulic fountain: two kinematic plates squeeze a pool through the gap between them.
 //!
-//! The plates wait above the water, drop together, hold the squeeze, then rise and repeat.
-//! The pool has no other outlet, so the displaced water leaves through the gap.
+//! The plates wait above the water, accelerate downward, pause, then rise slowly so the
+//! water can drain back through the hole. Thick outer cheeks leave that gap as the only
+//! outlet, and each lid leans two degrees toward the hole.
+
+use std::f32::consts::TAU;
 
 use liquidfun::collision::{FilterData, PolygonShape, Shape};
-use liquidfun::math::{Transform, Vec2};
+use liquidfun::math::{Rotation, Transform, Vec2};
 use liquidfun::particle::{
     ParticleColor, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
 };
@@ -15,47 +18,65 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-const PARTICLE_RADIUS: f32 = 0.025;
+const PARTICLE_RADIUS: f32 = 0.0125;
+const PARTICLE_COLUMNS: usize = 200;
+const PARTICLE_ROWS: usize = 16;
+const COLUMN_GAPS: f32 = 199.0;
+const ROW_GAPS: f32 = 15.0;
+/// Rest spacing is three quarters of the particle diameter, so the pool does not collapse.
+const POOL_STRIDE: f32 = 0.01875;
 const PARTICLE_DAMPING: f32 = 0.2;
-const PRESSURE_STRENGTH: f32 = 0.12;
+const PRESSURE_STRENGTH: f32 = 0.25;
 const GROUP_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const SIM_DT: f32 = 1.0 / 60.0;
-// One step of this speed moves less than a particle diameter, so the plates
-// push the pool instead of tunneling through it.
-const DESCEND_SPEED: f32 = 2.4;
-const ASCEND_SPEED: f32 = 1.5;
-const HOLD_HIGH: f32 = 33.0 / 60.0;
-const HOLD_LOW: f32 = 75.0 / 60.0;
+const HOLD_HIGH: f32 = 3.0;
+const HOLD_LOW: f32 = 1.0;
+const DESCEND_DURATION: f32 = 1.5;
+const ASCEND_DURATION: f32 = 4.5;
 const WALL_FRICTION: f32 = 0.05;
-const WALL_HALF_THICKNESS: f32 = 0.04;
-const INNER_HALF_WIDTH: f32 = 1.02;
+/// Below `tan(2°)`, so particles resting on the lid can drift toward the hole.
+const PLATE_FRICTION: f32 = 0.02;
+const WALL_HALF_THICKNESS: f32 = 0.1;
+const POOL_HALF_SPAN: f32 = COLUMN_GAPS * POOL_STRIDE * 0.5;
+const INNER_HALF_WIDTH: f32 = POOL_HALF_SPAN + 0.06;
 const FLOOR_TOP_Y: f32 = 0.0;
-const WALL_TOP_Y: f32 = 2.85;
-const GAP_HALF_WIDTH: f32 = 0.08;
-const SIDE_CLEARANCE: f32 = 0.01;
-const PLATE_HALF_HEIGHT: f32 = 0.055;
+const WALL_TOP_Y: f32 = 2.1;
+const GAP_HALF_WIDTH: f32 = 0.1;
+/// Wider than `LINEAR_SLOP` and narrower than a particle diameter.
+const SIDE_CLEARANCE: f32 = 0.008;
+const SLAB_HALF_HEIGHT: f32 = 0.09;
+const CHEEK_THICKNESS: f32 = 0.16;
+const CHEEK_DROP: f32 = 0.06;
+const CHEEK_RISE: f32 = 0.06;
 const PLATE_OUTER_X: f32 = INNER_HALF_WIDTH - SIDE_CLEARANCE;
-const PLATE_INNER_X: f32 = GAP_HALF_WIDTH;
-const PLATE_HALF_WIDTH: f32 = (PLATE_OUTER_X - PLATE_INNER_X) * 0.5;
-const PLATE_CENTER_X: f32 = (PLATE_OUTER_X + PLATE_INNER_X) * 0.5;
-const PRESSED_BOTTOM_Y: f32 = 0.055;
-const RAISED_BOTTOM_Y: f32 = 1.22;
-const STROKE: f32 = RAISED_BOTTOM_Y - PRESSED_BOTTOM_Y;
-const RAISED_CENTER_Y: f32 = RAISED_BOTTOM_Y + PLATE_HALF_HEIGHT;
-const PRESSED_CENTER_Y: f32 = PRESSED_BOTTOM_Y + PLATE_HALF_HEIGHT;
-const DESCEND_WINDOW: f32 = STROKE / DESCEND_SPEED + 3.0 * SIM_DT;
-const ASCEND_WINDOW: f32 = STROKE / ASCEND_SPEED + 3.0 * SIM_DT;
-const CYCLE: f32 = HOLD_HIGH + DESCEND_WINDOW + HOLD_LOW + ASCEND_WINDOW;
-const FILL_INSET_X: f32 = 0.045;
-const FILL_BOTTOM_Y: f32 = 0.035;
-const WATER_DEPTH: f32 = 0.46;
-const PLATE_LOCAL_CORNERS: [Vec2; 4] = [
-    Vec2::new(-PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
-    Vec2::new(PLATE_HALF_WIDTH, -PLATE_HALF_HEIGHT),
-    Vec2::new(PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
-    Vec2::new(-PLATE_HALF_WIDTH, PLATE_HALF_HEIGHT),
-];
+const SLAB_WIDTH: f32 = PLATE_OUTER_X - GAP_HALF_WIDTH;
+const SLAB_HALF_WIDTH: f32 = SLAB_WIDTH * 0.5;
+const PLATE_CENTER_X: f32 = (PLATE_OUTER_X + GAP_HALF_WIDTH) * 0.5;
+const POOL_BOTTOM_Y: f32 = 0.03;
+const POOL_TOP_Y: f32 = POOL_BOTTOM_Y + ROW_GAPS * POOL_STRIDE;
+const AIR_GAP: f32 = 0.4;
+const INTRUSION: f32 = 0.2;
+const PRESSED_SLAB_BOTTOM_Y: f32 = POOL_TOP_Y - INTRUSION;
+const RAISED_SLAB_BOTTOM_Y: f32 = POOL_TOP_Y + AIR_GAP;
+const STROKE: f32 = RAISED_SLAB_BOTTOM_Y - PRESSED_SLAB_BOTTOM_Y;
+const PEAK_DESCEND_SPEED: f32 = 2.0 * STROKE / DESCEND_DURATION;
+const ASCEND_SPEED: f32 = STROKE / ASCEND_DURATION;
+/// A little above the ease-in peak, and still under one particle diameter per step.
+const MAX_PLATE_SPEED: f32 = PEAK_DESCEND_SPEED + 0.15;
+const CYCLE: f32 = HOLD_HIGH + DESCEND_DURATION + HOLD_LOW + ASCEND_DURATION;
+const CHEEK_HALF_WIDTH: f32 = CHEEK_THICKNESS * 0.5;
+const CHEEK_HALF_HEIGHT: f32 = (CHEEK_DROP + CHEEK_RISE) * 0.5 + SLAB_HALF_HEIGHT;
+const CHEEK_CENTER_Y: f32 = (CHEEK_RISE - CHEEK_DROP) * 0.5;
+#[cfg(test)]
+const RAISED_CHEEK_BOTTOM_Y: f32 = RAISED_SLAB_BOTTOM_Y - CHEEK_DROP;
+const RAISED_CENTER_Y: f32 = RAISED_SLAB_BOTTOM_Y + SLAB_HALF_HEIGHT;
+const PRESSED_CENTER_Y: f32 = PRESSED_SLAB_BOTTOM_Y + SLAB_HALF_HEIGHT;
+const SLOPE_ANGLE: f32 = TAU / 180.0;
+const SLOPE_EDGE_INSET: f32 = 0.015;
+const SLOPE_HALF_LENGTH: f32 = SLAB_HALF_WIDTH - SLOPE_EDGE_INSET;
+const SLOPE_HALF_THICKNESS: f32 = 0.05;
+const SLOPE_OVERLAP: f32 = 0.012;
 
 /// Inner faces of the floor and the two side walls.
 const WALL_SEGMENTS: [RigidSegment; 3] = [
@@ -73,9 +94,14 @@ const WALL_SEGMENTS: [RigidSegment; 3] = [
     },
 ];
 
+struct DrivenPlate {
+    body: BodyId,
+    toward_gap: f32,
+}
+
 struct HydraulicFountainHooks {
     elapsed: f32,
-    plates: [BodyId; 2],
+    plates: [DrivenPlate; 2],
 }
 
 pub(crate) fn build(presets: &[(String, String)]) -> Result<BuiltScene, SessionError> {
@@ -97,8 +123,8 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
     attach_wall_boxes(&mut world, ground)?;
 
     let plates = [
-        create_plate(&mut world, -PLATE_CENTER_X)?,
-        create_plate(&mut world, PLATE_CENTER_X)?,
+        create_plate(&mut world, -PLATE_CENTER_X, 1.0)?,
+        create_plate(&mut world, PLATE_CENTER_X, -1.0)?,
     ];
     let particle_system = create_water_group(&mut world)?;
 
@@ -113,41 +139,31 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
     })
 }
 
-enum PlateCommand {
-    Hold,
-    Move { target_y: f32, max_speed: f32 },
-}
-
-fn plate_command(elapsed: f32) -> PlateCommand {
+fn scheduled_center_y(elapsed: f32) -> f32 {
     let cycle = elapsed.rem_euclid(CYCLE);
     if cycle < HOLD_HIGH {
-        return PlateCommand::Hold;
+        return RAISED_CENTER_Y;
     }
-    if cycle < HOLD_HIGH + DESCEND_WINDOW {
-        return PlateCommand::Move {
-            target_y: PRESSED_CENTER_Y,
-            max_speed: DESCEND_SPEED,
-        };
+    let since_high = cycle - HOLD_HIGH;
+    if since_high < DESCEND_DURATION {
+        let progress = since_high / DESCEND_DURATION;
+        let eased = progress * progress;
+        return RAISED_CENTER_Y + (PRESSED_CENTER_Y - RAISED_CENTER_Y) * eased;
     }
-    if cycle < HOLD_HIGH + DESCEND_WINDOW + HOLD_LOW {
-        return PlateCommand::Hold;
+    let since_descent = since_high - DESCEND_DURATION;
+    if since_descent < HOLD_LOW {
+        return PRESSED_CENTER_Y;
     }
-    PlateCommand::Move {
-        target_y: RAISED_CENTER_Y,
-        max_speed: ASCEND_SPEED,
+    let since_low = since_descent - HOLD_LOW;
+    if since_low < ASCEND_DURATION {
+        return PRESSED_CENTER_Y + ASCEND_SPEED * since_low;
     }
+    RAISED_CENTER_Y
 }
 
 fn plate_velocity(elapsed: f32, center_y: f32) -> f32 {
-    let PlateCommand::Move {
-        target_y,
-        max_speed,
-    } = plate_command(elapsed)
-    else {
-        return 0.0;
-    };
-    let delta = target_y - center_y;
-    let max_step = max_speed * SIM_DT;
+    let delta = scheduled_center_y(elapsed) - center_y;
+    let max_step = MAX_PLATE_SPEED * SIM_DT;
     delta.clamp(-max_step, max_step) / SIM_DT
 }
 
@@ -171,12 +187,18 @@ fn attach_wall_boxes(world: &mut World, ground: BodyId) -> Result<(), SceneError
         ),
     ];
     for (half_width, half_height, center) in boxes {
-        attach_box(world, ground, half_width, half_height, center)?;
+        let polygon = PolygonShape::oriented_box(half_width, half_height, center, 0.0)
+            .map_err(|_error| SceneError::Geometry)?;
+        attach_polygon(world, ground, polygon, WALL_FRICTION)?;
     }
     Ok(())
 }
 
-fn create_plate(world: &mut World, center_x: f32) -> Result<BodyId, SceneError> {
+fn create_plate(
+    world: &mut World,
+    center_x: f32,
+    toward_gap: f32,
+) -> Result<DrivenPlate, SceneError> {
     let definition = BodyDef::new(
         BodyType::Kinematic,
         Vec2::new(center_x, RAISED_CENTER_Y),
@@ -186,32 +208,60 @@ fn create_plate(world: &mut World, center_x: f32) -> Result<BodyId, SceneError> 
     .map_err(|_error| SceneError::Body)?
     .with_sleeping_allowed(false)
     .with_fixed_rotation(true);
-    let plate = world
+    let body = world
         .create_body(&definition)
         .map_err(|_error| SceneError::Body)?;
-    attach_box(
-        world,
-        plate,
-        PLATE_HALF_WIDTH,
-        PLATE_HALF_HEIGHT,
-        Vec2::ZERO,
-    )?;
-    Ok(plate)
+    let slab = PolygonShape::oriented_box(SLAB_HALF_WIDTH, SLAB_HALF_HEIGHT, Vec2::ZERO, 0.0)
+        .map_err(|_error| SceneError::Geometry)?;
+    attach_polygon(world, body, slab, PLATE_FRICTION)?;
+    let cheek = PolygonShape::oriented_box(
+        CHEEK_HALF_WIDTH,
+        CHEEK_HALF_HEIGHT,
+        cheek_center(toward_gap),
+        0.0,
+    )
+    .map_err(|_error| SceneError::Geometry)?;
+    attach_polygon(world, body, cheek, PLATE_FRICTION)?;
+    attach_polygon(world, body, slope_polygon(toward_gap)?, PLATE_FRICTION)?;
+    Ok(DrivenPlate { body, toward_gap })
 }
 
-fn attach_box(
+fn cheek_center(toward_gap: f32) -> Vec2 {
+    let outer_x = -toward_gap * SLAB_HALF_WIDTH;
+    Vec2::new(outer_x + toward_gap * CHEEK_HALF_WIDTH, CHEEK_CENTER_Y)
+}
+
+fn slope_polygon(toward_gap: f32) -> Result<PolygonShape, SceneError> {
+    let angle = -toward_gap * SLOPE_ANGLE;
+    let rotation = Rotation::from_angle(angle);
+    let gap_bottom = rotation.apply(Vec2::new(
+        toward_gap * SLOPE_HALF_LENGTH,
+        -SLOPE_HALF_THICKNESS,
+    ));
+    let overlap = SLAB_WIDTH * SLOPE_ANGLE.sin() + SLOPE_OVERLAP;
+    let lip = Vec2::new(
+        toward_gap * (SLAB_HALF_WIDTH - SLOPE_EDGE_INSET),
+        SLAB_HALF_HEIGHT - overlap,
+    );
+    PolygonShape::oriented_box(
+        SLOPE_HALF_LENGTH,
+        SLOPE_HALF_THICKNESS,
+        lip - gap_bottom,
+        angle,
+    )
+    .map_err(|_error| SceneError::Geometry)
+}
+
+fn attach_polygon(
     world: &mut World,
     body: BodyId,
-    half_width: f32,
-    half_height: f32,
-    center: Vec2,
+    polygon: PolygonShape,
+    friction: f32,
 ) -> Result<(), SceneError> {
-    let polygon = PolygonShape::oriented_box(half_width, half_height, center, 0.0)
-        .map_err(|_error| SceneError::Geometry)?;
     let definition = FixtureDef::new(
         Shape::from(polygon),
         0.0,
-        WALL_FRICTION,
+        friction,
         0.0,
         false,
         FilterData::default(),
@@ -223,16 +273,18 @@ fn attach_box(
     Ok(())
 }
 
-fn water_polygon() -> [Vec2; 4] {
-    let left = -INNER_HALF_WIDTH + FILL_INSET_X;
-    let right = INNER_HALF_WIDTH - FILL_INSET_X;
-    let top = FILL_BOTTOM_Y + WATER_DEPTH;
-    [
-        Vec2::new(left, FILL_BOTTOM_Y),
-        Vec2::new(right, FILL_BOTTOM_Y),
-        Vec2::new(right, top),
-        Vec2::new(left, top),
-    ]
+fn pool_positions() -> Vec<Vec2> {
+    let mut positions = Vec::with_capacity(PARTICLE_COLUMNS * PARTICLE_ROWS);
+    let mut y = POOL_BOTTOM_Y;
+    for _row in 0..PARTICLE_ROWS {
+        let mut x = -POOL_HALF_SPAN;
+        for _column in 0..PARTICLE_COLUMNS {
+            positions.push(Vec2::new(x, y));
+            x += POOL_STRIDE;
+        }
+        y += POOL_STRIDE;
+    }
+    positions
 }
 
 fn create_water_group(world: &mut World) -> Result<ParticleSystemId, SceneError> {
@@ -247,11 +299,8 @@ fn create_water_group(world: &mut World) -> Result<ParticleSystemId, SceneError>
     let system = world
         .create_particle_system_with_def(&system_definition)
         .map_err(|_error| SceneError::ParticleSystem)?;
-
-    let filled =
-        Shape::from(PolygonShape::new(&water_polygon()).map_err(|_error| SceneError::Geometry)?);
     let source =
-        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+        ParticleGroupSource::positions(pool_positions()).map_err(|_error| SceneError::Particle)?;
     let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
         .with_color(GROUP_COLOR)
         .with_transform(Transform::IDENTITY)
@@ -269,16 +318,16 @@ impl SceneHooks for HydraulicFountainHooks {
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
         self.elapsed += SIM_DT;
-        for plate in self.plates {
+        for plate in &self.plates {
             let center_y = world
-                .body_snapshot(plate)
+                .body_snapshot(plate.body)
                 .map_err(|_error| SessionError::StepFailed)?
                 .transform()
                 .position()
                 .y;
             world
                 .set_body_linear_velocity(
-                    plate,
+                    plate.body,
                     Vec2::new(0.0, plate_velocity(self.elapsed, center_y)),
                 )
                 .map_err(|_error| SessionError::StepFailed)?;
@@ -318,24 +367,57 @@ impl SceneHooks for HydraulicFountainHooks {
 
     fn collect_segments(&self, world: &World) -> Result<Vec<RigidSegment>, SessionError> {
         let mut segments = WALL_SEGMENTS.to_vec();
-        for plate in self.plates {
+        for plate in &self.plates {
             let transform = world
-                .body_snapshot(plate)
+                .body_snapshot(plate.body)
                 .map_err(|_error| SessionError::FrameCaptureFailed)?
                 .transform();
-            let world_corners = PLATE_LOCAL_CORNERS.map(|corner| transform.apply(corner));
-            for index in 0..world_corners.len() {
-                segments.push(RigidSegment {
-                    start: world_corners[index],
-                    end: world_corners[(index + 1) % world_corners.len()],
-                });
-            }
+            push_loop(&mut segments, transform, &slab_corners());
+            push_loop(&mut segments, transform, &cheek_corners(plate.toward_gap));
+            push_loop(
+                &mut segments,
+                transform,
+                slope_polygon(plate.toward_gap)
+                    .map_err(|_error| SessionError::FrameCaptureFailed)?
+                    .vertices(),
+            );
         }
         Ok(segments)
     }
 
     fn collect_circles(&self, _world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
         Ok(Vec::new())
+    }
+}
+
+fn slab_corners() -> [Vec2; 4] {
+    box_corners(Vec2::ZERO, SLAB_HALF_WIDTH, SLAB_HALF_HEIGHT)
+}
+
+fn cheek_corners(toward_gap: f32) -> [Vec2; 4] {
+    box_corners(
+        cheek_center(toward_gap),
+        CHEEK_HALF_WIDTH,
+        CHEEK_HALF_HEIGHT,
+    )
+}
+
+fn box_corners(center: Vec2, half_width: f32, half_height: f32) -> [Vec2; 4] {
+    [
+        center + Vec2::new(-half_width, -half_height),
+        center + Vec2::new(half_width, -half_height),
+        center + Vec2::new(half_width, half_height),
+        center + Vec2::new(-half_width, half_height),
+    ]
+}
+
+fn push_loop(segments: &mut Vec<RigidSegment>, transform: Transform, corners: &[Vec2]) {
+    for index in 0..corners.len() {
+        let next = (index + 1) % corners.len();
+        segments.push(RigidSegment {
+            start: transform.apply(corners[index]),
+            end: transform.apply(corners[next]),
+        });
     }
 }
 
