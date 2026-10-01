@@ -1,9 +1,9 @@
 //! Hydraulic fountain: two kinematic plates squeeze a pool through the gap between them.
 //!
 //! The plates wait above the water, accelerate downward, pause, then rise slowly so the
-//! water can drain back through the hole. Thick outer cheeks leave that gap as the only
-//! outlet, and each lid leans two degrees toward the hole. The gap slider moves the inner
-//! edges while the cheeks stay against the walls.
+//! water can drain back through the hole. Thick outer cheeks cover the side walls, so that
+//! gap is the only outlet, and each lid leans two degrees toward the hole. The gap slider
+//! moves the inner edges while those cheeks stay across the walls.
 
 use std::f32::consts::TAU;
 
@@ -44,24 +44,25 @@ const INNER_HALF_WIDTH: f32 = POOL_HALF_SPAN + 0.06;
 const FLOOR_TOP_Y: f32 = 0.0;
 const WALL_TOP_Y: f32 = 2.1;
 const GAP_CONTROL: &str = "gap";
-/// Full opening, in centimeters. Half of 20 cm is the authored `GAP_HALF_WIDTH`.
-const GAP_CENTIMETERS_MIN: i16 = 5;
-const GAP_CENTIMETERS_MAX: i16 = 80;
-const GAP_CENTIMETERS_DEFAULT: i16 = 20;
+/// Opening in tenths of a centimeter: 5 is 0.5 cm and 30 is 3.0 cm.
+const GAP_TENTHS_MIN: i16 = 5;
+const GAP_TENTHS_MAX: i16 = 30;
+const GAP_TENTHS_DEFAULT: i16 = 30;
 #[cfg(test)]
-const GAP_HALF_WIDTH: f32 = 0.1;
-/// Wider than `LINEAR_SLOP` and narrower than a particle diameter.
-const SIDE_CLEARANCE: f32 = 0.008;
+const GAP_HALF_WIDTH: f32 = 0.015;
 const SLAB_HALF_HEIGHT: f32 = 0.09;
 const CHEEK_THICKNESS: f32 = 0.16;
 const CHEEK_DROP: f32 = 0.06;
 const CHEEK_RISE: f32 = 0.06;
-const PLATE_OUTER_X: f32 = INNER_HALF_WIDTH - SIDE_CLEARANCE;
+/// Outer face of a side wall. The plates end here, so they cover the wall.
+const WALL_OUTER_X: f32 = INNER_HALF_WIDTH + 2.0 * WALL_HALF_THICKNESS;
+const PLATE_OUTER_X: f32 = WALL_OUTER_X;
 const POOL_BOTTOM_Y: f32 = 0.03;
 const POOL_TOP_Y: f32 = POOL_BOTTOM_Y + ROW_GAPS * POOL_STRIDE;
 const AIR_GAP: f32 = 0.4;
-const INTRUSION: f32 = 0.2;
-const PRESSED_SLAB_BOTTOM_Y: f32 = POOL_TOP_Y - INTRUSION;
+/// The cheeks stop just above the floor, so the press ends as low as the plates allow.
+const PRESSED_CHEEK_CLEARANCE: f32 = 0.015;
+const PRESSED_SLAB_BOTTOM_Y: f32 = PRESSED_CHEEK_CLEARANCE + CHEEK_DROP;
 const RAISED_SLAB_BOTTOM_Y: f32 = POOL_TOP_Y + AIR_GAP;
 const STROKE: f32 = RAISED_SLAB_BOTTOM_Y - PRESSED_SLAB_BOTTOM_Y;
 const PEAK_DESCEND_SPEED: f32 = 2.0 * STROKE / DESCEND_DURATION;
@@ -126,7 +127,7 @@ fn build_hydraulic_fountain() -> Result<BuiltScene, SceneError> {
         .map_err(|_error| SceneError::Body)?;
     attach_wall_boxes(&mut world, ground)?;
 
-    let gap_half = gap_half_from_centimeters(GAP_CENTIMETERS_DEFAULT);
+    let gap_half = gap_half_from_tenths(GAP_TENTHS_DEFAULT);
     let plates = [
         create_plate(&mut world, 1.0, gap_half, RAISED_CENTER_Y)?,
         create_plate(&mut world, -1.0, gap_half, RAISED_CENTER_Y)?,
@@ -165,8 +166,8 @@ fn slope_half_length(gap_half: f32) -> f32 {
     slab_half_width(gap_half) - SLOPE_EDGE_INSET
 }
 
-fn gap_half_from_centimeters(centimeters: i16) -> f32 {
-    f32::from(centimeters) / 200.0
+fn gap_half_from_tenths(tenths: i16) -> f32 {
+    f32::from(tenths) / 2_000.0
 }
 
 fn scheduled_center_y(elapsed: f32) -> f32 {
@@ -375,10 +376,10 @@ impl SceneHooks for HydraulicFountainHooks {
         if name != GAP_CONTROL {
             return Err(SessionError::UnknownControl);
         }
-        let Some(centimeters) = parse_gap_centimeters(value) else {
+        let Some(tenths) = parse_gap_tenths(value) else {
             return Err(SessionError::UnknownControl);
         };
-        let gap_half = gap_half_from_centimeters(centimeters);
+        let gap_half = gap_half_from_tenths(tenths);
         if gap_half.to_bits() == self.gap_half.to_bits() {
             return Ok(ControlEffect::Live);
         }
@@ -450,18 +451,23 @@ fn cheek_corners(toward_gap: f32, gap_half: f32) -> [Vec2; 4] {
     )
 }
 
-fn parse_gap_centimeters(value: &str) -> Option<i16> {
-    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+fn parse_gap_tenths(value: &str) -> Option<i16> {
+    let (whole, fraction) = value.split_once('.')?;
+    if whole.len() != 1 || fraction.len() != 1 {
         return None;
     }
-    if value.len() > 1 && value.starts_with('0') {
+    if !whole.bytes().all(|byte| byte.is_ascii_digit())
+        || !fraction.bytes().all(|byte| byte.is_ascii_digit())
+    {
         return None;
     }
-    let centimeters = value.parse::<i16>().ok()?;
-    if !(GAP_CENTIMETERS_MIN..=GAP_CENTIMETERS_MAX).contains(&centimeters) {
+    let whole_digit = whole.parse::<i16>().ok()?;
+    let fraction_digit = fraction.parse::<i16>().ok()?;
+    let tenths = whole_digit * 10 + fraction_digit;
+    if !(GAP_TENTHS_MIN..=GAP_TENTHS_MAX).contains(&tenths) {
         return None;
     }
-    Some(centimeters)
+    Some(tenths)
 }
 
 fn replace_plate(

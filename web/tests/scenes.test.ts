@@ -96,7 +96,7 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Drag on the canvas to paint into the vessel. A click with no move leaves one stamp. Use Material to paint Water or Elastic. Elastic paint clumps instead of flowing like water. Labeled controls also work from the keyboard.",
   sparky: WATCH_FIRST_HINT,
   "hydraulic-fountain":
-    "Use Gap to set the opening between the platforms. It starts at 20 cm. Labeled controls also work from the keyboard.",
+    "Use Gap to set the opening between the platforms. It starts at 3 cm. Labeled controls also work from the keyboard.",
   "wave-tank": WATCH_FIRST_HINT,
   "liquid-bubbler": WATCH_FIRST_HINT,
   "stacked-drip": WATCH_FIRST_HINT,

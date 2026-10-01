@@ -492,7 +492,7 @@ export const SCENES: readonly SceneRecord[] = [
     description:
       "Watch two raised platforms ease down into a pool, pause, and squeeze a jet of water up through the gap between them. This is an original experimental scene.",
     interactionHint:
-      "Use Gap to set the opening between the platforms. It starts at 20 cm. Labeled controls also work from the keyboard.",
+      "Use Gap to set the opening between the platforms. It starts at 3 cm. Labeled controls also work from the keyboard.",
     controls: withGravitySlider([GAP_CONTROL]),
     viewBounds: {
       minX: -2.28,
