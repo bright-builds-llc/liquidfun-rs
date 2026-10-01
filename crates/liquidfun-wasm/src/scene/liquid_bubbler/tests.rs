@@ -5,23 +5,23 @@ use super::build;
 use crate::scene::{SceneId, build_scene};
 use crate::session::{SessionCore, SessionError};
 
-const WAIST_TOP: f32 = 0.98;
-const WAIST_EXIT: f32 = 0.90;
 const CHAMBER_LEFT: f32 = -0.55;
 const DIVIDER_INNER_X: f32 = 0.48;
-const HUB: Vec2 = Vec2::new(0.0, 0.40);
-const HUB_RADIUS: f32 = 0.12;
 const SHAFT_WALL_X: f32 = 0.56;
 const PROOF_BATCHES: usize = 30;
 const ANGLE_FLOOR: f32 = 0.05;
 const PLATE_TRANSLATION_LIMIT: f32 = 0.01;
 const SPEED_TOLERANCE: f32 = 1.0e-5;
+/// Same 0.15 m drop below the top of the stroke as the original one-second
+/// sample at 0.15 m/s, so the plate is still above the divider lip.
+const SPILL_SAMPLE_DROP: f32 = 0.15;
 
 #[test]
-fn reservoir_starts_still_above_the_waist() {
+fn reservoir_starts_still_above_the_top_shelf() {
     // Arrange
     let session =
         SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
+    let shelf_top = super::LEVELS[0].shelf_top;
 
     // Act
     let (live_count, positions, velocities) = session.read_particles(|world, system| {
@@ -34,7 +34,7 @@ fn reservoir_starts_still_above_the_waist() {
             view.velocities().to_vec(),
         )
     });
-    let angle = revolute_angle(&session);
+    let angles = revolute_angles(&session);
     let translation = plate_translation(&session);
 
     // Assert
@@ -46,18 +46,25 @@ fn reservoir_starts_still_above_the_waist() {
     assert!(
         positions
             .iter()
-            .all(|position| position.y > WAIST_TOP && position.x < DIVIDER_INNER_X),
-        "every particle starts above the waist and left of the divider"
+            .all(|position| position.y > shelf_top && position.x < DIVIDER_INNER_X),
+        "every particle starts above the top shelf and left of the divider"
     );
-    assert_eq!(angle.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(angles.len(), super::LEVEL_COUNT);
+    assert!(
+        angles
+            .iter()
+            .all(|angle| angle.to_bits() == 0.0_f32.to_bits()),
+        "every spinner starts at rest"
+    );
     assert_eq!(translation.to_bits(), 0.0_f32.to_bits());
 }
 
 #[test]
-fn drip_crosses_the_waist_and_turns_the_wheel() {
+fn drip_crosses_the_top_shelf_and_turns_a_wheel() {
     // Arrange
     let mut session =
         SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
+    let shelf_top = super::LEVELS[0].shelf_top;
     let started_above = session.read_particles(|world, system| {
         let view = world
             .particle_system_view(system)
@@ -66,7 +73,7 @@ fn drip_crosses_the_waist_and_turns_the_wheel() {
             .iter()
             .copied()
             .zip(view.positions().iter().copied())
-            .filter(|(_id, position)| position.y > WAIST_TOP)
+            .filter(|(_id, position)| position.y > shelf_top)
             .collect::<Vec<_>>()
     });
     let start_count = session
@@ -86,28 +93,31 @@ fn drip_crosses_the_waist_and_turns_the_wheel() {
             view.particle_ids()
                 .iter()
                 .zip(view.positions())
-                .any(|(live, position)| live == id && is_below_the_waist_outside_the_hub(*position))
+                .any(|(live, position)| {
+                    live == id && is_below_the_top_shelf_outside_the_hub(*position)
+                })
         })
     });
-    let angle = revolute_angle(&session);
+    let angles = revolute_angles(&session);
 
     // Assert
     assert_eq!(end_count, start_count, "the live count stays unchanged");
     assert!(
         crossed,
-        "at least one original particle id is below the waist in the lower chamber"
+        "at least one original particle id is below the top shelf"
     );
     assert!(
-        angle.abs() >= ANGLE_FLOOR,
-        "the wheel angle should leave 0, got {angle}"
+        angles.iter().any(|angle| angle.abs() >= ANGLE_FLOOR),
+        "a spinner angle should leave 0, got {angles:?}"
     );
 }
 
 #[test]
-fn return_lifts_an_original_particle_above_the_waist() {
+fn return_lifts_an_original_particle_above_the_top_shelf() {
     // Arrange
     let mut session =
         SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
+    let shelf_top = super::LEVELS[0].shelf_top;
     let started_above = session.read_particles(|world, system| {
         let view = world
             .particle_system_view(system)
@@ -116,7 +126,7 @@ fn return_lifts_an_original_particle_above_the_waist() {
             .iter()
             .copied()
             .zip(view.positions().iter().copied())
-            .filter(|(_id, position)| position.y > WAIST_TOP)
+            .filter(|(_id, position)| position.y > shelf_top)
             .map(|(id, _position)| id)
             .collect::<Vec<_>>()
     });
@@ -138,19 +148,22 @@ fn return_lifts_an_original_particle_above_the_waist() {
                 .iter()
                 .zip(view.positions())
                 .any(|(live, position)| {
-                    live == id && position.y > WAIST_TOP && position.x < DIVIDER_INNER_X
+                    live == id && position.y > shelf_top && position.x < DIVIDER_INNER_X
                 })
         })
     });
-    let motor_enabled = revolute_motor_enabled(&session);
+    let motors_enabled = revolute_motors_enabled(&session);
 
     // Assert
     assert_eq!(end_count, start_count, "the live count stays unchanged");
     assert!(
         returned,
-        "an original above-waist particle is back above the waist and left of the divider"
+        "an original above-shelf particle is back above the top shelf and left of the divider"
     );
-    assert!(!motor_enabled, "the revolute motor stays disabled");
+    assert!(
+        motors_enabled.iter().all(|enabled| !enabled),
+        "every spinner motor stays disabled"
+    );
 }
 
 #[test]
@@ -176,25 +189,90 @@ fn plate_stays_down_during_the_proof() {
 }
 
 #[test]
-fn wheel_motor_stays_off_and_the_plate_is_beside_the_wheel() {
+fn plate_speed_is_four_times_the_original_cruise() {
+    // Arrange
+    let original_cruise = 0.15_f32;
+
+    // Act
+    let speed = super::PLATE_SPEED;
+
+    // Assert
+    assert_eq!(speed.to_bits(), (original_cruise * 4.0).to_bits());
+}
+
+#[test]
+fn plate_motor_uses_the_faster_cruise_after_the_dwell() {
+    // Arrange
+    let mut session =
+        SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
+
+    // Act
+    advance_seconds(&mut session, super::DWELL + 0.5);
+    let speed = prismatic_motor_speed(&session);
+
+    // Assert
+    assert_eq!(speed.to_bits(), super::PLATE_SPEED.to_bits());
+}
+
+#[test]
+fn each_level_puts_a_spinner_under_its_hole() {
+    // Arrange
+    let levels = super::LEVELS;
+
+    // Act
+    let placed = levels.map(|level| {
+        let centered = (level.spinner_center.x - level.hole_center_x).abs() < 1.0e-4;
+        let clearance = level.shelf_bottom() - (level.spinner_center.y + super::PADDLE_OUTER);
+        let hole_width = level.hole_right() - level.hole_left();
+        let lip_reaches_the_walls =
+            level.hole_left() > CHAMBER_LEFT && level.hole_right() < DIVIDER_INNER_X;
+        (centered, clearance, hole_width, lip_reaches_the_walls)
+    });
+
+    // Assert
+    assert_eq!(levels.len(), super::LEVEL_COUNT);
+    assert!(levels[0].hole_center_x < 0.0 && levels[2].hole_center_x < 0.0);
+    assert!(
+        levels[1].hole_center_x > 0.0,
+        "the middle hole sits on the right"
+    );
+    for (centered, clearance, hole_width, lip_reaches_the_walls) in placed {
+        assert!(centered, "the spinner is centered under the hole");
+        assert!(
+            clearance > super::PARTICLE_RADIUS * 2.0,
+            "the spinner clears the shelf by more than one particle, clearance {clearance}"
+        );
+        assert!(
+            hole_width > super::PARTICLE_RADIUS * 2.0,
+            "the hole is wider than one particle"
+        );
+        assert!(lip_reaches_the_walls, "each shelf spans the left chamber");
+    }
+}
+
+#[test]
+fn wheel_motors_stay_off_and_the_plate_is_beside_the_wheels() {
     // Arrange
     let session =
         SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
 
     // Act
-    let (motor_enabled, axis_count, dynamic_positions) =
+    let (motors_enabled, axis_count, dynamic_positions) =
         session.read_particles(|world, _system| {
             let observation = world
                 .world_observation(WorldObservationLimits::reviewed())
                 .expect("reviewed observation should include the joints");
-            let revolute = observation
+            let motors_enabled = observation
                 .joints()
                 .iter()
-                .find(|joint| joint.snapshot().kind() == JointKind::Revolute)
-                .expect("the wheel rides a revolute joint");
-            let JointDef::Revolute(revolute_definition) = revolute.snapshot().definition() else {
-                panic!("the wheel joint should be revolute");
-            };
+                .filter(|joint| joint.snapshot().kind() == JointKind::Revolute)
+                .map(|joint| {
+                    let JointDef::Revolute(definition) = joint.snapshot().definition() else {
+                        panic!("a spinner joint should be revolute");
+                    };
+                    definition.is_motor_enabled()
+                })
+                .collect::<Vec<_>>();
             let axis_count = observation
                 .joints()
                 .iter()
@@ -213,26 +291,28 @@ fn wheel_motor_stays_off_and_the_plate_is_beside_the_wheel() {
                 .filter(|body| body.snapshot().body_type() == BodyType::Dynamic)
                 .map(|body| body.snapshot().position())
                 .collect::<Vec<_>>();
-            (
-                revolute_definition.is_motor_enabled(),
-                axis_count,
-                dynamic_positions,
-            )
+            (motors_enabled, axis_count, dynamic_positions)
         });
 
     // Assert
-    assert!(!motor_enabled, "the revolute motor stays disabled");
+    assert_eq!(motors_enabled.len(), super::LEVEL_COUNT);
+    assert!(
+        motors_enabled.iter().all(|enabled| !enabled),
+        "every spinner motor stays disabled"
+    );
     assert_eq!(axis_count, 1, "exactly one prismatic joint points world-up");
     assert_eq!(
         dynamic_positions.len(),
-        2,
-        "the wheel and the plate are dynamic"
+        super::LEVEL_COUNT + 1,
+        "the spinners and the plate are dynamic"
     );
-    assert!(
+    assert_eq!(
         dynamic_positions
             .iter()
-            .any(|position| position.x > SHAFT_WALL_X),
-        "the plate sits beside the wheel"
+            .filter(|position| position.x > SHAFT_WALL_X)
+            .count(),
+        1,
+        "the plate sits beside the wheels"
     );
 }
 
@@ -247,17 +327,23 @@ fn rebuild_restores_the_reservoir() {
     // Act
     let rebuilt = SessionCore::create(SceneId::LiquidBubbler)
         .expect("a new session should restore the reservoir");
+    let shelf_top = super::LEVELS[0].shelf_top;
     let (positions, velocities) = rebuilt.read_particles(|world, system| {
         let view = world
             .particle_system_view(system)
             .expect("the rebuilt water system should be live");
         (view.positions().to_vec(), view.velocities().to_vec())
     });
-    let angle = revolute_angle(&rebuilt);
+    let angles = revolute_angles(&rebuilt);
     let translation = plate_translation(&rebuilt);
 
     // Assert
-    assert_eq!(angle.to_bits(), 0.0_f32.to_bits());
+    assert_eq!(angles.len(), super::LEVEL_COUNT);
+    assert!(
+        angles
+            .iter()
+            .all(|angle| angle.to_bits() == 0.0_f32.to_bits())
+    );
     assert_eq!(translation.to_bits(), 0.0_f32.to_bits());
     assert!(
         velocities.iter().copied().all(velocity_is_zero),
@@ -266,8 +352,8 @@ fn rebuild_restores_the_reservoir() {
     assert!(
         positions
             .iter()
-            .all(|position| position.y > WAIST_TOP && position.x < DIVIDER_INNER_X),
-        "rebuild puts every particle back above the waist"
+            .all(|position| position.y > shelf_top && position.x < DIVIDER_INNER_X),
+        "rebuild puts every particle back above the top shelf"
     );
 }
 
@@ -313,7 +399,7 @@ fn source_lifts_with_a_prismatic_plate() {
     // Assert
     assert!(lifts, "the plate speed is written from simulation time");
     assert!(keeps_particles, "age destruction stays off");
-    assert!(!spins_the_wheel, "the wheel is not motor-driven");
+    assert!(!spins_the_wheel, "the wheels are not motor-driven");
     assert!(!spawns_singles, "the return does not emit a jet");
     assert!(!writes_positions, "the return does not teleport particles");
     assert!(!mixes_color, "the drip is one plain color");
@@ -344,66 +430,74 @@ fn advance_proof(session: &mut SessionCore) {
     }
 }
 
-fn advance_return(session: &mut SessionCore) {
-    let seconds = super::DWELL + (super::STROKE / super::PLATE_SPEED) + 1.0;
+fn advance_seconds(session: &mut SessionCore, seconds: f32) {
     let steps = (seconds / super::SIM_DT).ceil() as usize;
     let batches = steps.div_ceil(4);
     for _ in 0..batches {
-        session.advance(4).expect("the return window should step");
+        session.advance(4).expect("the timed window should step");
     }
 }
 
-fn revolute_motor_enabled(session: &SessionCore) -> bool {
+fn advance_return(session: &mut SessionCore) {
+    let seconds = super::DWELL + super::RISE_SECONDS + SPILL_SAMPLE_DROP / super::PLATE_SPEED;
+    advance_seconds(session, seconds);
+}
+
+fn revolute_motors_enabled(session: &SessionCore) -> Vec<bool> {
     session.read_particles(|world, _system| {
         let observation = world
             .world_observation(WorldObservationLimits::reviewed())
-            .expect("reviewed observation should include the wheel joint");
-        let joint = observation
+            .expect("reviewed observation should include the wheel joints");
+        observation
             .joints()
             .iter()
-            .find(|joint| joint.snapshot().kind() == JointKind::Revolute)
-            .expect("the wheel rides a revolute joint");
-        let JointDef::Revolute(definition) = joint.snapshot().definition() else {
-            panic!("the wheel joint should be revolute");
-        };
-        definition.is_motor_enabled()
+            .filter(|joint| joint.snapshot().kind() == JointKind::Revolute)
+            .map(|joint| {
+                let JointDef::Revolute(definition) = joint.snapshot().definition() else {
+                    panic!("a spinner joint should be revolute");
+                };
+                definition.is_motor_enabled()
+            })
+            .collect()
     })
 }
 
-fn is_below_the_waist_outside_the_hub(position: Vec2) -> bool {
-    let offset_x = position.x - HUB.x;
-    let offset_y = position.y - HUB.y;
+fn is_below_the_top_shelf_outside_the_hub(position: Vec2) -> bool {
+    let level = super::LEVELS[0];
+    let offset_x = position.x - level.spinner_center.x;
+    let offset_y = position.y - level.spinner_center.y;
     let distance_sq = offset_x * offset_x + offset_y * offset_y;
-    position.y < WAIST_EXIT
+    position.y < level.shelf_bottom()
         && position.x > CHAMBER_LEFT
         && position.x < DIVIDER_INNER_X
-        && distance_sq > HUB_RADIUS * HUB_RADIUS
+        && distance_sq > super::HUB_RADIUS * super::HUB_RADIUS
 }
 
 fn velocity_is_zero(velocity: Vec2) -> bool {
     velocity.x.to_bits() == 0.0_f32.to_bits() && velocity.y.to_bits() == 0.0_f32.to_bits()
 }
 
-fn revolute_angle(session: &SessionCore) -> f32 {
+fn revolute_angles(session: &SessionCore) -> Vec<f32> {
     session.read_particles(|world, _system| {
-        let joint = sole_joint(
-            world,
-            JointKind::Revolute,
-            "the wheel rides one revolute joint",
-        );
-        world
-            .revolute_joint_angle(joint)
-            .expect("the wheel angle should be readable")
+        let observation = world
+            .world_observation(WorldObservationLimits::reviewed())
+            .expect("reviewed observation should include the wheel joints");
+        observation
+            .joints()
+            .iter()
+            .filter(|joint| joint.snapshot().kind() == JointKind::Revolute)
+            .map(|joint| {
+                world
+                    .revolute_joint_angle(joint.id())
+                    .expect("a wheel angle should be readable")
+            })
+            .collect()
     })
 }
 
 fn plate_translation(session: &SessionCore) -> f32 {
     session.read_particles(|world, _system| {
-        let joint = sole_joint(
-            world,
-            JointKind::Prismatic,
-            "the plate rides one prismatic joint",
-        );
+        let joint = sole_prismatic(world);
         world
             .prismatic_joint_translation(joint)
             .expect("the plate translation should be readable")
@@ -427,18 +521,18 @@ fn prismatic_motor_speed(session: &SessionCore) -> f32 {
     })
 }
 
-fn sole_joint(world: &liquidfun::World, kind: JointKind, label: &str) -> JointId {
+fn sole_prismatic(world: &liquidfun::World) -> JointId {
     let observation = world
         .world_observation(WorldObservationLimits::reviewed())
         .expect("reviewed observation should include the scene joints");
     let mut joints = observation
         .joints()
         .iter()
-        .filter(|joint| joint.snapshot().kind() == kind);
-    let joint = joints.next().expect(label);
+        .filter(|joint| joint.snapshot().kind() == JointKind::Prismatic);
+    let joint = joints.next().expect("the plate rides one prismatic joint");
     assert!(
         joints.next().is_none(),
-        "{label} is the only joint of that kind"
+        "the plate rides the only prismatic joint"
     );
     joint.id()
 }

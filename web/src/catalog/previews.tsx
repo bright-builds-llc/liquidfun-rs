@@ -379,17 +379,22 @@ function StackedDripPreview() {
 function LiquidBubblerPreview() {
   return (
     <PreviewFrame>
-      <line x1="28" y1="18" x2="28" y2="74" stroke={RIGID} stroke-width="3" />
-      <line x1="28" y1="74" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
-      <line x1="132" y1="18" x2="132" y2="74" stroke={RIGID} stroke-width="3" />
-      <line x1="108" y1="28" x2="108" y2="62" stroke={RIGID} stroke-width="3" />
-      <line x1="28" y1="46" x2="62" y2="46" stroke={RIGID} stroke-width="3" />
-      <line x1="76" y1="46" x2="108" y2="46" stroke={RIGID} stroke-width="3" />
-      <rect x="36" y="28" width="64" height="14" fill={DRIP} />
-      <rect x="66" y="46" width="6" height="10" fill={DRIP} />
-      <circle cx="69" cy="64" r="8" fill="none" stroke={RIGID} stroke-width="3" />
-      <line x1="69" y1="56" x2="69" y2="72" stroke={RIGID} stroke-width="2" />
-      <line x1="61" y1="64" x2="77" y2="64" stroke={RIGID} stroke-width="2" />
+      <line x1="28" y1="14" x2="28" y2="78" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="78" x2="132" y2="78" stroke={RIGID} stroke-width="3" />
+      <line x1="132" y1="14" x2="132" y2="78" stroke={RIGID} stroke-width="3" />
+      <line x1="104" y1="20" x2="104" y2="68" stroke={RIGID} stroke-width="3" />
+      <line x1="46" y1="32" x2="104" y2="32" stroke={RIGID} stroke-width="3" />
+      <line x1="28" y1="50" x2="80" y2="50" stroke={RIGID} stroke-width="3" />
+      <line x1="94" y1="50" x2="104" y2="50" stroke={RIGID} stroke-width="3" />
+      <line x1="46" y1="68" x2="104" y2="68" stroke={RIGID} stroke-width="3" />
+      <rect x="52" y="16" width="44" height="12" fill={DRIP} />
+      <circle cx="37" cy="41" r="4" fill="none" stroke={RIGID} stroke-width="2" />
+      <line x1="37" y1="37" x2="37" y2="45" stroke={RIGID} stroke-width="1.5" />
+      <circle cx="87" cy="59" r="4" fill="none" stroke={RIGID} stroke-width="2" />
+      <line x1="83" y1="59" x2="91" y2="59" stroke={RIGID} stroke-width="1.5" />
+      <circle cx="37" cy="73" r="4" fill="none" stroke={RIGID} stroke-width="2" />
+      <line x1="37" y1="69" x2="37" y2="77" stroke={RIGID} stroke-width="1.5" />
+      <line x1="110" y1="74" x2="126" y2="74" stroke={RIGID} stroke-width="3" />
     </PreviewFrame>
   );
 }

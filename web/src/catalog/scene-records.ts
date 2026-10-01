@@ -528,7 +528,7 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Liquid Bubbler",
     ready: true,
     description:
-      "Watch colored liquid drip through a narrow waist and turn a small wheel. This is an original experimental scene.",
+      "Watch colored liquid drip through three shelves and turn a small wheel under each hole. This is an original experimental scene.",
     interactionHint: WATCH_FIRST_HINT,
     controls: withGravitySlider([]),
     viewBounds: { minX: -0.71, minY: -0.16, maxX: 1.12, maxY: 1.98 },
