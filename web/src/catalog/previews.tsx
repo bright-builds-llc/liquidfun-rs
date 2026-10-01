@@ -382,7 +382,7 @@ function LiquidBubblerPreview() {
       <line x1="28" y1="14" x2="28" y2="78" stroke={RIGID} stroke-width="3" />
       <line x1="28" y1="78" x2="132" y2="78" stroke={RIGID} stroke-width="3" />
       <line x1="132" y1="14" x2="132" y2="78" stroke={RIGID} stroke-width="3" />
-      <line x1="104" y1="20" x2="104" y2="69" stroke={RIGID} stroke-width="3" />
+      <line x1="104" y1="20" x2="104" y2="66" stroke={RIGID} stroke-width="3" />
       <line x1="104" y1="74" x2="104" y2="78" stroke={RIGID} stroke-width="3" />
       <line x1="46" y1="32" x2="104" y2="32" stroke={RIGID} stroke-width="3" />
       <line x1="28" y1="50" x2="80" y2="50" stroke={RIGID} stroke-width="3" />

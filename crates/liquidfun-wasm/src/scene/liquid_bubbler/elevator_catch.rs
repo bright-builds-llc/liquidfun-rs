@@ -33,7 +33,11 @@ fn plate_spans_the_shaft_under_a_lower_divider() {
         right_gap > 0.0 && right_gap < 0.001,
         "the deck should meet the right face, gap {right_gap}"
     );
-    assert!(super::super::DIVIDER_BOTTOM_Y > deck_top + super::super::PLATE_CENTER.y);
+    let deck_world_top = deck_top + super::super::PLATE_CENTER.y;
+    assert!(
+        super::super::DIVIDER_BOTTOM_Y > deck_world_top + super::super::PARTICLE_RADIUS * 2.0,
+        "the spillway should clear a particle above the deck"
+    );
     assert!(super::super::DIVIDER_BOTTOM_Y < 0.22);
 }
 

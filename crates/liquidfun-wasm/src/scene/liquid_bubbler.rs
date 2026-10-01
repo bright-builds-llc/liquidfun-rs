@@ -45,7 +45,8 @@ const PLATE_DENSITY: f32 = 1.0;
 const WALL_TOP_Y: f32 = 2.40;
 const WALL_HALF_HEIGHT: f32 = WALL_TOP_Y * 0.5;
 const WALL_CENTER_Y: f32 = WALL_HALF_HEIGHT;
-const DIVIDER_BOTTOM_Y: f32 = 0.074;
+/// Opens the spillway about one particle diameter above the seated deck.
+const DIVIDER_BOTTOM_Y: f32 = 0.10;
 const DIVIDER_TOP_Y: f32 = 2.00;
 const DIVIDER_HALF_HEIGHT: f32 = (DIVIDER_TOP_Y - DIVIDER_BOTTOM_Y) * 0.5;
 const DIVIDER_CENTER_Y: f32 = (DIVIDER_BOTTOM_Y + DIVIDER_TOP_Y) * 0.5;
