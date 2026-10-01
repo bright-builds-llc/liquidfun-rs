@@ -302,3 +302,12 @@ Archive review: 16 completed phases/252 active plans archived as planning milest
 - [x] Prepare independently reviewed planning artifacts and required checks for commit and push.
 
 Milestone review: owner approved six specific demos and phases 16–19; all 22 requirements mapped once. Four research dimensions and synthesis use current primary sources and inspected Rust capabilities, with browser integration and Pages settings explicitly unverified. Previous phase/research history preserved. No dependencies installed, site deployed or implementation begun.
+
+## task-resolve-main-pull-conflicts | 2026-10-01 | Resolve conflicts and push main
+
+- [x] Reconcile stashed scene changes with upstream geometry, controls, and tests.
+- [x] Run ordered Rust format, Clippy, build, and test checks plus WASM scene regressions.
+- [x] Run web typecheck, unit tests, production WASM build, Markdown and managed checks.
+- [x] Review the complete diff, obtain independent review, commit, and verify the main push.
+
+Completion review: source commit `0fa50e1` is on `origin/main`. Ordered Rust checks passed in an isolated target (1032 core tests and 284 WASM scene tests); web typecheck, 402 unit tests, 28 browser tests, production build, Markdown and managed checks passed. Independent AI reviewer `/root/independent_review` acknowledged source digest `07e45e462804d0f583437cc1bccbb15a70d552d04b0afdd915d3bfe23b6845fe` at 2026-10-01 21:07:04 UTC. Keep upstream's verified 3000-particle bubbler initializer because both 1800-particle candidates broke the newer elevator catch regression. Original stashes and failed attempt evidence remain recoverable; the old ignored build cache was not deleted. No release qualification or package publication is claimed.
