@@ -45,6 +45,22 @@ fn create_builds_a_partially_filled_drum() {
 }
 
 #[test]
+fn particle_radius_is_sixty_percent_of_the_previous_size() {
+    // Arrange / Act
+    let super::super::BuiltScene {
+        particle_radius, ..
+    } = build(&[]).expect("Washing Machine should construct");
+
+    // Assert
+    let expected = 0.0106_f32 * 2.0 * 0.6;
+    assert_eq!(
+        particle_radius.to_bits(),
+        expected.to_bits(),
+        "the shared radius must be 0.6 times the previous size (got {particle_radius})"
+    );
+}
+
+#[test]
 fn clothes_start_as_socks() {
     // Arrange / Act
     let session =
