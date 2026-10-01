@@ -49,9 +49,9 @@ const WALLED_FALLING_BALL = {
  * clear of that chrome while the frame still fills the width.
  */
 const TESLA_VALVE_PORTRAIT = {
-  minX: -0.9,
-  minY: -0.7,
-  maxX: 0.9,
+  minX: -0.94,
+  minY: -1.02,
+  maxX: 0.94,
   maxY: 3.4,
 } as const;
 
