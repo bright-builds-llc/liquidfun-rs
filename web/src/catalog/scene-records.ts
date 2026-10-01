@@ -36,6 +36,10 @@ import {
 import { GAP_CONTROL } from "./hydraulic-fountain-gap";
 import { DRUM_SPEED_CONTROL } from "./washing-machine-speed";
 import {
+  FLOW_DIRECTION_CONTROL,
+  FLOW_RATE_CONTROL,
+} from "./tesla-valve-controls";
+import {
   WAVE_MACHINE_SPEED_CONTROL,
   WAVE_MACHINE_TILT_CONTROL,
 } from "./wave-machine-speed";
@@ -87,6 +91,21 @@ export const WASHING_MACHINE_VIEW_BOUNDS = {
   minY: -1.68,
   maxX: 1.68,
   maxY: 1.68,
+} as const;
+
+/**
+ * Camera frame for the Tesla valve, in meters.
+ *
+ * Keep in sync with `FRAME_*` in
+ * `crates/liquidfun-wasm/src/scene/tesla_valve/geometry.rs`. The conduit runs
+ * from the inlet at y = 3.02 down through the drain, and this rectangle
+ * includes those walls with a small margin. Its aspect fills a tall phone.
+ */
+export const TESLA_VALVE_VIEW_BOUNDS = {
+  minX: -0.78,
+  minY: -0.16,
+  maxX: 0.78,
+  maxY: 3.28,
 } as const;
 
 export const THEO_JANSEN_VIEW_BOUNDS = {
@@ -565,6 +584,21 @@ export const SCENES: readonly SceneRecord[] = [
     viewBounds: WASHING_MACHINE_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("washing_machine.rs"),
+      inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "tesla-valve",
+    title: "Tesla Valve",
+    ready: true,
+    description:
+      "Watch water fall through a Tesla valve. Forward lets it slide off the ramps and out the bottom. Reverse flips the valve so those ramps hold the water back. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
+    interactionHint:
+      "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([FLOW_RATE_CONTROL, FLOW_DIRECTION_CONTROL]),
+    viewBounds: TESLA_VALVE_VIEW_BOUNDS,
+    credits: {
+      implementationPath: sceneSource("tesla_valve.rs"),
       inspiration: [SHOWCASE],
     },
   },

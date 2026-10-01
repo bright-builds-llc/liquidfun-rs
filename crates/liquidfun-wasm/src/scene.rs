@@ -28,6 +28,7 @@ mod soup_stirrer;
 mod sparky;
 mod stacked_drip;
 mod surface_tension;
+mod tesla_valve;
 mod theo_jansen;
 mod washing_machine;
 mod water_wheel;
@@ -66,6 +67,7 @@ pub(crate) enum SceneId {
     LiquidBubbler,
     StackedDrip,
     WashingMachine,
+    TeslaValve,
 }
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
@@ -94,6 +96,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "liquid-bubbler" => Ok(SceneId::LiquidBubbler),
         "stacked-drip" => Ok(SceneId::StackedDrip),
         "washing-machine" => Ok(SceneId::WashingMachine),
+        "tesla-valve" => Ok(SceneId::TeslaValve),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -106,6 +109,7 @@ pub(crate) const fn particle_iterations(id: SceneId) -> u32 {
     match id {
         SceneId::LiquidTumbler => liquid_tumbler::PARTICLE_ITERATIONS,
         SceneId::StackedDrip => stacked_drip::PARTICLE_ITERATIONS,
+        SceneId::TeslaValve => tesla_valve::PARTICLE_ITERATIONS,
         _ => DEFAULT_PARTICLE_ITERATIONS,
     }
 }
@@ -235,6 +239,7 @@ pub(crate) fn build_scene(
         SceneId::LiquidBubbler => liquid_bubbler::build(&scene_presets),
         SceneId::StackedDrip => stacked_drip::build(&scene_presets),
         SceneId::WashingMachine => washing_machine::build(&scene_presets),
+        SceneId::TeslaValve => tesla_valve::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)

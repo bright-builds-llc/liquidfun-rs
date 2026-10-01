@@ -415,6 +415,37 @@ describe("Dam Break gravity slider", () => {
     expect(readout).toBe("20 rpm");
     expect(spoken).toBe("20 revolutions per minute");
   });
+
+  it("speaks flow rate in particles per second", () => {
+    // Arrange
+    const magnitude = "180";
+
+    // Act
+    const readout = formatRangeReadout(magnitude, "particles/s");
+    const spoken = formatRangeValueText(magnitude, "particles/s");
+
+    // Assert
+    expect(readout).toBe("180 particles/s");
+    expect(spoken).toBe("180 particles per second");
+  });
+
+  it("names valve direction instead of a signed unit", () => {
+    // Arrange
+    const forward = "1";
+    const reverse = "-1";
+
+    // Act
+    const forwardReadout = formatRangeReadout(forward, "direction");
+    const forwardSpoken = formatRangeValueText(forward, "direction");
+    const reverseReadout = formatRangeReadout(reverse, "direction");
+    const reverseSpoken = formatRangeValueText(reverse, "direction");
+
+    // Assert
+    expect(forwardReadout).toBe("Forward");
+    expect(forwardSpoken).toBe("forward, with the valve");
+    expect(reverseReadout).toBe("Reverse");
+    expect(reverseSpoken).toBe("reverse, against the valve");
+  });
 });
 
 describe("sceneControlsForSurface", () => {
@@ -465,5 +496,34 @@ describe("sceneControlsForSurface", () => {
     expect(maybeDrum.widget).toBe("spinner");
     expect(faster).toBe("21");
     expect(slower).toBe("0");
+  });
+
+  it("keeps Tesla Valve flow controls on the HUD", () => {
+    // Arrange
+    const maybeScene = maybeSceneById("tesla-valve");
+    expect(maybeScene).toBeDefined();
+    if (maybeScene === undefined) {
+      return;
+    }
+    const maybeDirection = maybeScene.controls.find(
+      (control) => control.id === "flow-direction",
+    );
+    expect(maybeDirection?.kind).toBe("range");
+    if (maybeDirection === undefined || maybeDirection.kind !== "range") {
+      return;
+    }
+
+    // Act
+    const hud = sceneControlsForSurface(maybeScene.controls, "hud");
+    const panel = sceneControlsForSurface(maybeScene.controls, "panel");
+    const ticks = rangeTickMarks(maybeDirection);
+
+    // Assert
+    expect(hud.map((control) => control.id)).toEqual([
+      "flow-rate",
+      "flow-direction",
+    ]);
+    expect(panel.map((control) => control.id)).toEqual(["gravity"]);
+    expect(ticks.map((tick) => tick.label)).toEqual(["Reverse", "Forward"]);
   });
 });

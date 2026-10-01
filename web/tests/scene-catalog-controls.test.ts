@@ -8,6 +8,10 @@ import {
 import { GAP_CONTROL } from "../src/catalog/hydraulic-fountain-gap";
 import { DRUM_SPEED_CONTROL } from "../src/catalog/washing-machine-speed";
 import {
+  FLOW_DIRECTION_CONTROL,
+  FLOW_RATE_CONTROL,
+} from "../src/catalog/tesla-valve-controls";
+import {
   SCENES,
   maybeSceneById,
   type SceneControl,
@@ -24,6 +28,7 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "shape",
   "softness",
+  "gravity",
   "gravity",
   "gravity",
   "gravity",
@@ -332,6 +337,14 @@ describe("scene catalog controls", () => {
       GRAVITY_CONTROL,
     ]);
     expect(DRUM_SPEED_CONTROL.recreates).toBe(false);
+    const teslaValve = maybeSceneById("tesla-valve");
+    expect(teslaValve?.controls).toEqual([
+      FLOW_RATE_CONTROL,
+      FLOW_DIRECTION_CONTROL,
+      GRAVITY_CONTROL,
+    ]);
+    expect(FLOW_RATE_CONTROL.recreates).toBe(false);
+    expect(FLOW_DIRECTION_CONTROL.recreates).toBe(false);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });
 });

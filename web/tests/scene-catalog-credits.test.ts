@@ -93,6 +93,7 @@ describe("scene catalog credits", () => {
       "liquid-bubbler": "crates/liquidfun-wasm/src/scene/liquid_bubbler.rs",
       "stacked-drip": "crates/liquidfun-wasm/src/scene/stacked_drip.rs",
       "washing-machine": "crates/liquidfun-wasm/src/scene/washing_machine.rs",
+      "tesla-valve": "crates/liquidfun-wasm/src/scene/tesla_valve.rs",
     };
     const pinnedBasinInspiration = {
       particles: [
@@ -209,6 +210,7 @@ describe("scene catalog credits", () => {
     expect(inspirationById["liquid-bubbler"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["stacked-drip"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["washing-machine"]).toEqual([SHOWCASE_HREF]);
+    expect(inspirationById["tesla-valve"]).toEqual([SHOWCASE_HREF]);
     expect(maybeSceneById("drawing-particles")?.credits.inspiration).toEqual([
       { label: "Pinned DrawingParticles.js", href: DRAWING_PARTICLES_JS_HREF },
       { label: "Pinned DrawingParticles.h", href: DRAWING_PARTICLES_H_HREF },

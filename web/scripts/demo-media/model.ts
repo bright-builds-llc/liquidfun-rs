@@ -278,6 +278,13 @@ export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
     interactionStep: 180,
     action: { kind: "click", point: { x: 0.5, y: 0.5 } },
   },
+  {
+    id: "tesla-valve",
+    title: "Tesla Valve",
+    route: "/liquidfun-rs/#/scene/tesla-valve",
+    interactionStep: 180,
+    action: { kind: "click", point: { x: 0.5, y: 0.5 } },
+  },
 ];
 
 function assertSceneCapturePlanCoverage(): void {

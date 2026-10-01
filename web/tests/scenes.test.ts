@@ -62,6 +62,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Watch colored liquid drain through three tipping trays. This is an original experimental scene.",
   "washing-machine":
     "Watch ribs on a spinning drum tumble water and a few elastic socks. This is an original experimental scene.",
+  "tesla-valve":
+    "Watch water fall through a Tesla valve. Forward lets it slide off the ramps and out the bottom. Reverse flips the valve so those ramps hold the water back. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -102,6 +104,8 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   "stacked-drip": WATCH_FIRST_HINT,
   "washing-machine":
     "Use Drum speed to change how fast the drum turns. It starts at 20 rpm. Labeled controls also work from the keyboard.",
+  "tesla-valve":
+    "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -133,7 +137,7 @@ const LOCKED_ACTION_LABELS = [
 ] as const;
 
 describe("SCENES", () => {
-  it("lists twenty-four locked scenes in the approved order", () => {
+  it("lists twenty-five locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "wave-machine",
@@ -160,13 +164,14 @@ describe("SCENES", () => {
       "liquid-bubbler",
       "stacked-drip",
       "washing-machine",
+      "tesla-valve",
     ] as const;
 
     // Act
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(24);
+    expect(SCENES).toHaveLength(25);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -198,6 +203,7 @@ describe("SCENES", () => {
       "Liquid Bubbler",
       "Stacked Drip",
       "Washing Machine",
+      "Tesla Valve",
     ];
 
     // Act
@@ -230,7 +236,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(24);
+    expect(readyCount).toBe(25);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -424,7 +430,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all twenty-four approved ids", () => {
+  it("is true for all twenty-five approved ids", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -432,7 +438,7 @@ describe("isReadySceneId", () => {
     const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(readyFlags).toEqual(Array.from({ length: 24 }, () => true));
+    expect(readyFlags).toEqual(Array.from({ length: 25 }, () => true));
   });
 });
 

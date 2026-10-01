@@ -2,6 +2,7 @@ import { WORLD_BOUNDS, type WorldBounds } from "../render/camera";
 import {
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
+  TESLA_VALVE_VIEW_BOUNDS,
   THEO_JANSEN_VIEW_BOUNDS,
   WASHING_MACHINE_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
@@ -32,6 +33,7 @@ export const SCENE_IDS = [
   "liquid-bubbler",
   "stacked-drip",
   "washing-machine",
+  "tesla-valve",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -93,6 +95,7 @@ export type SceneRecord = {
 export {
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
+  TESLA_VALVE_VIEW_BOUNDS,
   THEO_JANSEN_VIEW_BOUNDS,
   WASHING_MACHINE_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
