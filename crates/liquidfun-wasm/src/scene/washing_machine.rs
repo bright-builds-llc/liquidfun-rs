@@ -1,18 +1,20 @@
-//! Spinning drum with rim ribs and a partial fill of water.
+//! Spinning drum with rim ribs, a partial fill of water, and a few clothes.
 //!
 //! The drum is a motorized revolute body. Four ribs are fixtures on that same
-//! body, so they turn with the wall and lift the water. `drum-speed` is live:
-//! it sets the motor in revolutions per minute and leaves the water in place.
+//! body, so they turn with the wall and tumble the water and the elastic
+//! pieces. `drum-speed` is live: it sets the motor in revolutions per minute
+//! and leaves the load in place.
 
 mod geometry;
 
 use std::f32::consts::TAU;
 
-use liquidfun::collision::{FilterData, PolygonShape, Shape};
+use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
+use liquidfun::math::settings::PARTICLE_STRIDE;
 use liquidfun::math::{Transform, Vec2};
 use liquidfun::particle::{
-    ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe,
-    ParticleGroupSource,
+    ParticleColor, ParticleFlags, ParticleGroupDestination, ParticleGroupFlags,
+    ParticleGroupRecipe, ParticleGroupSource,
 };
 use liquidfun::{
     BodyDef, BodyId, BodyType, FixtureDef, JointDef, JointId, ParticleSystemDef, ParticleSystemId,
@@ -23,11 +25,22 @@ use self::geometry::{DRUM_CENTER, Quad, RIB_COUNT, SEGMENT_COUNT};
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-/// Fine water. This radius samples 3,000 particles across the fill box.
-const PARTICLE_RADIUS: f32 = 0.0106;
+/// Radius that sampled 3,000 water particles at the default stride.
+const FILL_SAMPLE_RADIUS: f32 = 0.0106;
+/// Water and clothing share this radius, twice the previous fine-water size.
+const PARTICLE_RADIUS: f32 = FILL_SAMPLE_RADIUS * 2.0;
+/// Previous default stride, so the same fill box still holds 3,000 particles.
+const FILL_STRIDE: f32 = PARTICLE_STRIDE * (FILL_SAMPLE_RADIUS * 2.0);
 const PARTICLE_DAMPING: f32 = 0.25;
+/// Holds the clothes together while the water keeps its own flags.
+const CLOTH_ELASTIC_STRENGTH: f32 = 0.75;
+const CLOTH_SPRING_STRENGTH: f32 = 0.75;
+const CLOTH_GROUP_STRENGTH: f32 = 0.75;
 const MAXIMUM_PARTICLE_COUNT: usize = 4_096;
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
+const RED_CLOTH: ParticleColor = ParticleColor::new(214, 69, 80, 255);
+const GREEN_CLOTH: ParticleColor = ParticleColor::new(72, 168, 112, 255);
+const GOLD_CLOTH: ParticleColor = ParticleColor::new(232, 176, 64, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const DRUM_DENSITY: f32 = 6.0;
 const DRUM_FRICTION: f32 = 0.6;
@@ -79,6 +92,7 @@ fn build_washing_machine() -> Result<BuiltScene, SceneError> {
 
     let joint = pin_drum(&mut world, ground, drum, rad_per_sec(DEFAULT_DRUM_RPM))?;
     let particle_system = create_water(&mut world)?;
+    create_clothes(&mut world, particle_system)?;
     carve_quads(&mut world, particle_system, drum, &wall_quads)?;
     carve_quads(&mut world, particle_system, drum, &rib_quads)?;
 
@@ -137,6 +151,10 @@ fn create_water(world: &mut World) -> Result<ParticleSystemId, SceneError> {
         .map_err(|_error| SceneError::ParticleSystem)?
         .with_damping(PARTICLE_DAMPING)
         .map_err(|_error| SceneError::ParticleSystem)?
+        .with_elastic_strength(CLOTH_ELASTIC_STRENGTH)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_spring_strength(CLOTH_SPRING_STRENGTH)
+        .map_err(|_error| SceneError::ParticleSystem)?
         .with_maximum_count(MAXIMUM_PARTICLE_COUNT)
         .map_err(|_error| SceneError::ParticleSystem)?;
     let system = world
@@ -152,13 +170,47 @@ fn create_water(world: &mut World) -> Result<ParticleSystemId, SceneError> {
     let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
         .with_particle_flags(ParticleFlags::WATER)
         .with_color(WATER_COLOR)
-        .with_default_stride()
+        .with_stride(FILL_STRIDE)
+        .map_err(|_error| SceneError::Particle)?
         .with_transform(Transform::IDENTITY)
         .map_err(|_error| SceneError::Particle)?;
     world
         .create_particle_group(system, &recipe)
         .map_err(|_error| SceneError::Particle)?;
     Ok(system)
+}
+
+/// Three soft pieces above the water, clear of the ribs, so they fall in as the drum turns.
+fn create_clothes(world: &mut World, system: ParticleSystemId) -> Result<(), SceneError> {
+    create_cloth(world, system, Vec2::new(-0.30, 0.02), 0.15, RED_CLOTH)?;
+    create_cloth(world, system, Vec2::new(0.32, 0.06), 0.13, GREEN_CLOTH)?;
+    create_cloth(world, system, Vec2::new(0.0, 0.28), 0.12, GOLD_CLOTH)?;
+    Ok(())
+}
+
+fn create_cloth(
+    world: &mut World,
+    system: ParticleSystemId,
+    center: Vec2,
+    radius: f32,
+    color: ParticleColor,
+) -> Result<(), SceneError> {
+    let filled =
+        Shape::from(CircleShape::new(Vec2::ZERO, radius).map_err(|_error| SceneError::Geometry)?);
+    let source =
+        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
+        .with_particle_flags(ParticleFlags::ELASTIC | ParticleFlags::SPRING)
+        .with_group_flags(ParticleGroupFlags::SOLID)
+        .with_color(color)
+        .with_strength(CLOTH_GROUP_STRENGTH)
+        .map_err(|_error| SceneError::Particle)?
+        .with_transform(Transform::from_position_angle(center, 0.0))
+        .map_err(|_error| SceneError::Particle)?;
+    world
+        .create_particle_group(system, &recipe)
+        .map_err(|_error| SceneError::Particle)?;
+    Ok(())
 }
 
 fn carve_quads(
