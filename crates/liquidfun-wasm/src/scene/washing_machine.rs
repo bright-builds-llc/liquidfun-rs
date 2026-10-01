@@ -1,15 +1,15 @@
-//! Spinning drum with rim ribs, a partial fill of water, and a few clothes.
+//! Spinning drum with rim ribs, a partial fill of water, and a few socks.
 //!
 //! The drum is a motorized revolute body. Four ribs are fixtures on that same
 //! body, so they turn with the wall and tumble the water and the elastic
-//! pieces. `drum-speed` is live: it sets the motor in revolutions per minute
+//! socks. `drum-speed` is live: it sets the motor in revolutions per minute
 //! and leaves the load in place.
 
 mod geometry;
 
 use std::f32::consts::TAU;
 
-use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
+use liquidfun::collision::{FilterData, PolygonShape, Shape};
 use liquidfun::math::settings::PARTICLE_STRIDE;
 use liquidfun::math::{Transform, Vec2};
 use liquidfun::particle::{
@@ -180,32 +180,48 @@ fn create_water(world: &mut World) -> Result<ParticleSystemId, SceneError> {
     Ok(system)
 }
 
-/// Three soft pieces above the water, clear of the ribs, so they fall in as the drum turns.
+/// Three rough socks above the water, clear of the ribs, so they fall in as the drum turns.
 fn create_clothes(world: &mut World, system: ParticleSystemId) -> Result<(), SceneError> {
-    create_cloth(world, system, Vec2::new(-0.30, 0.02), 0.15, RED_CLOTH)?;
-    create_cloth(world, system, Vec2::new(0.32, 0.06), 0.13, GREEN_CLOTH)?;
-    create_cloth(world, system, Vec2::new(0.0, 0.28), 0.12, GOLD_CLOTH)?;
+    create_sock(world, system, Vec2::new(-0.34, 0.08), TAU / 12.0, RED_CLOTH)?;
+    create_sock(
+        world,
+        system,
+        Vec2::new(0.32, 0.20),
+        TAU * 0.55,
+        GREEN_CLOTH,
+    )?;
+    create_sock(world, system, Vec2::new(0.02, 0.38), -TAU / 5.0, GOLD_CLOTH)?;
     Ok(())
 }
 
-fn create_cloth(
+/// A leg standing on the ankle and a foot sticking out to the right.
+///
+/// The foot shares the ankle with the leg, then runs past it, so the outline
+/// is a sock instead of a filled block.
+fn sock_shapes() -> Result<Vec<Shape>, SceneError> {
+    let leg = PolygonShape::oriented_box(0.055, 0.16, Vec2::new(-0.02, 0.14), 0.0)
+        .map_err(|_error| SceneError::Geometry)?;
+    let foot = PolygonShape::oriented_box(0.13, 0.055, Vec2::new(0.06, 0.0), 0.0)
+        .map_err(|_error| SceneError::Geometry)?;
+    Ok(vec![Shape::from(leg), Shape::from(foot)])
+}
+
+fn create_sock(
     world: &mut World,
     system: ParticleSystemId,
-    center: Vec2,
-    radius: f32,
+    ankle: Vec2,
+    angle: f32,
     color: ParticleColor,
 ) -> Result<(), SceneError> {
-    let filled =
-        Shape::from(CircleShape::new(Vec2::ZERO, radius).map_err(|_error| SceneError::Geometry)?);
-    let source =
-        ParticleGroupSource::filled_shapes(vec![filled]).map_err(|_error| SceneError::Particle)?;
+    let source = ParticleGroupSource::filled_shapes(sock_shapes()?)
+        .map_err(|_error| SceneError::Particle)?;
     let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
         .with_particle_flags(ParticleFlags::ELASTIC | ParticleFlags::SPRING)
         .with_group_flags(ParticleGroupFlags::SOLID)
         .with_color(color)
         .with_strength(CLOTH_GROUP_STRENGTH)
         .map_err(|_error| SceneError::Particle)?
-        .with_transform(Transform::from_position_angle(center, 0.0))
+        .with_transform(Transform::from_position_angle(ankle, angle))
         .map_err(|_error| SceneError::Particle)?;
     world
         .create_particle_group(system, &recipe)
