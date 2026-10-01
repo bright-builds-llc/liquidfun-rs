@@ -1,12 +1,12 @@
 //! Native-testable ownership and stepping for one allowlisted scene.
 
 use liquidfun::math::Vec2;
-use liquidfun::{
-    NoDecisionHook, ParticleSystemId, ParticleSystemSnapshot, StepConfiguration, StepLimits, World,
-};
+use liquidfun::{NoDecisionHook, ParticleSystemId, StepConfiguration, StepLimits, World};
 
 #[cfg(not(target_arch = "wasm32"))]
 use liquidfun::DiagnosticStepProfile;
+#[cfg(any(test, not(target_arch = "wasm32")))]
+use liquidfun::ParticleSystemSnapshot;
 
 use self::escape::evict_escaped_particles;
 use crate::frame::{FrameData, FrameDiagnostics};
@@ -160,9 +160,12 @@ impl SessionCore {
         for _ in 0..step_count {
             self.hooks
                 .on_advance(&mut self.world, self.particle_system)?;
-            if let Err(detail) =
-                evict_escaped_particles(&mut self.world, self.particle_system, self.particle_radius)
-            {
+            if let Err(detail) = evict_escaped_particles(
+                &mut self.world,
+                self.particle_system,
+                self.particle_radius,
+                self.scene_id,
+            ) {
                 self.last_failure_detail = detail;
                 return Err(SessionError::StepFailed);
             }
@@ -199,11 +202,16 @@ impl SessionCore {
             .ok_or(SessionError::StepIndexExhausted)?;
         self.hooks
             .on_advance(&mut self.world, self.particle_system)?;
-        evict_escaped_particles(&mut self.world, self.particle_system, self.particle_radius)
-            .map_err(|detail| {
-                self.last_failure_detail = detail;
-                SessionError::StepFailed
-            })?;
+        evict_escaped_particles(
+            &mut self.world,
+            self.particle_system,
+            self.particle_radius,
+            self.scene_id,
+        )
+        .map_err(|detail| {
+            self.last_failure_detail = detail;
+            SessionError::StepFailed
+        })?;
         let (report, profile) = match self.world.step_profiled(
             self.step_configuration,
             &mut NoDecisionHook,
@@ -393,6 +401,7 @@ impl SessionCore {
         self.particle_count
     }
 
+    #[cfg(any(test, not(target_arch = "wasm32")))]
     pub(crate) fn live_particle_count(&self) -> Result<usize, SessionError> {
         self.world
             .particle_system_snapshot(self.particle_system)

@@ -37,25 +37,25 @@ not rebuild the C++ oracle.
 Short recipe: 20 warmup steps, 80 measured steps, three runs each, in the
 order they were taken.
 
-| Build | Run | Wall ms | ms/step | steps/s |
+| Build       | Run | Wall ms   | ms/step  | steps/s     |
 | ----------- | --- | --------- | -------- | ----------- |
-| baseline | 1 | 75.195759 | 0.939947 | 1063.889787 |
-| baseline | 2 | 74.961892 | 0.937024 | 1067.208923 |
-| baseline | 3 | 74.951079 | 0.936888 | 1067.362886 |
-| this change | 1 | 57.248884 | 0.715611 | 1397.407153 |
-| this change | 2 | 57.143498 | 0.714294 | 1399.984299 |
-| this change | 3 | 57.407811 | 0.717598 | 1393.538590 |
+| baseline    | 1   | 75.195759 | 0.939947 | 1063.889787 |
+| baseline    | 2   | 74.961892 | 0.937024 | 1067.208923 |
+| baseline    | 3   | 74.951079 | 0.936888 | 1067.362886 |
+| this change | 1   | 57.248884 | 0.715611 | 1397.407153 |
+| this change | 2   | 57.143498 | 0.714294 | 1399.984299 |
+| this change | 3   | 57.407811 | 0.717598 | 1393.538590 |
 
 Median ms/step moved from `0.937024` to `0.715611` (about 1.31 times as many
 steps per second on this short sample).
 
 Long recipe: 60 warmup steps, 600 measured steps.
 
-| Build | Wall ms | ms/step | steps/s | realtime factor |
+| Build       | Wall ms    | ms/step  | steps/s     | realtime factor |
 | ----------- | ---------- | -------- | ----------- | --------------- |
-| baseline | 578.837726 | 0.964730 | 1036.559943 | 17.275999 |
-| this change | 478.873452 | 0.798122 | 1252.940620 | 20.882344 |
-| this change | 476.143242 | 0.793572 | 1260.124994 | 21.002083 |
+| baseline    | 578.837726 | 0.964730 | 1036.559943 | 17.275999       |
+| this change | 478.873452 | 0.798122 | 1252.940620 | 20.882344       |
+| this change | 476.143242 | 0.793572 | 1260.124994 | 21.002083       |
 
 On the 600-step sample the faster of the two new runs is about 1.22 times the
 baseline step rate (`0.964730 / 0.793572`). The short and long ratios differ;
@@ -78,17 +78,17 @@ table, attributed one 100-step window (20 warmup + 80 measured, two particle
 iterations, so most passes ran 200 times). Those milliseconds include the
 timer and are not the wall-clock authority.
 
-| Pass | Before, ms | After, ms |
-| ------------------ | ---------- | --------- |
-| particle contacts | 30.671 | 24.072 |
-| fixture collision | 23.019 | 8.682 |
-| damping | 9.120 | 8.550 |
-| body contacts | 4.808 | 4.925 |
-| pressure | 3.932 | 3.129 |
-| weight | 1.194 | 1.072 |
-| integrate | 0.484 | 0.500 |
-| rigid solve | 0.261 | 0.250 |
-| gravity | 0.123 | 0.110 |
+| Pass              | Before, ms | After, ms |
+| ----------------- | ---------- | --------- |
+| particle contacts | 30.671     | 24.072    |
+| fixture collision | 23.019     | 8.682     |
+| damping           | 9.120      | 8.550     |
+| body contacts     | 4.808      | 4.925     |
+| pressure          | 3.932      | 3.129     |
+| weight            | 1.194      | 1.072     |
+| integrate         | 0.484      | 0.500     |
+| rigid solve       | 0.261      | 0.250     |
+| gravity           | 0.123      | 0.110     |
 
 Inside the new contact pass, tag rebuild plus the in-place sort was about
 8.4 ms and the distance walk was about 16.3 ms, again with the timer

@@ -23,8 +23,8 @@ use crate::session::SessionError;
 const PARTICLE_RADIUS: f32 = 0.0125 * 3.0;
 const PARTICLE_COLUMNS: usize = 80;
 const PARTICLE_ROWS: usize = 40;
-const COLUMN_GAPS: f32 = (PARTICLE_COLUMNS - 1) as f32;
-const ROW_GAPS: f32 = (PARTICLE_ROWS - 1) as f32;
+const COLUMN_GAPS: f32 = grid_gaps(PARTICLE_COLUMNS);
+const ROW_GAPS: f32 = grid_gaps(PARTICLE_ROWS);
 /// Rest spacing is three quarters of the particle diameter, so the pool does not collapse.
 const POOL_STRIDE: f32 = PARTICLE_RADIUS * 2.0 * 0.75;
 const PARTICLE_DAMPING: f32 = 0.2;
@@ -32,6 +32,9 @@ const PRESSURE_STRENGTH: f32 = 0.25;
 const GROUP_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const SIM_DT: f32 = 1.0 / 60.0;
+
+// The press must stay under one particle diameter per step.
+const _: () = assert!(PEAK_DESCEND_SPEED < PARTICLE_RADIUS * 2.0 / SIM_DT);
 const HOLD_HIGH: f32 = 3.0;
 const HOLD_LOW: f32 = 1.0;
 const DESCEND_DURATION: f32 = 1.5;
@@ -514,3 +517,13 @@ fn push_loop(segments: &mut Vec<RigidSegment>, transform: Transform, corners: &[
 
 #[cfg(test)]
 mod tests;
+
+const fn grid_gaps(count: usize) -> f32 {
+    let mut gaps = 0.0;
+    let mut remaining = count.saturating_sub(1);
+    while remaining > 0 {
+        gaps += 1.0;
+        remaining -= 1;
+    }
+    gaps
+}

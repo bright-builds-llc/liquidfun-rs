@@ -44,7 +44,7 @@ const MAX_MOTOR_TORQUE: f32 = 1.0e7;
 const SIM_DT: f32 = 1.0 / 60.0;
 const FILL_HALF: f32 = 0.9;
 
-/// Wall half-extents and local centers matching testWaveMachine.js SetAsBoxXYCenterAngle.
+/// Wall half-extents and local centers matching `testWaveMachine.js` `SetAsBoxXYCenterAngle`.
 const WALLS: [(f32, f32, Vec2); 4] = [
     (0.05, 1.0, Vec2::new(2.0, 0.0)),
     (0.05, 1.0, Vec2::new(-2.0, 0.0)),

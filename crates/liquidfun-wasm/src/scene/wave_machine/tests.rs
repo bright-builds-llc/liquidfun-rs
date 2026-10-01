@@ -76,7 +76,7 @@ fn original_speed_follows_sim_time_after_advances() {
         mut hooks,
         ..
     } = build(&[]).expect("Wave Machine should construct the pinned motorized tank");
-    let advances = 7_u32;
+    let advances = 7_u16;
     hooks
         .apply_control(&mut world, particle_system, "wave-speed", "1.0")
         .expect("1.0 restores the pinned amplitude");
@@ -88,7 +88,7 @@ fn original_speed_follows_sim_time_after_advances() {
             .expect("on_advance must update motor from sim time");
     }
     let speed = revolute_motor_speed(&world);
-    let expected = 0.05 * (advances as f32 / 60.0).cos() * PI;
+    let expected = 0.05 * (f32::from(advances) / 60.0).cos() * PI;
 
     // Assert
     assert!(
@@ -106,7 +106,7 @@ fn max_wave_speed_raises_frequency_without_raising_tilt() {
         mut hooks,
         ..
     } = build(&[]).expect("Wave Machine should construct");
-    let advances = 7_u32;
+    let advances = 7_u16;
     hooks
         .apply_control(&mut world, particle_system, "wave-speed", "10.0")
         .expect("10.0 is the slider maximum");
@@ -118,7 +118,7 @@ fn max_wave_speed_raises_frequency_without_raising_tilt() {
             .expect("on_advance must scale rocking frequency");
     }
     let speed = revolute_motor_speed(&world);
-    let time = advances as f32 / 60.0;
+    let time = f32::from(advances) / 60.0;
     let expected = 10.0 * 0.05 * (10.0 * time).cos() * PI;
 
     // Assert

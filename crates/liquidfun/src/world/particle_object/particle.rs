@@ -186,10 +186,10 @@ impl World {
                 .compute_aabb(transform, child)
                 .map_err(|_error| ParticleQueryError::NonFiniteDerivedGeometry)?;
             self.query_aabb_with_particles(aabb, |occurrence| {
-                if let WorldQueryOccurrence::Particle(hit) = occurrence {
-                    if hit.system() == system {
-                        candidates.push(hit.particle());
-                    }
+                if let WorldQueryOccurrence::Particle(hit) = occurrence
+                    && hit.system() == system
+                {
+                    candidates.push(hit.particle());
                 }
                 QueryDirective::Continue
             })?;
@@ -291,7 +291,6 @@ mod destroy_in_shape_tests {
         let Ok(view) = world.particle_system_view(
             world
                 .particle_system_ids()
-                .into_iter()
                 .next()
                 .expect("test world has one system"),
         ) else {

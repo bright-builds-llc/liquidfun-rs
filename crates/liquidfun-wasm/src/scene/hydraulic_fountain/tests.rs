@@ -117,10 +117,6 @@ fn descent_eases_in_and_peaks_under_the_tunnel_limit() {
         late_speed.abs() <= PEAK_DESCEND_SPEED + 0.02,
         "the press peaks near {PEAK_DESCEND_SPEED}, got {late_speed}"
     );
-    assert!(
-        PEAK_DESCEND_SPEED < PARTICLE_RADIUS * 2.0 / SIM_DT,
-        "the press stays under one particle diameter per step"
-    );
 }
 
 #[test]

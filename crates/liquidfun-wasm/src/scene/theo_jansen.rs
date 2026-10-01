@@ -31,7 +31,7 @@ const MAX_MOTOR_TORQUE: f32 = 400.0;
 const CHASSIS_HALF: Vec2 = Vec2::new(2.5, 1.0);
 const WHEEL_RADIUS: f32 = 1.6;
 const BALL_RADIUS: f32 = 0.25;
-const BALL_COUNT: usize = 40;
+const BALL_COUNT: u16 = 40;
 const LEG_ANGULAR_DAMPING: f32 = 10.0;
 const WALKER_FILTER: FilterData = FilterData::new(0x0001, 0xffff, -1);
 const MOTOR_DIRECTION_CONTROL: &str = "motor-direction";
@@ -140,9 +140,9 @@ fn create_ground(world: &mut World) -> Result<[RigidSegment; 3], SceneError> {
 }
 
 fn create_balls(world: &mut World) -> Result<Vec<BodyId>, SceneError> {
-    let mut balls = Vec::with_capacity(BALL_COUNT);
+    let mut balls = Vec::with_capacity(usize::from(BALL_COUNT));
     for index in 0..BALL_COUNT {
-        let position = Vec2::new(-40.0 + 2.0 * index as f32, 0.5);
+        let position = Vec2::new(-40.0 + 2.0 * f32::from(index), 0.5);
         let definition = BodyDef::new(BodyType::Dynamic, position, 0.0, true)
             .map_err(|_error| SceneError::Body)?;
         let body = world
@@ -491,7 +491,7 @@ impl SceneHooks for TheoJansenHooks {
     }
 
     fn collect_circles(&self, world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
-        let mut circles = Vec::with_capacity(1 + BALL_COUNT);
+        let mut circles = Vec::with_capacity(1 + usize::from(BALL_COUNT));
         let wheel_position = world
             .body_snapshot(self.wheel)
             .map_err(|_error| SessionError::FrameCaptureFailed)?

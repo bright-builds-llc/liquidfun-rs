@@ -5,8 +5,8 @@ use super::build;
 use crate::scene::{SceneId, build_scene};
 use crate::session::{SessionCore, SessionError};
 
-const FAR_WINDOW_MIN_X: f32 = 1.20;
-const PARTICLE_DIAMETER: f32 = 0.05;
+const FAR_WINDOW_MIN_X: f32 = 47.0;
+const PARTICLE_DIAMETER: f32 = 0.33;
 
 #[test]
 fn pool_starts_as_a_still_band() {
@@ -31,21 +31,47 @@ fn pool_starts_as_a_still_band() {
         .collect();
 
     // Assert
-    assert!(live_count > 0, "the pool should start with water");
+    assert_eq!(live_count, 2500, "the pool starts with 2500 particles");
     assert!(
-        velocities.iter().all(velocity_is_zero),
+        velocities.iter().copied().all(velocity_is_zero),
         "a fresh pool has no particle velocity"
     );
     assert!(
         !far_window.is_empty(),
         "the far-wall sample should start filled"
     );
-    let pool_top = maximum_y(&positions);
+    let channel_top = maximum_y(
+        &positions
+            .iter()
+            .copied()
+            .filter(|position| position.x >= 5.0)
+            .collect::<Vec<_>>(),
+    );
     let far_top = maximum_y(&far_window);
     assert!(
-        (pool_top - far_top).abs() <= PARTICLE_DIAMETER,
-        "the far surface starts within one diameter of the pool surface"
+        (channel_top - far_top).abs() <= PARTICLE_DIAMETER,
+        "the far surface starts within one diameter of the channel surface"
     );
+}
+
+#[test]
+fn horizontal_device_tilt_preserves_the_pool_particles() {
+    for gravity_x in [-10.0, 10.0] {
+        // Arrange
+        let mut session =
+            SessionCore::create(SceneId::WaveTank).expect("wave tank should construct");
+        let starting_count = session.live_particle_count().expect("water should be live");
+        session
+            .set_gravity(gravity_x, 0.0)
+            .expect("horizontal device tilt should be supported");
+
+        // Act
+        session.advance(4).expect("the tilted pool should step");
+        let final_count = session.live_particle_count().expect("water should remain");
+
+        // Assert
+        assert_eq!(final_count, starting_count);
+    }
 }
 
 #[test]
@@ -135,12 +161,33 @@ fn far_wall_particles_rise_after_a_half_cycle() {
     for _ in 0..(HALF_PERIOD_STEPS / 4) {
         session
             .advance(4)
-            .expect("a half period is fifteen batches of four steps");
+            .expect("the half period should finish on the crest");
     }
     let end_count = session
         .live_particle_count()
         .expect("the same water should still be live");
     let translation = prismatic_translation(&session);
+
+    // Assert
+    assert!(
+        !started.is_empty(),
+        "the far window starts over the fixed floor"
+    );
+    assert!(
+        translation >= 0.5 * STROKE,
+        "the platform should be at least halfway up the stroke, was {translation}"
+    );
+    assert_eq!(end_count, start_count);
+    assert!(
+        particles_stay_in_the_tank(&session),
+        "particles should stay inside the tank"
+    );
+
+    for _ in 0..(FAR_WALL_WAIT_STEPS / 4) {
+        session
+            .advance(4)
+            .expect("the wave should have time to reach the far wall");
+    }
     let rose = session.read_particles(|world, system| {
         let view = world
             .particle_system_view(system)
@@ -154,20 +201,25 @@ fn far_wall_particles_rise_after_a_half_cycle() {
                 })
         })
     });
-
-    // Assert
-    assert!(
-        !started.is_empty(),
-        "the far window starts over the fixed floor"
-    );
-    assert!(
-        translation >= 0.5 * STROKE,
-        "the platform should be at least halfway up the stroke, was {translation}"
-    );
-    assert_eq!(end_count, start_count);
+    let (later_count, buried) = session.read_particles(|world, system| {
+        let view = world
+            .particle_system_view(system)
+            .expect("the water system should still be live");
+        let buried = view
+            .positions()
+            .iter()
+            .copied()
+            .find(|position| position.y < -0.3 || position.x < -0.15 || position.x > 50.15);
+        (view.particle_ids().len(), buried)
+    });
     assert!(
         rose,
         "an original far-wall particle should rise by one diameter"
+    );
+    assert_eq!(later_count, start_count);
+    assert!(
+        buried.is_none(),
+        "water should stay above the floor, found {buried:?}"
     );
 }
 
@@ -176,7 +228,7 @@ fn motor_speed_follows_the_sine() {
     // Arrange
     let mut first = SessionCore::create(SceneId::WaveTank).expect("wave tank should construct");
     let mut crest = SessionCore::create(SceneId::WaveTank).expect("wave tank should construct");
-    let expected = PEAK_SPEED * (std::f32::consts::TAU * SIM_DT / PERIOD).sin();
+    let expected = PEAK_SPEED * (SPEED * std::f32::consts::TAU * SIM_DT / PERIOD).sin();
 
     // Act
     first
@@ -222,6 +274,58 @@ fn rebuild_restores_the_still_pool() {
 }
 
 #[test]
+fn platform_anchor_starts_at_the_default_width() {
+    // Arrange
+    let session = SessionCore::create(SceneId::WaveTank).expect("wave tank should construct");
+
+    // Act
+    let position = dynamic_body_position(&session);
+
+    // Assert
+    assert_eq!(position.x.to_bits(), 4.0_f32.to_bits());
+    assert_eq!(position.y.to_bits(), 0.0_f32.to_bits());
+}
+
+#[test]
+fn wider_platform_preset_moves_the_anchor() {
+    // Arrange
+    let presets = [("platform-width".to_owned(), "8.0".to_owned())];
+
+    // Act
+    let built = build(&presets).expect("the original width should still construct");
+    let position = platform_position(&built.world);
+
+    // Assert
+    assert_eq!(position.x.to_bits(), 8.0_f32.to_bits());
+}
+
+#[test]
+fn speed_and_amplitude_scale_the_sine_without_rebuilding() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::WaveTank).expect("wave tank should construct");
+    let doubled_speed = session.apply_control("platform-speed", "2.0");
+    let doubled_stroke = session.apply_control("platform-amplitude", "1.0");
+    let applied_peak = 1.0 * 2.0 * std::f32::consts::TAU / (2.0 * PERIOD);
+    let expected = applied_peak * (2.0 * std::f32::consts::TAU * SIM_DT / PERIOD).sin();
+
+    // Act
+    session
+        .advance(1)
+        .expect("the first step should write the scaled sine sample");
+    let speed = prismatic_motor_speed(&session);
+    let count = session.live_particle_count().expect("water should remain");
+
+    // Assert
+    assert_eq!(doubled_speed, Ok(false));
+    assert_eq!(doubled_stroke, Ok(false));
+    assert!(
+        (speed - expected).abs() <= 1.0e-5,
+        "scaled speed {speed} should match {expected}"
+    );
+    assert_eq!(count, 2500);
+}
+
+#[test]
 fn source_writes_a_prismatic_sine() {
     // Arrange
     let source = include_str!("../wave_tank.rs");
@@ -236,12 +340,29 @@ fn source_writes_a_prismatic_sine() {
     assert!(!source.contains("with_destruction_by_age"));
 }
 
-const PARTICLE_RADIUS: f32 = 0.025;
-const STROKE: f32 = 0.16;
-const PERIOD: f32 = 2.0;
+const PARTICLE_RADIUS: f32 = 0.11 * 1.5;
+const SPEED: f32 = 0.6;
+const STROKE: f32 = 0.5;
+const PERIOD: f32 = 2.4;
 const SIM_DT: f32 = 1.0 / 60.0;
-const PEAK_SPEED: f32 = STROKE * std::f32::consts::TAU / (2.0 * PERIOD);
-const HALF_PERIOD_STEPS: u32 = (PERIOD * 30.0) as u32;
+const PEAK_SPEED: f32 = STROKE * SPEED * std::f32::consts::TAU / (2.0 * PERIOD);
+/// Half a cycle at 0.6× is 2 seconds.
+const HALF_PERIOD_STEPS: u32 = 120;
+/// The pool is still 50 m long, so the wave needs about 10 seconds after the crest.
+const FAR_WALL_WAIT_STEPS: u32 = 600;
+
+fn particles_stay_in_the_tank(session: &SessionCore) -> bool {
+    session.read_particles(|world, system| {
+        let view = world
+            .particle_system_view(system)
+            .expect("the water system should still be live");
+        view.positions().iter().all(|position| {
+            position.x > -PARTICLE_DIAMETER
+                && position.x < 50.0 + PARTICLE_DIAMETER
+                && position.y > -0.3
+        })
+    })
+}
 
 fn far_window_particles(session: &SessionCore) -> Vec<(liquidfun::ParticleId, Vec2)> {
     session.read_particles(|world, system| {
@@ -273,21 +394,44 @@ fn assert_still_band(session: &SessionCore) {
         .copied()
         .filter(|position| position.x >= FAR_WINDOW_MIN_X)
         .collect();
-    assert!(live_count > 0, "the pool should start with water");
+    assert_eq!(live_count, 2500, "the pool starts with 2500 particles");
     assert!(
-        velocities.iter().all(velocity_is_zero),
+        velocities.iter().copied().all(velocity_is_zero),
         "a fresh pool has no particle velocity"
     );
     assert!(
         !far_window.is_empty(),
         "the far-wall sample should start filled"
     );
-    let pool_top = maximum_y(&positions);
+    let channel_top = maximum_y(
+        &positions
+            .iter()
+            .copied()
+            .filter(|position| position.x >= 5.0)
+            .collect::<Vec<_>>(),
+    );
     let far_top = maximum_y(&far_window);
     assert!(
-        (pool_top - far_top).abs() <= PARTICLE_DIAMETER,
-        "the far surface starts within one diameter of the pool surface"
+        (channel_top - far_top).abs() <= PARTICLE_DIAMETER,
+        "the far surface starts within one diameter of the channel surface"
     );
+}
+
+fn dynamic_body_position(session: &SessionCore) -> Vec2 {
+    session.read_particles(|world, _system| platform_position(world))
+}
+
+fn platform_position(world: &liquidfun::World) -> Vec2 {
+    let observation = world
+        .world_observation(WorldObservationLimits::reviewed())
+        .expect("reviewed observation should include the platform");
+    observation
+        .bodies()
+        .iter()
+        .find(|body| body.snapshot().body_type() == BodyType::Dynamic)
+        .expect("the platform is the dynamic body")
+        .snapshot()
+        .position()
 }
 
 fn prismatic_translation(session: &SessionCore) -> f32 {
@@ -323,7 +467,102 @@ fn prismatic_motor_speed(session: &SessionCore) -> f32 {
     })
 }
 
-fn velocity_is_zero(velocity: &Vec2) -> bool {
+#[test]
+fn platform_right_face_is_as_thick_as_the_tank_wall() {
+    // Arrange
+    let layout = super::wave_layout(super::DEFAULT_PLATFORM_WIDTH, 0.0);
+    let rise = 0.08;
+
+    // Act
+    let face = super::platform_face(&layout, 0.0);
+    let raised = super::platform_face(&layout, rise);
+
+    // Assert
+    let thickness = face.half_width * 2.0;
+    assert_eq!(thickness.to_bits(), (super::WALL_HALF * 2.0).to_bits());
+    assert_eq!(
+        (face.center.y + face.half_height).to_bits(),
+        0.0_f32.to_bits()
+    );
+    assert_eq!(
+        (face.center.y - face.half_height).to_bits(),
+        super::FLOOR_BOTTOM_Y.to_bits()
+    );
+    let slab_right = layout.pad_center.x + layout.half_width;
+    assert_eq!(
+        (face.center.x + face.half_width).to_bits(),
+        slab_right.to_bits()
+    );
+    let raised_bottom = rise + raised.center.y - raised.half_height;
+    assert_eq!(raised_bottom.to_bits(), super::FLOOR_BOTTOM_Y.to_bits());
+}
+
+#[test]
+fn default_slant_lifts_the_back_above_the_spill_edge() {
+    // Arrange
+    let flat = super::wave_layout(super::DEFAULT_PLATFORM_WIDTH, 0.0);
+    let sloped = super::wave_layout(super::DEFAULT_PLATFORM_WIDTH, super::default_slant());
+
+    // Act
+    let flat_back = highest_corner(&super::plate_corners(&flat));
+    let sloped_corners = super::plate_corners(&sloped);
+    let sloped_back = highest_corner(&sloped_corners);
+    let spill = nearest_origin(&sloped_corners);
+
+    // Assert
+    assert_eq!(flat_back.y.to_bits(), 0.0_f32.to_bits());
+    assert!(sloped_back.y > 0.6, "a 10 degree plate raises the back");
+    assert!(
+        sloped_back.x < 0.0,
+        "the high end stays toward the back wall"
+    );
+    assert!(spill.x.abs() < 1.0e-4 && spill.y.abs() < 1.0e-4);
+}
+
+#[test]
+fn slant_recreates_and_amplitude_reaches_four_meters() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::WaveTank).expect("wave tank should construct");
+
+    // Act
+    let slant = session.apply_control("platform-slant", "30");
+    let rejected = session.apply_control("platform-slant", "31");
+    let amplitude = session.apply_control("platform-amplitude", "4.0");
+
+    // Assert
+    assert_eq!(slant, Ok(true));
+    assert!(matches!(rejected, Err(SessionError::UnknownControl)));
+    assert_eq!(amplitude, Ok(false));
+}
+
+fn highest_corner(corners: &[Vec2; 4]) -> Vec2 {
+    let mut highest = corners[0];
+    for corner in corners.iter().skip(1) {
+        if corner.y > highest.y {
+            highest = *corner;
+        }
+    }
+    highest
+}
+
+fn nearest_origin(corners: &[Vec2; 4]) -> Vec2 {
+    let mut nearest = corners[0];
+    let mut nearest_distance = corner_distance_squared(nearest);
+    for corner in corners.iter().skip(1) {
+        let distance = corner_distance_squared(*corner);
+        if distance < nearest_distance {
+            nearest = *corner;
+            nearest_distance = distance;
+        }
+    }
+    nearest
+}
+
+fn corner_distance_squared(corner: Vec2) -> f32 {
+    corner.x * corner.x + corner.y * corner.y
+}
+
+fn velocity_is_zero(velocity: Vec2) -> bool {
     velocity.x.to_bits() == 0.0_f32.to_bits() && velocity.y.to_bits() == 0.0_f32.to_bits()
 }
 

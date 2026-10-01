@@ -213,7 +213,7 @@ fn sock_shapes() -> Result<Vec<Shape>, SceneError> {
 fn create_sock(
     world: &mut World,
     system: ParticleSystemId,
-    ankle: Vec2,
+    sock_position: Vec2,
     angle: f32,
     color: ParticleColor,
 ) -> Result<(), SceneError> {
@@ -227,7 +227,7 @@ fn create_sock(
         .map_err(|_error| SceneError::Particle)?
         .with_stride(SOCK_STRIDE)
         .map_err(|_error| SceneError::Particle)?
-        .with_transform(Transform::from_position_angle(ankle, angle))
+        .with_transform(Transform::from_position_angle(sock_position, angle))
         .map_err(|_error| SceneError::Particle)?;
     world
         .create_particle_group(system, &recipe)
@@ -294,7 +294,7 @@ impl SceneHooks for WashingMachineHooks {
         world
             .body_snapshot(self.drum)
             .ok()
-            .map(|snapshot| snapshot.angle())
+            .map(liquidfun::BodySnapshot::angle)
     }
 
     fn apply_control(

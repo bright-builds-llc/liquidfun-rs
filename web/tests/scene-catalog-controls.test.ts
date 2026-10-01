@@ -43,6 +43,8 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "gravity",
   "gravity",
+  "platform-width",
+  "platform-slant",
   "gravity",
   "gravity",
   "gravity",
@@ -311,7 +313,39 @@ describe("scene catalog controls", () => {
       ),
     ).toBe(false);
     const waveTank = maybeSceneById("wave-tank");
-    expect(waveTank?.controls).toEqual([GRAVITY_CONTROL]);
+    expect(waveTank?.controls.map((control) => control.id)).toEqual([
+      "platform-width",
+      "platform-slant",
+      "platform-speed",
+      "platform-amplitude",
+      "gravity",
+    ]);
+    expect(waveTank?.controls[0]).toMatchObject({
+      label: "Platform width",
+      kind: "range",
+      recreates: true,
+      surface: "hud",
+      defaultValue: 4,
+    });
+    expect(waveTank?.controls[1]).toMatchObject({
+      label: "Platform slant",
+      kind: "range",
+      recreates: true,
+      defaultValue: 10,
+      max: 30,
+    });
+    expect(waveTank?.controls[2]).toMatchObject({
+      label: "Platform speed",
+      recreates: false,
+      defaultValue: 0.6,
+    });
+    expect(waveTank?.controls[3]).toMatchObject({
+      label: "Platform amplitude",
+      recreates: false,
+      defaultValue: 0.5,
+      max: 4,
+    });
+    expect(waveTank?.controls[4]).toEqual(GRAVITY_CONTROL);
     expect(
       (waveTank?.controls ?? []).some((control) =>
         ["period", "amplitude", "stroke"].includes(control.id),

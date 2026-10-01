@@ -82,7 +82,10 @@ export function formatRangeValueText(value: string, unit: string): string {
     return `${value} meters per second squared`;
   }
   if (unit === "×") {
-    return `${value} times the original wave speed`;
+    return `${value} times the original rate`;
+  }
+  if (unit === "m") {
+    return `${value} meters`;
   }
   if (unit === "°") {
     return `${value} degrees`;

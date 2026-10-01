@@ -403,10 +403,11 @@ fn advance_proof(session: &mut SessionCore) {
 
 fn advance_return(session: &mut SessionCore) {
     let seconds = super::DWELL + super::RISE_SECONDS + super::SPILL_SAMPLE_SECONDS;
-    let steps = (seconds / super::SIM_DT).ceil() as usize;
-    let batches = steps.div_ceil(4);
-    for _ in 0..batches {
+    let steps = (seconds / super::SIM_DT).ceil();
+    let mut advanced = 0.0;
+    while advanced < steps {
         session.advance(4).expect("the return window should step");
+        advanced += 4.0;
     }
 }
 

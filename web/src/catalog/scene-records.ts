@@ -43,6 +43,12 @@ import {
   WAVE_MACHINE_SPEED_CONTROL,
   WAVE_MACHINE_TILT_CONTROL,
 } from "./wave-machine-speed";
+import {
+  WAVE_TANK_AMPLITUDE_CONTROL,
+  WAVE_TANK_SLANT_CONTROL,
+  WAVE_TANK_SPEED_CONTROL,
+  WAVE_TANK_WIDTH_CONTROL,
+} from "./wave-tank-controls";
 import type { SceneRecord } from "./scenes";
 
 /**
@@ -531,13 +537,19 @@ export const SCENES: readonly SceneRecord[] = [
     ready: true,
     description:
       "Watch a still pool whose end platform rises and falls and sends a wave toward the far wall. This is an original experimental scene.",
-    interactionHint: WATCH_FIRST_HINT,
-    controls: withGravitySlider([]),
+    interactionHint:
+      "Use Platform width, Platform slant, Platform speed, and Platform amplitude to drive the wave. Width starts at 4.0 m. Slant starts at 10 degrees. Speed starts at 0.6× the original rate, and amplitude starts at 0.5 m. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([
+      WAVE_TANK_WIDTH_CONTROL,
+      WAVE_TANK_SLANT_CONTROL,
+      WAVE_TANK_SPEED_CONTROL,
+      WAVE_TANK_AMPLITUDE_CONTROL,
+    ]),
     viewBounds: {
-      minX: -0.12,
-      minY: -0.28,
-      maxX: 1.52,
-      maxY: 1.02,
+      minX: -1.5,
+      minY: -2,
+      maxX: 52,
+      maxY: 13,
     },
     credits: {
       implementationPath: "crates/liquidfun-wasm/src/scene/wave_tank.rs",

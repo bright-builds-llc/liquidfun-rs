@@ -99,7 +99,8 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   sparky: WATCH_FIRST_HINT,
   "hydraulic-fountain":
     "Use Gap to set the opening between the platforms. It starts at 9 cm. Labeled controls also work from the keyboard.",
-  "wave-tank": WATCH_FIRST_HINT,
+  "wave-tank":
+    "Use Platform width, Platform slant, Platform speed, and Platform amplitude to drive the wave. Width starts at 4.0 m. Slant starts at 10 degrees. Speed starts at 0.6× the original rate, and amplitude starts at 0.5 m. Labeled controls also work from the keyboard.",
   "liquid-bubbler": WATCH_FIRST_HINT,
   "stacked-drip": WATCH_FIRST_HINT,
   "washing-machine":
@@ -118,7 +119,6 @@ const WATCH_FIRST_SCENE_IDS = [
   "soup",
   "liquid-tumbler",
   "sparky",
-  "wave-tank",
   "liquid-bubbler",
   "stacked-drip",
 ] as const;

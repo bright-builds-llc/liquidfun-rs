@@ -208,7 +208,9 @@ fn create_floating_box(
     Ok((body, shape, corners))
 }
 
-fn create_edge_noodles(world: &mut World) -> Result<([BodyId; 3], [(Vec2, Vec2); 3]), SceneError> {
+type EdgeNoodles = ([BodyId; 3], [(Vec2, Vec2); 3]);
+
+fn create_edge_noodles(world: &mut World) -> Result<EdgeNoodles, SceneError> {
     let mut built_bodies = Vec::with_capacity(3);
     let mut locals = [(Vec2::ZERO, Vec2::ZERO); 3];
     for (index, (start, end)) in EDGE_ENDPOINTS.iter().copied().enumerate() {

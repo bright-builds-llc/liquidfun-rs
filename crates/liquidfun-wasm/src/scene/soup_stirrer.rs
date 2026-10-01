@@ -64,7 +64,6 @@ fn build_soup_stirrer() -> Result<BuiltScene, SceneError> {
     } = soup_family::build_soup_family()?;
 
     // Explicit pin matching testSoupStirrer.js SetDamping(1.0).
-    let _pinned_damping = PARTICLE_DAMPING;
     debug_assert!(
         (world
             .particle_system_snapshot(particle_system)

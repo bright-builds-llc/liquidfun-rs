@@ -161,7 +161,7 @@ fn create_particle_group(
 }
 
 fn pointer_inside_box(world_x: f32, world_y: f32) -> bool {
-    BOX_LEFT <= world_x && world_x <= BOX_RIGHT && BOX_BOTTOM <= world_y && world_y <= BOX_TOP
+    (BOX_LEFT..=BOX_RIGHT).contains(&world_x) && (BOX_BOTTOM..=BOX_TOP).contains(&world_y)
 }
 
 fn shove_group(
@@ -183,7 +183,8 @@ fn shove_group(
             .map_err(|_error| SessionError::SceneConstruction)?;
         view.member_ids().to_vec()
     };
-    let member_count = members.len() as f32;
+    let member_count =
+        f32::from(u16::try_from(members.len()).map_err(|_error| SessionError::SceneConstruction)?);
     match push_mode {
         PushMode::Force => {
             let force = direction * (FORCE_MAGNITUDE * member_count);

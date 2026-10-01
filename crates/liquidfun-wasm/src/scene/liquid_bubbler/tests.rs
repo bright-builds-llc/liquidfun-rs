@@ -34,10 +34,12 @@ fn reservoir_holds_three_thousand_finer_particles() {
             .expect("the reservoir should be live"),
         3_000
     );
-    assert!(
-        super::PARTICLE_RADIUS < 0.025,
-        "particles should be finer than the original 0.025 m drip"
-    );
+    const {
+        assert!(
+            super::PARTICLE_RADIUS < 0.025,
+            "particles should be finer than the original 0.025 m drip"
+        );
+    };
 }
 
 #[test]
@@ -62,7 +64,7 @@ fn reservoir_starts_still_above_the_top_shelf() {
     let translation = plate_translation(&session);
 
     // Assert
-    assert!(live_count > 0, "the reservoir should start with water");
+    assert_eq!(live_count, 3000, "the reservoir starts with 3000 particles");
     assert!(
         velocities.iter().copied().all(velocity_is_zero),
         "a fresh drip has no particle velocity"
@@ -241,10 +243,12 @@ fn plate_pauses_at_the_top_before_descending() {
     assert_eq!(during_pause.to_bits(), 0.0_f32.to_bits());
     assert_eq!(last_pause_step.to_bits(), 0.0_f32.to_bits());
     assert_eq!(descent.to_bits(), (-super::PLATE_SPEED).to_bits());
-    assert!(
-        super::TOP_DWELL >= 3.0,
-        "the top pause should last a few seconds"
-    );
+    const {
+        assert!(
+            super::TOP_DWELL >= 3.0,
+            "the top pause should last a few seconds"
+        );
+    };
 }
 
 #[test]
@@ -511,10 +515,11 @@ fn advance_proof(session: &mut SessionCore) {
 }
 
 fn advance_seconds(session: &mut SessionCore, seconds: f32) {
-    let steps = (seconds / super::SIM_DT).ceil() as usize;
-    let batches = steps.div_ceil(4);
-    for _ in 0..batches {
+    let steps = (seconds / super::SIM_DT).ceil();
+    let mut advanced = 0.0;
+    while advanced < steps {
         session.advance(4).expect("the timed window should step");
+        advanced += 4.0;
     }
 }
 

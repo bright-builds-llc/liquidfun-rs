@@ -38,7 +38,9 @@ fn plate_spans_the_shaft_under_a_lower_divider() {
         super::super::DIVIDER_BOTTOM_Y > deck_world_top + super::super::PARTICLE_RADIUS * 2.0,
         "the spillway should clear a particle above the deck"
     );
-    assert!(super::super::DIVIDER_BOTTOM_Y < 0.22);
+    const {
+        assert!(super::super::DIVIDER_BOTTOM_Y < 0.22);
+    };
     let blocks_the_floor = super::super::wall_boxes().into_iter().any(|wall| {
         let left = wall.center.x - wall.half_width;
         let right = wall.center.x + wall.half_width;
@@ -57,11 +59,13 @@ fn second_dwell_keeps_a_load_on_the_deck() {
     // Arrange
     let mut session =
         SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
-    let steps = (15.0 / super::super::SIM_DT).ceil() as usize;
+    let steps = (15.0 / super::super::SIM_DT).ceil();
+    let mut advanced = 0.0;
 
     // Act
-    for _ in 0..steps.div_ceil(4) {
+    while advanced < steps {
         session.advance(4).expect("the second dwell should step");
+        advanced += 4.0;
     }
     let (translation, on_deck, under) = session.read_particles(|world, system| {
         let observation = world

@@ -468,43 +468,113 @@ fn escape_follows_gravity_and_falls_back_to_downward() {
     // Act / Assert
     let wide = 1.0;
     assert!(escape::particle_has_escaped(
+        SceneId::Fountain,
         Vec2::new(0.0, -12.1),
         upright,
         wide
     ));
     assert!(!escape::particle_has_escaped(
+        SceneId::Fountain,
         Vec2::new(0.0, -11.0),
         upright,
         wide
     ));
     assert!(escape::particle_has_escaped(
+        SceneId::Fountain,
         Vec2::new(12.1, 0.0),
         sideways,
         wide
     ));
     assert!(!escape::particle_has_escaped(
+        SceneId::Fountain,
         Vec2::new(0.0, -20.0),
         sideways,
         wide
     ));
     assert!(escape::particle_has_escaped(
+        SceneId::Fountain,
         Vec2::new(0.0, -12.1),
         Vec2::new(0.0, 0.0),
         wide
     ));
     assert!(escape::particle_has_escaped(
+        SceneId::Fountain,
         Vec2::new(f32::NAN, 0.0),
         upright,
         wide
     ));
     let glass = 0.004;
     assert!(
-        escape::particle_has_escaped(Vec2::new(0.0, -10.0), upright, glass),
+        escape::particle_has_escaped(SceneId::Fountain, Vec2::new(0.0, -10.0), upright, glass),
         "a 4 mm particle at -10 m is already outside the tag domain"
     );
     assert!(!escape::particle_has_escaped(
+        SceneId::Fountain,
         Vec2::new(0.0, -2.0),
         upright,
         glass
     ));
+}
+
+#[test]
+fn normal_scenes_keep_the_original_sideways_escape_limit() {
+    // Arrange
+    let gravity = Vec2::new(0.0, -10.0);
+
+    // Act / Assert
+    assert!(!escape::particle_has_escaped(
+        SceneId::Fountain,
+        Vec2::new(47.9, 0.0),
+        gravity,
+        1.0,
+    ));
+    assert!(escape::particle_has_escaped(
+        SceneId::Fountain,
+        Vec2::new(48.1, 0.0),
+        gravity,
+        1.0,
+    ));
+}
+
+#[test]
+fn wave_tank_escape_bounds_contain_both_pool_ends_under_tilt() {
+    // Arrange
+    let pool_ends = [Vec2::new(0.1, 1.0), Vec2::new(49.0, 1.0)];
+    let gravities = [
+        Vec2::new(10.0, 0.0),
+        Vec2::new(-10.0, 0.0),
+        Vec2::new(0.0, 10.0),
+        Vec2::new(0.0, -10.0),
+    ];
+
+    // Act / Assert
+    for gravity in gravities {
+        for position in pool_ends {
+            assert!(!escape::particle_has_escaped(
+                SceneId::WaveTank,
+                position,
+                gravity,
+                0.33,
+            ));
+        }
+        assert!(escape::particle_has_escaped(
+            SceneId::WaveTank,
+            Vec2::new(81.0, 0.0),
+            gravity,
+            0.33,
+        ));
+    }
+}
+
+#[test]
+fn wave_tank_still_evicts_particles_outside_the_proxy_domain() {
+    // Arrange
+    let position = Vec2::new(49.0, 1.0);
+
+    // Act
+    let escaped =
+        escape::particle_has_escaped(SceneId::WaveTank, position, Vec2::new(10.0, 0.0), 0.004);
+
+    // Assert
+    assert!(escaped);
 }

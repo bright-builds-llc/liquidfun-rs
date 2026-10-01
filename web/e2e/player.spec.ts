@@ -145,6 +145,7 @@ test("switches rendering without stepping and persists across scenes and reload"
   expect(await canvasPixelSha256(page)).not.toBe(shadedPixels);
 
   // Act
+  await closeSceneControls(page);
   await page.goto(FOUNTAIN_PATH);
   await expectReadySceneChrome(page, "Fountain");
 

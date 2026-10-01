@@ -294,8 +294,11 @@ fn sock_silhouette(positions: &[Vec2]) -> (f32, usize, usize) {
         .iter()
         .copied()
         .reduce(|total, position| total + position)
-        .map(|total| total * (1.0 / positions.len() as f32))
-        .unwrap_or(Vec2::ZERO);
+        .map_or(Vec2::ZERO, |total| {
+            let count =
+                u16::try_from(positions.len()).expect("bounded test sock count fits in u16");
+            total * (1.0 / f32::from(count))
+        });
     let cuff = farthest_from(positions, centroid);
     let toe = farthest_from(positions, cuff);
     let axis = toe - cuff;

@@ -89,6 +89,7 @@ const SPILL_LIP_Y: f32 = 1.70;
 const DIVIDER_HALF_HEIGHT: f32 = (SPILL_LIP_Y - DIVIDER_BOTTOM_Y) * 0.5;
 const DIVIDER_CENTER_Y: f32 = (DIVIDER_BOTTOM_Y + SPILL_LIP_Y) * 0.5;
 /// Halfway through the pause at the top, while liquid can still cross the lip.
+#[cfg(test)]
 const SPILL_SAMPLE_SECONDS: f32 = TOP_DWELL * 0.5;
 const SAMPLE_PLATE_TOP: f32 = PLATE_REST_TOP + STROKE;
 /// Outer face of the counterweight, in tray-local metres.

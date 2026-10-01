@@ -374,7 +374,7 @@ describe("Dam Break gravity slider", () => {
 
     // Assert
     expect(readout).toBe("1.0 ×");
-    expect(spoken).toBe("1.0 times the original wave speed");
+    expect(spoken).toBe("1.0 times the original rate");
   });
 
   it("reads a wave-tilt magnitude as degrees", () => {

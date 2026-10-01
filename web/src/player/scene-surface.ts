@@ -1,4 +1,4 @@
-import { maybeSceneById } from "../catalog/scenes";
+import { maybeSceneById, type SceneId } from "../catalog/scenes";
 import { changedPresetEntries } from "../export/presets";
 import type { SvgExportRequest } from "../export/messages";
 import { controlStoresAppliedValue } from "../components/scene-controls";
@@ -154,6 +154,27 @@ function assignCanvas(session: SceneRuntime, canvas: HTMLCanvasElement): void {
   );
 }
 
+function reapplyLiveControls(session: SceneRuntime, sceneId: SceneId): void {
+  const maybeScene = maybeSceneById(sceneId);
+  const maybeOwnedSession = session.maybeSession;
+  if (maybeScene === undefined || maybeOwnedSession === undefined) {
+    return;
+  }
+
+  for (const control of maybeScene.controls) {
+    if (control.recreates || control.kind === "action") {
+      continue;
+    }
+
+    const maybeValue = session.constructionValues[control.id];
+    if (maybeValue === undefined) {
+      continue;
+    }
+
+    maybeOwnedSession.applyControl(control.id, maybeValue);
+  }
+}
+
 function applySceneControl(
   session: SceneRuntime,
   name: string,
@@ -200,6 +221,7 @@ function applySceneControl(
       return;
     }
 
+    reapplyLiveControls(session, maybeReadyId);
     session.clock.maybePreviousFrame = undefined;
     session.setMaybeDebugFrame(undefined);
     session.setStepsThisFrame(0);

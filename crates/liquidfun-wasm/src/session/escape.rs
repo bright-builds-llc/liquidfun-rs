@@ -3,17 +3,26 @@
 use liquidfun::math::Vec2;
 use liquidfun::{PROXY_TAG_HALF_EXTENT_DIAMETERS, ParticleId, ParticleSystemId, World};
 
+use crate::scene::SceneId;
+
 /// Distance along gravity, in meters, past which a particle is below the playfield.
 const BELOW_GROUND_METERS: f32 = 12.0;
 /// Distance sideways or against gravity, in meters, past which a particle has left.
 const ESCAPE_METERS: f32 = 48.0;
+/// The 50 m wave tank must fit even when device tilt rotates gravity.
+const WAVE_TANK_ESCAPE_METERS: f32 = 80.0;
 const GRAVITY_EPSILON_SQUARED: f32 = 1.0e-8;
 /// Fraction of the tag domain kept. The rest is room for one step of motion.
 const PROXY_KEEP_FRACTION: f32 = 0.5;
 
 /// Returns whether `position` is far enough along gravity, far enough away, or
 /// too close to the particle tag wall to keep simulating.
-pub(crate) fn particle_has_escaped(position: Vec2, gravity: Vec2, diameter: f32) -> bool {
+pub(crate) fn particle_has_escaped(
+    scene: SceneId,
+    position: Vec2,
+    gravity: Vec2,
+    diameter: f32,
+) -> bool {
     if !position.is_valid() || !diameter.is_finite() || diameter <= 0.0 {
         return true;
     }
@@ -21,16 +30,20 @@ pub(crate) fn particle_has_escaped(position: Vec2, gravity: Vec2, diameter: f32)
         return true;
     }
 
+    let (fall_limit, escape_limit) = match scene {
+        SceneId::WaveTank => (WAVE_TANK_ESCAPE_METERS, WAVE_TANK_ESCAPE_METERS),
+        _ => (BELOW_GROUND_METERS, ESCAPE_METERS),
+    };
     let down = fall_direction(gravity);
     let below = position.x * down.x + position.y * down.y;
-    if below > BELOW_GROUND_METERS {
+    if below > fall_limit {
         return true;
     }
 
     let sideways_x = position.x - below * down.x;
     let sideways_y = position.y - below * down.y;
     let sideways_squared = sideways_x * sideways_x + sideways_y * sideways_y;
-    below < -ESCAPE_METERS || sideways_squared > ESCAPE_METERS * ESCAPE_METERS
+    below < -escape_limit || sideways_squared > escape_limit * escape_limit
 }
 
 /// Destroys particles that have left the playfield before the next solver step.
@@ -38,10 +51,11 @@ pub(crate) fn evict_escaped_particles(
     world: &mut World,
     system: ParticleSystemId,
     particle_radius: f32,
+    scene: SceneId,
 ) -> Result<(), String> {
     let gravity = world.gravity();
     let diameter = particle_radius * 2.0;
-    let escaped = escaped_particle_ids(world, system, gravity, diameter)?;
+    let escaped = escaped_particle_ids(world, system, gravity, diameter, scene)?;
     for particle in escaped {
         world
             .destroy_particle(particle)
@@ -55,6 +69,7 @@ fn escaped_particle_ids(
     system: ParticleSystemId,
     gravity: Vec2,
     diameter: f32,
+    scene: SceneId,
 ) -> Result<Vec<ParticleId>, String> {
     let view = world
         .particle_system_view(system)
@@ -64,7 +79,7 @@ fn escaped_particle_ids(
         .iter()
         .copied()
         .zip(view.positions().iter().copied())
-        .filter(|(_particle, position)| particle_has_escaped(*position, gravity, diameter))
+        .filter(|(_particle, position)| particle_has_escaped(scene, *position, gravity, diameter))
         .map(|(particle, _position)| particle)
         .collect())
 }
