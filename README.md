@@ -185,6 +185,12 @@ change.
 
 [Animated SVG](docs/assets/readme/washing-machine-10s.svg)
 
+#### [Tesla Valve](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/tesla-valve)
+
+[![Tesla Valve simulation preview](docs/assets/readme/tesla-valve-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/tesla-valve)
+
+[Animated SVG](docs/assets/readme/tesla-valve-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
