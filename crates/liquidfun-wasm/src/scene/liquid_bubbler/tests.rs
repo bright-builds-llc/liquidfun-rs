@@ -17,6 +17,30 @@ const SPEED_TOLERANCE: f32 = 1.0e-5;
 const SPILL_SAMPLE_DROP: f32 = 0.15;
 
 #[test]
+fn reservoir_holds_three_thousand_finer_particles() {
+    // Arrange / Act
+    let session =
+        SessionCore::create(SceneId::LiquidBubbler).expect("liquid bubbler should construct");
+
+    // Assert
+    assert_eq!(
+        session.particle_count(),
+        3_000,
+        "the upper chamber should start with 3000 particles"
+    );
+    assert_eq!(
+        session
+            .live_particle_count()
+            .expect("the reservoir should be live"),
+        3_000
+    );
+    assert!(
+        super::PARTICLE_RADIUS < 0.025,
+        "particles should be finer than the original 0.025 m drip"
+    );
+}
+
+#[test]
 fn reservoir_starts_still_above_the_top_shelf() {
     // Arrange
     let session =
