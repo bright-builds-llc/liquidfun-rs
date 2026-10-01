@@ -394,7 +394,7 @@ function LiquidBubblerPreview() {
       <line x1="83" y1="59" x2="91" y2="59" stroke={RIGID} stroke-width="1.5" />
       <circle cx="37" cy="73" r="4" fill="none" stroke={RIGID} stroke-width="2" />
       <line x1="37" y1="69" x2="37" y2="77" stroke={RIGID} stroke-width="1.5" />
-      <line x1="110" y1="74" x2="126" y2="74" stroke={RIGID} stroke-width="3" />
+      <line x1="110" y1="74.6" x2="126" y2="74" stroke={RIGID} stroke-width="3" />
     </PreviewFrame>
   );
 }
