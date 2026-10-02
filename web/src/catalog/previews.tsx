@@ -350,24 +350,24 @@ function TeslaValvePreview() {
   const main = "M75.99 9.02 L77.22 12.4 L82.11 25.85 A5.4 5.4 0 0 1 82.11 29.55 L77.89 41.15 A5.4 5.4 0 0 0 77.89 44.85 L82.11 56.45 A5.4 5.4 0 0 1 82.11 60.15 L77.22 73.6 L75.99 76.98";
   const pipes = [
     main,
-    "M79.2 17.85 L81.51 15.1 A3.06 3.06 0 0 1 86.19 19.04 L81.62 24.49",
-    "M80.8 33.15 L78.5 30.4 A3.06 3.06 0 0 0 73.81 34.34 L78.38 39.79",
-    "M79.2 48.45 L81.51 45.7 A3.06 3.06 0 0 1 86.19 49.64 L81.62 55.09",
-    "M80.8 63.75 L78.5 61 A3.06 3.06 0 0 0 73.81 64.94 L78.38 70.39",
+    "M79.00 17.32 L80.21 15.88 A3.06 3.06 0 0 1 84.90 19.82 L81.42 23.96",
+    "M81.00 32.62 L79.79 31.18 A3.06 3.06 0 0 0 75.10 35.12 L78.58 39.26",
+    "M79.00 47.92 L80.21 46.48 A3.06 3.06 0 0 1 84.90 50.42 L81.42 54.56",
+    "M81.00 63.22 L79.79 61.78 A3.06 3.06 0 0 0 75.10 65.72 L78.58 69.86",
   ];
   return (
     <PreviewFrame>
-      <g fill="none" stroke={RIGID} stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+      <g fill="none" stroke={RIGID} stroke-width="4.08" stroke-linejoin="round" stroke-linecap="round">
         {pipes.map((path) => <path d={path} />)}
       </g>
-      <g fill="none" stroke={CANVAS} stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <g fill="none" stroke={CANVAS} stroke-width="1.08" stroke-linejoin="round" stroke-linecap="round">
         {pipes.map((path) => <path d={path} />)}
       </g>
       <path
         d={main}
         fill="none"
         stroke={WATER}
-        stroke-width="1"
+        stroke-width="0.5"
         stroke-linecap="round"
         stroke-dasharray="0.5 2"
       />

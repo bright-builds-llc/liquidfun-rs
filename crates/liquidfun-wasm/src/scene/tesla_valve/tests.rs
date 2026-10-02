@@ -1,10 +1,9 @@
 //! Circular width, solid fill, physical wall, and source regressions.
 use super::super::SceneId;
 use super::geometry::{
-    BORDER_HALF_WIDTH, BYPASS_RADIUS, CLEAR_WIDTH, CircularArc, FRAME_MAX_X, FRAME_MAX_Y,
-    FRAME_MIN_X, FRAME_MIN_Y, PARTICLE_RADIUS, SOURCE_SPACING, TRUNK_RADIUS, WALL_HALF_THICKNESS,
-    inlet_center, inlet_direction, island_wall_path, mirror_y, outline_segments, valve_geometry,
-    wall_boxes,
+    BORDER_HALF_WIDTH, BYPASS_RADIUS, CircularArc, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X,
+    FRAME_MIN_Y, PARTICLE_RADIUS, SOURCE_SPACING, TRUNK_RADIUS, WALL_HALF_THICKNESS, inlet_center,
+    inlet_direction, island_wall_path, mirror_y, outline_segments, valve_geometry, wall_boxes,
 };
 use crate::session::SessionCore;
 use liquidfun::collision::{CircleShape, PolygonShape};
@@ -25,7 +24,7 @@ fn bypasses_are_world_space_semicircles_with_constant_radial_width() {
         for (arc, island) in geometry.bypass_arcs.into_iter().zip(geometry.splitters) {
             assert!((arc.radius - BYPASS_RADIUS).abs() < 0.000_001);
             assert!((arc.sweep.abs() - TAU * 0.5).abs() < 0.000_001);
-            assert!((island.radius - 0.055).abs() < 0.000_001);
+            assert!((island.radius - 0.11).abs() < 0.000_001);
             let outer = CircularArc {
                 radius: arc.radius + BORDER_HALF_WIDTH,
                 ..arc
@@ -37,17 +36,14 @@ fn bypasses_are_world_space_semicircles_with_constant_radial_width() {
             for fraction in [0.0, 0.25, 0.5, 0.75, 1.0] {
                 let outer_point = outer.point(fraction);
                 let inner_point = inner.point(fraction);
-                assert!(((outer_point - arc.center).length() - 0.285).abs() < 0.000_001);
-                assert!(((inner_point - arc.center).length() - 0.055).abs() < 0.000_001);
+                assert!(((outer_point - arc.center).length() - 0.23).abs() < 0.000_001);
+                assert!(((inner_point - arc.center).length() - 0.11).abs() < 0.000_001);
                 assert!(
                     ((outer_point - inner_point).length() - 2.0 * BORDER_HALF_WIDTH).abs()
                         < 0.000_001
                 );
                 assert!(
-                    ((outer_point - inner_point).length()
-                        - 2.0 * WALL_HALF_THICKNESS
-                        - CLEAR_WIDTH)
-                        .abs()
+                    ((outer_point - inner_point).length() - 2.0 * WALL_HALF_THICKNESS - 0.06).abs()
                         < 0.000_001
                 );
             }
@@ -291,11 +287,57 @@ fn physical_bend_faces_keep_the_shared_clear_width() {
                     .min_by(|first, second| first.1.total_cmp(&second.1))
                     .expect("walls exist");
                 assert!(
-                    (clearance - CLEAR_WIDTH * 0.5).abs() < 0.0015,
+                    (clearance - 0.03).abs() < 0.0015,
                     "bend center {:?}, fraction {fraction} has {clearance} m physical clearance; wall {wall_index} {:?}",
                     arc.center,
                     walls[wall_index].vertices()
                 );
+            }
+        }
+    }
+}
+
+#[test]
+fn straight_trunk_and_return_arms_have_six_centimeter_physical_channels() {
+    for forward in [true, false] {
+        // Arrange
+        let geometry = valve_geometry(forward);
+        let mut paths = geometry.outer_paths.to_vec();
+        paths.extend(geometry.splitters.iter().map(island_wall_path));
+        let walls: Vec<PolygonShape> = wall_boxes(&paths)
+            .into_iter()
+            .map(|wall| {
+                PolygonShape::oriented_box(
+                    wall.half_length,
+                    WALL_HALF_THICKNESS,
+                    wall.center,
+                    wall.angle,
+                )
+                .expect("wall")
+            })
+            .collect();
+
+        // Act / Assert
+        for island in geometry.splitters {
+            let trunk_direction = island.stem[3] - island.stem[0];
+            let normal =
+                Vec2::new(-trunk_direction.y, trunk_direction.x) * (1.0 / trunk_direction.length());
+            let midpoint = (island.stem[0] + island.stem[3]) * 0.5;
+            let outward = normal * (island.center - midpoint).dot(normal).signum();
+            let radial = (island.stem[2] - island.center) * (1.0 / island.radius);
+            for fraction in [0.25, 0.5, 0.75] {
+                let trunk =
+                    island.stem[0] + trunk_direction * fraction - outward * BORDER_HALF_WIDTH;
+                let branch = island.stem[2]
+                    + (island.stem[3] - island.stem[2]) * fraction
+                    + radial * BORDER_HALF_WIDTH;
+                for point in [trunk, branch] {
+                    let clearance = physical_wall_clearance(point, &walls);
+                    assert!(
+                        (clearance - 0.03).abs() < 0.0015,
+                        "straight channel center {point:?} has {clearance} m clearance"
+                    );
+                }
             }
         }
     }
@@ -346,7 +388,8 @@ fn maximum_source_slots_fit_inlet_and_emit_aligned_velocity() {
     for (index, point) in view.positions().iter().enumerate() {
         let offset = *point - inlet_center();
         assert!(offset.dot(direction) > PARTICLE_RADIUS);
-        assert!(offset.dot(normal).abs() + PARTICLE_RADIUS < CLEAR_WIDTH * 0.5);
+        assert!(offset.dot(normal).abs() + PARTICLE_RADIUS < 0.03);
+        assert!((0.0377..=0.1501).contains(&offset.dot(direction)));
         for other in &view.positions()[index + 1..] {
             assert!((*point - *other).length() > SOURCE_SPACING - 0.000_001);
         }
@@ -413,4 +456,26 @@ fn point_to_segment_distance(point: Vec2, start: Vec2, end: Vec2) -> f32 {
     let edge = end - start;
     let fraction = ((point - start).dot(edge) / edge.length_squared()).clamp(0.0, 1.0);
     (point - (start + edge * fraction)).length()
+}
+
+fn physical_wall_clearance(point: Vec2, walls: &[PolygonShape]) -> f32 {
+    walls
+        .iter()
+        .map(|wall| {
+            assert!(
+                !wall.test_point(Transform::IDENTITY, point).expect("point"),
+                "channel center inside wall"
+            );
+            let vertices = wall.vertices();
+            (0..vertices.len())
+                .map(|edge| {
+                    point_to_segment_distance(
+                        point,
+                        vertices[edge],
+                        vertices[(edge + 1) % vertices.len()],
+                    )
+                })
+                .fold(f32::INFINITY, f32::min)
+        })
+        .fold(f32::INFINITY, f32::min)
 }

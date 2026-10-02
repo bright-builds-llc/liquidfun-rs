@@ -10,7 +10,7 @@ use std::f32::consts::TAU;
 pub(super) const MIRROR_Y: f32 = 2.15;
 pub(super) const PARTICLE_RADIUS: f32 = 0.005;
 pub(super) const WALL_HALF_THICKNESS: f32 = 0.03;
-pub(super) const CLEAR_WIDTH: f32 = 0.17;
+pub(super) const CLEAR_WIDTH: f32 = 0.06;
 pub(super) const BORDER_HALF_WIDTH: f32 = CLEAR_WIDTH * 0.5 + WALL_HALF_THICKNESS;
 pub(super) const BYPASS_RADIUS: f32 = 0.17;
 pub(super) const TRUNK_RADIUS: f32 = 0.30;
@@ -25,8 +25,8 @@ pub(super) const DRAIN_TOP_Y: f32 = 0.32;
 pub(super) const DRAIN_HALF_WIDTH: f32 = 0.7;
 pub(super) const DRAIN_HALF_HEIGHT: f32 = 0.22;
 pub(super) const DRAIN_CENTER: Vec2 = Vec2::new(0.0, DRAIN_TOP_Y - DRAIN_HALF_HEIGHT);
-const SOURCE_COLUMNS: u32 = 16;
-const SOURCE_SLOTS: u32 = SOURCE_COLUMNS * 3;
+const SOURCE_COLUMNS: u32 = 4;
+const SOURCE_SLOTS: u32 = SOURCE_COLUMNS * 12;
 pub(super) const SOURCE_SPACING: f32 = 0.0102;
 #[cfg(test)]
 pub(super) const FRAME_MIN_X: f32 = -0.70;
@@ -149,8 +149,8 @@ pub(super) fn source_position(cursor: u32) -> Vec2 {
     let column = u16::try_from(slot % SOURCE_COLUMNS).expect("source columns fit u16");
     let row = u16::try_from(slot / SOURCE_COLUMNS).expect("source rows fit u16");
     inlet_center()
-        + leg.direction * (0.08 - f32::from(row) * SOURCE_SPACING)
-        + leg.normal * ((f32::from(column) - 7.5) * SOURCE_SPACING)
+        + leg.direction * (0.15 - f32::from(row) * SOURCE_SPACING)
+        + leg.normal * ((f32::from(column) - 1.5) * SOURCE_SPACING)
 }
 
 fn bypass(leg: Leg) -> CircularArc {
