@@ -2,7 +2,7 @@
 //!
 //! A source at the top pours particles into the valve. A drain under the
 //! outlet destroys whatever gets through, so the conduit does not fill up.
-//! Solid teardrop splitters separate each branch from the winding main route.
+//! Solid rounded splitter islands separate each branch from the winding trunk.
 //! Reverse reflects the internal stages about a horizontal axis while the
 //! source, gravity, and drain keep their downward orientation.
 
@@ -25,7 +25,8 @@ use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, Sc
 use crate::session::SessionError;
 use geometry::{
     DRAIN_CENTER, DRAIN_HALF_HEIGHT, DRAIN_HALF_WIDTH, MIRROR_Y, PARTICLE_RADIUS,
-    WALL_HALF_THICKNESS, outline_segments, source_position, valve_geometry, wall_boxes,
+    WALL_HALF_THICKNESS, inlet_direction, island_wall_path, outline_segments, source_position,
+    valve_geometry, wall_boxes,
 };
 
 /// Extra substeps so particles stay inside the curved heads.
@@ -103,10 +104,19 @@ fn create_valve_body(world: &mut World, forward: bool) -> Result<BodyId, SceneEr
     for island in geometry.splitters {
         let circle = CircleShape::new(island.center, island.radius)
             .map_err(|_error| SceneError::Geometry)?;
-        let triangle =
-            PolygonShape::new(&island.triangle).map_err(|_error| SceneError::Geometry)?;
+        let stem = PolygonShape::new(&island.stem).map_err(|_error| SceneError::Geometry)?;
         attach_shape(world, body, Shape::from(circle))?;
-        attach_shape(world, body, Shape::from(triangle))?;
+        attach_shape(world, body, Shape::from(stem))?;
+        for wall in wall_boxes(&[island_wall_path(&island)]) {
+            let polygon = PolygonShape::oriented_box(
+                wall.half_length,
+                WALL_HALF_THICKNESS,
+                wall.center,
+                wall.angle,
+            )
+            .map_err(|_error| SceneError::Geometry)?;
+            attach_shape(world, body, Shape::from(polygon))?;
+        }
     }
     Ok(body)
 }
@@ -173,7 +183,7 @@ fn spawn_one(world: &mut World, system: ParticleSystemId, cursor: u32) -> bool {
         return false;
     }
     let position = source_position(cursor);
-    let velocity = Vec2::new(0.0, -SPAWN_SPEED);
+    let velocity = inlet_direction() * SPAWN_SPEED;
     let Ok(definition) = ParticleDef::default()
         .with_flags(ParticleFlags::WATER)
         .with_color(PARTICLE_COLOR)

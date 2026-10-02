@@ -3,7 +3,7 @@
 use liquidfun::math::Vec2;
 
 use super::super::SceneId;
-use super::geometry::{DRAIN_TOP_Y, valve_geometry};
+use super::geometry::{DRAIN_TOP_Y, inlet_center, inlet_direction, valve_geometry};
 use super::tests::inside_boundary;
 use crate::session::SessionCore;
 
@@ -126,6 +126,8 @@ pub(super) fn run_contained(
         .chain(geometry.outer_paths[1].iter().copied().rev())
         .collect();
     let starting_count = session.live_particle_count().expect("count");
+    let inlet = inlet_center();
+    let direction = inlet_direction();
     let mut maybe_arrival = None;
     for elapsed in (4..=steps).step_by(4) {
         session.advance(4).expect("valve should step");
@@ -139,11 +141,17 @@ pub(super) fn run_contained(
         for point in points {
             assert!(point.x.is_finite() && point.y.is_finite());
             assert!(point.y >= DRAIN_TOP_Y, "drain left a particle {point:?}");
-            if point.y <= 3.02 {
+            if (point - inlet).dot(direction) >= 0.0 {
                 assert!(
                     inside_boundary(point, &boundary),
                     "particle escaped at {point:?}, step {elapsed}, forward {forward}, emissions/step {emitted_per_step}"
                 );
+                for island in &geometry.splitters {
+                    assert!(
+                        !inside_boundary(point, &island.outline),
+                        "particle entered solid island at {point:?}"
+                    );
+                }
             }
         }
         let emitted = elapsed as usize * emitted_per_step;

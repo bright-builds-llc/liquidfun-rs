@@ -1,23 +1,33 @@
-//! Analytic wall centerlines, thick overlapping boxes, and solid teardrops.
-
-use std::f32::consts::TAU;
-
-use liquidfun::math::Vec2;
+//! Constant-width winding trunk and circular semicircular bypasses.
+//!
+//! All placements are rigid. Drawn borders are wall centerlines; overlapping
+//! checked boxes give them the same physical thickness, including the islands.
 
 use super::super::RigidSegment;
+use liquidfun::math::Vec2;
+use std::f32::consts::TAU;
 
-pub(super) const MIRROR_Y: f32 = 1.48;
+pub(super) const MIRROR_Y: f32 = 2.15;
 pub(super) const PARTICLE_RADIUS: f32 = 0.005;
 pub(super) const WALL_HALF_THICKNESS: f32 = 0.03;
+pub(super) const CLEAR_WIDTH: f32 = 0.17;
+pub(super) const BORDER_HALF_WIDTH: f32 = CLEAR_WIDTH * 0.5 + WALL_HALF_THICKNESS;
+pub(super) const BYPASS_RADIUS: f32 = 0.17;
+pub(super) const TRUNK_RADIUS: f32 = 0.30;
 const WALL_END_OVERLAP: f32 = 0.01;
+const LEG_PITCH: f32 = 0.85;
+const LEG_ANGLE: f32 = TAU / 18.0;
+const BRANCH_ANGLE: f32 = TAU / 6.0;
+const OUTER_SAMPLES: u16 = 56;
+const INNER_SAMPLES: u16 = 24;
+const CORNER_SAMPLES: u16 = 12;
 pub(super) const DRAIN_TOP_Y: f32 = 0.32;
 pub(super) const DRAIN_HALF_WIDTH: f32 = 0.7;
 pub(super) const DRAIN_HALF_HEIGHT: f32 = 0.22;
 pub(super) const DRAIN_CENTER: Vec2 = Vec2::new(0.0, DRAIN_TOP_Y - DRAIN_HALF_HEIGHT);
-pub(super) const SPAWN_Y: f32 = 2.86;
-const SOURCE_COLUMNS: u32 = 24;
-const SOURCE_SLOTS: u32 = SOURCE_COLUMNS * 2;
-const SOURCE_SPACING: f32 = 0.014;
+const SOURCE_COLUMNS: u32 = 16;
+const SOURCE_SLOTS: u32 = SOURCE_COLUMNS * 3;
+pub(super) const SOURCE_SPACING: f32 = 0.0102;
 #[cfg(test)]
 pub(super) const FRAME_MIN_X: f32 = -0.70;
 #[cfg(test)]
@@ -25,83 +35,269 @@ pub(super) const FRAME_MAX_X: f32 = 0.58;
 #[cfg(test)]
 pub(super) const FRAME_MIN_Y: f32 = -0.12;
 #[cfg(test)]
-pub(super) const FRAME_MAX_Y: f32 = 3.22;
+pub(super) const FRAME_MAX_Y: f32 = 4.15;
 
-const STAGE_OFFSET: f32 = 0.568;
-const STAGE_OFFSETS: [f32; 4] = [0.0, STAGE_OFFSET, 2.0 * STAGE_OFFSET, 3.0 * STAGE_OFFSET];
-const DOWNSTREAM_SCALE: f32 = 0.8;
-const FIRST_STAGE_Y: f32 = 2.62;
-const NECK_TRANSVERSE: f32 = 0.030;
-pub(super) const CAP_SAMPLES: u16 = 28;
-pub(super) const RETURN_SAMPLES: u16 = 20;
-pub(super) const ISLAND_ARC_SAMPLES: u16 = 24;
+#[derive(Clone, Copy)]
+pub(super) struct CircularArc {
+    pub(super) center: Vec2,
+    pub(super) radius: f32,
+    pub(super) start: f32,
+    pub(super) sweep: f32,
+    pub(super) samples: u16,
+}
 
-/// Template coordinates are downstream distance and distance toward the lobe.
-pub(super) const OUTER_CURVES: [[Vec2; 4]; 2] = [
-    [
-        Vec2::new(0.0, NECK_TRANSVERSE),
-        Vec2::new(-0.24, 0.08),
-        Vec2::new(-0.24, 0.434),
-        Vec2::new(0.0, 0.434),
-    ],
-    [
-        Vec2::new(0.0, 0.434),
-        Vec2::new(0.15, 0.434),
-        Vec2::new(0.80, 0.15),
-        Vec2::new(1.136, NECK_TRANSVERSE),
-    ],
-];
+impl CircularArc {
+    pub(super) fn point(self, fraction: f32) -> Vec2 {
+        let angle = self.start + self.sweep * fraction;
+        self.center + Vec2::new(angle.cos(), angle.sin()) * self.radius
+    }
+
+    pub(super) fn points(self) -> Vec<Vec2> {
+        (0..=self.samples)
+            .map(|step| self.point(f32::from(step) / f32::from(self.samples)))
+            .collect()
+    }
+
+    #[cfg(test)]
+    fn reflected(self) -> Self {
+        Self {
+            center: mirror_y(self.center),
+            start: -self.start,
+            sweep: -self.sweep,
+            ..self
+        }
+    }
+
+    fn border(self, radius: f32, samples: u16) -> Self {
+        Self {
+            radius,
+            samples,
+            ..self
+        }
+    }
+}
 
 pub(super) struct SplitterIsland {
     pub(super) center: Vec2,
     pub(super) radius: f32,
-    pub(super) triangle: [Vec2; 3],
+    pub(super) stem: [Vec2; 4],
     pub(super) outline: Vec<Vec2>,
 }
 
 pub(super) struct ValveGeometry {
     pub(super) outer_paths: [Vec<Vec2>; 2],
     pub(super) splitters: [SplitterIsland; 4],
+    #[cfg(test)]
+    pub(super) bypass_arcs: [CircularArc; 4],
+    #[cfg(test)]
+    pub(super) trunk_arcs: [CircularArc; 3],
 }
 
-/// A frame walks distinct slots before reusing any location. The upper row
-/// follows the lower row, so falling water clears it before the next frame.
+#[derive(Clone, Copy)]
+struct Leg {
+    vertex: Vec2,
+    direction: Vec2,
+    normal: Vec2,
+    outward: Vec2,
+    side: f32,
+}
+
+fn legs() -> [Leg; 4] {
+    let amplitude = 0.5 * LEG_PITCH * LEG_ANGLE.tan();
+    std::array::from_fn(|index| {
+        let y = [3.85, 3.0, 2.15, 1.30][index];
+        let side = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+        let direction = Vec2::new(side * LEG_ANGLE.sin(), -LEG_ANGLE.cos());
+        let normal = Vec2::new(-direction.y, direction.x);
+        Leg {
+            vertex: Vec2::new(-side * amplitude, y),
+            direction,
+            normal,
+            outward: normal * side,
+            side,
+        }
+    })
+}
+
+fn leg_length() -> f32 {
+    LEG_PITCH / LEG_ANGLE.cos()
+}
+fn trim() -> f32 {
+    TRUNK_RADIUS * LEG_ANGLE.tan()
+}
+fn entry_length() -> f32 {
+    BORDER_HALF_WIDTH * (1.0 + BRANCH_ANGLE.cos()) / BRANCH_ANGLE.sin()
+}
+fn return_span() -> f32 {
+    2.0 * BYPASS_RADIUS / BRANCH_ANGLE.sin() + BORDER_HALF_WIDTH / BRANCH_ANGLE.tan()
+}
+fn anchor_distance() -> f32 {
+    (leg_length() - entry_length() - return_span()) * 0.5 + entry_length()
+}
+
+pub(super) fn inlet_direction() -> Vec2 {
+    legs()[0].direction
+}
+pub(super) fn inlet_center() -> Vec2 {
+    let leg = legs()[0];
+    leg.vertex - leg.direction * 0.20
+}
+
 pub(super) fn source_position(cursor: u32) -> Vec2 {
+    let leg = legs()[0];
     let slot = cursor % SOURCE_SLOTS;
     let column = u16::try_from(slot % SOURCE_COLUMNS).expect("source columns fit u16");
     let row = u16::try_from(slot / SOURCE_COLUMNS).expect("source rows fit u16");
-    Vec2::new(
-        (f32::from(column) - 11.5) * SOURCE_SPACING,
-        SPAWN_Y + f32::from(row) * SOURCE_SPACING,
-    )
+    inlet_center()
+        + leg.direction * (0.08 - f32::from(row) * SOURCE_SPACING)
+        + leg.normal * ((f32::from(column) - 7.5) * SOURCE_SPACING)
+}
+
+fn bypass(leg: Leg) -> CircularArc {
+    let upstream = -leg.direction;
+    let center_x = (BYPASS_RADIUS + BORDER_HALF_WIDTH) * BRANCH_ANGLE.cos() + BORDER_HALF_WIDTH;
+    let center_y = entry_length() * BRANCH_ANGLE.cos() - BYPASS_RADIUS * BRANCH_ANGLE.sin();
+    let center = leg.vertex
+        + leg.direction * anchor_distance()
+        + leg.outward * center_x
+        + upstream * center_y;
+    let radial = -leg.outward * BRANCH_ANGLE.cos() + upstream * BRANCH_ANGLE.sin();
+    CircularArc {
+        center,
+        radius: BYPASS_RADIUS,
+        start: radial.y.atan2(radial.x),
+        sweep: -leg.side * TAU * 0.5,
+        samples: OUTER_SAMPLES,
+    }
+}
+
+fn trunk_corners(legs: &[Leg; 4]) -> [CircularArc; 3] {
+    std::array::from_fn(|index| {
+        let vertex = legs[index + 1].vertex;
+        let sign = vertex.x.signum();
+        let center = vertex - Vec2::new(sign * TRUNK_RADIUS / LEG_ANGLE.cos(), 0.0);
+        let tangent = vertex - legs[index].direction * trim();
+        let radial = tangent - center;
+        CircularArc {
+            center,
+            radius: TRUNK_RADIUS,
+            start: radial.y.atan2(radial.x),
+            sweep: -sign * 2.0 * LEG_ANGLE,
+            samples: CORNER_SAMPLES,
+        }
+    })
+}
+
+fn append(path: &mut Vec<Vec2>, point: Vec2) {
+    if path
+        .last()
+        .is_none_or(|previous| (point - *previous).length_squared() > 0.000_000_000_1)
+    {
+        path.push(point);
+    }
 }
 
 pub(super) fn valve_geometry(forward: bool) -> ValveGeometry {
-    let splitters = std::array::from_fn(|stage| splitter(stage, forward));
-    let template = outer_template();
-    let outer_paths = std::array::from_fn(|side| {
-        let mut points: Vec<Vec2> = [side, side + 2]
-            .into_iter()
-            .enumerate()
-            .flat_map(|(index, stage)| {
-                template
-                    .iter()
-                    .copied()
-                    .skip(usize::from(index != 0))
-                    .map(move |point| place_stage(point, stage, forward))
-            })
-            .collect();
-        if !forward {
-            points.reverse();
+    let legs = legs();
+    let bypass_arcs = legs.map(bypass);
+    let trunk_arcs = trunk_corners(&legs);
+    let mut splitters = std::array::from_fn(|index| splitter(legs[index], bypass_arcs[index]));
+    let mut outer_paths = std::array::from_fn(|path_index| {
+        let side = if path_index == 0 { 1.0 } else { -1.0 };
+        let mut path = Vec::new();
+        for (index, leg) in legs.iter().copied().enumerate() {
+            let start = if index == 0 { -0.20 } else { trim() };
+            let end = if index == 3 {
+                leg_length() + 0.20
+            } else {
+                leg_length() - trim()
+            };
+            append(
+                &mut path,
+                leg.vertex + leg.direction * start + leg.normal * (side * BORDER_HALF_WIDTH),
+            );
+            if (side - leg.side).abs() < 0.1 {
+                for point in bypass_arcs[index]
+                    .border(BYPASS_RADIUS + BORDER_HALF_WIDTH, OUTER_SAMPLES)
+                    .points()
+                {
+                    append(&mut path, point);
+                }
+                append(
+                    &mut path,
+                    leg.vertex
+                        + leg.direction * (anchor_distance() + return_span())
+                        + leg.normal * (side * BORDER_HALF_WIDTH),
+                );
+            }
+            append(
+                &mut path,
+                leg.vertex + leg.direction * end + leg.normal * (side * BORDER_HALF_WIDTH),
+            );
+            if index < 3 {
+                let arc = trunk_arcs[index];
+                let radius = TRUNK_RADIUS - side * arc.sweep.signum() * BORDER_HALF_WIDTH;
+                for point in arc.border(radius, CORNER_SAMPLES).points() {
+                    append(&mut path, point);
+                }
+            }
         }
-        let sign = if side == 0 { 1.0 } else { -1.0 };
-        points.insert(0, Vec2::new(sign * 0.38, 3.02));
-        points.push(Vec2::new(sign * 0.38, 0.10));
-        points
+        path
     });
+    if !forward {
+        for path in &mut outer_paths {
+            for point in path.iter_mut() {
+                *point = mirror_y(*point);
+            }
+            path.reverse();
+        }
+        for island in &mut splitters {
+            island.center = mirror_y(island.center);
+            island.stem = island.stem.map(mirror_y);
+            for point in &mut island.outline {
+                *point = mirror_y(*point);
+            }
+        }
+    }
     ValveGeometry {
         outer_paths,
         splitters,
+        #[cfg(test)]
+        bypass_arcs: if forward {
+            bypass_arcs
+        } else {
+            bypass_arcs.map(CircularArc::reflected)
+        },
+        #[cfg(test)]
+        trunk_arcs: if forward {
+            trunk_arcs
+        } else {
+            trunk_arcs.map(CircularArc::reflected)
+        },
+    }
+}
+
+fn splitter(leg: Leg, arc: CircularArc) -> SplitterIsland {
+    let radius = BYPASS_RADIUS - BORDER_HALF_WIDTH;
+    let inner = arc.border(radius, INNER_SAMPLES);
+    let mut outline = inner.points();
+    let first = outline[0];
+    let last = outline[outline.len() - 1];
+    let direction = leg.outward * BRANCH_ANGLE.sin() - leg.direction * BRANCH_ANGLE.cos();
+    let center_x = (BYPASS_RADIUS + BORDER_HALF_WIDTH) * BRANCH_ANGLE.cos() + BORDER_HALF_WIDTH;
+    let upper = first
+        - direction
+            * ((center_x - radius * BRANCH_ANGLE.cos() - BORDER_HALF_WIDTH) / BRANCH_ANGLE.sin());
+    let lower = last
+        - direction
+            * ((center_x + radius * BRANCH_ANGLE.cos() - BORDER_HALF_WIDTH) / BRANCH_ANGLE.sin());
+    outline.push(lower);
+    outline.push(upper);
+    SplitterIsland {
+        center: arc.center,
+        radius,
+        stem: [upper, first, last, lower],
+        outline,
     }
 }
 
@@ -111,7 +307,7 @@ pub(super) struct WallBox {
     pub(super) angle: f32,
 }
 
-pub(super) fn wall_boxes(paths: &[Vec<Vec2>; 2]) -> Vec<WallBox> {
+pub(super) fn wall_boxes(paths: &[Vec<Vec2>]) -> Vec<WallBox> {
     paths
         .iter()
         .flat_map(|path| path.windows(2))
@@ -126,67 +322,10 @@ pub(super) fn wall_boxes(paths: &[Vec<Vec2>; 2]) -> Vec<WallBox> {
         .collect()
 }
 
-fn outer_template() -> Vec<Vec2> {
-    OUTER_CURVES
-        .into_iter()
-        .zip([CAP_SAMPLES, RETURN_SAMPLES])
-        .enumerate()
-        .flat_map(|(index, (curve, samples))| {
-            (0..=samples)
-                .skip(usize::from(index != 0))
-                .map(move |step| cubic_point(curve, f32::from(step) / f32::from(samples)))
-        })
-        .collect()
-}
-
-pub(super) fn cubic_point(curve: [Vec2; 4], fraction: f32) -> Vec2 {
-    let before = 1.0 - fraction;
-    curve[0] * (before * before * before)
-        + curve[1] * (3.0 * before * before * fraction)
-        + curve[2] * (3.0 * before * fraction * fraction)
-        + curve[3] * (fraction * fraction * fraction)
-}
-
-pub(super) fn place_stage(point: Vec2, stage: usize, forward: bool) -> Vec2 {
-    let sign = if stage.is_multiple_of(2) { 1.0 } else { -1.0 };
-    let placed = Vec2::new(
-        sign * point.y,
-        FIRST_STAGE_Y - DOWNSTREAM_SCALE * (point.x + STAGE_OFFSETS[stage]),
-    );
-    if forward { placed } else { mirror_y(placed) }
-}
-
-fn splitter(stage: usize, forward: bool) -> SplitterIsland {
-    let center = place_stage(Vec2::new(0.04, 0.19), stage, true);
-    let tip = place_stage(Vec2::new(0.53, 0.08), stage, true);
-    let radius = 0.068;
-    let delta = tip - center;
-    let angle = delta.y.atan2(delta.x);
-    let tangent_angle = (radius / delta.length()).acos();
-    let start = angle + tangent_angle;
-    let span = TAU - 2.0 * tangent_angle;
-    let mut outline: Vec<Vec2> = (0..=ISLAND_ARC_SAMPLES)
-        .map(|step| {
-            let theta = start + span * f32::from(step) / f32::from(ISLAND_ARC_SAMPLES);
-            center + Vec2::new(theta.cos(), theta.sin()) * radius
-        })
-        .collect();
-    let triangle = [outline[0], outline[outline.len() - 1], tip];
-    outline.push(tip);
-    if forward {
-        return SplitterIsland {
-            center,
-            radius,
-            triangle,
-            outline,
-        };
-    }
-    SplitterIsland {
-        center: mirror_y(center),
-        radius,
-        triangle: triangle.map(mirror_y),
-        outline: outline.into_iter().map(mirror_y).collect(),
-    }
+pub(super) fn island_wall_path(island: &SplitterIsland) -> Vec<Vec2> {
+    let mut points = island.outline.clone();
+    points.push(points[0]);
+    points
 }
 
 pub(super) fn mirror_y(point: Vec2) -> Vec2 {
@@ -195,27 +334,25 @@ pub(super) fn mirror_y(point: Vec2) -> Vec2 {
 
 pub(super) fn outline_segments(forward: bool) -> Vec<RigidSegment> {
     let geometry = valve_geometry(forward);
-    let mut segments: Vec<RigidSegment> = geometry
+    geometry
         .outer_paths
         .iter()
-        .flat_map(|points| polyline(points))
-        .collect();
-    for island in geometry.splitters {
-        segments.extend(polyline(&island.outline));
-        segments.push(RigidSegment {
-            start: island.triangle[2],
-            end: island.outline[0],
-        });
-    }
-    segments
+        .flat_map(|path| polyline(path))
+        .chain(
+            geometry
+                .splitters
+                .iter()
+                .flat_map(|island| polyline(&island_wall_path(island))),
+        )
+        .collect()
 }
 
 fn polyline(points: &[Vec2]) -> Vec<RigidSegment> {
     points
         .windows(2)
-        .map(|pair| RigidSegment {
-            start: pair[0],
-            end: pair[1],
+        .map(|edge| RigidSegment {
+            start: edge[0],
+            end: edge[1],
         })
         .collect()
 }

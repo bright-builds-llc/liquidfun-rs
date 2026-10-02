@@ -347,31 +347,29 @@ function WaveTankPreview() {
 }
 
 function TeslaValvePreview() {
+  const main = "M75.99 9.02 L77.22 12.4 L82.11 25.85 A5.4 5.4 0 0 1 82.11 29.55 L77.89 41.15 A5.4 5.4 0 0 0 77.89 44.85 L82.11 56.45 A5.4 5.4 0 0 1 82.11 60.15 L77.22 73.6 L75.99 76.98";
+  const pipes = [
+    main,
+    "M79.2 17.85 L81.51 15.1 A3.06 3.06 0 0 1 86.19 19.04 L81.62 24.49",
+    "M80.8 33.15 L78.5 30.4 A3.06 3.06 0 0 0 73.81 34.34 L78.38 39.79",
+    "M79.2 48.45 L81.51 45.7 A3.06 3.06 0 0 1 86.19 49.64 L81.62 55.09",
+    "M80.8 63.75 L78.5 61 A3.06 3.06 0 0 0 73.81 64.94 L78.38 70.39",
+  ];
   return (
     <PreviewFrame>
+      <g fill="none" stroke={RIGID} stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+        {pipes.map((path) => <path d={path} />)}
+      </g>
+      <g fill="none" stroke={CANVAS} stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+        {pipes.map((path) => <path d={path} />)}
+      </g>
       <path
-        d="M75 5 L82 15 C86 6 100 11 100 23 C100 27 98 30 95 32 L82 48 C86 39 100 44 100 56 C100 60 98 63 95 65 L82 82"
-        fill="none"
-        stroke={RIGID}
-        stroke-width="2"
-      />
-      <path
-        d="M85 5 L78 32 C74 23 60 28 60 40 C60 44 62 47 65 49 L78 65 C74 56 60 61 60 73 C60 77 62 80 65 82 L85 85"
-        fill="none"
-        stroke={RIGID}
-        stroke-width="2"
-      />
-      <path d="M86 17 C94 13 95 22 93 25 L85 32 Z" fill={RIGID} />
-      <path d="M74 34 C66 30 65 39 67 42 L75 49 Z" fill={RIGID} />
-      <path d="M86 50 C94 46 95 55 93 58 L85 65 Z" fill={RIGID} />
-      <path d="M74 67 C66 63 65 72 67 75 L75 82 Z" fill={RIGID} />
-      <path
-        d="M80 8 L80 22 L76 34 L84 50 L76 67 L80 82"
+        d={main}
         fill="none"
         stroke={WATER}
-        stroke-width="3"
+        stroke-width="1"
         stroke-linecap="round"
-        stroke-dasharray="1 6"
+        stroke-dasharray="0.5 2"
       />
     </PreviewFrame>
   );

@@ -104,14 +104,14 @@ export const WASHING_MACHINE_VIEW_BOUNDS = {
  *
  * Keep in sync with `FRAME_*` in
  * `crates/liquidfun-wasm/src/scene/tesla_valve/geometry.rs`. The alternating loops and
- * splitter islands run from the inlet near y = 3 down through the drain. This
+ * splitter islands run from the inlet near y = 4 down through the drain. This
  * rectangle includes those walls with a small margin.
  */
 export const TESLA_VALVE_VIEW_BOUNDS = {
   minX: -0.7,
   minY: -0.12,
   maxX: 0.58,
-  maxY: 3.22,
+  maxY: 4.15,
 } as const;
 
 export const THEO_JANSEN_VIEW_BOUNDS = {
@@ -604,7 +604,7 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Tesla Valve",
     ready: true,
     description:
-      "Watch water fall through alternating curved loops around rounded teardrop islands. Forward follows the central passage. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
+      "Watch water follow a winding pipe with semicircular bypasses around solid splitter islands. The straight runs and circular bends share one channel width. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
     interactionHint:
       "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
     controls: withGravitySlider([FLOW_RATE_CONTROL, FLOW_DIRECTION_CONTROL]),
