@@ -33,10 +33,12 @@ const STAGE_OFFSET: f32 = 0.568;
 const STAGE_OFFSETS: [f32; 4] = [0.0, STAGE_OFFSET, 2.0 * STAGE_OFFSET, 3.0 * STAGE_OFFSET];
 const DOWNSTREAM_SCALE: f32 = 0.8;
 const FIRST_STAGE_Y: f32 = 2.62;
+// Pull each outer cusp toward its lobe to open the opposite splitter's neck.
+const NECK_TRANSVERSE: f32 = 0.030;
 
 /// Template coordinates are downstream distance and distance toward the lobe.
 const OUTER_LOBE: [Vec2; 9] = [
-    Vec2::new(0.0, -0.036),
+    Vec2::new(0.0, NECK_TRANSVERSE),
     Vec2::new(-0.09, 0.06),
     Vec2::new(-0.16, 0.175),
     Vec2::new(-0.16, 0.30),
@@ -44,7 +46,7 @@ const OUTER_LOBE: [Vec2; 9] = [
     Vec2::new(0.0, 0.434),
     Vec2::new(0.12, 0.405),
     Vec2::new(0.62, 0.19),
-    Vec2::new(1.136, -0.036),
+    Vec2::new(1.136, NECK_TRANSVERSE),
 ];
 
 const SPLITTER: [Vec2; 6] = [

@@ -350,13 +350,13 @@ function TeslaValvePreview() {
   return (
     <PreviewFrame>
       <path
-        d="M75 5 L75 15 C86 6 100 11 100 23 C100 27 98 30 95 32 L75 48 C86 39 100 44 100 56 C100 60 98 63 95 65 L75 82"
+        d="M75 5 L82 15 C86 6 100 11 100 23 C100 27 98 30 95 32 L82 48 C86 39 100 44 100 56 C100 60 98 63 95 65 L82 82"
         fill="none"
         stroke={RIGID}
         stroke-width="2"
       />
       <path
-        d="M85 5 L85 32 C74 23 60 28 60 40 C60 44 62 47 65 49 L85 65 C74 56 60 61 60 73 C60 77 62 80 65 82 L85 85"
+        d="M85 5 L78 32 C74 23 60 28 60 40 C60 44 62 47 65 49 L78 65 C74 56 60 61 60 73 C60 77 62 80 65 82 L85 85"
         fill="none"
         stroke={RIGID}
         stroke-width="2"

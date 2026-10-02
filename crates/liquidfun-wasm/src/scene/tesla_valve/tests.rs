@@ -193,6 +193,45 @@ fn forward_reaches_the_drain_sooner_than_the_flipped_valve() {
 }
 
 #[test]
+fn all_four_splitter_necks_leave_a_wider_opening() {
+    for forward in [true, false] {
+        // Arrange
+        let geometry = valve_geometry(forward);
+        let polygons = collision_polygons(forward);
+        let walls = &polygons[..polygons.len() - geometry.splitters.len()];
+
+        // Act / Assert
+        for island in geometry.splitters {
+            let nearest_wall = splitter_wall_clearance(island[5], walls);
+            assert!(
+                nearest_wall >= 0.08,
+                "the tip-to-fixture neck should exceed 0.08 m, measured {nearest_wall}"
+            );
+        }
+    }
+}
+
+#[test]
+fn wider_necks_pass_more_water_without_losing_containment() {
+    // Arrange
+    let mut forward = SessionCore::create(SceneId::TeslaValve).expect("valve should construct");
+    let mut reverse = SessionCore::create(SceneId::TeslaValve).expect("valve should construct");
+    reverse
+        .apply_control("flow-direction", "-1")
+        .expect("valve should reverse");
+
+    // Act
+    let forward_drained = drained_checkpoints(&mut forward, true);
+    let reverse_drained = drained_checkpoints(&mut reverse, false);
+
+    // Assert
+    assert!(
+        forward_drained[1] >= 400 && forward_drained[2] >= 1_000,
+        "3/6/10-second drained totals: forward {forward_drained:?}, reverse {reverse_drained:?}"
+    );
+}
+
+#[test]
 fn shutting_off_the_source_drains_the_running_valve() {
     // Arrange
     let mut session = SessionCore::create(SceneId::TeslaValve).expect("valve should construct");
@@ -293,6 +332,16 @@ fn advance_contained(session: &mut SessionCore, forward: bool, steps: u32) {
     }
 }
 
+fn drained_checkpoints(session: &mut SessionCore, forward: bool) -> [usize; 3] {
+    let mut previous = 0;
+    [180, 360, 600].map(|steps| {
+        advance_contained(session, forward, steps - previous);
+        previous = steps;
+        let emitted = (steps * 3) as usize;
+        emitted - session.live_particle_count().expect("count")
+    })
+}
+
 fn positions(session: &SessionCore) -> Vec<Vec2> {
     session.read_particles(|world, system| {
         world
@@ -345,4 +394,23 @@ fn inside_boundary(point: Vec2, boundary: &[Vec2]) -> bool {
         }
     }
     inside
+}
+
+fn point_to_segment_distance(point: Vec2, start: Vec2, end: Vec2) -> f32 {
+    let edge = end - start;
+    let offset = point - start;
+    let fraction =
+        ((offset.x * edge.x + offset.y * edge.y) / edge.length_squared()).clamp(0.0, 1.0);
+    (point - (start + edge * fraction)).length()
+}
+
+fn splitter_wall_clearance(tip: Vec2, walls: &[Vec<Vec2>]) -> f32 {
+    walls
+        .iter()
+        .flat_map(|wall| {
+            (0..wall.len()).map(move |index| {
+                point_to_segment_distance(tip, wall[index], wall[(index + 1) % wall.len()])
+            })
+        })
+        .fold(f32::INFINITY, f32::min)
 }
