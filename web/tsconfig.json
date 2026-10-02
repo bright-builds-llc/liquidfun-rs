@@ -21,6 +21,7 @@
     "types": ["vite/client"]
   },
   "include": [
+    "benchmarks",
     "src",
     "tests",
     "scripts",

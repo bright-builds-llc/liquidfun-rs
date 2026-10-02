@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tesla Valve benchmark</title>
+    <style>
+      html, body { margin: 0; background: #071017; overflow: hidden; }
+      canvas { position: absolute; inset: 0; }
+      #walls { z-index: 1; }
+    </style>
+  </head>
+  <body>
+    <canvas id="particles" aria-hidden="true"></canvas>
+    <canvas id="walls" aria-label="Benchmark of the actual Tesla Valve renderer"></canvas>
+    <script type="module" src="./benchmark.ts"></script>
+  </body>
+</html>

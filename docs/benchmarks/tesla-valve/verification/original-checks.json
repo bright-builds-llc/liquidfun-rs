@@ -1,0 +1,20 @@
+{
+  "stage": "original",
+  "run": "20261002-original-01",
+  "checks": {
+    "orderedCargo": [
+      "fmt --all",
+      "clippy --all-targets --all-features -- -D warnings",
+      "build --all-targets --all-features",
+      "test --all-features"
+    ],
+    "nativeTests": "1032 including doctests",
+    "wasmTests": "299 release, including forward/reverse at default/max rate",
+    "web": "415 unit tests, typecheck, production WASM and Vite build",
+    "managed": "all findings=0",
+    "markdown": "just markdown-check passed",
+    "semanticConsistency": "all fixed checkpoints and live warmups match across repeats"
+  },
+  "measuredSource": "8c419c4c42aaf99cdfdf8d3d297c184c25d5ae8f plus harness diff recorded in report",
+  "reviewPatchSha256": "deb29fde2472fb8b82123e26d1f24a82597400ee734ab866ba2e9377ca5fb32c"
+}
