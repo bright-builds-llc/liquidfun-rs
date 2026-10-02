@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: complete
-stopped_at: Completed quick task 261001-lhi; v1.3 remains archived
-last_updated: "2026-10-01T21:13:24Z"
+stopped_at: Completed quick task 261001-tvf; v1.3 remains archived
+last_updated: "2026-10-02T02:55:55Z"
 last_activity: 2026-10-01
 progress:
   total_phases: 8
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-28)
 Phase: none
 Plan: none
 Status: v1.3 archived — no active milestone
-Last activity: 2026-10-01 — completed quick task 261001-lhi, main-pull reconciliation
+Last activity: 2026-10-01 — completed quick task 261001-tvf, Tesla Valve reference geometry
 
 Progress: [██████████] 100%
 
@@ -71,6 +71,7 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | --- | --- | --- | --- | --- |
 | 260921-tbx | Global wireframe stroke width slider from 0.1 to 1.5, default 0.3 | 2026-09-22 | complete | [260921-tbx](./quick/260921-tbx-global-wireframe-stroke-width-slider-fro/) |
 | 261001-lhi | Resolve main pull conflicts and publish verified scene changes | 2026-10-01 | complete | [261001-lhi](./quick/261001-lhi-resolve-main-pull-conflicts-and-commit-s/) |
+| 261001-tvf | Match Tesla Valve reference with alternating curved lobes and closed splitters | 2026-10-01 | complete | [261001-tvf](./quick/261001-tvf-reshape-tesla-valve-with-alternating-cur/) |
 
 ## Performance Metrics
 
@@ -93,6 +94,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-10-01T21:14:08Z
-Stopped at: Completed quick task 261001-lhi; v1.3 remains archived
+Last session: 2026-10-02T02:55:55Z
+Stopped at: Completed quick task 261001-tvf; v1.3 remains archived
 Resume file: None

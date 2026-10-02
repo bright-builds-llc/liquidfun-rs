@@ -311,3 +311,15 @@ Milestone review: owner approved six specific demos and phases 16–19; all 22 r
 - [x] Review the complete diff, obtain independent review, commit, and verify the main push.
 
 Completion review: source commit `0fa50e1` is on `origin/main`. Ordered Rust checks passed in an isolated target (1032 core tests and 284 WASM scene tests); web typecheck, 402 unit tests, 28 browser tests, production build, Markdown and managed checks passed. Independent AI reviewer `/root/independent_review` acknowledged source digest `07e45e462804d0f583437cc1bccbb15a70d552d04b0afdd915d3bfe23b6845fe` at 2026-10-01 21:07:04 UTC. Keep upstream's verified 3000-particle bubbler initializer because both 1800-particle candidates broke the newer elevator catch regression. Original stashes and failed attempt evidence remain recoverable; the old ignored build cache was not deleted. No release qualification or package publication is claimed.
+
+## task-tesla-reference-geometry | 2026-10-01 21:34 CDT | Match the Tesla Valve reference
+
+- [x] Replace unilateral open hairpins with alternating rounded lobes and closed teardrop islands; share render and collision geometry.
+- [x] Update the thumbnail, scene description, portrait framing assertions, and README SVG/WebP previews.
+- [x] Verify construction, frame limits, containment, drain behavior, and live flow controls with scene regressions.
+- [x] Run Rust format, Clippy, build, and tests; WASM/web build, typecheck, unit tests, browser preview, managed checks, and Markdown checks.
+- [x] Review the final diff and record completion evidence.
+
+Guidance: AGENTS.md standing authorization and hobby scope, AGENTS.bright-builds.md, standards-overrides.md, and local architecture, code-shape, verification, testing, Rust, and frontend standards. GSD quick task: 261001-tvf.
+
+Completion review: source commit `7d7ca9d` replaces the unilateral loops with four alternating lobes and closed solid islands. Ordered core Rust checks (1032 tests), affected WASM checks (287 tests), web typecheck and 402 unit tests, 44 browser tests, production build, managed checks, Markdown and diff checks passed. Desktop/phone previews and the regenerated ten-second SVG/WebP match the new silhouette. Independent AI reviewer `/root/tesla_review` acknowledged source digest `b9c646fe9a40f438e69b2bce8d049bc875fcb1eea25cf42f2c4212a7e8a09f47` at 2026-10-02 02:53:08 UTC. Four-stage throughput uses a six-second window with the existing 80-particle margin, earlier drain arrival and continuous containment. Local WebP text uses an explicit Arial font path while CI retains DejaVu. Ordinary main publication uses standing authorization. This records experimental simulation evidence, not a measured real-world valve performance claim.
