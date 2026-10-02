@@ -28,6 +28,7 @@ impl World {
             maybe_next_diagnostic_id: Some(1),
             step_state: StepState::new(),
             configuration: WorldConfiguration::default(),
+            particle_step_scratch: super::super::particle_coupling::ParticleStepScratch::default(),
         })
     }
 

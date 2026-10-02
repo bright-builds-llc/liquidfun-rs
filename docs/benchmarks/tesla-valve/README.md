@@ -26,13 +26,20 @@ The five stages retain geometry, particle radius, source rates, four particle it
 
 The original run used the unchanged physics implementation at `8c419c4c42aaf99cdfdf8d3d297c184c25d5ae8f`. Its source manifest includes the then-uncommitted benchmark harness; the report records that exact producer diff and artifact hashes. Measurements below are means of three replicate means on Apple M4 Max, Chromium 153, ANGLE Metal, on 2026-10-02.
 
-| Stage                    | Forward physics (ms/step) | Reverse physics (ms/step) | Forward live paints/s | Reverse live paints/s | Evidence                                                |
-| ------------------------ | ------------------------- | ------------------------- | --------------------- | --------------------- | ------------------------------------------------------- |
-| Original                 | 31.374                    | 110.849                   | 31.3                  | 9.1                   | [Raw report](runs/20261002-original-01/report.json)     |
-| 1. Spatial wall contacts | 6.268                     | 32.533                    | 53.7                  | 29.6                  | [Raw report](runs/20261002-stage1-after-01/report.json) |
+| Stage                           | Forward physics (ms/step) | Reverse physics (ms/step) | Forward live paints/s | Reverse live paints/s | Evidence                                                |
+| ------------------------------- | ------------------------- | ------------------------- | --------------------- | --------------------- | ------------------------------------------------------- |
+| Original                        | 31.374                    | 110.849                   | 31.3                  | 9.1                   | [Raw report](runs/20261002-original-01/report.json)     |
+| 1. Spatial wall contacts        | 6.268                     | 32.533                    | 53.7                  | 29.6                  | [Raw report](runs/20261002-stage1-after-01/report.json) |
+| 2. Geometry sharing and buffers | 6.125                     | 32.282                    | 52.1                  | 29.9                  | [Raw report](runs/20261002-stage2-after-02/report.json) |
 
 The original fixed checkpoints matched across all replicates and the live warmup. Forward checkpoint counts were 2852 to 2857; reverse were 9051 to 9662. The reverse live probe advanced fewer steps, reaching 9389 particles, which is why live count and fixed-checkpoint count must be read separately. Render submission averaged 0.126 ms forward and 0.187 ms reverse; physics dominated this baseline. Later rows report each isolated stage against its immediate predecessor and preserve the original as the cumulative reference.
 
 ## Stage 1: Spatial wall contacts
 
 The original report is this stage's before record. The indexed contact path reduced mean physics time by about 80% forward and 71% reverse. All six fixed checkpoint pairs matched the original exactly, including contacts, particle positions and wall geometry. Five regression tests independently compare the legacy full scan, including stateful filter ordering, stale indices, overflow and strict AABB edges. Full native and299 release WASM tests, including all four rate/direction containment cases, passed.
+
+## Stage 2: Immutable geometry sharing and reusable buffers
+
+Stage1 is the before record. Two after runs used the same source bytes; all fixed checkpoints still matched the original. The [first run](runs/20261002-stage2-after-01/report.json) and [repeat](runs/20261002-stage2-after-02/report.json) are both retained. The table uses the later accepted repeat as the next stage's before record, not a selected best replicate. The forward physics change is small; reverse timings overlap the preceding replicate variation, so this experiment does not establish a substantial reverse speedup. Sharing and reuse are separately witnessed by tests of backing storage, varying-size buffers, refreshed collider metadata, rejected swaps and error followed by successful retry.
+
+World always restores a usable workspace after a solver Result. Successful commits recycle displaced vectors. Existing consuming kernels can drop candidate capacity on an error; their prior authoritative error/rollback behavior remains intact. All1044 native and299 WASM tests passed.

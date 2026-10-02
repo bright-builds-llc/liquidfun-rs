@@ -92,7 +92,122 @@ pub(crate) struct BoundaryCandidate {
     effect_limit: usize,
 }
 
+#[derive(Default)]
+pub(crate) struct BoundaryBuffers {
+    particle_ids: Vec<ParticleId>,
+    positions: Vec<Vec2>,
+    velocities: Vec<Vec2>,
+    forces: Vec<Vec2>,
+    flags: Vec<ParticleFlags>,
+    memberships: Vec<Option<ParticleGroupId>>,
+    groups: Vec<GroupRecord>,
+    pass_trace: Vec<BoundaryPass>,
+    effects: Vec<BoundaryEffect>,
+}
+
+impl BoundaryBuffers {
+    pub(crate) fn clear(&mut self) {
+        self.particle_ids.clear();
+        self.positions.clear();
+        self.velocities.clear();
+        self.forces.clear();
+        self.flags.clear();
+        self.memberships.clear();
+        self.groups.clear();
+        self.pass_trace.clear();
+        self.effects.clear();
+    }
+}
+
 impl BoundaryCandidate {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the solver-tail candidate validates every aligned authoritative lane"
+    )]
+    pub(crate) fn new_with_buffers(
+        owner: ParticleSystemId,
+        particle_ids: &[ParticleId],
+        positions: &[Vec2],
+        velocities: &[Vec2],
+        forces: &[Vec2],
+        flags: &[ParticleFlags],
+        memberships: &[Option<ParticleGroupId>],
+        groups: &[GroupRecord],
+        has_pending_force: bool,
+        effect_limit: usize,
+        buffers: &mut BoundaryBuffers,
+    ) -> Result<Self, BoundarySolverError> {
+        #[cfg(debug_assertions)]
+        support::validate_source_lanes(
+            owner,
+            particle_ids,
+            positions,
+            velocities,
+            forces,
+            flags,
+            memberships,
+            groups,
+        )?;
+        support::copy_into(
+            particle_ids,
+            &mut buffers.particle_ids,
+            "boundary particle identities",
+        )?;
+        support::copy_into(
+            positions,
+            &mut buffers.positions,
+            "boundary position candidates",
+        )?;
+        support::copy_into(
+            velocities,
+            &mut buffers.velocities,
+            "boundary velocity candidates",
+        )?;
+        support::copy_into(forces, &mut buffers.forces, "boundary force candidates")?;
+        support::copy_into(flags, &mut buffers.flags, "boundary flag candidates")?;
+        support::copy_into(
+            memberships,
+            &mut buffers.memberships,
+            "boundary membership candidates",
+        )?;
+        support::copy_into(groups, &mut buffers.groups, "boundary group candidates")?;
+        buffers.pass_trace.clear();
+        buffers.pass_trace.reserve(5);
+        buffers.effects.clear();
+        buffers.effects.reserve(effect_limit);
+        Ok(Self {
+            owner,
+            particle_ids: std::mem::take(&mut buffers.particle_ids),
+            positions: std::mem::take(&mut buffers.positions),
+            velocities: std::mem::take(&mut buffers.velocities),
+            forces: std::mem::take(&mut buffers.forces),
+            flags: std::mem::take(&mut buffers.flags),
+            memberships: std::mem::take(&mut buffers.memberships),
+            groups: std::mem::take(&mut buffers.groups),
+            stage: BoundaryStage::AfterRigidDamping,
+            has_pending_force,
+            pass_trace: std::mem::take(&mut buffers.pass_trace),
+            effects: std::mem::take(&mut buffers.effects),
+            effect_limit,
+        })
+    }
+
+    pub(crate) fn recycle(self, buffers: &mut BoundaryBuffers) {
+        *buffers = BoundaryBuffers {
+            particle_ids: self.particle_ids,
+            positions: self.positions,
+            velocities: self.velocities,
+            forces: self.forces,
+            flags: self.flags,
+            memberships: self.memberships,
+            groups: self.groups,
+            pass_trace: self.pass_trace,
+            effects: self.effects,
+        };
+        buffers.clear();
+    }
+
+    #[cfg(test)]
     #[allow(
         clippy::too_many_arguments,
         reason = "the solver-tail candidate validates every aligned authoritative lane"
@@ -109,8 +224,7 @@ impl BoundaryCandidate {
         has_pending_force: bool,
         effect_limit: usize,
     ) -> Result<Self, BoundarySolverError> {
-        #[cfg(debug_assertions)]
-        support::validate_source_lanes(
+        Self::new_with_buffers(
             owner,
             particle_ids,
             positions,
@@ -119,22 +233,10 @@ impl BoundaryCandidate {
             flags,
             memberships,
             groups,
-        )?;
-        Ok(Self {
-            owner,
-            particle_ids: support::copy_slice(particle_ids, "boundary particle identities")?,
-            positions: support::copy_slice(positions, "boundary position candidates")?,
-            velocities: support::copy_slice(velocities, "boundary velocity candidates")?,
-            forces: support::copy_slice(forces, "boundary force candidates")?,
-            flags: support::copy_slice(flags, "boundary flag candidates")?,
-            memberships: support::copy_slice(memberships, "boundary membership candidates")?,
-            groups: support::copy_slice(groups, "boundary group candidates")?,
-            stage: BoundaryStage::AfterRigidDamping,
             has_pending_force,
-            pass_trace: Vec::with_capacity(5),
-            effects: Vec::with_capacity(effect_limit),
             effect_limit,
-        })
+            &mut BoundaryBuffers::default(),
+        )
     }
 
     fn begin_pass(&mut self, expected: BoundaryStage) -> Result<(), BoundarySolverError> {
@@ -173,3 +275,6 @@ impl BoundaryCandidate {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod buffer_tests;

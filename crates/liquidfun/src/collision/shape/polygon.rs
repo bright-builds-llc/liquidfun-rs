@@ -1,6 +1,7 @@
 use crate::collision::{Aabb, CollisionError, MassData, RayCastHit, RayCastInput};
 use crate::math::settings::{EPSILON, LINEAR_SLOP, MAX_POLYGON_VERTICES, POLYGON_RADIUS};
 use crate::math::{Rotation, Transform, Vec2};
+use std::sync::Arc;
 
 use super::{
     PointDistance, validate_density, validate_query, validate_scalar, validate_transform,
@@ -10,8 +11,8 @@ use super::{
 /// An immutable owned convex polygon with source-ordered hull state.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PolygonShape {
-    vertices: Vec<Vec2>,
-    normals: Vec<Vec2>,
+    vertices: Arc<[Vec2]>,
+    normals: Arc<[Vec2]>,
     centroid: Vec2,
 }
 
@@ -145,8 +146,8 @@ impl PolygonShape {
             return Err(CollisionError::InvalidGeometry);
         }
         let polygon = Self {
-            vertices,
-            normals,
+            vertices: vertices.into(),
+            normals: normals.into(),
             centroid,
         };
         if !polygon.validate() {
@@ -220,7 +221,7 @@ impl PolygonShape {
         let local_point = transform
             .rotation()
             .inverse_apply(point - transform.position());
-        for (normal, vertex) in self.normals.iter().zip(&self.vertices) {
+        for (normal, vertex) in self.normals.iter().zip(self.vertices.iter()) {
             if normal.dot(local_point - *vertex) > 0.0 {
                 return Ok(false);
             }
@@ -244,7 +245,7 @@ impl PolygonShape {
             .inverse_apply(point - transform.position());
         let mut maximum_distance = -f32::MAX;
         let mut maximum_normal = local_point;
-        for (normal, vertex) in self.normals.iter().zip(&self.vertices) {
+        for (normal, vertex) in self.normals.iter().zip(self.vertices.iter()) {
             let distance = normal.dot(local_point - *vertex);
             if distance > maximum_distance {
                 maximum_distance = distance;
@@ -260,7 +261,7 @@ impl PolygonShape {
 
         let mut minimum = maximum_normal;
         let mut minimum_squared = maximum_distance * maximum_distance;
-        for vertex in &self.vertices {
+        for vertex in self.vertices.iter() {
             let offset = local_point - *vertex;
             let squared = offset.length_squared();
             if minimum_squared > squared {
@@ -297,7 +298,7 @@ impl PolygonShape {
         let mut lower = 0.0;
         let mut upper = input.max_fraction();
         let mut maybe_index = None;
-        for (index, (normal, vertex)) in self.normals.iter().zip(&self.vertices).enumerate() {
+        for (index, (normal, vertex)) in self.normals.iter().zip(self.vertices.iter()).enumerate() {
             let numerator = normal.dot(*vertex - first);
             let denominator = normal.dot(direction);
             if denominator == 0.0 {
@@ -352,7 +353,7 @@ impl PolygonShape {
         let mut area = 0.0;
         let mut inertia = 0.0;
         let mut reference = Vec2::ZERO;
-        for vertex in &self.vertices {
+        for vertex in self.vertices.iter() {
             reference += *vertex;
         }
         reference *= 1.0 / self.vertices.len() as f32;

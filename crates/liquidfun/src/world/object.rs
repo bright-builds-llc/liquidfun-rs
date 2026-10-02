@@ -380,6 +380,7 @@ pub struct World {
     maybe_next_diagnostic_id: Option<u64>,
     pub(super) step_state: StepState,
     pub(super) configuration: WorldConfiguration,
+    pub(super) particle_step_scratch: super::particle_coupling::ParticleStepScratch,
 }
 
 fn new_world_broad_phase() -> BroadPhase<FixtureProxy> {

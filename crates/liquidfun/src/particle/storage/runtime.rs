@@ -69,10 +69,33 @@ impl ParticleStorage {
     pub(crate) fn replace_solver_candidate(
         &mut self,
         particle_ids: &[ParticleId],
-        positions: Vec<Vec2>,
-        velocities: Vec<Vec2>,
-        forces: Vec<Vec2>,
-        group_records: Vec<GroupRecord>,
+        mut positions: Vec<Vec2>,
+        mut velocities: Vec<Vec2>,
+        mut forces: Vec<Vec2>,
+        mut group_records: Vec<GroupRecord>,
+        pending_system_force: bool,
+    ) -> Result<(), ParticleStorageError> {
+        self.swap_solver_candidate(
+            particle_ids,
+            &mut positions,
+            &mut velocities,
+            &mut forces,
+            &mut group_records,
+            pending_system_force,
+        )
+    }
+
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the validated lane transaction keeps every authoritative field explicit"
+    )]
+    pub(crate) fn swap_solver_candidate(
+        &mut self,
+        particle_ids: &[ParticleId],
+        positions: &mut Vec<Vec2>,
+        velocities: &mut Vec<Vec2>,
+        forces: &mut Vec<Vec2>,
+        group_records: &mut Vec<GroupRecord>,
         pending_system_force: bool,
     ) -> Result<(), ParticleStorageError> {
         let count = self.len();
@@ -89,11 +112,11 @@ impl ParticleStorage {
         }
         #[cfg(not(debug_assertions))]
         let _ = particle_ids;
-        validate_groups(self.system, &self.groups, &group_records)?;
-        self.positions = positions;
-        self.velocities = velocities;
-        self.forces = forces;
-        self.group_records = group_records;
+        validate_groups(self.system, &self.groups, group_records)?;
+        std::mem::swap(&mut self.positions, positions);
+        std::mem::swap(&mut self.velocities, velocities);
+        std::mem::swap(&mut self.forces, forces);
+        std::mem::swap(&mut self.group_records, group_records);
         self.solver_state
             .set_pending_system_force(pending_system_force);
         self.solver_state.refresh_group_flags(&self.group_records);

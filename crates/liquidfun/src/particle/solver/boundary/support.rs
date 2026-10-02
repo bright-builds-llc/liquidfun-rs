@@ -59,16 +59,17 @@ pub(super) fn validate_source_lanes(
     Ok(())
 }
 
-pub(super) fn copy_slice<T: Copy>(
+pub(super) fn copy_into<T: Copy>(
     source: &[T],
+    candidate: &mut Vec<T>,
     resource_name: &'static str,
-) -> Result<Vec<T>, BoundarySolverError> {
-    let mut candidate = Vec::new();
+) -> Result<(), BoundarySolverError> {
+    candidate.clear();
     candidate
         .try_reserve_exact(source.len())
         .map_err(|_error| resource(resource_name, source.len()))?;
     candidate.extend_from_slice(source);
-    Ok(candidate)
+    Ok(())
 }
 
 pub(super) fn validate_candidate(candidate: &BoundaryCandidate) -> Result<(), BoundarySolverError> {

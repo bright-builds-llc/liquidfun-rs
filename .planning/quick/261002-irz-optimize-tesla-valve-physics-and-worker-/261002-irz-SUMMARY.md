@@ -18,3 +18,7 @@ Spatial contacts, immutable collision sharing plus scratch reuse, query-only dra
 ## Stage 1
 
 Spatial wall contacts use one validated current-index check per pass, collect candidates in stable row order and retain exact fallback/narrowphase behavior. Five legacy-equivalence tests added. Accepted original→stage1 report:6.268ms forward/32.533ms reverse versus31.374/110.849ms. Exact checkpoints match; full native1037/WASM299 and managed/Markdown checks pass. Independent AI review bound to digest6f997a2034a76831600b939079f8926a789a0f0514dbadb58b14ad434ee60844 at2026-10-02 20:17:35UTC. No residual physical behavior change observed.
+
+## Stage 2
+
+Private Arc slices share immutable geometry; World-owned workspace reuses candidate and collider/source/hit buffers while refreshing current metadata. Seven new regressions cover sharing, reuse, freshness, validated swaps and error recovery. Full native1044/WASM299 checks pass. Two unchanged-source after runs have exact original checkpoints. Later repeat20261002-stage2-after-02 is accepted:6.125ms forward/32.282ms reverse; small forward gain, reverse overlaps preceding variation, no substantial reverse gain claimed. Reviewer/root/tesla_plan acknowledges digestbb1600d0298831c6031308eb2351f02c50e9e8a091a8c7e0a7e905e1453bd747 at2026-10-02 20:51:09UTC. Consuming failed kernels may drop capacity as before; usable workspace always restored and legacy rollback preserved.

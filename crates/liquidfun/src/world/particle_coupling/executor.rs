@@ -19,6 +19,7 @@ use crate::{
 
 use super::super::object::{Body, ParticleSystem};
 use super::super::step::ContactHookRun;
+use super::ParticleStepScratch;
 use super::body_coupling::CandidateBodyCoupling;
 
 pub(super) struct SystemPassExecutor<'a, 'hook, H> {
@@ -29,6 +30,7 @@ pub(super) struct SystemPassExecutor<'a, 'hook, H> {
     bodies: &'a mut Arena<Body, BodyId>,
     hook_run: &'a mut ContactHookRun<'hook, H>,
     maybe_boundary: Option<BoundaryCandidate>,
+    scratch: &'a mut ParticleStepScratch,
 }
 
 impl<'a, 'hook, H: CollisionDecisionHook> SystemPassExecutor<'a, 'hook, H> {
@@ -39,6 +41,7 @@ impl<'a, 'hook, H: CollisionDecisionHook> SystemPassExecutor<'a, 'hook, H> {
         systems: &'a mut Arena<ParticleSystem, ParticleSystemId>,
         bodies: &'a mut Arena<Body, BodyId>,
         hook_run: &'a mut ContactHookRun<'hook, H>,
+        scratch: &'a mut ParticleStepScratch,
     ) -> Self {
         Self {
             world,
@@ -48,6 +51,7 @@ impl<'a, 'hook, H: CollisionDecisionHook> SystemPassExecutor<'a, 'hook, H> {
             bodies,
             hook_run,
             maybe_boundary: None,
+            scratch,
         }
     }
 
@@ -230,11 +234,12 @@ impl<H: CollisionDecisionHook> ParticlePassExecutor for SystemPassExecutor<'_, '
                     .timestamp
                     .checked_add(1)
                     .ok_or(StepError::ParticleLifecycleInvariant)?;
-                let sources = self.world.fixture_contact_sources(self.bodies);
+                self.world
+                    .fixture_contact_sources(self.bodies, &mut self.scratch.body_sources);
                 World::update_body_contacts(
                     self.system,
                     self.systems,
-                    &sources,
+                    &self.scratch.body_sources,
                     timestamp,
                     self.hook_run,
                 )?;

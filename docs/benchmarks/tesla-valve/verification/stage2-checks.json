@@ -1,0 +1,64 @@
+{
+  "stage": "stage2",
+  "runs": [
+    "20261002-stage2-after-01",
+    "20261002-stage2-after-02"
+  ],
+  "acceptedRun": "20261002-stage2-after-02",
+  "beforeRun": "20261002-stage1-after-01",
+  "checks": [
+    "ordered Cargo fmt/clippy/build/test passed:1044 native including doctests",
+    "299 release WASM tests including four Tesla rate/direction cases passed",
+    "managed all findings=0",
+    "two same-source after runs: all fixed checkpoints match original; within-run and fixed/live consistency pass",
+    "7 new sharing/reuse/freshness/error-recovery/swap tests pass; no measured allocation-count claim"
+  ],
+  "sourcePatchSha256": "414b21709aec873b94d0116a01b39671ef1942a8337c603c472c14eaa40ba465",
+  "physicsMeansMs": {
+    "forward": 6.124999996026357,
+    "reverse": 32.281666660308844
+  },
+  "livePresentedFps": {
+    "forward": 52.139673856795035,
+    "reverse": 29.887375289921586
+  },
+  "repeatPhysicsMeansMs": [
+    {
+      "forward": {
+        "count": 3,
+        "mean": 6.122500002384186,
+        "median": 6.0924999833107,
+        "p95": 6.2000000238418576,
+        "min": 6.075,
+        "max": 6.2000000238418576
+      },
+      "reverse": {
+        "count": 3,
+        "mean": 32.30833332538605,
+        "median": 32.2424999833107,
+        "p95": 32.48499997854233,
+        "min": 32.19750001430511,
+        "max": 32.48499997854233
+      }
+    },
+    {
+      "forward": {
+        "count": 3,
+        "mean": 6.124999996026357,
+        "median": 6.142500054836273,
+        "p95": 6.1549999713897705,
+        "min": 6.077499961853027,
+        "max": 6.1549999713897705
+      },
+      "reverse": {
+        "count": 3,
+        "mean": 32.281666660308844,
+        "median": 32.3224999666214,
+        "p95": 32.33999998569489,
+        "min": 32.18250002861023,
+        "max": 32.33999998569489
+      }
+    }
+  ],
+  "interpretation": "Small timing difference; reverse overlaps prior variation, no substantial reverse speedup established."
+}

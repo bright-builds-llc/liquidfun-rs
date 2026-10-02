@@ -149,3 +149,8 @@ All five locked optimizations are fully implemented, exact physical/flow/render 
 <output>
 Parent creates .planning/quick/261002-irz-optimize-tesla-valve-physics-and-worker-/261002-irz-SUMMARY.md with run/commit links, actual improvements/noise, verification/reviewer evidence and residual limits. This planning turn edits only quick planning artifacts, not source/STATE/commits/ROADMAP.
 </output>
+
+
+## Execution scheduling clarification
+
+After the committed Stage1 gate, frontend Stage4 preparation may run in a separate managed worktree based on01728fd. Main-checkout integration and all accepted measurements remain serial: Stage2, Stage3, then Stage4, then Stage5. The worker agent must not mutate the measured main checkout or run heavy jobs during canonical timing. Revalidate the complete frontend integration against the accepted Stage3 core before Stage4 measurement. This preserves isolation and attribution while reducing idle preparation time.

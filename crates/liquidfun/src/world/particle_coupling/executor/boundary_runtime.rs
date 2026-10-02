@@ -13,11 +13,11 @@ use super::{SystemPassExecutor, boundary_error, rigid_error};
 impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
     pub(super) fn begin_boundary(&mut self) -> Result<(), StepError> {
         let (time_step, inverse_time_step) = self.substep();
-        let record = self.record();
+        let record = self.systems.get(self.system).expect("system remains live");
         let definition = record.definition;
         let diameter = 2.0 * definition.radius();
         let particle_mass = definition.density() * (settings::PARTICLE_STRIDE * diameter).powi(2);
-        let source = BoundaryCandidate::new(
+        let source = BoundaryCandidate::new_with_buffers(
             self.system,
             record.storage.particle_ids(),
             record.storage.positions(),
@@ -28,6 +28,7 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             record.storage.group_records(),
             record.storage.has_pending_system_force(),
             record.storage.len(),
+            &mut self.scratch.boundary,
         )
         .map_err(boundary_error)?;
         let candidate = barrier_candidate(
@@ -59,7 +60,7 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             .maybe_boundary
             .as_ref()
             .ok_or(StepError::ParticleLifecycleInvariant)?;
-        let hits = {
+        {
             let world = self.world;
             let bodies = &mut *self.bodies;
             let hook_run = &mut *self.hook_run;
@@ -78,7 +79,8 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
                 Vec2::new(diameter, diameter),
                 proxies,
                 diameter,
-            )?
+                &mut self.scratch.collision,
+            )?;
         };
         let source = self
             .maybe_boundary
@@ -86,12 +88,12 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
             .ok_or(StepError::ParticleLifecycleInvariant)?;
         let candidate = collision_candidate(
             source,
-            &hits,
+            &self.scratch.collision.hits,
             iteration,
             particle_mass,
             time_step,
             inverse_time_step,
-            hits.len(),
+            self.scratch.collision.hits.len(),
         )
         .map_err(boundary_error)?;
         self.maybe_boundary = Some(candidate);
@@ -166,20 +168,22 @@ impl<H: CollisionDecisionHook> SystemPassExecutor<'_, '_, H> {
 
     pub(super) fn commit_boundary(
         &mut self,
-        candidate: BoundaryCandidate,
+        mut candidate: BoundaryCandidate,
     ) -> Result<(), StepError> {
         let record = self.record_mut();
         record.storage.clear_contact_scan();
-        record
+        let result = record
             .storage
-            .replace_solver_candidate(
+            .swap_solver_candidate(
                 &candidate.particle_ids,
-                candidate.positions,
-                candidate.velocities,
-                candidate.forces,
-                candidate.groups,
+                &mut candidate.positions,
+                &mut candidate.velocities,
+                &mut candidate.forces,
+                &mut candidate.groups,
                 candidate.has_pending_force,
             )
-            .map_err(|_error| StepError::ParticleLifecycleInvariant)
+            .map_err(|_error| StepError::ParticleLifecycleInvariant);
+        candidate.recycle(&mut self.scratch.boundary);
+        result
     }
 }

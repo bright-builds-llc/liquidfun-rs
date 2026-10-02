@@ -241,3 +241,5 @@ pub(super) fn validate_density(density: f32) -> Result<(), CollisionError> {
 fn validate_child(child_index: ChildIndex, child_count: usize) -> Result<(), CollisionError> {
     ChildIndex::new(child_index.get(), child_count).map(|_| ())
 }
+#[cfg(test)]
+mod sharing_tests;

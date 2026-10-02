@@ -188,3 +188,6 @@ pub(crate) mod properties;
 
 #[cfg(test)]
 mod editor_tests;
+
+#[cfg(test)]
+mod solver_buffer_tests;

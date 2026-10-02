@@ -1,6 +1,7 @@
 use crate::collision::{Aabb, ChildIndex, CollisionError, MassData, RayCastHit, RayCastInput};
 use crate::math::settings::{LINEAR_SLOP, POLYGON_RADIUS};
 use crate::math::{Transform, Vec2};
+use std::sync::Arc;
 
 use super::{EdgeShape, PointDistance, validate_density, validate_query, validate_vec2};
 
@@ -16,7 +17,7 @@ enum ChainTopology {
 /// closing child. Optional ghost points exist only in the open topology.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ChainShape {
-    vertices: Vec<Vec2>,
+    vertices: Arc<[Vec2]>,
     topology: ChainTopology,
     maybe_previous: Option<Vec2>,
     maybe_next: Option<Vec2>,
@@ -38,7 +39,7 @@ impl ChainShape {
         validate_ghost(maybe_previous, vertices[0])?;
         validate_ghost(maybe_next, vertices[vertices.len() - 1])?;
         Ok(Self {
-            vertices: vertices.to_vec(),
+            vertices: Arc::from(vertices),
             topology: ChainTopology::Open,
             maybe_previous,
             maybe_next,
@@ -54,7 +55,7 @@ impl ChainShape {
     pub fn closed(vertices: &[Vec2]) -> Result<Self, CollisionError> {
         validate_vertices(vertices, 3, true)?;
         Ok(Self {
-            vertices: vertices.to_vec(),
+            vertices: Arc::from(vertices),
             topology: ChainTopology::Closed,
             maybe_previous: None,
             maybe_next: None,

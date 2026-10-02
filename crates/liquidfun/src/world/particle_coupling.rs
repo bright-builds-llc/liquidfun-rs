@@ -2,6 +2,13 @@
 
 mod body_coupling;
 mod executor;
+mod scratch;
+
+#[cfg(test)]
+mod scratch_tests;
+
+use scratch::CollisionBuffers;
+pub(super) use scratch::ParticleStepScratch;
 
 use crate::arena::Arena;
 use crate::collision::{Aabb, ChildIndex, RayCastInput, Shape};
@@ -33,6 +40,7 @@ impl World {
         let backup_bodies = self.bodies.clone();
         let backup_groups = self.particle_groups.clone();
         self.run_particle_lifecycle_step(configuration.time_step(), hook_run)?;
+        let mut scratch = std::mem::take(&mut self.particle_step_scratch);
         let mut candidate_bodies = self.bodies.replace_with_empty();
         let mut candidate_systems = self.particle_systems.replace_with_empty();
         let system_order = self.particle_system_order.clone();
@@ -45,6 +53,7 @@ impl World {
                     &mut candidate_systems,
                     &mut candidate_bodies,
                     hook_run,
+                    &mut scratch,
                 );
                 crate::particle::solver::run_particle_solver(configuration, &mut executor)?;
             }
@@ -52,6 +61,8 @@ impl World {
         })();
         self.bodies = candidate_bodies;
         self.particle_systems = candidate_systems;
+        scratch.clear_transient();
+        self.particle_step_scratch = scratch;
         if result.is_err() {
             self.bodies = backup_bodies;
             self.particle_groups = backup_groups;
@@ -59,8 +70,12 @@ impl World {
         result
     }
 
-    fn fixture_contact_sources(&self, bodies: &Arena<Body, BodyId>) -> Vec<FixtureContactSource> {
-        let mut sources = Vec::new();
+    fn fixture_contact_sources(
+        &self,
+        bodies: &Arena<Body, BodyId>,
+        sources: &mut Vec<FixtureContactSource>,
+    ) {
+        sources.clear();
         for body_id in &self.body_order {
             let body = bodies
                 .get(*body_id)
@@ -87,7 +102,6 @@ impl World {
                 });
             }
         }
-        sources
     }
 
     #[allow(
@@ -104,12 +118,16 @@ impl World {
         expansion: Vec2,
         proxies: &[ContactProxy],
         diameter: f32,
-    ) -> Result<Vec<FilteredCollisionHit>, StepError> {
-        let fixtures = ccd_fixture_records(self, bodies, expansion)?;
-        let mut hits = Vec::new();
+        buffers: &mut CollisionBuffers,
+    ) -> Result<(), StepError> {
+        buffers.recycle_records();
+        ccd_fixture_records(self, bodies, expansion, buffers)?;
+        buffers.hits.clear();
+        let fixtures = &buffers.fixtures;
+        let hits = &mut buffers.hits;
         let motion = max_particle_motion(&candidate.velocities, time_step);
         let proxies_match = proxies.len() == candidate.positions.len();
-        for fixture in &fixtures {
+        for fixture in fixtures {
             let static_fixture = fixture.previous_transform == fixture.current_transform;
             for (child, maybe_aabb) in &fixture.children {
                 // Later iterations raycast from the current position, so the
@@ -130,7 +148,7 @@ impl World {
                                 time_step,
                                 particle_iteration,
                                 hook_run,
-                                &mut hits,
+                                hits,
                             )
                         })?;
                     if queried {
@@ -147,13 +165,13 @@ impl World {
                         time_step,
                         particle_iteration,
                         hook_run,
-                        &mut hits,
+                        hits,
                     )?;
                 }
             }
         }
         hits.sort_by_key(|hit| hit.particle);
-        Ok(hits)
+        Ok(())
     }
 
     fn update_particle_contacts<H: CollisionDecisionHook>(
@@ -404,8 +422,8 @@ fn ccd_fixture_records(
     world: &World,
     bodies: &Arena<Body, BodyId>,
     expansion: Vec2,
-) -> Result<Vec<CcdFixtureRecord>, StepError> {
-    let mut fixtures = Vec::new();
+    buffers: &mut CollisionBuffers,
+) -> Result<(), StepError> {
     for body_id in &world.body_order {
         let body = bodies
             .get(*body_id)
@@ -429,7 +447,8 @@ fn ccd_fixture_records(
                 continue;
             }
             let shape = fixture.definition.shape().clone();
-            let mut children = Vec::with_capacity(shape.child_count());
+            let mut children = buffers.child_pool.pop().unwrap_or_default();
+            children.reserve(shape.child_count());
             for child in 0..shape.child_count() {
                 let child = shape
                     .child_index(child)
@@ -437,7 +456,7 @@ fn ccd_fixture_records(
                 let maybe_aabb = expanded_shape_aabb(&shape, current_transform, child, expansion);
                 children.push((child, maybe_aabb));
             }
-            fixtures.push(CcdFixtureRecord {
+            buffers.fixtures.push(CcdFixtureRecord {
                 body: *body_id,
                 fixture: *fixture_id,
                 previous_transform,
@@ -449,7 +468,7 @@ fn ccd_fixture_records(
             });
         }
     }
-    Ok(fixtures)
+    Ok(())
 }
 
 fn expanded_shape_aabb(
