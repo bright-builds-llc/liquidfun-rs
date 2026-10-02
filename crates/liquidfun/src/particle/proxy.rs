@@ -118,6 +118,16 @@ impl ParticleNeighborhood {
         view: &ParticleSystemView<'_>,
         diameter: f32,
     ) -> Result<Self, ParticleProxyError> {
+        let mut neighborhood = Self::from_view_for_query(view, diameter)?;
+        neighborhood.pair_rows = enumerate_pair_rows(&neighborhood.proxies);
+        Ok(neighborhood)
+    }
+
+    // AABB traversal needs the checked index but never consumes neighbor pairs.
+    pub(in crate::particle) fn from_view_for_query(
+        view: &ParticleSystemView<'_>,
+        diameter: f32,
+    ) -> Result<Self, ParticleProxyError> {
         if !diameter.is_finite() {
             return Err(ParticleProxyError::NonFiniteDiameter);
         }
@@ -144,14 +154,12 @@ impl ParticleNeighborhood {
             });
         }
         proxies.sort_by_key(|proxy| proxy.tag);
-        let pair_rows = enumerate_pair_rows(&proxies);
-
         Ok(Self {
             system: view.system(),
             diameter,
             particles,
             proxies,
-            pair_rows,
+            pair_rows: Vec::new(),
         })
     }
 

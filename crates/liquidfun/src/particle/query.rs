@@ -1,5 +1,8 @@
 //! Pure particle AABB and ray traversal over stable semantic identities.
 
+#[cfg(test)]
+mod tests;
+
 use std::error::Error;
 use std::fmt;
 
@@ -245,7 +248,7 @@ pub(crate) fn query_aabb(
     bounds: Aabb,
     visitor: &mut impl FnMut(&ParticleQueryOccurrence) -> QueryDirective,
 ) -> Result<bool, ParticleQueryError> {
-    let neighborhood = ParticleNeighborhood::from_view(view, diameter)?;
+    let neighborhood = ParticleNeighborhood::from_view_for_query(view, diameter)?;
     let candidates = neighborhood.particle_candidates_in_bounds(bounds)?;
     let lower = bounds.lower_bound();
     let upper = bounds.upper_bound();

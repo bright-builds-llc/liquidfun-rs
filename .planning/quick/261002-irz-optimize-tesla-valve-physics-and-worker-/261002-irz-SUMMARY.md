@@ -22,3 +22,7 @@ Spatial wall contacts use one validated current-index check per pass, collect ca
 ## Stage 2
 
 Private Arc slices share immutable geometry; World-owned workspace reuses candidate and collider/source/hit buffers while refreshing current metadata. Seven new regressions cover sharing, reuse, freshness, validated swaps and error recovery. Full native1044/WASM299 checks pass. Two unchanged-source after runs have exact original checkpoints. Later repeat20261002-stage2-after-02 is accepted:6.125ms forward/32.282ms reverse; small forward gain, reverse overlaps preceding variation, no substantial reverse gain claimed. Reviewer/root/tesla_plan acknowledges digestbb1600d0298831c6031308eb2351f02c50e9e8a091a8c7e0a7e905e1453bd747 at2026-10-02 20:51:09UTC. Consuming failed kernels may drop capacity as before; usable workspace always restored and legacy rollback preserved.
+
+## Stage 3
+
+AABBqueries use the same checked stable index and skip unused pair enumeration; public neighbourhood/raycast paths retain pairs. Six new regressions and full native1050/WASM299 checks pass. Report20261002-stage3-after-01 remains exactly original at all fixed checkpoints:6.042ms forward/31.957ms reverse, about1% change from Stage2 repeat. Independent reviewer/root/tesla_plan acknowledges digest956f6bfe8742c951206e4664d050066d2bdc91fa778731bff07e3b922cec15fb at2026-10-02 21:05:46UTC. Worker preparation remains isolated pending main integration.

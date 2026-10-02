@@ -1,0 +1,4 @@
+[web-build] start wasm
+[web-build] remove web/src/generated/liquidfun-wasm
+[web-build] run wasm-pack build crates/liquidfun-wasm --target web --release --out-dir ../../web/src/generated/liquidfun-wasm --out-name liquidfun_wasm
+[web-build] complete wasm

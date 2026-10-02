@@ -31,6 +31,7 @@ The original run used the unchanged physics implementation at `8c419c4c42aaf99cd
 | Original                        | 31.374                    | 110.849                   | 31.3                  | 9.1                   | [Raw report](runs/20261002-original-01/report.json)     |
 | 1. Spatial wall contacts        | 6.268                     | 32.533                    | 53.7                  | 29.6                  | [Raw report](runs/20261002-stage1-after-01/report.json) |
 | 2. Geometry sharing and buffers | 6.125                     | 32.282                    | 52.1                  | 29.9                  | [Raw report](runs/20261002-stage2-after-02/report.json) |
+| 3. Query-only drain index       | 6.042                     | 31.957                    | 50.1                  | 30.2                  | [Raw report](runs/20261002-stage3-after-01/report.json) |
 
 The original fixed checkpoints matched across all replicates and the live warmup. Forward checkpoint counts were 2852 to 2857; reverse were 9051 to 9662. The reverse live probe advanced fewer steps, reaching 9389 particles, which is why live count and fixed-checkpoint count must be read separately. Render submission averaged 0.126 ms forward and 0.187 ms reverse; physics dominated this baseline. Later rows report each isolated stage against its immediate predecessor and preserve the original as the cumulative reference.
 
@@ -43,3 +44,7 @@ The original report is this stage's before record. The indexed contact path redu
 Stage1 is the before record. Two after runs used the same source bytes; all fixed checkpoints still matched the original. The [first run](runs/20261002-stage2-after-01/report.json) and [repeat](runs/20261002-stage2-after-02/report.json) are both retained. The table uses the later accepted repeat as the next stage's before record, not a selected best replicate. The forward physics change is small; reverse timings overlap the preceding replicate variation, so this experiment does not establish a substantial reverse speedup. Sharing and reuse are separately witnessed by tests of backing storage, varying-size buffers, refreshed collider metadata, rejected swaps and error followed by successful retry.
 
 World always restores a usable workspace after a solver Result. Successful commits recycle displaced vectors. Existing consuming kernels can drop candidate capacity on an error; their prior authoritative error/rollback behavior remains intact. All1044 native and299 WASM tests passed.
+
+## Stage 3: Query-only drain index
+
+The accepted Stage2 repeat is the before record. AABB queries retain the checked spatial index and omit neighbour-pair enumeration. Public neighbourhood construction and raycasts still retain their pair path. The measured change is modest (about1% in each direction); fixed state remains identical to the original. Six new query tests preserve validation, equal-tag ordering, strict boundaries, shape selection, callback termination and pair API behavior. All1050 native and299 WASM tests passed.

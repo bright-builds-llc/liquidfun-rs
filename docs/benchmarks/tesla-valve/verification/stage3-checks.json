@@ -1,0 +1,22 @@
+{
+  "stage": "stage3",
+  "run": "20261002-stage3-after-01",
+  "beforeRun": "20261002-stage2-after-02",
+  "checks": [
+    "ordered Cargo fmt/clippy/build/test passed:1050 native including doctests",
+    "299 release WASM tests including four Tesla rate/direction cases passed",
+    "managed all findings=0",
+    "all fixed checkpoints match original; within-run and fixed/live consistency pass",
+    "6 new query regressions,19 world-query and9 public-contact tests pass"
+  ],
+  "sourcePatchSha256": "b670e8fbf30f62567a366b4945dc06b42808a3d5ab98909abea9eab13b1238bb",
+  "physicsMeansMs": {
+    "forward": 6.0416666587193815,
+    "reverse": 31.95666665633519
+  },
+  "livePresentedFps": {
+    "forward": 50.080846944178816,
+    "reverse": 30.166286418545585
+  },
+  "interpretation": "Modest point estimates; local experimental measurements, no controlled-host statistical claim."
+}
