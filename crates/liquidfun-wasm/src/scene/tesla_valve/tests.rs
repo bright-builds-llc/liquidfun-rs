@@ -111,7 +111,8 @@ fn dense_frames_and_every_wall_fixture_fit_coordinated_bounds() {
             .expect("direction");
         session.capture_frame().expect("dense capture");
         // Assert
-        assert!((400..=450).contains(&session.rigid_shape_count()));
+        assert_eq!(session.rigid_shape_count(), 468);
+        assert!(session.rigid_shape_count() <= 512);
         for (wall, edge) in wall_boxes(&paths)
             .into_iter()
             .zip(paths.iter().flat_map(|path| path.windows(2)))
@@ -358,8 +359,8 @@ fn reflection_preserves_solid_geometry_and_ports() {
         );
     }
     for path in reverse.outer_paths {
-        assert!((path[0].y - 4.03794).abs() < 0.05);
-        assert!((path[path.len() - 1].y - 0.26206).abs() < 0.05);
+        assert!((path[0].y - 4.272_043).abs() < 0.000_003);
+        assert!((path[path.len() - 1].y - 0.027_957).abs() < 0.000_003);
     }
     assert_eq!(outline_segments(true).len(), outline_segments(false).len());
 }

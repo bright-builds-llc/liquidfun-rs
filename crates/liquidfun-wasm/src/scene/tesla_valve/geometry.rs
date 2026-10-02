@@ -17,11 +17,13 @@ pub(super) const TRUNK_RADIUS: f32 = 0.30;
 const WALL_END_OVERLAP: f32 = 0.01;
 const LEG_PITCH: f32 = 0.85;
 const LEG_ANGLE: f32 = TAU / 18.0;
-const BRANCH_ANGLE: f32 = TAU / 6.0;
+const BRANCH_ANGLE: f32 = TAU / 9.0;
+const PORT_STUB_LENGTH: f32 = 0.18;
+const PORT_LENGTH: f32 = 0.20;
 const OUTER_SAMPLES: u16 = 56;
 const INNER_SAMPLES: u16 = 24;
 const CORNER_SAMPLES: u16 = 12;
-pub(super) const DRAIN_TOP_Y: f32 = 0.32;
+pub(super) const DRAIN_TOP_Y: f32 = 0.08;
 pub(super) const DRAIN_HALF_WIDTH: f32 = 0.7;
 pub(super) const DRAIN_HALF_HEIGHT: f32 = 0.22;
 pub(super) const DRAIN_CENTER: Vec2 = Vec2::new(0.0, DRAIN_TOP_Y - DRAIN_HALF_HEIGHT);
@@ -35,7 +37,7 @@ pub(super) const FRAME_MAX_X: f32 = 0.58;
 #[cfg(test)]
 pub(super) const FRAME_MIN_Y: f32 = -0.12;
 #[cfg(test)]
-pub(super) const FRAME_MAX_Y: f32 = 4.15;
+pub(super) const FRAME_MAX_Y: f32 = 4.32;
 
 #[derive(Clone, Copy)]
 pub(super) struct CircularArc {
@@ -90,7 +92,9 @@ pub(super) struct ValveGeometry {
     #[cfg(test)]
     pub(super) bypass_arcs: [CircularArc; 4],
     #[cfg(test)]
-    pub(super) trunk_arcs: [CircularArc; 3],
+    pub(super) trunk_arcs: [CircularArc; 5],
+    #[cfg(test)]
+    pub(super) port_arcs: [CircularArc; 2],
 }
 
 #[derive(Clone, Copy)]
@@ -128,29 +132,27 @@ fn trim() -> f32 {
 fn entry_length() -> f32 {
     BORDER_HALF_WIDTH * (1.0 + BRANCH_ANGLE.cos()) / BRANCH_ANGLE.sin()
 }
-fn return_span() -> f32 {
-    2.0 * BYPASS_RADIUS / BRANCH_ANGLE.sin() + BORDER_HALF_WIDTH / BRANCH_ANGLE.tan()
-}
 fn anchor_distance() -> f32 {
-    (leg_length() - entry_length() - return_span()) * 0.5 + entry_length()
+    // This places the return tangent on the following leg's actual border,
+    // rather than reconnecting to the incoming leg and a separate corner.
+    leg_length() - 2.0 * BYPASS_RADIUS / BRANCH_ANGLE.sin()
 }
 
 pub(super) fn inlet_direction() -> Vec2 {
-    legs()[0].direction
+    Vec2::new(0.0, -1.0)
 }
 pub(super) fn inlet_center() -> Vec2 {
-    let leg = legs()[0];
-    leg.vertex - leg.direction * 0.20
+    let arc = port_turns(&legs())[0];
+    Vec2::new(arc.center.x + TRUNK_RADIUS, arc.center.y + PORT_LENGTH)
 }
 
 pub(super) fn source_position(cursor: u32) -> Vec2 {
-    let leg = legs()[0];
     let slot = cursor % SOURCE_SLOTS;
     let column = u16::try_from(slot % SOURCE_COLUMNS).expect("source columns fit u16");
     let row = u16::try_from(slot / SOURCE_COLUMNS).expect("source rows fit u16");
     inlet_center()
-        + leg.direction * (0.15 - f32::from(row) * SOURCE_SPACING)
-        + leg.normal * ((f32::from(column) - 1.5) * SOURCE_SPACING)
+        + inlet_direction() * (0.15 - f32::from(row) * SOURCE_SPACING)
+        + Vec2::new((f32::from(column) - 1.5) * SOURCE_SPACING, 0.0)
 }
 
 fn bypass(leg: Leg) -> CircularArc {
@@ -171,12 +173,55 @@ fn bypass(leg: Leg) -> CircularArc {
     }
 }
 
-fn trunk_corners(legs: &[Leg; 4]) -> [CircularArc; 3] {
+fn incoming_stub_direction() -> Vec2 {
+    Vec2::new(-LEG_ANGLE.sin(), -LEG_ANGLE.cos())
+}
+
+fn outgoing_stub_direction() -> Vec2 {
+    Vec2::new(LEG_ANGLE.sin(), -LEG_ANGLE.cos())
+}
+
+fn port_trim() -> f32 {
+    TRUNK_RADIUS * (LEG_ANGLE * 0.5).tan()
+}
+
+fn port_turns(legs: &[Leg; 4]) -> [CircularArc; 2] {
+    let top = legs[0].vertex - incoming_stub_direction() * PORT_STUB_LENGTH;
+    let last = legs[3];
+    let bottom =
+        last.vertex + last.direction * leg_length() + outgoing_stub_direction() * PORT_STUB_LENGTH;
+    [
+        CircularArc {
+            center: top + Vec2::new(-TRUNK_RADIUS, port_trim()),
+            radius: TRUNK_RADIUS,
+            start: 0.0,
+            sweep: -LEG_ANGLE,
+            samples: CORNER_SAMPLES,
+        },
+        CircularArc {
+            center: bottom - Vec2::new(TRUNK_RADIUS, port_trim()),
+            radius: TRUNK_RADIUS,
+            start: LEG_ANGLE,
+            sweep: -LEG_ANGLE,
+            samples: CORNER_SAMPLES,
+        },
+    ]
+}
+
+fn trunk_corners(legs: &[Leg; 4]) -> [CircularArc; 5] {
     std::array::from_fn(|index| {
-        let vertex = legs[index + 1].vertex;
+        let (vertex, incoming) = if index == 0 {
+            (legs[0].vertex, incoming_stub_direction())
+        } else {
+            let previous = legs[index - 1];
+            (
+                previous.vertex + previous.direction * leg_length(),
+                previous.direction,
+            )
+        };
         let sign = vertex.x.signum();
         let center = vertex - Vec2::new(sign * TRUNK_RADIUS / LEG_ANGLE.cos(), 0.0);
-        let tangent = vertex - legs[index].direction * trim();
+        let tangent = vertex - incoming * trim();
         let radial = tangent - center;
         CircularArc {
             center,
@@ -189,6 +234,18 @@ fn trunk_corners(legs: &[Leg; 4]) -> [CircularArc; 3] {
 }
 
 fn append(path: &mut Vec<Vec2>, point: Vec2) {
+    if path.len() >= 2 {
+        let previous = path[path.len() - 1];
+        let before = previous - path[path.len() - 2];
+        let after = point - previous;
+        if before.dot(after) > 0.0
+            && before.cross(after).abs() <= 0.000_001 * before.length() * after.length()
+        {
+            let end = path.len() - 1;
+            path[end] = point;
+            return;
+        }
+    }
     if path
         .last()
         .is_none_or(|previous| (point - *previous).length_squared() > 0.000_000_000_1)
@@ -197,24 +254,38 @@ fn append(path: &mut Vec<Vec2>, point: Vec2) {
     }
 }
 
+fn append_border(path: &mut Vec<Vec2>, arc: CircularArc, side: f32) {
+    let radius = arc.radius - side * arc.sweep.signum() * BORDER_HALF_WIDTH;
+    for point in arc.border(radius, arc.samples).points() {
+        append(path, point);
+    }
+}
+
+#[cfg(test)]
+pub(super) fn outlet_center() -> Vec2 {
+    let arc = port_turns(&legs())[1];
+    Vec2::new(arc.center.x + TRUNK_RADIUS, arc.center.y - PORT_LENGTH)
+}
+
 pub(super) fn valve_geometry(forward: bool) -> ValveGeometry {
     let legs = legs();
     let bypass_arcs = legs.map(bypass);
     let trunk_arcs = trunk_corners(&legs);
+    let port_arcs = port_turns(&legs);
     let mut splitters = std::array::from_fn(|index| splitter(legs[index], bypass_arcs[index]));
     let mut outer_paths = std::array::from_fn(|path_index| {
         let side = if path_index == 0 { 1.0 } else { -1.0 };
         let mut path = Vec::new();
+        append(
+            &mut path,
+            inlet_center() + Vec2::new(side * BORDER_HALF_WIDTH, 0.0),
+        );
+        append_border(&mut path, port_arcs[0], side);
+        append_border(&mut path, trunk_arcs[0], side);
         for (index, leg) in legs.iter().copied().enumerate() {
-            let start = if index == 0 { -0.20 } else { trim() };
-            let end = if index == 3 {
-                leg_length() + 0.20
-            } else {
-                leg_length() - trim()
-            };
             append(
                 &mut path,
-                leg.vertex + leg.direction * start + leg.normal * (side * BORDER_HALF_WIDTH),
+                leg.vertex + leg.direction * trim() + leg.normal * (side * BORDER_HALF_WIDTH),
             );
             if (side - leg.side).abs() < 0.1 {
                 for point in bypass_arcs[index]
@@ -223,25 +294,24 @@ pub(super) fn valve_geometry(forward: bool) -> ValveGeometry {
                 {
                     append(&mut path, point);
                 }
+                // Its tangent already lies on the following leg. The next
+                // append continues that wall directly, including stage four.
+            } else {
                 append(
                     &mut path,
                     leg.vertex
-                        + leg.direction * (anchor_distance() + return_span())
+                        + leg.direction * (leg_length() - trim())
                         + leg.normal * (side * BORDER_HALF_WIDTH),
                 );
-            }
-            append(
-                &mut path,
-                leg.vertex + leg.direction * end + leg.normal * (side * BORDER_HALF_WIDTH),
-            );
-            if index < 3 {
-                let arc = trunk_arcs[index];
-                let radius = TRUNK_RADIUS - side * arc.sweep.signum() * BORDER_HALF_WIDTH;
-                for point in arc.border(radius, CORNER_SAMPLES).points() {
-                    append(&mut path, point);
-                }
+                append_border(&mut path, trunk_arcs[index + 1], side);
             }
         }
+        append_border(&mut path, port_arcs[1], side);
+        let bottom = Vec2::new(
+            port_arcs[1].center.x + TRUNK_RADIUS,
+            port_arcs[1].center.y - PORT_LENGTH,
+        );
+        append(&mut path, bottom + Vec2::new(side * BORDER_HALF_WIDTH, 0.0));
         path
     });
     if !forward {
@@ -273,6 +343,12 @@ pub(super) fn valve_geometry(forward: bool) -> ValveGeometry {
             trunk_arcs
         } else {
             trunk_arcs.map(CircularArc::reflected)
+        },
+        #[cfg(test)]
+        port_arcs: if forward {
+            port_arcs
+        } else {
+            port_arcs.map(CircularArc::reflected)
         },
     }
 }

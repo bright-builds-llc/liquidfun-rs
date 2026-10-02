@@ -14,6 +14,9 @@ mod tests;
 #[cfg(test)]
 mod flow_tests;
 
+#[cfg(test)]
+mod topology_tests;
+
 use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};
 use liquidfun::{

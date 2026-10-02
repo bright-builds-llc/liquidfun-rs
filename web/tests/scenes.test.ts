@@ -63,7 +63,7 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
   "washing-machine":
     "Watch ribs on a spinning drum tumble water and a few elastic socks. This is an original experimental scene.",
   "tesla-valve":
-    "Watch water follow a winding pipe with semicircular bypasses around solid splitter islands. The straight runs and circular bends share a 6 cm channel width. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
+    "Watch water pass through a Tesla Valve whose outer loop walls continue into the next pipe section around solid splitter islands. The straight runs and circular bends share a 6 cm channel width. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {

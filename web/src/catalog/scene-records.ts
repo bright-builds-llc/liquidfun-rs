@@ -111,7 +111,7 @@ export const TESLA_VALVE_VIEW_BOUNDS = {
   minX: -0.7,
   minY: -0.12,
   maxX: 0.58,
-  maxY: 4.15,
+  maxY: 4.32,
 } as const;
 
 export const THEO_JANSEN_VIEW_BOUNDS = {
@@ -604,7 +604,7 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Tesla Valve",
     ready: true,
     description:
-      "Watch water follow a winding pipe with semicircular bypasses around solid splitter islands. The straight runs and circular bends share a 6 cm channel width. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
+      "Watch water pass through a Tesla Valve whose outer loop walls continue into the next pipe section around solid splitter islands. The straight runs and circular bends share a 6 cm channel width. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
     interactionHint:
       "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
     controls: withGravitySlider([FLOW_RATE_CONTROL, FLOW_DIRECTION_CONTROL]),

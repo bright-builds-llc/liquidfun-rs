@@ -39,10 +39,13 @@ async function expectCanvasFillsViewport(page: Page): Promise<void> {
     throw new Error("viewport is unavailable");
   }
 
-  const box = await page.locator("canvas.scene-canvas").boundingBox();
-  expect(box).not.toBeNull();
-  expect(box?.width).toBeGreaterThanOrEqual(viewport.width - 1);
-  expect(box?.height).toBeGreaterThanOrEqual(viewport.height - 1);
+  // ResizeObserver publishes canvas dimensions after the viewport changes.
+  await expect(async () => {
+    const box = await page.locator("canvas.scene-canvas").boundingBox();
+    expect(box).not.toBeNull();
+    expect(box?.width).toBeGreaterThanOrEqual(viewport.width - 1);
+    expect(box?.height).toBeGreaterThanOrEqual(viewport.height - 1);
+  }).toPass({ timeout: 5000 });
 }
 
 test("fills a desktop viewport with the canvas shell and HUD", async ({
