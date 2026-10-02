@@ -7,8 +7,10 @@ import type { Camera } from "../../src/render/camera";
 import { drawRenderFrame } from "../../src/render/canvas";
 import { canvasRenderMode, type SvgRenderMode } from "../../src/render/mode";
 
-/** Pinned face so label text does not depend on the host font set. */
-export const README_PREVIEW_FONT_FILE = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+/** Canonical CI face; local captures may explicitly select an installed font. */
+export const README_PREVIEW_FONT_FILE =
+  process.env.LIQUIDFUN_README_FONT_FILE ??
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
 
 let registeredFontFile: string | undefined;
 
@@ -77,7 +79,7 @@ async function assertFontFile(fontFile: string): Promise<void> {
     await access(fontFile);
   } catch (error) {
     throw new Error(
-      `README WebP font is missing at ${fontFile}. Install DejaVu Sans (fonts-dejavu-core).`,
+      `README WebP font is missing at ${fontFile}. Install DejaVu Sans (fonts-dejavu-core), or set LIQUIDFUN_README_FONT_FILE to an installed TrueType font.`,
       { cause: error },
     );
   }

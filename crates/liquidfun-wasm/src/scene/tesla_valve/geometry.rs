@@ -1,30 +1,22 @@
-//! Tesla valve walls, authored for downward flow.
+//! Alternating rounded valve lobes enclosing solid teardrop splitters.
 //!
-//! The main tube runs down the right. Each head is a loop on the left: it
-//! leaves the tube, curves around, and turns back into the tube pointing
-//! downstream. Reverse mirrors the heads about a horizontal axis, so those
-//! returns point upstream and falling water is turned back into the loops.
-//! The inlet, the right wall, and the drain stay put.
+//! Both drawing and collision use these authored points. The two continuous
+//! outer paths wind around four alternating islands, leaving the center open.
 
 use liquidfun::math::Vec2;
 
 use super::super::RigidSegment;
 
-/// Horizontal axis of the valve heads. `y' = 2 * MIRROR_Y - y`.
+/// Horizontal reflection axis used to reverse the valve's internal stages.
 pub(super) const MIRROR_Y: f32 = 1.48;
 pub(super) const PARTICLE_RADIUS: f32 = 0.014;
-/// Particles below this line, inside the drain width, are removed.
 pub(super) const DRAIN_TOP_Y: f32 = 0.32;
 pub(super) const DRAIN_HALF_WIDTH: f32 = 0.7;
 pub(super) const DRAIN_HALF_HEIGHT: f32 = 0.22;
 pub(super) const DRAIN_CENTER: Vec2 = Vec2::new(0.0, DRAIN_TOP_Y - DRAIN_HALF_HEIGHT);
 pub(super) const SPAWN_Y: f32 = 2.86;
-/// Three columns inside the main tube, to the right of the curved heads.
-pub(super) const SPAWN_XS: [f32; 3] = [0.12, 0.20, 0.28];
-/// Portrait and landscape frame. Keep in sync with the catalog view bounds.
-///
-/// The catalog owns the rectangle the canvas uses. These copies exist so the
-/// wall test can reject a corner that leaves that frame.
+pub(super) const SPAWN_XS: [f32; 3] = [-0.08, 0.0, 0.08];
+/// Keep these regression bounds in sync with the catalog's world rectangle.
 #[cfg(test)]
 pub(super) const FRAME_MIN_X: f32 = -0.70;
 #[cfg(test)]
@@ -34,144 +26,109 @@ pub(super) const FRAME_MIN_Y: f32 = -0.12;
 #[cfg(test)]
 pub(super) const FRAME_MAX_Y: f32 = 3.22;
 
+// Polygon welding uses a squared-distance threshold: ribbons need a full
+// thickness above 0.05 m even though the particle radius is much smaller.
 const WALL_HALF_THICKNESS: f32 = 0.03;
+const STAGE_OFFSET: f32 = 0.568;
+const STAGE_OFFSETS: [f32; 4] = [0.0, STAGE_OFFSET, 2.0 * STAGE_OFFSET, 3.0 * STAGE_OFFSET];
+const DOWNSTREAM_SCALE: f32 = 0.8;
+const FIRST_STAGE_Y: f32 = 2.62;
 
-/// Ends of the wall that turns a head back into the main tube.
-///
-/// `curve` sits out in the head. `tube` meets the straight conduit. Forward
-/// points that return downstream. Reverse lifts `tube` above `curve`.
-#[cfg(test)]
-pub(super) struct TubeReturn {
-    pub(super) curve: Vec2,
-    pub(super) tube: Vec2,
+/// Template coordinates are downstream distance and distance toward the lobe.
+const OUTER_LOBE: [Vec2; 9] = [
+    Vec2::new(0.0, -0.036),
+    Vec2::new(-0.09, 0.06),
+    Vec2::new(-0.16, 0.175),
+    Vec2::new(-0.16, 0.30),
+    Vec2::new(-0.10, 0.395),
+    Vec2::new(0.0, 0.434),
+    Vec2::new(0.12, 0.405),
+    Vec2::new(0.62, 0.19),
+    Vec2::new(1.136, -0.036),
+];
+
+const SPLITTER: [Vec2; 6] = [
+    Vec2::new(0.0, 0.12),
+    Vec2::new(-0.04, 0.16),
+    Vec2::new(-0.03, 0.22),
+    Vec2::new(0.04, 0.25),
+    Vec2::new(0.12, 0.235),
+    Vec2::new(0.53, 0.08),
+];
+
+pub(super) struct ValveGeometry {
+    pub(super) outer_paths: [Vec<Vec2>; 2],
+    pub(super) splitters: [[Vec2; 6]; 4],
 }
 
-struct Ribbon {
-    quads: Vec<[Vec2; 4]>,
-}
-
-pub(super) fn collision_quads(forward: bool) -> Vec<[Vec2; 4]> {
-    paths(forward)
-        .into_iter()
-        .map(|points| coarse(&points))
-        .flat_map(|points| ribbon(&points).quads)
-        .collect()
-}
-
-/// Drops centerline points that sit closer than the wall is thick.
-///
-/// A quad shorter than it is wide collapses in the polygon builder.
-fn coarse(points: &[Vec2]) -> Vec<Vec2> {
-    let mut kept = Vec::new();
-    let Some(mut previous) = points.first().copied() else {
-        return kept;
-    };
-    kept.push(previous);
-    let count = points.len();
-    for (index, point) in points.iter().copied().enumerate().skip(1) {
-        let span = (point - previous).length();
-        let is_end = index + 1 == count;
-        if span >= 0.10 || (is_end && span >= 0.05) {
-            kept.push(point);
-            previous = point;
-        } else if is_end && kept.len() > 1 {
-            let end = kept.len() - 1;
-            kept[end] = point;
+pub(super) fn valve_geometry(forward: bool) -> ValveGeometry {
+    let splitters =
+        std::array::from_fn(|stage| SPLITTER.map(|point| place_stage(point, stage, forward)));
+    let outer_paths = std::array::from_fn(|side| {
+        let mut stages: Vec<Vec2> = [side, side + 2]
+            .into_iter()
+            .enumerate()
+            .flat_map(|(index, stage)| {
+                OUTER_LOBE
+                    .iter()
+                    .copied()
+                    .skip(usize::from(index != 0))
+                    .map(move |point| place_stage(point, stage, forward))
+            })
+            .collect();
+        if !forward {
+            stages.reverse();
         }
+        let sign = if side == 0 { 1.0 } else { -1.0 };
+        stages.insert(0, Vec2::new(sign * 0.38, 3.02));
+        stages.push(Vec2::new(sign * 0.38, 0.10));
+        stages
+    });
+    ValveGeometry {
+        outer_paths,
+        splitters,
     }
-    kept
 }
 
-/// Smooth centerlines. Collision stays a thick ribbon; the picture spends the
-/// segment budget on the curve instead of on both edges of every wall.
-pub(super) fn outline_segments(forward: bool) -> Vec<RigidSegment> {
-    paths(forward)
-        .into_iter()
-        .flat_map(|points| polyline(&points))
-        .collect()
+fn place_stage(point: Vec2, stage: usize, forward: bool) -> Vec2 {
+    let sign = if stage.is_multiple_of(2) { 1.0 } else { -1.0 };
+    let placed = Vec2::new(
+        sign * point.y,
+        FIRST_STAGE_Y - DOWNSTREAM_SCALE * (point.x + STAGE_OFFSETS[stage]),
+    );
+    if forward { placed } else { mirror_y(placed) }
 }
 
 pub(super) fn mirror_y(point: Vec2) -> Vec2 {
     Vec2::new(point.x, 2.0 * MIRROR_Y - point.y)
 }
 
-/// Return nozzles, curve end then tube end, in forward orientation.
-#[cfg(test)]
-pub(super) fn forward_tube_returns() -> [TubeReturn; 2] {
-    [upper_outer(), lower_outer()].map(|outer| TubeReturn {
-        curve: outer[outer.len() - 2],
-        tube: outer[outer.len() - 1],
-    })
+pub(super) fn collision_polygons(forward: bool) -> Vec<Vec<Vec2>> {
+    let geometry = valve_geometry(forward);
+    let mut polygons: Vec<Vec<Vec2>> = geometry
+        .outer_paths
+        .iter()
+        .flat_map(|points| ribbon(points))
+        .collect();
+    polygons.extend(geometry.splitters.into_iter().map(Vec::from));
+    polygons
 }
 
-const HEAD_STRIDE: f32 = 1.14;
-
-fn paths(forward: bool) -> Vec<Vec<Vec2>> {
-    let mut paths = vec![
-        vec![Vec2::new(0.02, 3.02), Vec2::new(0.02, 2.42)],
-        vec![Vec2::new(0.42, 3.02), Vec2::new(0.42, 0.40)],
-    ];
-    for curve in [
-        upper_outer().to_vec(),
-        lower_outer().to_vec(),
-        upper_inner().to_vec(),
-        lower_inner().to_vec(),
-    ] {
-        paths.push(placed(curve, forward));
+pub(super) fn outline_segments(forward: bool) -> Vec<RigidSegment> {
+    let geometry = valve_geometry(forward);
+    let mut segments: Vec<RigidSegment> = geometry
+        .outer_paths
+        .iter()
+        .flat_map(|points| polyline(points))
+        .collect();
+    for island in geometry.splitters {
+        segments.extend(polyline(&island));
+        segments.push(RigidSegment {
+            start: island[5],
+            end: island[0],
+        });
     }
-    paths
-}
-
-fn placed(points: Vec<Vec2>, forward: bool) -> Vec<Vec2> {
-    if forward {
-        return points;
-    }
-    points.into_iter().map(mirror_y).collect()
-}
-
-fn upper_outer() -> [Vec2; 16] {
-    [
-        Vec2::new(0.01, 2.40),
-        Vec2::new(-0.08, 2.39),
-        Vec2::new(-0.16, 2.36),
-        Vec2::new(-0.23, 2.32),
-        Vec2::new(-0.29, 2.26),
-        Vec2::new(-0.33, 2.19),
-        Vec2::new(-0.36, 2.11),
-        Vec2::new(-0.38, 2.03),
-        Vec2::new(-0.38, 1.94),
-        Vec2::new(-0.36, 1.86),
-        Vec2::new(-0.32, 1.79),
-        Vec2::new(-0.27, 1.72),
-        Vec2::new(-0.20, 1.67),
-        Vec2::new(-0.08, 1.60),
-        Vec2::new(0.04, 1.52),
-        Vec2::new(0.12, 1.42),
-    ]
-}
-
-fn lower_outer() -> [Vec2; 16] {
-    upper_outer().map(|point| Vec2::new(point.x, point.y - HEAD_STRIDE))
-}
-
-fn upper_inner() -> [Vec2; 11] {
-    [
-        Vec2::new(-0.13, 2.13),
-        Vec2::new(-0.16, 2.09),
-        Vec2::new(-0.17, 2.05),
-        Vec2::new(-0.18, 2.00),
-        Vec2::new(-0.17, 1.95),
-        Vec2::new(-0.16, 1.91),
-        Vec2::new(-0.13, 1.87),
-        Vec2::new(-0.06, 1.80),
-        Vec2::new(0.06, 1.70),
-        Vec2::new(0.16, 1.60),
-        Vec2::new(0.28, 1.50),
-    ]
-}
-
-fn lower_inner() -> [Vec2; 11] {
-    upper_inner().map(|point| Vec2::new(point.x, point.y - HEAD_STRIDE))
+    segments
 }
 
 fn polyline(points: &[Vec2]) -> Vec<RigidSegment> {
@@ -184,33 +141,33 @@ fn polyline(points: &[Vec2]) -> Vec<RigidSegment> {
         .collect()
 }
 
-fn ribbon(points: &[Vec2]) -> Ribbon {
+fn ribbon(points: &[Vec2]) -> Vec<Vec<Vec2>> {
     let normals = vertex_normals(points);
-    let left: Vec<Vec2> = points
-        .iter()
-        .zip(&normals)
-        .map(|(point, normal)| *point + *normal * WALL_HALF_THICKNESS)
-        .collect();
-    let right: Vec<Vec2> = points
-        .iter()
-        .zip(&normals)
-        .map(|(point, normal)| *point - *normal * WALL_HALF_THICKNESS)
-        .collect();
-    let mut quads = Vec::with_capacity(points.len().saturating_sub(1));
-    for index in 0..points.len() - 1 {
-        quads.push([left[index], left[index + 1], right[index + 1], right[index]]);
-    }
-    Ribbon { quads }
+    points
+        .windows(2)
+        .enumerate()
+        .map(|(index, pair)| {
+            let before = normals[index] * WALL_HALF_THICKNESS;
+            let after = normals[index + 1] * WALL_HALF_THICKNESS;
+            vec![
+                pair[0] + before,
+                pair[1] + after,
+                pair[1] - after,
+                pair[0] - before,
+            ]
+        })
+        .collect()
 }
 
 fn vertex_normals(points: &[Vec2]) -> Vec<Vec2> {
-    let mut segment_normals = Vec::with_capacity(points.len().saturating_sub(1));
-    for pair in points.windows(2) {
-        let delta = pair[1] - pair[0];
-        let length = delta.length().max(1.0e-4);
-        let tangent = delta * (1.0 / length);
-        segment_normals.push(Vec2::new(-tangent.y, tangent.x));
-    }
+    let segment_normals: Vec<Vec2> = points
+        .windows(2)
+        .map(|pair| {
+            let delta = pair[1] - pair[0];
+            let tangent = delta * (1.0 / delta.length());
+            Vec2::new(-tangent.y, tangent.x)
+        })
+        .collect();
     (0..points.len())
         .map(|index| {
             if index == 0 {
@@ -226,8 +183,7 @@ fn vertex_normals(points: &[Vec2]) -> Vec<Vec2> {
 
 fn miter(before: Vec2, after: Vec2) -> Vec2 {
     let sum = before + after;
-    let length = sum.length().max(1.0e-4);
-    let direction = sum * (1.0 / length);
+    let direction = sum * (1.0 / sum.length());
     let alignment = direction.x * before.x + direction.y * before.y;
     if alignment > 0.5 {
         return direction * (1.0 / alignment).min(2.0);

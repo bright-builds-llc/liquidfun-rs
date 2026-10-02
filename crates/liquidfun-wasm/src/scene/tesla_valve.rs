@@ -1,10 +1,10 @@
-//! Tesla valve: gravity pulls water down through a one-way conduit.
+//! Tesla valve: gravity pulls water through alternating curved branches.
 //!
 //! A source at the top pours particles into the valve. A drain under the
 //! outlet destroys whatever gets through, so the conduit does not fill up.
-//! Forward leaves each curved head turning back downstream into the tube.
-//! Reverse flips the valve about a horizontal axis so those heads turn the
-//! water back upstream and hold it.
+//! Solid teardrop splitters separate each branch from the winding main route.
+//! Reverse reflects the internal stages about a horizontal axis while the
+//! source, gravity, and drain keep their downward orientation.
 
 mod geometry;
 
@@ -22,7 +22,7 @@ use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, Sc
 use crate::session::SessionError;
 use geometry::{
     DRAIN_CENTER, DRAIN_HALF_HEIGHT, DRAIN_HALF_WIDTH, MIRROR_Y, PARTICLE_RADIUS, SPAWN_XS,
-    SPAWN_Y, collision_quads, outline_segments,
+    SPAWN_Y, collision_polygons, outline_segments,
 };
 
 /// Extra substeps so particles stay inside the curved heads.
@@ -64,8 +64,8 @@ fn build_tesla_valve() -> Result<BuiltScene, SceneError> {
         .set_gravity(GRAVITY)
         .map_err(|_error| SceneError::Gravity)?;
 
-    let quads = collision_quads(true);
-    let valve_body = create_valve_body(&mut world, &quads)?;
+    let polygons = collision_polygons(true);
+    let valve_body = create_valve_body(&mut world, &polygons)?;
     let particle_system = create_particle_system(&mut world)?;
 
     Ok(BuiltScene {
@@ -83,17 +83,17 @@ fn build_tesla_valve() -> Result<BuiltScene, SceneError> {
     })
 }
 
-fn create_valve_body(world: &mut World, quads: &[[Vec2; 4]]) -> Result<BodyId, SceneError> {
+fn create_valve_body(world: &mut World, polygons: &[Vec<Vec2>]) -> Result<BodyId, SceneError> {
     let body = world
         .create_body(&BodyDef::default())
         .map_err(|_error| SceneError::Body)?;
-    for quad in quads {
-        attach_quad(world, body, quad)?;
+    for polygon in polygons {
+        attach_polygon(world, body, polygon)?;
     }
     Ok(body)
 }
 
-fn attach_quad(world: &mut World, body: BodyId, corners: &[Vec2; 4]) -> Result<(), SceneError> {
+fn attach_polygon(world: &mut World, body: BodyId, corners: &[Vec2]) -> Result<(), SceneError> {
     let polygon = PolygonShape::new(corners).map_err(|_error| SceneError::Geometry)?;
     let definition = FixtureDef::new(
         Shape::from(polygon),
@@ -206,9 +206,9 @@ fn flip_valve(
     if forward == hooks.forward {
         return Ok(());
     }
-    let quads = collision_quads(forward);
+    let polygons = collision_polygons(forward);
     let new_body =
-        create_valve_body(world, &quads).map_err(|_error| SessionError::SceneConstruction)?;
+        create_valve_body(world, &polygons).map_err(|_error| SessionError::SceneConstruction)?;
     clear_playfield(world, system)?;
     world
         .destroy_body(hooks.valve_body)

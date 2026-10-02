@@ -103,8 +103,8 @@ export const WASHING_MACHINE_VIEW_BOUNDS = {
  * Camera frame for the Tesla valve, in meters.
  *
  * Keep in sync with `FRAME_*` in
- * `crates/liquidfun-wasm/src/scene/tesla_valve/geometry.rs`. The tube and the
- * curved heads run from the inlet near y = 3 down through the drain. This
+ * `crates/liquidfun-wasm/src/scene/tesla_valve/geometry.rs`. The alternating loops and
+ * splitter islands run from the inlet near y = 3 down through the drain. This
  * rectangle includes those walls with a small margin.
  */
 export const TESLA_VALVE_VIEW_BOUNDS = {
@@ -604,7 +604,7 @@ export const SCENES: readonly SceneRecord[] = [
     title: "Tesla Valve",
     ready: true,
     description:
-      "Watch water fall through a Tesla valve. Forward follows the straight tube. Reverse flips the valve so each curved head turns the water back into the tube and holds it. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
+      "Watch water fall through alternating curved loops around rounded teardrop islands. Forward follows the central passage. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
     interactionHint:
       "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
     controls: withGravitySlider([FLOW_RATE_CONTROL, FLOW_DIRECTION_CONTROL]),

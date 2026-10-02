@@ -224,7 +224,9 @@ directly from that scene, and upserts the demo gallery. The SVG stays in the
 repo. The post-merge Readme scene preview workflow runs the same command and
 commits when the export changes. A new scene also needs a plan in
 `web/scripts/readme-svg/plans.ts`, including a cue when the default scene does
-not move on its own.
+not move on its own. The WebP recorder uses DejaVu Sans by default. For local
+captures on another platform, set `LIQUIDFUN_README_FONT_FILE` to an installed
+TrueType font, such as `/System/Library/Fonts/Supplemental/Arial.ttf` on macOS.
 
 `just demo-media` and `just demo-media-check` remain optional local MP4 and
 WebP captures into `docs/assets/demos`. They are not the README gallery. They
