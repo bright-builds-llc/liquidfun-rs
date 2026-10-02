@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: complete
-stopped_at: Completed quick task 261002-f8p; v1.3 remains archived
-last_updated: "2026-10-02T17:02:38Z"
+stopped_at: Completed quick task 261002-irz; v1.3 remains archived
+last_updated: "2026-10-02T23:42:02Z"
 last_activity: 2026-10-02
 progress:
   total_phases: 8
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-28)
 Phase: none
 Plan: none
 Status: v1.3 archived — no active milestone
-Last activity: 2026-10-02 — completed quick task 261002-f8p, continuous Tesla Valve loop returns
+Last activity: 2026-10-02 — completed quick task 261002-irz, five Tesla performance changes with serial benchmark history
 
 Progress: [██████████] 100%
 
@@ -77,6 +77,7 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | 261002-1yc | Circular Tesla Valve bends and uniform channel width | 2026-10-02 | complete | [261002-1yc](./quick/261002-1yc-make-tesla-valve-bends-circular-and-flow/) |
 | 261002-ejw | Set Tesla Valve clear pipe width to six centimeters | 2026-10-02 | complete | [261002-ejw](./quick/261002-ejw-set-tesla-valve-clear-pipe-width-to-six-/) |
 | 261002-f8p | Continue Tesla Valve loop stems into the main pipe | 2026-10-02 | complete | [261002-f8p](./quick/261002-f8p-continue-tesla-valve-loop-stems-into-the/) |
+| 261002-irz | Five Tesla performance changes with immutable serial benchmark history | 2026-10-02 | complete | [261002-irz](./quick/261002-irz-optimize-tesla-valve-physics-and-worker-/) |
 
 ## Performance Metrics
 
@@ -99,6 +100,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-10-02T17:02:38Z
-Stopped at: Completed quick task 261002-f8p; v1.3 remains archived
+Last session: 2026-10-02T23:42:02Z
+Stopped at: Completed quick task 261002-irz; v1.3 remains archived
 Resume file: None
