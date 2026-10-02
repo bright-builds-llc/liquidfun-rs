@@ -334,3 +334,15 @@ Completion review: source commit `7d7ca9d` replaces the unilateral loops with fo
 Guidance: continue the GSD quick workflow (261001-uk9), AGENTS.md standing authorization and hobby scope, the Bright Builds sidecar/overrides, and loaded Rust, architecture, testing and verification standards.
 
 Completion review: `a849c09` widens all four stage necks through one shared geometry parameter; collision and drawing remain aligned. Native/production WASM ten-second forward discharge at unchanged 180 particles/s rises from 853 to 1526 (about 79% more over that startup window), with continuous native conduit containment and preserved forward preference. Ordered core checks (1032 tests), full affected WASM checks (289 tests), 402 web unit tests, 44 browser tests, production build, managed/Markdown/diff checks and independent AI review pass. Reviewer `/root/tesla_review` acknowledged exact source digest `aca3482aa908243cde39ee43a7ac5a915864b26daaad5bc35751c5a514d79b20` at 2026-10-02 03:13:26 UTC. Gallery and existing in-app preview show the wider gaps. This is fixed-window simulation evidence, not a steady-state or physical-valve efficiency claim. Ordinary main publication uses standing authorization.
+
+## task-tesla-smooth-flow | 2026-10-01 23:11 CDT | Smooth curves and refine particle flow
+
+- [x] Replace angular curve samples with dense shared analytic geometry while retaining wider necks and solid splitter islands.
+- [x] Reduce particle radius to about 5 mm and raise default flow to 1440 particles/s with distinct, non-overlapping spawn positions.
+- [x] Raise the bounded Rust/TypeScript segment lanes together and verify dense acceptance plus overflow rejection; synchronize flow-control defaults and bounds.
+- [x] Validate curvature, collision containment, controls, drainage and default/maximum-rate performance; rebuild browser and gallery previews.
+- [x] Run required checks, obtain exact-diff independent review, commit and verify publication.
+
+Plan: GSD quick task 261001-w0a. Standing authorization, current hobby scope and loaded Bright Builds architecture, Rust, testing and verification rules apply. The earlier wider-neck commit is integrated with the preview bot update on main at c5bc0a3.
+
+Completion review: source `4881057` draws 300 smooth segments, uses solid rounded islands and sampled overlapping thick wall boxes, and reduces radius to 5 mm with 1440/s default and 2880/s maximum emission. Strict native/production-WASM four-case containment passes; failed thin-chain/cusp candidates remain retained. Ordered core checks (1032 tests), affected WASM checks (292 tests), 404 unit tests, final 44 browser tests, production build, managed/Markdown/diff checks and independent review pass. `/root/tesla_review` acknowledged exact source digest `19d2e4360323388816757c79f4d9058ae12c8bba30240c2713645f3e2c94858a` at 2026-10-02 05:17:04 UTC. Dense frame limits are matched at 512 on both sides; gallery is refreshed. Maximum reverse flow is more costly; measured local results are not a universal 60 fps guarantee. Standing authorization applies to normal main publication.
