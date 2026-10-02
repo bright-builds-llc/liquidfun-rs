@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Reference Testbed Scenes
 status: complete
-stopped_at: Completed quick task 261001-w0a; v1.3 remains archived
-last_updated: "2026-10-02T05:25:32Z"
-last_activity: 2026-10-01
+stopped_at: Completed quick task 261002-1yc; v1.3 remains archived
+last_updated: "2026-10-02T07:42:56Z"
+last_activity: 2026-10-02
 progress:
   total_phases: 8
   completed_phases: 8
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-28)
 Phase: none
 Plan: none
 Status: v1.3 archived — no active milestone
-Last activity: 2026-10-01 — completed quick task 261001-w0a, smooth curves and finer Tesla Valve flow
+Last activity: 2026-10-02 — completed quick task 261002-1yc, circular Tesla Valve bends and uniform channels
 
 Progress: [██████████] 100%
 
@@ -74,6 +74,7 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 | 261001-tvf | Match Tesla Valve reference with alternating curved lobes and closed splitters | 2026-10-01 | complete | [261001-tvf](./quick/261001-tvf-reshape-tesla-valve-with-alternating-cur/) |
 | 261001-uk9 | Widen Tesla Valve necks and measure higher flow | 2026-10-01 | complete | [261001-uk9](./quick/261001-uk9-widen-tesla-valve-stage-necks-and-verify/) |
 | 261001-w0a | Smooth Tesla Valve curvature and refine particle flow | 2026-10-01 | complete | [261001-w0a](./quick/261001-w0a-smooth-tesla-valve-curvature-with-dense-/) |
+| 261002-1yc | Circular Tesla Valve bends and uniform channel width | 2026-10-02 | complete | [261002-1yc](./quick/261002-1yc-make-tesla-valve-bends-circular-and-flow/) |
 
 ## Performance Metrics
 
@@ -96,6 +97,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-10-02T05:25:32Z
-Stopped at: Completed quick task 261001-w0a; v1.3 remains archived
+Last session: 2026-10-02T07:42:56Z
+Stopped at: Completed quick task 261002-1yc; v1.3 remains archived
 Resume file: None

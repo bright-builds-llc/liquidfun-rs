@@ -74,3 +74,10 @@
 1. What went wrong: The earlier production-quality qualification campaign no longer matched the owner's revised goal of a fun hobby project.
 1. Preventive rule: Apply the current project scope before inheriting old completion gates; retain useful local checks and honest claims, and keep explicitly optional certification separate from ordinary progress.
 1. Trigger signal to catch it earlier: Development is blocked on controlled hardware, exhaustive matrices, or attestation work after the owner has reduced the project's quality goals.
+
+## lesson-derive-channel-boundaries-from-width | 2026-10-02 01:55 CDT
+
+1. Date: 2026-10-02 01:55 CDT
+1. What went wrong: Independently fitted valve wall curves looked smooth but produced oval bends and varying flow-channel widths; the owner requested semicircular bends and constant cross-sections.
+1. Preventive rule: Build matching boundaries from one centerline and clear-width parameter, use concentric circular arcs and parallel line offsets, and preserve circles with rigid transforms. Verify radial and normal clearances separately from visual smoothness.
+1. Trigger signal to catch it earlier: A pipe or valve is described as circular or constant-width while its two sides use unrelated control points or unequal axis scales.
