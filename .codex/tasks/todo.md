@@ -389,7 +389,7 @@ Completion review: source `3de2929` makes all four loop return walls actual cont
 - [x] Spatially filter wall contacts; preserve ordering and collision behavior; benchmark and commit Stage 1.
 - [x] Share immutable collision geometry and reuse transaction-safe buffers; benchmark and commit Stage 2.
 - [x] Remove unnecessary neighbour-pair construction from drain queries; benchmark and commit Stage 3.
-- [ ] Move Tesla live playback into an ordered, bounded worker lifecycle; retain direct export/testing paths; benchmark and commit Stage 4.
+- [x] Move Tesla live playback into an ordered, bounded worker lifecycle; retain direct export/testing paths; benchmark and commit Stage 4.
 - [ ] Cache/batch rendering with correct invalidation and unchanged particle/geometry presentation; benchmark and commit Stage 5.
 - [ ] Complete native/WASM/web/browser and four-case flow checks, independent review, historical comparison, normal main publication and refreshed live preview.
 

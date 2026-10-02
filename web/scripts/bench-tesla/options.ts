@@ -1,46 +1,121 @@
 import type { BenchmarkStage, RunRole } from "./contracts";
 
 export type BenchmarkOptions = {
-  readonly help: boolean; readonly stage: BenchmarkStage; readonly role: RunRole;
-  readonly maybeRunId: string | undefined; readonly maybeOutputRoot: string | undefined;
+  readonly help: boolean;
+  readonly stage: BenchmarkStage;
+  readonly role: RunRole;
+  readonly maybeRunId: string | undefined;
+  readonly maybeOutputRoot: string | undefined;
   readonly maybePrevious: string | undefined;
   readonly browserChannel: "chromium" | "headless-shell";
+  readonly maybeLiveBackend: "direct" | "worker" | undefined;
 };
 
 export function parseOptions(args: readonly string[]): BenchmarkOptions {
   const flags = args.filter((value) => value !== "--");
   let stage: BenchmarkStage = "original";
   let maybeRole: RunRole | undefined;
-  let maybeRunId: string | undefined, maybeOutputRoot: string | undefined, maybePrevious: string | undefined;
+  let maybeRunId: string | undefined,
+    maybeOutputRoot: string | undefined,
+    maybePrevious: string | undefined;
   let help = false;
   let browserChannel: "chromium" | "headless-shell" = "chromium";
+  let maybeLiveBackend: "direct" | "worker" | undefined;
   for (let index = 0; index < flags.length; index += 1) {
     const flag = flags[index];
-    if (flag === "--help" || flag === "-h") { help = true; continue; }
-    if (flag === "--smoke") { stage = "smoke"; continue; }
-    if (!["--stage", "--role", "--run-id", "--output-root", "--previous", "--browser-channel"].includes(flag ?? "")) throw new Error(`Unknown benchmark option ${flag}`);
+    if (flag === "--help" || flag === "-h") {
+      help = true;
+      continue;
+    }
+    if (flag === "--smoke") {
+      stage = "smoke";
+      continue;
+    }
+    if (
+      ![
+        "--stage",
+        "--role",
+        "--run-id",
+        "--output-root",
+        "--previous",
+        "--browser-channel",
+        "--live-backend",
+      ].includes(flag ?? "")
+    )
+      throw new Error(`Unknown benchmark option ${flag}`);
     const value = flags[++index];
-    if (value === undefined || value.startsWith("--")) throw new Error(`Missing value for ${flag}`);
+    if (value === undefined || value.startsWith("--"))
+      throw new Error(`Missing value for ${flag}`);
     if (flag === "--stage") {
-      if (!["original", "stage1", "stage2", "stage3", "stage4", "stage5"].includes(value)) throw new Error("Unknown benchmark stage");
+      if (
+        ![
+          "original",
+          "stage1",
+          "stage2",
+          "stage3",
+          "stage4",
+          "stage5",
+        ].includes(value)
+      )
+        throw new Error("Unknown benchmark stage");
       stage = value as BenchmarkStage;
     }
     if (flag === "--role") {
-      if (!["before", "after"].includes(value)) throw new Error("Role must be before or after");
+      if (!["before", "after"].includes(value))
+        throw new Error("Role must be before or after");
       maybeRole = value as RunRole;
     }
     if (flag === "--run-id") maybeRunId = value;
     if (flag === "--output-root") maybeOutputRoot = value;
     if (flag === "--previous") maybePrevious = value;
     if (flag === "--browser-channel") {
-      if (value !== "chromium" && value !== "headless-shell") throw new Error("Browser channel must be chromium or headless-shell");
+      if (value !== "chromium" && value !== "headless-shell")
+        throw new Error("Browser channel must be chromium or headless-shell");
       browserChannel = value;
     }
+    if (flag === "--live-backend") {
+      if (value !== "direct" && value !== "worker")
+        throw new Error("Live backend must be direct or worker");
+      maybeLiveBackend = value;
+    }
   }
-  const role = stage === "original" ? "baseline" : stage === "smoke" ? "smoke" : maybeRole ?? "after";
-  if (!help && (stage === "original" || stage === "smoke") && (maybeRole !== undefined || maybePrevious !== undefined)) throw new Error("Original/smoke runs cannot link a previous stage or specify a role");
-  if (!help && stage !== "original" && stage !== "smoke" && maybePrevious === undefined) throw new Error("An optimization stage requires --previous report.json");
-  return { help, stage, role, maybeRunId, maybeOutputRoot, maybePrevious, browserChannel };
+  const role =
+    stage === "original"
+      ? "baseline"
+      : stage === "smoke"
+        ? "smoke"
+        : (maybeRole ?? "after");
+  if (
+    !help &&
+    (stage === "original" || stage === "smoke") &&
+    (maybeRole !== undefined || maybePrevious !== undefined)
+  )
+    throw new Error(
+      "Original/smoke runs cannot link a previous stage or specify a role",
+    );
+  if (
+    !help &&
+    stage !== "original" &&
+    stage !== "smoke" &&
+    maybePrevious === undefined
+  )
+    throw new Error("An optimization stage requires --previous report.json");
+  if (
+    !help &&
+    maybeLiveBackend === "worker" &&
+    ["original", "stage1", "stage2", "stage3"].includes(stage)
+  )
+    throw new Error("Core-stage and original live probes stay direct");
+  return {
+    help,
+    stage,
+    role,
+    maybeRunId,
+    maybeOutputRoot,
+    maybePrevious,
+    browserChannel,
+    maybeLiveBackend,
+  };
 }
 
 export const HELP = `Usage: bun run bench:tesla -- [options]
@@ -52,6 +127,7 @@ export const HELP = `Usage: bun run bench:tesla -- [options]
   --output-root DIRECTORY  Default: docs/benchmarks/tesla-valve/runs
   --smoke                  Small non-comparable harness check (not baseline evidence)
   --browser-channel chromium|headless-shell  Default: chromium (new full headless)
+  --live-backend direct|worker               Core stages direct; stage4/5 AFTER worker
   --help                   Show this help
 
 Canonical profile: forward warm360, reverse warm384, 40 one-step samples,

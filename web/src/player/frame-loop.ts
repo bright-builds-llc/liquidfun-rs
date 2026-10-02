@@ -7,7 +7,16 @@ import {
   restoreUnrunSteps,
 } from "../physics/clock";
 import type { RenderFrame } from "../physics/frame";
-import type { SceneSession } from "../physics/session";
+import {
+  isWorkerSession,
+  type PlayerSession,
+  type WorkerTiming,
+} from "../physics/live-session";
+import {
+  cancelWorkerFrames,
+  presentWorkerOwnedFrame,
+  scheduleWorkerFrame,
+} from "./worker-frame-loop";
 import { observeFrame } from "./observe";
 import { maybeReadySceneId } from "./runtime";
 import { prefersReducedMotion, isUsableViewport } from "./viewport";
@@ -39,7 +48,8 @@ export type FrameClock = {
 export type FrameLoopDeps = {
   view: () => PlayerView;
   fail: (error: unknown) => void;
-  maybeSession: () => SceneSession | undefined;
+  maybeSession: () => PlayerSession | undefined;
+  maybeOnWorkerTiming?: (timing: WorkerTiming) => void;
   route: () => Parameters<typeof maybeReadySceneId>[0];
   startScene: (id: SceneId) => void;
   drawSceneFrame: (
@@ -72,6 +82,7 @@ export function createFrameClock(): FrameClock {
 }
 
 export function cancelPendingFrame(clock: FrameClock): void {
+  cancelWorkerFrames(clock);
   if (clock.maybeAnimationFrameId === undefined) {
     return;
   }
@@ -91,6 +102,11 @@ export function scheduleFrame(
   context: CanvasRenderingContext2D,
   deps: FrameLoopDeps,
 ): void {
+  const maybeWorker = deps.maybeSession();
+  if (maybeWorker !== undefined && isWorkerSession(maybeWorker)) {
+    scheduleWorkerFrame(clock, context, deps, maybeWorker);
+    return;
+  }
   clock.maybeAnimationFrameId = requestAnimationFrame((timestamp) => {
     clock.maybeAnimationFrameId = undefined;
     if (deps.view().kind !== "playing") {
@@ -106,6 +122,10 @@ export function scheduleFrame(
     const maybeOwnedSession = deps.maybeSession();
     if (maybeOwnedSession === undefined) {
       deps.fail(new Error("Scene session owner is unavailable"));
+      return;
+    }
+    if (isWorkerSession(maybeOwnedSession)) {
+      scheduleWorkerFrame(clock, context, deps, maybeOwnedSession);
       return;
     }
 
@@ -175,11 +195,19 @@ export function scheduleFrame(
 
 export function presentOwnedFrame(
   clock: FrameClock,
-  ownedSession: SceneSession,
+  ownedSession: PlayerSession,
   context: CanvasRenderingContext2D,
   resetObservation: boolean,
   deps: FrameLoopDeps,
-): void {
+): void | Promise<void> {
+  if (isWorkerSession(ownedSession))
+    return presentWorkerOwnedFrame(
+      clock,
+      ownedSession,
+      context,
+      resetObservation,
+      deps,
+    );
   const camera = clock.maybeCamera;
   if (camera === undefined) {
     deps.fail(new Error("Canvas camera is unavailable"));
@@ -191,7 +219,9 @@ export function presentOwnedFrame(
   const observation = observeFrame(
     frame,
     resetObservation ? undefined : clock.maybePreviousFrame,
-    resetObservation ? 0 : maybeObservedFrame(deps.view())?.movedFrameCount ?? 0,
+    resetObservation
+      ? 0
+      : (maybeObservedFrame(deps.view())?.movedFrameCount ?? 0),
   );
   clock.maybePreviousFrame = frame;
   deps.setMaybeDebugFrame(frame);

@@ -9,6 +9,8 @@ import { isStaleGeneration, nextGeneration } from "./generation";
 import { maybeObservedFrame } from "./view";
 import { loadSceneSession } from "../physics/loader";
 import { createSceneSession } from "../physics/session";
+import { createWorkerSession } from "../physics/worker-session";
+import { isWorkerSession, type PlayerSession } from "../physics/live-session";
 import {
   cancelPendingFrame,
   disconnectResizeObserver,
@@ -17,12 +19,11 @@ import {
   type FrameLoopDeps,
 } from "./frame-loop";
 import { reapplyStoredTiltGravity } from "../input/tilt-binding";
-import {
-  DEFAULT_RENDERED_PARTICLE_LIMIT,
-} from "../render/particle-limit";
+import { DEFAULT_RENDERED_PARTICLE_LIMIT } from "../render/particle-limit";
 import { IDENTITY_CAMERA_VIEW } from "../render/camera";
 import { normalizeSceneRoute } from "../routing/hash";
 import type { SceneRuntime } from "./scene-runtime";
+import { publishHeldWorkerFrame } from "./worker-frame-loop";
 
 function incrementGeneration(session: SceneRuntime): number {
   session.generation = nextGeneration(session.generation);
@@ -30,6 +31,8 @@ function incrementGeneration(session: SceneRuntime): number {
 }
 
 function disposeOwnedSession(session: SceneRuntime): void {
+  session.maybeWorkerInitialization?.abort();
+  delete session.maybeWorkerInitialization;
   session.maybeCanvasPointer?.cancel();
   const maybeOwnedSession = session.maybeSession;
   session.maybeSession = undefined;
@@ -122,18 +125,26 @@ async function beginScene(session: SceneRuntime, id: SceneId): Promise<void> {
     return;
   }
 
+  // Browser media producers install their deterministic RAF controller before startup.
+  const deterministic = "__liquidfunSyntheticAnimationClock" in window;
+  const maybeInitialization =
+    id === "tesla-valve" && !deterministic ? new AbortController() : undefined;
+  if (maybeInitialization !== undefined)
+    session.maybeWorkerInitialization = maybeInitialization;
   try {
-    const generatedSession = await loadSceneSession(id);
-    if (isStaleGeneration(started, session.generation)) {
-      createSceneSession(generatedSession).dispose();
-      return;
-    }
-
-    const ownedSession = createSceneSession(generatedSession);
+    const ownedSession: PlayerSession =
+      maybeInitialization === undefined
+        ? createSceneSession(await loadSceneSession(id))
+        : await createWorkerSession(
+            started,
+            undefined,
+            maybeInitialization.signal,
+          );
     if (isStaleGeneration(started, session.generation)) {
       ownedSession.dispose();
       return;
     }
+    if (isWorkerSession(ownedSession)) session.maybeSession = ownedSession;
 
     const maybeScene = maybeSceneById(id);
     if (maybeScene !== undefined) {
@@ -141,18 +152,36 @@ async function beginScene(session: SceneRuntime, id: SceneId): Promise<void> {
         maybeScene,
         session.constructionValues,
       )) {
-        ownedSession.applyControl(entry.name, entry.value);
+        if (isWorkerSession(ownedSession))
+          await ownedSession.applyControl(entry.name, entry.value);
+        else ownedSession.applyControl(entry.name, entry.value);
+        if (isStaleGeneration(started, session.generation)) {
+          ownedSession.dispose();
+          return;
+        }
       }
     }
 
     session.maybeSession = ownedSession;
+    if (session.maybeWorkerInitialization === maybeInitialization)
+      delete session.maybeWorkerInitialization;
+    canvas.dataset.simulationBackend = isWorkerSession(ownedSession)
+      ? "worker"
+      : "direct";
     reapplyStoredTiltGravity(
       session.tiltBinding,
       () => session.maybeSession,
       session.gravitySliderMagnitude,
       session.setTiltDebug,
+      (error) => {
+        if (
+          session.maybeSession === ownedSession &&
+          session.generation === started
+        )
+          failScene(session, error);
+      },
     );
-    presentOwnedFrame(
+    await presentOwnedFrame(
       session.clock,
       ownedSession,
       context,
@@ -160,7 +189,10 @@ async function beginScene(session: SceneRuntime, id: SceneId): Promise<void> {
       frameDeps(session),
     );
   } catch (error) {
-    if (isStaleGeneration(started, session.generation)) {
+    if (
+      isStaleGeneration(started, session.generation) ||
+      maybeInitialization?.signal.aborted
+    ) {
       return;
     }
 
@@ -257,6 +289,23 @@ export function bindLifecycle(session: SceneRuntime): void {
 export function handleVisibilityChange(session: SceneRuntime): void {
   session.clock.maybeLastTimestamp = undefined;
   if (document.hidden) {
+    if (
+      session.maybeSession !== undefined &&
+      isWorkerSession(session.maybeSession)
+    )
+      cancelPendingFrame(session.clock);
     session.maybeCanvasPointer?.cancel();
+  } else if (
+    session.maybeSession !== undefined &&
+    isWorkerSession(session.maybeSession) &&
+    session.maybeContext !== undefined
+  ) {
+    publishHeldWorkerFrame(
+      session.clock,
+      session.maybeContext,
+      frameDeps(session),
+    );
+    if (session.view().kind === "playing")
+      scheduleFrame(session.clock, session.maybeContext, frameDeps(session));
   }
 }

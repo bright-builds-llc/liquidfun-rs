@@ -8,7 +8,7 @@ import type { TiltBinding } from "../input/tilt-binding";
 import type { TiltDebug } from "../input/tilt-gravity";
 import type { PointerKind } from "../input/pointer";
 import type { RenderFrame } from "../physics/frame";
-import type { SceneSession } from "../physics/session";
+import type { PlayerSession } from "../physics/live-session";
 import type { FrameClock, FrameLoopDeps } from "./frame-loop";
 import type { PlayerView } from "./view";
 import type { AppearancePreferences } from "./appearance";
@@ -22,7 +22,8 @@ export type SceneRuntime = {
   maybeCanvas: HTMLCanvasElement | undefined;
   maybeParticleCanvas: HTMLCanvasElement | undefined;
   maybeContext: CanvasRenderingContext2D | undefined;
-  maybeSession: SceneSession | undefined;
+  maybeSession: PlayerSession | undefined;
+  maybeWorkerInitialization?: AbortController;
   maybeCanvasPointer: CanvasPointerHandlers | undefined;
   clock: FrameClock;
   tiltBinding: TiltBinding;

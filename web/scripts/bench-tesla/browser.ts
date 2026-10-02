@@ -15,7 +15,12 @@ export type BrowserProbe = {
   readonly builtWasmSha256: string;
   readonly chromiumExecutable: string;
   readonly chromiumExecutableSha256: string;
-  runCase(workload: BenchmarkWorkload, caseId: string, repetition: number): Promise<CaseReplicate>;
+  runCase(
+    workload: BenchmarkWorkload,
+    caseId: string,
+    repetition: number,
+    liveBackend: "direct" | "worker",
+  ): Promise<CaseReplicate>;
   close(): Promise<void>;
 };
 
@@ -24,9 +29,18 @@ async function bundleHash(directory: string): Promise<string> {
   async function walk(current: string): Promise<void> {
     for (const entry of await readdir(current, { withFileTypes: true })) {
       const full = resolve(current, entry.name);
-      if (entry.isDirectory()) { await walk(full); continue; }
-      if (!entry.isFile()) throw new Error(`Unexpected benchmark bundle entry: ${full}`);
-      entries.push({ path: relative(directory, full), sha256: createHash("sha256").update(await readFile(full)).digest("hex") });
+      if (entry.isDirectory()) {
+        await walk(full);
+        continue;
+      }
+      if (!entry.isFile())
+        throw new Error(`Unexpected benchmark bundle entry: ${full}`);
+      entries.push({
+        path: relative(directory, full),
+        sha256: createHash("sha256")
+          .update(await readFile(full))
+          .digest("hex"),
+      });
     }
   }
   await walk(directory);
@@ -35,43 +49,99 @@ async function bundleHash(directory: string): Promise<string> {
 }
 
 /** Builds and owns a separate real-browser bundle; normal web/dist is untouched. */
-export async function openBenchmarkBrowser(webRoot: string, buildRoot: string, workload: BenchmarkWorkload, channel: "chromium" | "headless-shell"): Promise<BrowserProbe> {
-  await build({ configFile: resolve(webRoot, "vite.config.ts"), base: "/",
-    build: { outDir: buildRoot, emptyOutDir: true,
-      rollupOptions: { input: resolve(webRoot, "benchmarks/tesla-valve/index.html") } } });
+export async function openBenchmarkBrowser(
+  webRoot: string,
+  buildRoot: string,
+  workload: BenchmarkWorkload,
+  channel: "chromium" | "headless-shell",
+): Promise<BrowserProbe> {
+  await build({
+    configFile: resolve(webRoot, "vite.config.ts"),
+    base: "/",
+    build: {
+      outDir: buildRoot,
+      emptyOutDir: true,
+      rollupOptions: {
+        input: resolve(webRoot, "benchmarks/tesla-valve/index.html"),
+      },
+    },
+  });
   const benchmarkBundleSha256 = await bundleHash(buildRoot);
-  const wasmAssets = (await readdir(resolve(buildRoot, "assets"))).filter((name) => name.endsWith(".wasm"));
-  if (wasmAssets.length !== 1) throw new Error("Benchmark bundle must contain one actual WASM producer");
-  const builtWasmSha256 = createHash("sha256").update(await readFile(resolve(buildRoot, "assets", wasmAssets[0]!))).digest("hex");
-  const server = await preview({ configFile: resolve(webRoot, "vite.config.ts"), base: "/",
-    build: { outDir: buildRoot }, preview: { host: "127.0.0.1", port: 0, strictPort: true } });
+  const wasmAssets = (await readdir(resolve(buildRoot, "assets"))).filter(
+    (name) => name.endsWith(".wasm"),
+  );
+  if (wasmAssets.length !== 1)
+    throw new Error("Benchmark bundle must contain one actual WASM producer");
+  const builtWasmSha256 = createHash("sha256")
+    .update(await readFile(resolve(buildRoot, "assets", wasmAssets[0]!)))
+    .digest("hex");
+  const server = await preview({
+    configFile: resolve(webRoot, "vite.config.ts"),
+    base: "/",
+    build: { outDir: buildRoot },
+    preview: { host: "127.0.0.1", port: 0, strictPort: true },
+  });
   let maybeBrowser: Browser | undefined;
   let maybeBrowserServer: BrowserServer | undefined;
-  const closeServer = () => new Promise<void>((resolveClose, reject) => {
-    server.httpServer.close((error) => error === undefined ? resolveClose() : reject(error));
-  });
+  const closeServer = () =>
+    new Promise<void>((resolveClose, reject) => {
+      server.httpServer.close((error) =>
+        error === undefined ? resolveClose() : reject(error),
+      );
+    });
   try {
     const address = server.httpServer.address();
-    if (address === null || typeof address === "string") throw new Error("Benchmark preview did not expose a local port");
-    const browserServer = await chromium.launchServer({ headless: true, host: "127.0.0.1", port: 0,
-      ...(channel === "chromium" ? { channel: "chromium" } : {}) });
+    if (address === null || typeof address === "string")
+      throw new Error("Benchmark preview did not expose a local port");
+    const browserServer = await chromium.launchServer({
+      headless: true,
+      host: "127.0.0.1",
+      port: 0,
+      ...(channel === "chromium" ? { channel: "chromium" } : {}),
+    });
     maybeBrowserServer = browserServer;
     const browser = await chromium.connect(browserServer.wsEndpoint());
     maybeBrowser = browser;
-    const context = await browser.newContext({ viewport: workload.viewport, deviceScaleFactor: workload.devicePixelRatio });
+    const context = await browser.newContext({
+      viewport: workload.viewport,
+      deviceScaleFactor: workload.devicePixelRatio,
+    });
     const page = await context.newPage();
-    await page.goto(`http://127.0.0.1:${address.port}/benchmarks/tesla-valve/index.html`);
+    await page.goto(
+      `http://127.0.0.1:${address.port}/benchmarks/tesla-valve/index.html`,
+    );
     await page.waitForFunction(() => window.teslaBenchmark !== undefined);
-    const navigatorIdentity = await page.evaluate(() => ({ userAgent: navigator.userAgent, hardwareConcurrency: navigator.hardwareConcurrency }));
+    const navigatorIdentity = await page.evaluate(() => ({
+      userAgent: navigator.userAgent,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+    }));
     const chromiumExecutable = browserServer.process().spawnfile;
-    const chromiumExecutableSha256 = createHash("sha256").update(await readFile(chromiumExecutable)).digest("hex");
+    const chromiumExecutableSha256 = createHash("sha256")
+      .update(await readFile(chromiumExecutable))
+      .digest("hex");
     return {
-      chromiumVersion: browser.version(), ...navigatorIdentity, benchmarkBundleSha256, builtWasmSha256,
-      chromiumExecutable, chromiumExecutableSha256,
-      runCase: async (settings, caseId, repetition) => await page.evaluate(
-        ({ settings, caseId, repetition }) => window.teslaBenchmark.runCase(settings, caseId, repetition),
-        { settings, caseId, repetition }),
-      close: async () => { await browser.close(); await browserServer.close(); await closeServer(); },
+      chromiumVersion: browser.version(),
+      ...navigatorIdentity,
+      benchmarkBundleSha256,
+      builtWasmSha256,
+      chromiumExecutable,
+      chromiumExecutableSha256,
+      runCase: async (settings, caseId, repetition, liveBackend) =>
+        await page.evaluate(
+          ({ settings, caseId, repetition, liveBackend }) =>
+            window.teslaBenchmark.runCase(
+              settings,
+              caseId,
+              repetition,
+              liveBackend,
+            ),
+          { settings, caseId, repetition, liveBackend },
+        ),
+      close: async () => {
+        await browser.close();
+        await browserServer.close();
+        await closeServer();
+      },
     };
   } catch (error) {
     if (maybeBrowser !== undefined) await maybeBrowser.close();

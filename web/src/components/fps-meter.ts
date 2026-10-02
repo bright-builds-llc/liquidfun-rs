@@ -16,6 +16,7 @@ const FAIR_FPS = 30;
 export type FpsTick = {
   readonly timeMs: number;
   readonly simSteps: number;
+  readonly maybeRafTimestampMs?: number;
 };
 
 export type FpsRates = {
@@ -41,13 +42,23 @@ export function appendFpsTick(
   ticks: readonly FpsTick[],
   tick: FpsTick,
 ): readonly FpsTick[] {
-  if (!Number.isFinite(tick.timeMs) || !Number.isFinite(tick.simSteps) || tick.simSteps < 0) {
+  if (
+    !Number.isFinite(tick.timeMs) ||
+    !Number.isFinite(tick.simSteps) ||
+    tick.simSteps < 0
+  ) {
     return ticks;
   }
 
   const cutoff = tick.timeMs - FPS_RETAIN_MS;
   const kept = ticks.filter((item) => item.timeMs >= cutoff);
-  kept.push({ timeMs: tick.timeMs, simSteps: tick.simSteps });
+  kept.push({
+    timeMs: tick.timeMs,
+    simSteps: tick.simSteps,
+    ...(tick.maybeRafTimestampMs === undefined
+      ? {}
+      : { maybeRafTimestampMs: tick.maybeRafTimestampMs }),
+  });
   return kept;
 }
 
@@ -82,7 +93,10 @@ export function fpsOverWindow(
 const FADE_FLOOR = 0.18;
 
 /** One fixed slot per bucket. Only the current slot moves; older slots keep the rate they were given. */
-export function fpsHistory(ticks: readonly FpsTick[], nowMs: number): FpsHistory {
+export function fpsHistory(
+  ticks: readonly FpsTick[],
+  nowMs: number,
+): FpsHistory {
   const bucketMs = FPS_HISTORY_MS / FPS_GRAPH_BUCKETS;
   const currentBucket = Math.floor(nowMs / bucketMs);
   const cursor = positiveMod(currentBucket, FPS_GRAPH_BUCKETS);
@@ -92,7 +106,11 @@ export function fpsHistory(ticks: readonly FpsTick[], nowMs: number): FpsHistory
     const bucketsAgo = positiveMod(cursor - index, FPS_GRAPH_BUCKETS);
     const sampleBucket = currentBucket - bucketsAgo;
     const bucketEnd = (sampleBucket + 1) * bucketMs;
-    const rates = fpsOverWindow(ticks, Math.min(nowMs, bucketEnd), FPS_COUNTER_WINDOW_MS);
+    const rates = fpsOverWindow(
+      ticks,
+      Math.min(nowMs, bucketEnd),
+      FPS_COUNTER_WINDOW_MS,
+    );
     const opacity = overwriteOpacity(index, cursor);
     render.push({ fps: rates.renderFps, opacity });
     sim.push({ fps: rates.simFps, opacity });
@@ -146,7 +164,10 @@ export function formatFps(fps: number): string {
 }
 
 /** Rounded rendered frame rate over the trailing one-second window. */
-export function renderedFpsLabel(ticks: readonly FpsTick[], nowMs: number): string {
+export function renderedFpsLabel(
+  ticks: readonly FpsTick[],
+  nowMs: number,
+): string {
   const rates = fpsOverWindow(ticks, nowMs, FPS_COUNTER_WINDOW_MS);
   return `${formatFps(rates.renderFps)} fps`;
 }

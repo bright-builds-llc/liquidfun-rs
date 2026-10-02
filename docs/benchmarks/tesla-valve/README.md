@@ -32,6 +32,7 @@ The original run used the unchanged physics implementation at `8c419c4c42aaf99cd
 | 1. Spatial wall contacts        | 6.268                     | 32.533                    | 53.7                  | 29.6                  | [Raw report](runs/20261002-stage1-after-01/report.json) |
 | 2. Geometry sharing and buffers | 6.125                     | 32.282                    | 52.1                  | 29.9                  | [Raw report](runs/20261002-stage2-after-02/report.json) |
 | 3. Query-only drain index       | 6.042                     | 31.957                    | 50.1                  | 30.2                  | [Raw report](runs/20261002-stage3-after-01/report.json) |
+| 4. Live simulation worker       | 5.981                     | 31.574                    | 59.5                  | 29.9                  | [Raw report](runs/20261002-stage4-after-02/report.json) |
 
 The original fixed checkpoints matched across all replicates and the live warmup. Forward checkpoint counts were 2852 to 2857; reverse were 9051 to 9662. The reverse live probe advanced fewer steps, reaching 9389 particles, which is why live count and fixed-checkpoint count must be read separately. Render submission averaged 0.126 ms forward and 0.187 ms reverse; physics dominated this baseline. Later rows report each isolated stage against its immediate predecessor and preserve the original as the cumulative reference.
 
@@ -48,3 +49,15 @@ World always restores a usable workspace after a solver Result. Successful commi
 ## Stage 3: Query-only drain index
 
 The accepted Stage2 repeat is the before record. AABB queries retain the checked spatial index and omit neighbour-pair enumeration. Public neighbourhood construction and raycasts still retain their pair path. The measured change is modest (about1% in each direction); fixed state remains identical to the original. Six new query tests preserve validation, equal-tag ordering, strict boundaries, shape selection, callback termination and pair API behavior. All1050 native and299 WASM tests passed.
+
+## Rejected candidates
+
+[Worker candidate20261002-stage4-after-01](runs/20261002-stage4-after-01/report.json) completed timing and matched all physical checkpoints, but independent lifecycle review found that a control completed while hidden could leave stale geometry in a paused view after visibility restoration. Its [rejection record](verification/stage4-after-01-rejected.json) is preserved. This candidate is excluded from accepted history and must not be used as a stage predecessor. The subsequent corrected worker candidate is measured again against accepted Stage3.
+
+## Stage 4: Live simulation worker
+
+Accepted Stage3 is the before record. The corrected worker run retains identical WASM bytes and exact physical checkpoints. Direct fixed-step solver timings are still reported; small differences there are not attributed to worker acceleration. Actual new-snapshot cadence is about59.5/s forward and30/s reverse. The worker owns stepping/capture/transfer, preserves ordered controls and direct exports, and captures the final batch frame once.
+
+The 16ms main-thread timer-lateness proxy fell from 1.380 to 0.350ms forward and 45.806 to 0.371ms reverse (means of three replicate means). This measures responsiveness, not physics throughput or end-to-end input latency. Reverse simulation still delivers about30steps/s at this workload. Only newly delivered snapshots count as paints.
+
+All1050 native/299 WASM/456 web unit tests passed;61 browser tests passed with one existing optional forensic skip. Independent source review closed protocol ownership, gravity rejection, abort, control/transport, hidden completion and paused redraw races. A test-only isolated fixture serves worker-quality tests without adding diagnostics to the production app. Rejected candidate01 and failed validation attempts remain identified separately.

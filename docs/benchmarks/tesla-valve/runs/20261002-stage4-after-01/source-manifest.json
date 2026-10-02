@@ -1,0 +1,2678 @@
+[
+  {
+    "path": ".cargo/config.toml",
+    "sha256": "783fdc447abb5b8f8b5652157aa9ede64da640813fa89679c29c5251c8e0cbe6"
+  },
+  {
+    "path": "Cargo.lock",
+    "sha256": "3a3b89f6b36e2b5f1f84287cae0713041d0adc7ead5b7d31157e5254905583f4"
+  },
+  {
+    "path": "Cargo.toml",
+    "sha256": "8735a523e42e44c427113f13cc969f810a74d369eb9f8a2b4cb93dc9ffcb87ae"
+  },
+  {
+    "path": "crates/liquidfun-wasm/Cargo.toml",
+    "sha256": "dddadcae21e6a5652f3c76dc544289be2cea10c9cfb55bfea4b569605051fb85"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/bin/dam_break_bench.rs",
+    "sha256": "9cd53d339fa8db99af582445754fc0f1c1452b6d8e50083358834fe1f462429f"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/bin/dam_break_timers.rs",
+    "sha256": "8b3a165e729f193ababe857764a3c01f867cf59070e0a77aec57be1513deb415"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/bin/playground_scene_spot.rs",
+    "sha256": "64d25dd5697835bc86e3367adc11b0e1bf94d0df0d9da7a8009206c7eed3a34a"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/dam_break_bench.rs",
+    "sha256": "92aae3a715c47bfbfd9d29457d2972e392f5abae42a58c517fea461b97f2099f"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/dam_break_timers.rs",
+    "sha256": "754ba000684c2aef4c97498d98baf7a4f0ae1ff88b12e3fb9e89918a9cf33649"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/frame.rs",
+    "sha256": "ea0be8e2818d355b1b498c56e353baef9601d054dbad9e16602c607f5e605f93"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/lib.rs",
+    "sha256": "c4fec3093a70d969277b74cd5045fd905965adae670b275b900bcb06302accda"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene.rs",
+    "sha256": "3f41bac250a7add7af4adf4aad6e5cadf494d54a60d1303de926f5a759b77d35"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/basin_family.rs",
+    "sha256": "39795276b163165de47fabab4dc15325724f2fea37c4cbe65f1df3cd7019eee2"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/color_mixer.rs",
+    "sha256": "f615ba68937a98cac2b304580450ad06dbe1d397bf3feeb548553cc49cb3d1bb"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/color_mixer/tests.rs",
+    "sha256": "5decc36c28a86fccc78cd1f7dcef1285c319e975cfb7bc3e2afbe9c53c1da805"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/dam_break.rs",
+    "sha256": "8ccb70c7017b3318e3c8dfdf5a533b75a755f3d7781d34aea9cf7dd7c6e12ce0"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/dam_break/tests.rs",
+    "sha256": "1ec9232487a5f2cb81ef0f7768e388780a07ed532d15e4992ab8b1c772f41ad2"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/drawing_particles.rs",
+    "sha256": "f804722f3ee7e942419eb0dbe442f2f0828965a89bb5d060698f1f082a343385"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/drawing_particles/tests.rs",
+    "sha256": "0110eac286c7eb9406304ff0a1954cbf712be1ac6408acb1783fe65501ce8dff"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/elastic_particles.rs",
+    "sha256": "4cb108427c804658e45314b5c91d5c5ef37d4e69a2e187c13498174ead04f349"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/float_or_sink.rs",
+    "sha256": "f8691e24c03b15dfcc72ed3b1cfe157aab75e3fb66cf75f4f183e3d77e9b45ed"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/fountain.rs",
+    "sha256": "b15635734fda047b4904f56ce1c91134d190f5cf7a8dfc74ebe8f6d61dec8f86"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/gravity_slider.rs",
+    "sha256": "d0da2051a62b62585aeb47a3774955cd511354fde652f3dfe8116f33323530c9"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/hydraulic_fountain.rs",
+    "sha256": "16b3ec068b8dfb529da2152e2d900964ff6c0d8918e21916c9080a7c2c0e91f9"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/hydraulic_fountain/tests.rs",
+    "sha256": "95ffb3471d953e7a7c629f3a78033dd8d252eb55914ca22b63417c2f0efd79bf"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/impulse.rs",
+    "sha256": "8c724b115bc2e8e12fe1e4cfa9a3ea18969a8bfef732bddd80cd726e9a08d998"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/jelly_drop.rs",
+    "sha256": "e58942c809b2230231cb49525bab4716846993a9754f10223c44b7eef6a006bf"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/jelly_drop/tests.rs",
+    "sha256": "2b1049a1e5f06e5153a5d187fc78a11f8089d3266e1864f2c7f2b9eb9b5a3e34"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/liquid_bubbler.rs",
+    "sha256": "ca36626752406ff614c3d3283d049d0b12a1f7380c1d7d6f25c55cd29c8c0c46"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/liquid_bubbler/elevator_catch.rs",
+    "sha256": "c1cd372c4e1500d1efefd10d892d15b74cd63c573ccfa2e4b098db9f89b6c43a"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/liquid_bubbler/elevator_motion.rs",
+    "sha256": "3ac90fc6c9d8aedbbb6a8b07da7a5f80e92c2568b5575c06b1c44a7dee049018"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/liquid_bubbler/tests.rs",
+    "sha256": "69a9a776e6f1d85441b894579be6b1c8f891271e04eff7c9e1b1e17984ba21da"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/liquid_timer.rs",
+    "sha256": "a1baea39ef33415d0fe327cbbd5e0caef71ba32b08ad871fc80227fe8662d2c8"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/liquid_tumbler.rs",
+    "sha256": "901ac1a8d942329378b5ca409f3c3705b8602c8737844e2c3ddd5a91ac226d52"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/particles.rs",
+    "sha256": "f75281ac8bdef30d58a9faed022832d9ba3e59b46a578a16a4a86a1fd73d1558"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/rigid_particles.rs",
+    "sha256": "3f28bd423189112554dc233a59407acd290765ba5190508eb7913eb5e5c5e4f7"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/soup.rs",
+    "sha256": "9ebb802ca41080d32ebe4337ffbca760140f7ca2055b49042781775774447c07"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/soup_family.rs",
+    "sha256": "faad2d0353b384f82a2609ee9560b0ce5e71157d71117f1943dd781006363123"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/soup_stirrer.rs",
+    "sha256": "b7c9f9c05b1bd89f50dd26715b8f4ffc4acbb281a7969e5f576a42648e74eb44"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/sparky.rs",
+    "sha256": "11fc98837af7a3b04bb45aac6324acf8e17d656c3d4dc5acded042a3961e460a"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/sparky/tests.rs",
+    "sha256": "c0334c314c8a2d31bcce455d920a8866a564199d7f2441a042007ec2e07627ca"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/stacked_drip.rs",
+    "sha256": "7d8d493b081e7354c64938c48350dad4a7d89513305c3097509b4076e6a5c21e"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/stacked_drip/tests.rs",
+    "sha256": "0a497e05100cfcb3496686785181d323c4a65d63a88b78588f28e9c1a8d1a062"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/stacked_drip/vessel.rs",
+    "sha256": "d9ae010433a7a14f3669a083670a0bd612c732f076ea5ef0189ddf74e859177c"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/surface_tension.rs",
+    "sha256": "4325100935b7a04b1e25281ab40104c326572481881f5ac6752139f3c303b89a"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/tesla_valve.rs",
+    "sha256": "23b05df1994f2f1891ae0048ab45cfe074cd670810437e86414b388643e03150"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/tesla_valve/flow_tests.rs",
+    "sha256": "a51848f9c0e82c1d6df8c55505cb8be56c61eee6b19e15a3842ce642d15e9b4e"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/tesla_valve/geometry.rs",
+    "sha256": "700acd3dec0381baf9b33d6a83958bbc2a3e1fd09bdac6c8a268c45f42391b0b"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/tesla_valve/tests.rs",
+    "sha256": "59a97a1bd8c35fd791466e8f0e0a68375ea03dccdca98042c5886c9daef9560d"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/tesla_valve/topology_tests.rs",
+    "sha256": "bf54c8460171f8fc9f0d9bba22d467e6a456aff172b93fe5c292c24b9500ced1"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/theo_jansen.rs",
+    "sha256": "4c4e5b2d684ce8910b3b656ab55477b29649dc7a3366b039e68207d6524f9cde"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/theo_jansen/tests.rs",
+    "sha256": "b3f4479ca8af17d9b7a79df0cc1fcebf70748bbb24d295c1e138fc97795e6105"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/washing_machine.rs",
+    "sha256": "df7f6f8dbb685a2451aabe1a8301883113adbe805dba4973b9cb19b412ec2e70"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/washing_machine/geometry.rs",
+    "sha256": "fccf40c4876ea2b5ed0bcbc74cbe59dc95ce36c9c59081f80164c1ba25519dd1"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/washing_machine/tests.rs",
+    "sha256": "862145401fa950f708b36236ed631a2c383c8a489b80587e3ef8148043a906cd"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/water_wheel.rs",
+    "sha256": "8b8e4b482fa0942c90ddfbb90e4dfae8837f04b68b52e60034d1487980772b5c"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/water_wheel/tests.rs",
+    "sha256": "2f6cfc4babb9c954a9cbcc7ad377b7aa332fd9ed62af932d76e4d0d03f0455bb"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/wave_machine.rs",
+    "sha256": "b33bbfcd6ffcbd9cda1091204e1951cd26fe41fa4ebc358b07d7f78af3f23943"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/wave_machine/drive.rs",
+    "sha256": "b5efb2cafc72ede0e6b7c16fd59e0e02d4a5d840d39082268f59c36131f70dba"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/wave_machine/live_controls.rs",
+    "sha256": "4e4a7a6d77a1caf10ad57b1af98c033c10aa4c121f1f8c97a6bed23b0e8176bc"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/wave_machine/tests.rs",
+    "sha256": "f903b05e68e0f04bfde726a4199df9680bbb03ae87575e6d5089680f04690f0a"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/wave_tank.rs",
+    "sha256": "dc3ea9a9c43c6fb264fc14aa27db99c64deae9f2af430cf2b69054fcf3581e2f"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/wave_tank/slider.rs",
+    "sha256": "a6b7f88854c7bab45e2ab67a06acc4083725875e9665a57c06b92d89732496a3"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene/wave_tank/tests.rs",
+    "sha256": "90a1a68dcb2e199297bdf8646b79db12904131f8eb807ad154c284e1fffb80f1"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/scene_spot.rs",
+    "sha256": "9bc0d963c6de228068e152189798310d19229b0569a96b16ee0c0181b45971d8"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/session.rs",
+    "sha256": "5e16c3a4b73a91de79f992b47b3e36cb941ef25a8894010f1f11a39eb82119ef"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/session/escape.rs",
+    "sha256": "781ca552f8bec3b25a7b81e953a7290ce7e803f866d30de60fca87947ffb4cd4"
+  },
+  {
+    "path": "crates/liquidfun-wasm/src/session/tests.rs",
+    "sha256": "a2fd90afef4d052d72b1d166d8f6a17f75a30b9692263352309277bb4d6c46cf"
+  },
+  {
+    "path": "crates/liquidfun/Cargo.toml",
+    "sha256": "5a7e4fa048a96ca8c0d55660d8bd766e6bf8e89dfa88d651447758b1b8f846ec"
+  },
+  {
+    "path": "crates/liquidfun/LICENSE",
+    "sha256": "3aa6e2c193cf5da11d2509be472b434db23708278beaf8955206fd4b92b47ae0"
+  },
+  {
+    "path": "crates/liquidfun/proptest-regressions/particle/storage/properties/lifecycle_model.txt",
+    "sha256": "aee929739863ffb942831997a44bcab0c3a375908b24f10a1a40a3d3f62f532b"
+  },
+  {
+    "path": "crates/liquidfun/src/arena.rs",
+    "sha256": "56e12b36ed9b390e90af0c5c009de4c0bf97ca8f19a3ad045a80dd4829bff037"
+  },
+  {
+    "path": "crates/liquidfun/src/arena/tests.rs",
+    "sha256": "ca24b2df07151e4b79c39c7f00b798de112cc9b1490a24cbe15f36682025104f"
+  },
+  {
+    "path": "crates/liquidfun/src/association.rs",
+    "sha256": "cffbea9593bdbbab8893b4c87068dd9a46775941a4bbe1ce72e642102f2943e1"
+  },
+  {
+    "path": "crates/liquidfun/src/collision.rs",
+    "sha256": "7c25404c256c85d5f65fe80ed31d405efaf1c31d3718c43805fd8070d6c7bf80"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/broad_phase.rs",
+    "sha256": "67f9c462df0240d9a50889b1fd3cfd4014b8be488bd5f9d152682c9f02f32526"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/differential.rs",
+    "sha256": "d0e63a18be4308ef114755c6165511581e126c8edfed00ff6a1723860abf7dbe"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/differential/cache_replay.rs",
+    "sha256": "d7cdd11afe2d0673f12d15709a437b2cddd5ed9b62cfac421376b978c8d356e7"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/distance.rs",
+    "sha256": "4b83acb5ae8806429834fc3154940d4f5c8438e5d66ee2a296c994568ec189dc"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/distance/proxy.rs",
+    "sha256": "c78095b1123d0d9fd6f98f86cfb3f0d8d12572df61401e90d0f2abe56f56674d"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/distance/replay.rs",
+    "sha256": "3d10d78903da829a48ba20b27dffee35ba87527a723185bf26f1bc975e4c3fa2"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/distance/simplex.rs",
+    "sha256": "b82ec30e811079aa4772e5bc23fc984fd8958be0282ad8e62b0eccbd69704810"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/distance/tests.rs",
+    "sha256": "d1fc6fd44d4a20696abe04be475550064715c8986a835f0782934a6b9171bdb1"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/error.rs",
+    "sha256": "66529b3ab6876e7f17d063472c1e60476e97305172b77bc594ac9257ae2f83aa"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/narrow.rs",
+    "sha256": "8c438547f02ee7505804ecc9152edc2b2689ac5f410d397b3c812723bc62afa1"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/narrow/circle.rs",
+    "sha256": "9479bab692aacfefd627b7e46bd91c97e0f5e883fb89781647643e1cd74ba716"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/narrow/clipping.rs",
+    "sha256": "5c69597e3e4c8d95bb64d19173651baf7f3ac44ef64a2768bed8a1f58bb51a1f"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/narrow/edge.rs",
+    "sha256": "c2624b9556182d138014d755ba54af4c6fe6db4bad6278ab3c27bd9ccd7a31fc"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/narrow/polygon.rs",
+    "sha256": "dbd5c8d44d2849b109052da6fc21bc2b0a9a153f3615e5213ca4c0cc6406442e"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/shape.rs",
+    "sha256": "e5574042e92576a4b9a4111e6ad2b56f1641d24bc16f81a7d469c57a3f35eeb4"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/shape/chain.rs",
+    "sha256": "2c816247bfa5dba460309d5734ef99257657927a7340383d0230635d690d141a"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/shape/circle.rs",
+    "sha256": "2b3bfb95eec23c9e31d7f8047cb3826c000fc18980b9fcd075534773d9739e8c"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/shape/edge.rs",
+    "sha256": "12972f4ee04347d038b3b494528e825393f0f22f94619ffed07b65f3f48baa20"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/shape/polygon.rs",
+    "sha256": "39ce2e2c40e90848a538f956e9ae65d484fbef02e03b1ca23ef374bddd61ccb3"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/shape/sharing_tests.rs",
+    "sha256": "d119ede2cd487aeefdc0bcb0cc9cc41c7fa2d77d26a4d58e97a3c92412a1a19b"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/toi.rs",
+    "sha256": "b4b08619eb4dfd804cf99bb9d9e0a79f28c3911b85a80dd302ff9b158769e124"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/toi/separation.rs",
+    "sha256": "7536fe2676f8cf037ba7d54753623d653fe2e45d8475be47bfcced0aeacd0288"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/toi/tests.rs",
+    "sha256": "14a0862fb93c6e2b066a93dccc5bb2fead80254fb3c9ebb58a11def52571fbea"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/tree.rs",
+    "sha256": "3b9e5eaad73ae59909dfd84effd5438b936cd148f00ebf1a55d3b5ca8fb8c870"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/tree/metrics.rs",
+    "sha256": "40a65078fd3c91270d94f4ba1dd92be2ef42ab6f8ef9458fcf86633f982a98c7"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/tree/pool.rs",
+    "sha256": "62d690f74f6ed6ef5f6e27d9419c29cc3807c3bf024a28fe6fa33ab60d0da60a"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/tree/tests.rs",
+    "sha256": "af6d9411100ad8b4d467a86148f5ed1a480fcca51a26156fbfc520c20d761f85"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/tree/traversal.rs",
+    "sha256": "7a2856ea1d4f650b4d3f92b03dca19cfaa45646975efb9fb2cb2369cc450465a"
+  },
+  {
+    "path": "crates/liquidfun/src/collision/types.rs",
+    "sha256": "e6fb052fd7087855259925d1273af327416600a5a7d61760b781be66c51ec9b5"
+  },
+  {
+    "path": "crates/liquidfun/src/debug_draw.rs",
+    "sha256": "ccd96489a39cd94bccee2a65a91918eeb5a37e7523dc6e500b45c898647c7548"
+  },
+  {
+    "path": "crates/liquidfun/src/debug_draw/collector.rs",
+    "sha256": "e3118480e23ac4ac24780b6a8b895c6bf20efce437bf19d895b6177994cc8b87"
+  },
+  {
+    "path": "crates/liquidfun/src/debug_draw/collector/layers.rs",
+    "sha256": "189e76717a1e7b527b2d0ab608120382d53023e7c3a2a73a0c758c77018f87ab"
+  },
+  {
+    "path": "crates/liquidfun/src/debug_draw/collector/support.rs",
+    "sha256": "e6182f910fae7fd51e92af4326e8136f223c89fa2b8442176697334d64ca98f1"
+  },
+  {
+    "path": "crates/liquidfun/src/debug_draw/primitive.rs",
+    "sha256": "2b595c883ad38801faa0296724cd85cabccee96d51a6f83e9d6e64e3633d5653"
+  },
+  {
+    "path": "crates/liquidfun/src/error.rs",
+    "sha256": "d1af4dd4792ac85bcb4c2643ee988a68afbc2ac1e67618e63b63f0c39c2376d1"
+  },
+  {
+    "path": "crates/liquidfun/src/identity.rs",
+    "sha256": "979ba0d59b4f381dd73c1c5fad2adfeb66de0adae91ae477f3a9a7a4e7f1f778"
+  },
+  {
+    "path": "crates/liquidfun/src/joint.rs",
+    "sha256": "9e4477988c3e12accecfda3db28e6c05aaaa3c7ad0b7d84379ee8838f8e14ddb"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/definition.rs",
+    "sha256": "13a2d7761ff84e63cb41bc8c5264bbfb56799b9f58801fc0ec5064a500f5d2f1"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/definition/distance_pulley_mouse.rs",
+    "sha256": "8102d042d65fc1fe5b6b2a08ca76006b3361a063c79158c42434d42f2b4a88b1"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/definition/friction_rope_motor.rs",
+    "sha256": "836da5ed43caa0d89d42192dc46b7b4c23180309b40855f1c329209261176a7b"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/definition/gear_wheel_weld.rs",
+    "sha256": "092a3ba66475c20c5032ae12c3a8816913ca04138d3f21a5d827bcc49af97280"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/definition/revolute_prismatic.rs",
+    "sha256": "37ccf7c03d75a3ead20dbf212067f8cc4780c61b00599c690ddbd0b0cabdecac"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/snapshot.rs",
+    "sha256": "981b33fc863e0cd1bc31a544c544e4ead2c6a6ac686f6629af69f77cd4b7848c"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/snapshot/distance_pulley.rs",
+    "sha256": "82debb2a760da4c4a759468f151da28a5fb66304fa67ef122b516124121491c6"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/snapshot/gear_friction_rope_motor.rs",
+    "sha256": "7435abe163f6f58071954bda50bcc306681dc6c0de6c82ac2eed81780eb87e70"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/snapshot/mouse_revolute_prismatic.rs",
+    "sha256": "7b311970ebb811066b7984f8e541b04f4d9ca80961bf95958d5656212faae0c7"
+  },
+  {
+    "path": "crates/liquidfun/src/joint/snapshot/wheel_weld.rs",
+    "sha256": "8b2784919f82fe940d50ad6579b321962a8de6e8491483cbcf3473174784ced0"
+  },
+  {
+    "path": "crates/liquidfun/src/lib.rs",
+    "sha256": "116d1d7de10b9d5f3b6d80c90e16932ebdc5a73bd814b839d4114f4e25448d19"
+  },
+  {
+    "path": "crates/liquidfun/src/math.rs",
+    "sha256": "ea4fa9324a5c13e55179b95e608da7cfb243f157807a73fe1d47290de929fb2d"
+  },
+  {
+    "path": "crates/liquidfun/src/math/matrix.rs",
+    "sha256": "c3ec2bd0ea2bc9a1a1e290ad705adca84313c770a412e0db9427e92188cebc25"
+  },
+  {
+    "path": "crates/liquidfun/src/math/scalar.rs",
+    "sha256": "323f84862ec7b13d5464f151d74867dc3e85bef1ca065745ef8d7b98554c415a"
+  },
+  {
+    "path": "crates/liquidfun/src/math/settings.rs",
+    "sha256": "4053bfbb8f5b9e3e35c07c122b1d63c2de3eac95317d4c74e5266177771af423"
+  },
+  {
+    "path": "crates/liquidfun/src/math/sweep.rs",
+    "sha256": "54e2c2ea81cb65cd0aa95e6714e54cfe03ae3acfb3e254df07f50bc634cd85f4"
+  },
+  {
+    "path": "crates/liquidfun/src/math/transform.rs",
+    "sha256": "bdd580e76c8ce59dd3543af1325be7d785c03bfbc7dd191ac178d1af30484edc"
+  },
+  {
+    "path": "crates/liquidfun/src/math/vector.rs",
+    "sha256": "e8d1a12da962181a595d69f59e3d1f0c74ec5f5ff54be76d79071bda0dd0a802"
+  },
+  {
+    "path": "crates/liquidfun/src/particle.rs",
+    "sha256": "f3875bb88194faeb2c8cef1a4413105d1ec4f58928893bbeda994366397f80be"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/body_contact.rs",
+    "sha256": "597adbf1d4eb9f40ea5939fcf158853bc2d40d37f1cf52694859742570507647"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/body_contact/tests.rs",
+    "sha256": "3e1d8c2d288a36c42e0b4c70b568fdcc5ae1b0e3d5b94ebabbac0db90c156d60"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/buffer.rs",
+    "sha256": "f70f6d6640afcde4daa734ffd7a4466caf1a00e50bc7b8e854950b42818dc416"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/contact.rs",
+    "sha256": "36406cbdd0e011e62231e8c71b54dd39fafefb586d9ec55ddc7b4199f95f9357"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/contact_scan.rs",
+    "sha256": "5f106b096136d3c11db0b1901c55b7f9bfe2ea034aee241e6bf624e8e96a1765"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/definition.rs",
+    "sha256": "245ef34424241957b4edb9f304199ee1c01c0911897df35c0e83471e725877e5"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/definition/particle.rs",
+    "sha256": "639ecb512a8fb75fcafaa54424da7af673b4434fa1e08ac0114d5bdbd72734e2"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/definition/system.rs",
+    "sha256": "720e4c8c02261d2e2e78dd2390245383f3492feed2b7dc9c5b2e1617b591bf44"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/definition/system_definition.rs",
+    "sha256": "31bc58c61c4fb0654a70fdae4e4f1799bcd5e9718f09711af5415c1bdbcd87e2"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/definition/tests.rs",
+    "sha256": "a3c910a1299de26f17c989fa2de573b9c77b01cdc694333c52d3342711f31a1b"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/definition/validation.rs",
+    "sha256": "e6011bbd155e9295007578a618ca5880c359322b1b14fc1a325521359efb0b5c"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/editor.rs",
+    "sha256": "bd4017e9641162616cba1fb0be0f398e520cedd98cecde181a76d82c1b986734"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/force.rs",
+    "sha256": "fa4e1491aa36bde5fbd2026db206e094a7d7be1c486508e13acc33b3c8eff995"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group.rs",
+    "sha256": "1130ef70c017e9fe7431648c84c6b11c38eb05982d55739b53a646b1b98193ba"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group/flags.rs",
+    "sha256": "944063532fa376ab6d8b0c9a6116c50d90b2a05b41624e6a30e8e6a12396d1cb"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group/recipe.rs",
+    "sha256": "5a0774a1a0d7ecf63322273035565c64e459814170c4ccd0f0c225dfa586d033"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group/sampling.rs",
+    "sha256": "2b198be6944eaec7fe6755612a479b45eac53e344d09c5dbb9e4624980597c31"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group/sampling/tests.rs",
+    "sha256": "ca350c0f38528aa22d40cccf9d7f04f5774aa7d5e96e8be7df277ef0c6c391c7"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group/source.rs",
+    "sha256": "e096df0e0ed3ac052e3893df7611ae532e10c3f7089e634e897a9e6643d9e8e9"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group/tests.rs",
+    "sha256": "0abdba65a91e5459a480f4e5cb7d9e4b4c2173a48b327b5eb6081030adfb2c15"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/group/view.rs",
+    "sha256": "447d91692353065f74981a2dc3761b11e417fb391b60c938d3abcc5412e97ba3"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/lifetime.rs",
+    "sha256": "829d6d40209e18ce52959eddea4a90b8717fbbf3444b76e57f451b309a23ea69"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/lifetime/eviction.rs",
+    "sha256": "909cc3e13c20fcea18a7ecc5e13246320f366304321b3990a22cbcb65a47fdbf"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/lifetime/tests.rs",
+    "sha256": "655499068da5a31048d4da047dc2ac39dc3fad9b2153465fd46a9170d9edae56"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/proxy.rs",
+    "sha256": "9972669ae76f055b137b06de8e0d2fa78e9a3609123293ae6f980b07e0930530"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/query.rs",
+    "sha256": "5fea11d029b81edc8b9988b7b161162b47be0af9650d6871b6f068f23a0668fa"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/query/tests.rs",
+    "sha256": "0e22a26cbc001cd3683368c70544fd959188245118bab3bd7a2381c7e342c6b0"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver.rs",
+    "sha256": "5532dbb3d5f5d6713d284ce6e682fc29f71b602055ab853da06d41f4f6748b7f"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/boundary.rs",
+    "sha256": "4e5a374ab0bc903ec632b52f835ead8f06f6c6ff8845e83813147e88166f2184"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/boundary/barrier.rs",
+    "sha256": "85b4eb1839e4afc3ad3cfbb05295e809ed046d1d4906e09cab05681b2981b9d5"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/boundary/buffer_tests.rs",
+    "sha256": "a2e13e28210a03601a88d2adcbeed81c452a05ba420da858ce38fe28c6462f90"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/boundary/collision.rs",
+    "sha256": "f8a8fcf88f71d2c3fe4241c4fc84361a6acb894d2451a25b05b3f598d499d412"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/boundary/support.rs",
+    "sha256": "5813a22eb0f601cb22bac294318723bcd1962c27ce0ad56f69dd88eb34e6be0d"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/boundary/tests.rs",
+    "sha256": "57d2bfd3f8b22e39de3d166cfce54e9de4880d57631eaefea8c09671cafcba66"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/constraints.rs",
+    "sha256": "3481124b1abdc03ef09e0e8f85abf1bbea18fad3a9e6f14bd9b0852d043ebdf7"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/constraints/tests.rs",
+    "sha256": "97f8a4da0435e371f378ba268a2b36a652374479df6f2d747712e79e3ba500a4"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/manifest.rs",
+    "sha256": "a3f9e0925e7807be13463a7a2453c485c7d5fbc8c40b523ac8052396302c0565"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/manifest/witness_registry.rs",
+    "sha256": "5eeb680d61e5c3de6b9499f64b137d3a5738f1e2455499b33c43e35c8c6a870d"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/material.rs",
+    "sha256": "1714b0a0ffef34cd7c5e1417bbdb97af94b09baed0f79c844c200c7a4f52ee03"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/material/tests.rs",
+    "sha256": "48ee986f8db3e9073b20dce1f8f6b2ebd9521a5c7f91ad23202b79a0f20d985c"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/order_tests.rs",
+    "sha256": "d54c40325185fa552f805a5dbee2442079ef6c9546e21aafef0a0cfc344cc0ca"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/preparation.rs",
+    "sha256": "2256f3775ebb6ab3dc419622090edf4a66c0ca950278012e2d47eca030fa437a"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/pressure.rs",
+    "sha256": "0e3c5e20d70f33fbe4eddea74844d5a4ae63ffd7ce1999d7407040f7a19389f0"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/pressure/tests.rs",
+    "sha256": "71dd44ce69ee3eb1cdd1ab3837aa97f2212853d66a9497552bbf8290401798da"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/rigid.rs",
+    "sha256": "f16703d2eacd77996c9f3e87000c05aebd3b84adfdabb749c4ce140b9ead76ab"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/rigid/damping.rs",
+    "sha256": "08695fd4300e379c97c3fa65c72ba797cd4eb439cf050c6d50b8556bc0dc1d17"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/rigid/projection.rs",
+    "sha256": "a9feaf7a53ac4e0135b912ed8e9988f6f0fb33a7f1dc08fefac14183d276f7a5"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/rigid/support.rs",
+    "sha256": "62c89cc8b92fae315cd5ea7f7990114154bf259e8b0a64d6e73f4b886db6bcd3"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/solver/rigid/tests.rs",
+    "sha256": "f508b9281071859f9f7f46cb297d0d3953cde4f2fb7907bd33c231344e6481ce"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/statistics.rs",
+    "sha256": "00bbf2db5cbbc09a6c6951aa9099b8828afb97575532de19524d09516005ec3a"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage.rs",
+    "sha256": "b65d43f0e1dfc115841537082fec44cb463cb8fda91b0ce0f0487f0d0fc1be87"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/creation.rs",
+    "sha256": "79d647b15928790c85a516dd766fec2dc616c7342cdb6b52a75eabc6e371de7d"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/editor_tests.rs",
+    "sha256": "4e78087472ba7a92943710bbbf375830cb33d2f5663886935f214acad592bf00"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/group.rs",
+    "sha256": "91f92b580a4933cced618301f958575806fb92355567ce5d04cafac4f671a891"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/group/depth.rs",
+    "sha256": "a8782efe97d65c7b6cb4ff10aab9af46c0266e93180c0b8e55567ba666a0524a"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/group/statistics.rs",
+    "sha256": "9b4711c86e6a9d12ed41367fd377b245a175a6e6769536bcc4a0fb960b0f830e"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/group/tests.rs",
+    "sha256": "89e04c94871ea26f6c32f51a482f3c3cc461e697fa75766b4fe5816de3da732e"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/identity.rs",
+    "sha256": "5f2621c2dba9a537eb4deff80a615d0959b4ac27150cc1de0064ea4bded8fc94"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/lane_inventory.rs",
+    "sha256": "0834cb15dbe958dfaf82f8ac3cbef7cd86dad728027edc8e0def30577e4251af"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/lanes.rs",
+    "sha256": "426d89fb2df43be603ea93d6865368d81bdf21336f1ae6c27bb369fbf3487d1c"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/lifecycle.rs",
+    "sha256": "f66170953c48ba4bf2efc16946cbe2cd1470e75b7e7cbee56dbfba6eef092ea5"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/mutation.rs",
+    "sha256": "93566944a752ec8e3ce2f22661241ac03a17fc26e1bed3fb495f7382b371f601"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/mutation/join.rs",
+    "sha256": "dd0ab5345031d4fb47c994799a5c340eac86a0e541c9de89390d195c1dcb65da"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/mutation/join/tests.rs",
+    "sha256": "d71488ce9ba82720f14584dec60d86fa8fe2e811098bd4baf7ebb6cbec977621"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/mutation/split.rs",
+    "sha256": "b2193dd25f93781bce8a13331d6a9e4ceb30e2c31c181e18e51dd5233512e50b"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/mutation/split/tests.rs",
+    "sha256": "e705fe7b134d3427e51395b2e91c2703480e3bd5523e5c2f69da2211905d7fee"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/mutation/tests.rs",
+    "sha256": "d7268162df6fc2acc1d0dbd7e0fbcbf16cd01ae7c539b00f35bf411cf90676b5"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/permutation.rs",
+    "sha256": "550d624c955257a29a2eac2f302a091be2e175618b18bac5eb6f12b4dfc87440"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/permutation/group_reassignment.rs",
+    "sha256": "3316b58088238f32e6973c417995284bdcecf23682c210141885166a509eddbf"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/permutation/remap.rs",
+    "sha256": "9b1461dc0c65ddf7b343ef2b0582597703b1123d697299f019b145b39b9e8ab7"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/permutation/tests.rs",
+    "sha256": "9d73a2167ba558ea28beaa59053a1d7e077017c99f50a64b950ffc6ae27ce789"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/properties.rs",
+    "sha256": "c48e4081e23cb3cfb4012bdd011f5a2645108bde86975304a90a6e3a947017bd"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/properties/group_model.rs",
+    "sha256": "02b68919c218e291bb7b64bc8b404c470151b46e0f1fd540acc57f0098ea4448"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/properties/group_model/configuration.rs",
+    "sha256": "71d11c8bdd655f547455d6ebb93f0dd3333d9ae8cd83e5111911cac751ce4784"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/properties/lifecycle_model.rs",
+    "sha256": "dd51c2a4d45b1bc827eac231abbd280c1210bc5061b1cc0c0f3c2cf2e7ae0032"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/properties/permutation_model.rs",
+    "sha256": "718f38e0e758cf2db7e27a76fa8c957ad3c5729b8edf1824c7acc972731cd9ee"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/runtime.rs",
+    "sha256": "885cf9120bc3f8a9a67f36057b9f45b8411e4ea934b7b7d7ed81c9b6da9de0ea"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/solver_buffer_tests.rs",
+    "sha256": "32bb5ac0bbb855b83349ea404ae573451a185494fbbef1766e4a4a30099692f3"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/solver_state.rs",
+    "sha256": "e352a45d21b409170b9cdd652bdf36f57024493f84e62a68b261f07fbcd83529"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/solver_state/tests.rs",
+    "sha256": "38d848f1f20a01f207ee72c5c40778f64e1ed28cf3bbdabb3abe3e43bd6f730b"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/transaction_test_support.rs",
+    "sha256": "c9e3b4888bacb6f496b3fa258c192761870eef57806da8157001d8ba4d1a039f"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/storage/validation.rs",
+    "sha256": "6bded74d0899fe5b3eaaa20d96c27a842dd7cd5285d2e8ad32530425d51573b9"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/testdata/group-topology-witnesses.json",
+    "sha256": "90d212d3380fe9aa645ca9d972e39b962db9f912853850a9deb5943be2395278"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/testdata/group-topology-witnesses.provenance.json",
+    "sha256": "9acb2f81076e9d4f5426b7a070fb0ab5d0f0ea8799dfd4bfe819a5452c51257a"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/topology.rs",
+    "sha256": "7744a4d896017ef7c900493f7eed7ca54adecba01a9f0bfbadcb1334b44d71db"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/topology/connectivity.rs",
+    "sha256": "847526ae2476fd094b23d18e8678a120113ed6c8a4450cc10e1b13598b190d57"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/topology/constraints.rs",
+    "sha256": "bf0890c7c24d6f9021620f935a7b0ec24d0d451a525b36d5ce0c38dc8195c000"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/topology/constraints/tests.rs",
+    "sha256": "c59ebc717ca9d3eb9636f0295f9dc9941a542ecebc10e3b6dcd47ccbf30152e0"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/topology/constraints/tests/properties.rs",
+    "sha256": "fa73832738cd9e3ed0a004be2303e98663937e01784d0c4a9244bde09a0099cf"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/topology/voronoi.rs",
+    "sha256": "c1bbc9e3bb8317d1e73ffabe29f953855289b94b02445c09a16a69ba2be133bc"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/topology/voronoi/tests.rs",
+    "sha256": "ea2be9ea8c9f6928d100cdaea30e24af0faeb4fd7e3082f2626b7df95ace649a"
+  },
+  {
+    "path": "crates/liquidfun/src/particle/view.rs",
+    "sha256": "80bfe013f8883239634c01728d0e6a561cdbd9c652e7081b1525f89d6b0e8455"
+  },
+  {
+    "path": "crates/liquidfun/src/rigid_differential.rs",
+    "sha256": "4737310940f2451e201a2896a884a610bd5796a08846d815609ec16e3a9a2418"
+  },
+  {
+    "path": "crates/liquidfun/src/rope.rs",
+    "sha256": "d6e8c237ab40599649b905ace0e9628df7987515fb062127c037e28a62f3d36a"
+  },
+  {
+    "path": "crates/liquidfun/src/rope/core.rs",
+    "sha256": "9ffb16131b1dd4adafbbc68116ae2f55a2f5353e0e5fef52f39dad2c5b1965d7"
+  },
+  {
+    "path": "crates/liquidfun/src/world.rs",
+    "sha256": "5649bff7c21f2d5f6336b84eb8396557396abf0f766393c1808feb5e3e304c89"
+  },
+  {
+    "path": "crates/liquidfun/src/world/body.rs",
+    "sha256": "09ae412dbf50fd555bc353e92de3057d60f2dc46792a3cc1fc421bb0a8313060"
+  },
+  {
+    "path": "crates/liquidfun/src/world/body/control.rs",
+    "sha256": "6d328d3b6e89535ae65a5b817dd6cbff74d9a5276d003d3d7ef4de4474fc8cb2"
+  },
+  {
+    "path": "crates/liquidfun/src/world/body/control/tests.rs",
+    "sha256": "468dab4dd34b6352ff74cf468f5fd9edc9e42846ec32314e66e000cdfec0a2ff"
+  },
+  {
+    "path": "crates/liquidfun/src/world/body/mass.rs",
+    "sha256": "9297acf439878ec2f9171e2a2334c412741d8c703dfe9b95d733428941e91aa2"
+  },
+  {
+    "path": "crates/liquidfun/src/world/body/state.rs",
+    "sha256": "ee69027d4ea1cabddc9184fb18e9a0f39fffa08a90dba9a7bfad4fce7e4cdc97"
+  },
+  {
+    "path": "crates/liquidfun/src/world/config.rs",
+    "sha256": "3ef3e6c57a25bf88600256e544be24035e007f497635902008cecb7bc98ebb07"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact.rs",
+    "sha256": "8bd9bb2f274608112e984e4281655ff739a5ade3a7899db8d4f2b5b3ebcebceb"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact_manager.rs",
+    "sha256": "72350b324928820c6b017b4dff954194d9d801af5e44681190ec6cd07fe07aa6"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact_manager/update.rs",
+    "sha256": "68ad1e0944b37bba12212492c74745f5fec7ddc5cfad0a508d6b5563edc26284"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact_solver.rs",
+    "sha256": "68067239c000a31adb8c77d8ae19691a920a8452c1dccba9144c656d439ce624"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact_solver/position.rs",
+    "sha256": "07ad0b4176914a6a521f4f1633ab74127746975826c40d269f3937c4c2af5cba"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact_solver/tests.rs",
+    "sha256": "ef7332126c0f3a276b226b5a9245962b291543900b45244df85a5523e14e49a9"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact_solver/toi.rs",
+    "sha256": "3445bacf1bb971b70d1b241732a3ce5c011a95b1afed9d3c811d58d97f088009"
+  },
+  {
+    "path": "crates/liquidfun/src/world/contact_solver/velocity.rs",
+    "sha256": "179cb4a5cdfe19b2376daf9e8cbe1d5f9050bbea0586b25b293e7b102658dd39"
+  },
+  {
+    "path": "crates/liquidfun/src/world/continuous.rs",
+    "sha256": "26e09d57ab06ac461ddc39cd5010eaae7e6efe4c9d08f41f873682d5c16b19c6"
+  },
+  {
+    "path": "crates/liquidfun/src/world/continuous/event.rs",
+    "sha256": "12580976dfd2462908a218676af14fc4d3711f2a3afbc49ddeb6cb5b5cb526c4"
+  },
+  {
+    "path": "crates/liquidfun/src/world/continuous/step_state.rs",
+    "sha256": "96601329e5e9d6bf16a983354645ec75e664fc00acb4ce412ad917c778b4aedb"
+  },
+  {
+    "path": "crates/liquidfun/src/world/continuous/tests.rs",
+    "sha256": "cd9e4cd8457024f24e5d00f24bcc71173fb5560d8e6cacb69c3808545bc2bf06"
+  },
+  {
+    "path": "crates/liquidfun/src/world/diagnostics.rs",
+    "sha256": "8531cae33ee4abf2c1f73d5862536ceeaac582dc15cd84b5ec981fcec8a201c4"
+  },
+  {
+    "path": "crates/liquidfun/src/world/diagnostics/reconstruction.rs",
+    "sha256": "50b3bbafd70415d5cf97e148096aa77698ba3f99b34cc6f502a5b98f2469f154"
+  },
+  {
+    "path": "crates/liquidfun/src/world/fixture.rs",
+    "sha256": "0e4be14aa69963084e893a5c72250538d79b4752027262be622a4ec27dca83da"
+  },
+  {
+    "path": "crates/liquidfun/src/world/island.rs",
+    "sha256": "e0254b5e4d3be7bf8b414bf2bb8eee3e558e8280575266fb292805d69e293827"
+  },
+  {
+    "path": "crates/liquidfun/src/world/island/graph.rs",
+    "sha256": "2354129f9ca34f5d2860382ce7c23840784b182fb1f7244860c77fe6f7b8b317"
+  },
+  {
+    "path": "crates/liquidfun/src/world/island/toi.rs",
+    "sha256": "888c37624ea2e8e571af905febed2084eb775dd12b17608cd602f03183d9a18d"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint.rs",
+    "sha256": "317a2b92b9e0e74d76be00ccb53c9ef545a1227bf2ae49a4fe2a6b99f9a0efb1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/distance.rs",
+    "sha256": "695500f22116301baf4de7398da2159aa3649124a13dc7dbcb09ef0c29c9c54c"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/friction.rs",
+    "sha256": "e3fcc8105f9a5e0d7da06f3fb508f6212ec5037a8d148dbc163aac899fc67bf5"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/gear.rs",
+    "sha256": "bd0a648c1950b9bc72ede908148bb7b566dd125e5cd4687ad787db61a377ee87"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/gear/solver.rs",
+    "sha256": "ff7dff9648b57551be9e69e12087a850ce648463b07a13d7a8576f9f734b9c47"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/motor.rs",
+    "sha256": "5bc4fab2d8c31103ac47036f277b44b56aa13a061a3538a04b29a6ed3abad0d3"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/mouse.rs",
+    "sha256": "564c3f8733078b658a9128d170f0034b795cd1111fa2e10211142623beaec4f9"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/prismatic.rs",
+    "sha256": "2377ef2462e4efb5f14e523d1f8c58d179eacb38e9702c6adb7c0a9af419be06"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/pulley.rs",
+    "sha256": "3163abb7f61c80d6759272ad0b9cc8569056b947106cd7bd2b9946e12eb91248"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/revolute.rs",
+    "sha256": "26ae3b92ad3c4efc1f0fe8cc59e1ca169a8bf9e0cd4c5bb9f2e3164f8d0f1085"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/rope.rs",
+    "sha256": "23e7dc1e506cf195345eb95ecf19b5f333d12ce465aeb3cf0962cd85f15535e1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver.rs",
+    "sha256": "dd966de8aaab1610754e7466a6851663635f71ab8c6ace244f32d759f1b0d8f1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/assembly.rs",
+    "sha256": "edd1c48d07dfa27a34f1213b030cf5185d264d815a2703accadd192d84e2e9a9"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/body_access.rs",
+    "sha256": "a4afd3931ebba623531d46694562c66b6cf33f5f21bb304fc48a879c75618aa1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/distance_pulley_mouse.rs",
+    "sha256": "2fe2c7e5065966b4f56b592c32aea71027faa009354ad5fdc2753e9cca9125e3"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/friction_rope_motor.rs",
+    "sha256": "bd0c5dd738fbd88456752a39ff9a0ff8c3549c5b9c4d150dd1716144c13d2133"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/gear_constraint.rs",
+    "sha256": "9339c0e08af885f34c087ca3c65fab711e725117c661275366eac01c9a75b00c"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/primary.rs",
+    "sha256": "852e19cf31f20eb1529a8a257e439e4d98237a59d278749a4d0a1c3f643cc159"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/staging.rs",
+    "sha256": "215b65bec381ba701900e53b3c165b14eab4fe2e904deb4e866b985a2e293331"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/tests.rs",
+    "sha256": "180f6b4c4bb34a2ecc6f55466426c015a05e68b6960f11ba6c710c608086607f"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/solver/wheel_weld.rs",
+    "sha256": "79d1b5e001ce816936e5cef494e3691605912f7a74e38dd5b4a41b723391fe26"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/tests.rs",
+    "sha256": "bc4e7a3edb9a0526ed0595e496932a63df8817e6e5bb60f753da90f15643d852"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/weld.rs",
+    "sha256": "d495d7782cafb24d37619c07adfd380d19dea2c8b41a63355fdf39a385ba8a01"
+  },
+  {
+    "path": "crates/liquidfun/src/world/joint/wheel.rs",
+    "sha256": "6a0e09a0b868f1bb21e7f2ebe851c801fd7062956d62c98042ca26d34e7b4635"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object.rs",
+    "sha256": "6cd383f374422939717d35353d73511916665154e55542d019e6e12d89e3c366"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/body_object.rs",
+    "sha256": "39272961df79114493ff18ad0c0987edf0a7e20f33ebacddc12793e5366f772e"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/fixture_object.rs",
+    "sha256": "da5d110b00c7591c8a728d9d5eb5e3a6adf3cd43450b2034363c7a8e69e80956"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/lifecycle.rs",
+    "sha256": "e796bffc28d953213b09ac034786367fe3137039e4b1cbf7390a695ad964cfd0"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/report.rs",
+    "sha256": "449e5b4e79fe216a6ab68c69fc08311103076cfc93020a7bc51100cd701dea10"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/solver.rs",
+    "sha256": "44bb15cfa7ea74417c6d01346b7bdf74ab3e4362cdec97ae9a5c912aaa84d436"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/tests.rs",
+    "sha256": "84dc991341724a9a545233d51d0202e2ed2772961261bf099c040ab7316a383d"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/tests/particle_color_batch.rs",
+    "sha256": "eaa8f36a4c3919b5477073803d2bde9a953c003ed12ac054fc135fbe8feabb40"
+  },
+  {
+    "path": "crates/liquidfun/src/world/object/tests/particle_group_transactions.rs",
+    "sha256": "0246d84032441a20477ebc337b688db594f6b682e8bfc65d13e7eca863c9160d"
+  },
+  {
+    "path": "crates/liquidfun/src/world/observation.rs",
+    "sha256": "36dcac577699eab37efecf78f8fbc617702babf706f1360eef1af8cb50f5daa1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/observation/collection.rs",
+    "sha256": "4bb446f96e9d62d8caaacf81710f8239932a6893883ec9ce53c5afd3a088a980"
+  },
+  {
+    "path": "crates/liquidfun/src/world/observation/profile.rs",
+    "sha256": "939804ae5743d356db618a565376ecdfc5ec8afca1f448e257ad0a9d7e04f0b5"
+  },
+  {
+    "path": "crates/liquidfun/src/world/observation/records.rs",
+    "sha256": "cef496b5d942f1c85b5fe0747e998e2c5d930bed5ef4e625aa571bedd9ebd8ba"
+  },
+  {
+    "path": "crates/liquidfun/src/world/origin.rs",
+    "sha256": "fefaf64529089e11d7c8b360d4410469fba5dfc167803fa3ff8004e2e46c9907"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_coupling.rs",
+    "sha256": "ec6d720694abcb090959938bdb6907fb07b63a9a82d978ffeb54c89b8eaa5621"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_coupling/body_coupling.rs",
+    "sha256": "b584dd2c557d05cdfe35e79571382dfd46a5e0015f96080efb2ac943e03d92cd"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_coupling/executor.rs",
+    "sha256": "a7a0b94d15812a7c3b30d145dbabd2f213645e64d792612e2142bd89d8f446f6"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_coupling/executor/boundary_runtime.rs",
+    "sha256": "f71c219252f5b26a4b7015e7a634193daf47a04c16cc077f9b5a66c091ce613e"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_coupling/scratch.rs",
+    "sha256": "5b0ff44c568ca697cb7f51280dceb3dcb2bea53e5f98f4771dce68da2dc1ddcc"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_coupling/scratch_tests.rs",
+    "sha256": "937e215d4a572fb0ec63632fb824696733974d208d1181267a580c7b92f6f78b"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_lifecycle.rs",
+    "sha256": "815ad097ce815a3670bf98ccc66a2c0c6ad1b4949c8f928f7fe45122766d076d"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_object.rs",
+    "sha256": "31dc0e865aa1c8b92208b1b3117a99cc4511bc3e3cfa2b76d1ee033090a60c8b"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_object/group.rs",
+    "sha256": "7b73876304ea5c74e9aa5b79dc94c867ecbce929f3cd3f6c9a622e148d6baa31"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_object/group_lifecycle.rs",
+    "sha256": "758291519ab351e88c2dd32b3edb44f35affd3c8bbdd24d9c05f40df657d11b5"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_object/group_lifecycle_tests.rs",
+    "sha256": "746c5f8d526d72943534c42626f5ca5442b2bb4aba184a43072fb3e70b875907"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_object/group_mutation.rs",
+    "sha256": "ab569deb4d5e699d14dd2d1ef32cfabcd00db867f435a2b3e2cd708a9479f9b1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_object/particle.rs",
+    "sha256": "edf2da1ba518ed72fd26fc17b99f84148a42e4bd43e18c6f78223b429c1f7429"
+  },
+  {
+    "path": "crates/liquidfun/src/world/particle_object/system.rs",
+    "sha256": "431c4fb570e3bb92a0946a05645488a326c88dea8c17179db6c028e10fd18894"
+  },
+  {
+    "path": "crates/liquidfun/src/world/proxy.rs",
+    "sha256": "6c00f19d28554c99d1addc3a54e99e38bda9855f6acd191d1dfcc4158f1f09e1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/query.rs",
+    "sha256": "4c6e04607ee387031a82a90903ddc6bc89a2a751ace3598ba74d67cab743637d"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step.rs",
+    "sha256": "923c3ff3ecd506591f38e64449aae12d3863f26cad01bf3687080f8eb4e8b567"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step/contact_view.rs",
+    "sha256": "d09c0e7b2c647da372eac2fc6a7aa4aa13f3a39b758d70c4697106e9dab15ae5"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step/continuous.rs",
+    "sha256": "407a0c46a5c340b2c5a8fb851acda10d75dc50c1bcffc00b39dd24faf93b898b"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step/execution.rs",
+    "sha256": "85a0c8b61fa57784669d46369dc8c948f302ae31eb3c640de2de41b15de652df"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step/hook.rs",
+    "sha256": "6c151861048ee8a70fc0d8c4f984b3925a93ee3aa3052ab8c7460f69fdc1fffd"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step/report.rs",
+    "sha256": "8132f5fcb96c99a36e472f4485ca761acb411fe893bb088e882330b5ffdf27c1"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step/state.rs",
+    "sha256": "3ab2e7bf9180d4b8e813b5689b67a46fba118f7fbe42114f225204072da862bc"
+  },
+  {
+    "path": "crates/liquidfun/src/world/step/tests.rs",
+    "sha256": "a5bc853d490a1cb1a3577f7a14d3b78bb0ef01f30409e189e2430f4c82058bef"
+  },
+  {
+    "path": "crates/liquidfun/tests/collision_broad_phase.rs",
+    "sha256": "2d8142c43583549974ae53b7b3cb8630e341fd33fb874486f0c20371d4ff3c4a"
+  },
+  {
+    "path": "crates/liquidfun/tests/collision_broad_phase/support.rs",
+    "sha256": "7c1e093bbfcd3e4b5dc224ab712cdac1ef5a7578fb501dca1bcbba0c4e8f133c"
+  },
+  {
+    "path": "crates/liquidfun/tests/collision_contract.rs",
+    "sha256": "a925a94cec9e7caf2d38715a16d839fbf1149362097db5a61b1cf004e98605d2"
+  },
+  {
+    "path": "crates/liquidfun/tests/collision_distance.rs",
+    "sha256": "fbd3d23093e99fd18ba150e4047f162e637eacbf034406e47d58b536a89ee680"
+  },
+  {
+    "path": "crates/liquidfun/tests/collision_manifolds.rs",
+    "sha256": "b43df699643d8fdf36c466e868854e95f7855923da4a300e4f8a233237e30e3a"
+  },
+  {
+    "path": "crates/liquidfun/tests/collision_shapes.rs",
+    "sha256": "1eaf4a0011fb890510135e2118fab6f1f4c5dc63b2c2f980e5be73e295993c64"
+  },
+  {
+    "path": "crates/liquidfun/tests/collision_toi.rs",
+    "sha256": "3db5b5648c9200445c403e2b14c23fcb061146c5f4ed51a4b00a8bcfb91aa9ca"
+  },
+  {
+    "path": "crates/liquidfun/tests/contact_hook_timing.rs",
+    "sha256": "cdf43e01a294993ef97e3ff9c6e89e5da3e3683428e4b0d10c78609657d6257b"
+  },
+  {
+    "path": "crates/liquidfun/tests/debug_draw.rs",
+    "sha256": "d62ad34c7b559291d6ffcb5d3b91bd4e10b61909de421549155a8cfc4108a26f"
+  },
+  {
+    "path": "crates/liquidfun/tests/destruction_listener.rs",
+    "sha256": "77087b3ecf848b7b660bb4c15936a687dbaf1869b7d01028278443014499495c"
+  },
+  {
+    "path": "crates/liquidfun/tests/differential_feature.rs",
+    "sha256": "1db8e8750c4a6c17ece68f33e05b9b43f670126457ec42ed63ca699f0249f22d"
+  },
+  {
+    "path": "crates/liquidfun/tests/fixture_dynamics.rs",
+    "sha256": "107af9433727b146951c6cdb9a5a81b557dc9cf02c554d62275c6294155df57a"
+  },
+  {
+    "path": "crates/liquidfun/tests/fixture_dynamics/aggregate_mutation.rs",
+    "sha256": "c4a524c883dc2082a390a878b7917d0d9ebcd8b5b7a2b104401a73c8d2103ee0"
+  },
+  {
+    "path": "crates/liquidfun/tests/hook_contract.rs",
+    "sha256": "5070c62a90bfe6da2fe6b611ad181f41cad43807423f635f36e4e99949dc5be5"
+  },
+  {
+    "path": "crates/liquidfun/tests/hook_limit_transaction.rs",
+    "sha256": "55c882dee85c7dabc3cffb9995eca1a9dbdf9be2ab604289028eeb3b29f84c0b"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_collision_origin.rs",
+    "sha256": "96d1d2ff65b69ca15def75aa1249bbe598a6b0da478d7da200c93e5a9db2652d"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_contract.rs",
+    "sha256": "838c371c956c2a144fe918eea253cbc38639cd619af4187f88e2441f1fba7ef6"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_distance.rs",
+    "sha256": "daab89b1e0cfd125685b4d71ec7b48d55acb8567b9e33724e14c920a40d7b6ad"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_friction.rs",
+    "sha256": "cacad3ad7105aacb580ed80e67a3cab2e5b3cb1621a8da5e0475df460b95282c"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_gear.rs",
+    "sha256": "803b758183afecb0b316d7ada1b7610d2f753c6dcc09efde660b047ab29b904d"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_island_solver.rs",
+    "sha256": "9c15f5c6204a48092b05b39bb74e4e94af14d2420dd9ba1e82d971c55f482804"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_island_solver/gear_atomicity.rs",
+    "sha256": "d72cec061dd5c379592de7d3df91ca8be4a1215a39591fb7cb120faaebd91e49"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_motor.rs",
+    "sha256": "73c83ba0da48e108ab0ceb127763589f89033bb538f80c3ecee19319b00260c5"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_mouse.rs",
+    "sha256": "f7218d98a7c8fea782405ca0070d9dd41b2178d42085c4dba14628f49925bda6"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_prismatic.rs",
+    "sha256": "2b73e873ceea1fd5cac27789248e65380b48ffa5192171314378ad37d8171a81"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_pulley.rs",
+    "sha256": "f0d1eaa397a69b0252e8fe6d26c8862cadc84e0fd26a13f6d298240a2a1376f0"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_revolute.rs",
+    "sha256": "2425c42c000a76bbcdedaa43e27a704762abc38ae033e8a8536fd21469550f2f"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_rope.rs",
+    "sha256": "f1b75422217eb795e52ea37f07ba4ae8d5602143ea36cac44a5ea5496fede1c2"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_weld.rs",
+    "sha256": "37342f3cb0c1946fbd644204e597ab3592ba8d52f639f28a3ebbc6a27773b74d"
+  },
+  {
+    "path": "crates/liquidfun/tests/joint_wheel.rs",
+    "sha256": "807f0b89441dc7c41c0b68c8c94072c4532879fceae829eed70056a7d36b2bd5"
+  },
+  {
+    "path": "crates/liquidfun/tests/lifecycle_timeline.rs",
+    "sha256": "5caa10fdf14f07b087d21787cb41cbe4901b4e4b7cf50157dbd661a74fb17a1d"
+  },
+  {
+    "path": "crates/liquidfun/tests/math_contract.rs",
+    "sha256": "516fe7c6c3b2aae568e26d8b9adce7944130ef40eea5930e3109cd984115f8c0"
+  },
+  {
+    "path": "crates/liquidfun/tests/object_model.rs",
+    "sha256": "d1fca5471acd18ba7bdada9eef34cf720c6715e04c2dde3e2de9d8c5eaf50631"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_body_contacts.rs",
+    "sha256": "b2ee029c664757422f2158fc4134f91d9ed9c715d4533f0a5668dcdc29342f14"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_body_contacts/step_ordering.rs",
+    "sha256": "0f00e274403ab62eaa5e88f1e7129a4f32189c21f7e604c345f999708808795c"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_buffers.rs",
+    "sha256": "ce9ad0216126a28e5914cbd421f11f41cb8c3e442e2bba57d3deb57e53462da9"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_contacts.rs",
+    "sha256": "6ea84ac88c51927c8045ba9ea0f62ff39acad1091f9af1078b76de372b1dcb80"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_creation_eviction.rs",
+    "sha256": "7ce35a11bef97f484e51db6dc2472b04b3d6d29f60c50037824483c55a88dc9d"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_definitions.rs",
+    "sha256": "a878e1962399f8180c18bebaa99052b6d60a306f1363cb1f3379b388d215268f"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_forces_statistics.rs",
+    "sha256": "3339dfd494d1039da440eeeacc474482314e1a0010f701b1c49d0f16696dc575"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_lifecycle.rs",
+    "sha256": "6eedae834285588430170058e8c2d3f7c1878faab27bc617396728b6287341f6"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_mutation.rs",
+    "sha256": "690521359d63e0448f60894a49916d19a5bc2000d9264c638340f56d08b99ab3"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_mutation/transactional_rejection.rs",
+    "sha256": "80180ef09bf0abf3a82348b5251ee12bf6f41b69e70233c5f3eb66692347f2a4"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_properties.proptest-regressions",
+    "sha256": "2883b763fab32259753251a86fc86199b2c851475774fc91d847ecbb229ffd05"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_properties.rs",
+    "sha256": "d7357e814dfd34fa93cea6ecbec1078fa2149a5d8465cf1e396dd9a4d572d467"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_properties/model.rs",
+    "sha256": "89e2996cff56deb46af51e237c4e5f43995acceeeab3720f5ba4f695e6c9ac48"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_properties/phase14-particle-groups.txt",
+    "sha256": "172eecc6d4522d5cbb449c9147145241f20db995a06cc5435aeceeb734a8a6c0"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_properties/registered.rs",
+    "sha256": "32567495be63197ec303c7054a6810ac33c63607f0559d100e7564b4893dc947"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_group_properties/snapshot.rs",
+    "sha256": "e44891300dd9647f21313ad2534b813ed41367c16be0afaa3469a08de5075ee4"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_groups.rs",
+    "sha256": "4b1f4e1b0cbb40b045b3eae0d0f8c044bc5eb24d2cd43b97532f959719082083"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_groups/transaction_support.rs",
+    "sha256": "7361e0850d1ca5ab3940f8cfbd5e0ed77c666335c76b3da6189a2708b6436c5e"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_groups/transactional_rejection.rs",
+    "sha256": "595b5ab55eb68df17d23d96ccb4ceb826d05568ac101ed71bba9eaa2ad9ff10a"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_identity.rs",
+    "sha256": "650f7beeaf68074c93076c904e3f4ad6ae1dd5d148cde838d259619433451003"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_lifecycle.rs",
+    "sha256": "739d58f068e9569cb32ff2dad3cb17f10ca11c1193e0d9fa57ab49332af4f781"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_lifetimes.rs",
+    "sha256": "c80d035840e6fc909f5ece1bb499f43a3f7c62a6625ad61853736088ce58b7a7"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_objects.rs",
+    "sha256": "db5401290895acf1fbbcc8fac9cdc5c08d9c0bfc6bfaeab2483fc739d3a19695"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_permutation_coherence.rs",
+    "sha256": "946e76cc47383ab90fb19e3b38cbeb242013da3ccbe359e14486f964cad94dfb"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_queries.rs",
+    "sha256": "a3418654ca656a4ffd197fc99abdb434468f637033bd9ef6ff3bd603bdd681dc"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_solver_baseline.rs",
+    "sha256": "8eda0269a0b89367a41b827a4f60e8c8d0e8dfac1b08d7ed54fd1a6e9eb22847"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_solver_flags.rs",
+    "sha256": "815a02d9dbb5378bcd048d16a7a88b36700cc5b0448d01cdc4dba65b3d67937d"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_solver_order.rs",
+    "sha256": "0e2fc80e0206a10c079d9d3be81c09fb35ad274079ab9e58a7053580033c4e85"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_step_guards.rs",
+    "sha256": "9f7e2fdcd34dccd7be5e723777cf0f555e511e47096679a95ff52e4c056d7896"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_views.rs",
+    "sha256": "9a81203b481a61e6d16acfe0561253f2763322ef22542e849b423f74a951938d"
+  },
+  {
+    "path": "crates/liquidfun/tests/particle_zombie_authority.rs",
+    "sha256": "26bbd689c8051368edd67a00c86325c1028850cd8c9e94049e9e1728cbfb51d4"
+  },
+  {
+    "path": "crates/liquidfun/tests/phase11_public_observability.rs",
+    "sha256": "4cd69fdf35c5ff98026137219c4fd156fa3e319a303ea69ae658d3e2dbe426bb"
+  },
+  {
+    "path": "crates/liquidfun/tests/phase12_profiles.rs",
+    "sha256": "c16e09a1ec24aa5c1c52ba570f993743f4a900d48ad47b47258261e73e764258"
+  },
+  {
+    "path": "crates/liquidfun/tests/public_api_documentation.rs",
+    "sha256": "8634b76cca26d3ffaea58980c801f835be9522eeecb423bb02427f5abcea0f44"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_body_controls.rs",
+    "sha256": "a1ac0884d5052777db17353f091374c220f1dcb9de28bab00171090a5f77e142"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_ccd.rs",
+    "sha256": "89b9e2ec21218f10d94332e17135184b1db8e57d9bfdc18d8b77b38af1e7c648"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_ccd_selection.rs",
+    "sha256": "f624ba85578c1280577c16a0a9b5903be5938ae3b2b4acc133693104849032ed"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_contact_solver.rs",
+    "sha256": "73e1c4775952b4543859bec91cbfd5edca44cb100fe5d19ae035f6845309dd25"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_contacts.rs",
+    "sha256": "d3c478a5ed8a13d0bf0cd389a5cb8d1dbdc782d4b08be580e137a62bae1488db"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_definitions.rs",
+    "sha256": "a7c27d2cbfc4c1e38802edf12b8113a67ac1a63e51e44453869631a56f160350"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_island_order.rs",
+    "sha256": "3e4a6a2c368f1c047075c7d5789929a79c7f7697f800be58c97b052a29c45e41"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_island_solver.rs",
+    "sha256": "5a2eb32837e75fad8788e173ba4e4d1d277f34e135e85fc0f59a223cd6becd3c"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_origin_shift.rs",
+    "sha256": "b55d7546abeb0e31aa6c8e0715bb05f884d7badd06b03f5d2e870b06bcc2d13e"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_sleeping.rs",
+    "sha256": "ecc955962e03f5692569c8082b943ad0b5439e33cf370fdfb24d166e8facbed1"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_world.rs",
+    "sha256": "1a953fb18ddaa20edfeb9716eb45130c80eee77872e808c22dd51d472af39bbd"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_world_config.rs",
+    "sha256": "640ac6f0a0618fd78af3251dff464e04cc124748eab9e0c9a2c3474f9f9322e7"
+  },
+  {
+    "path": "crates/liquidfun/tests/rigid_world_queries.rs",
+    "sha256": "127a0d8556c05f9a8dcad05735896c4f4d78145e83c928fea53309101c4ce340"
+  },
+  {
+    "path": "crates/liquidfun/tests/semantic_reconstruction.rs",
+    "sha256": "d960d8ea5dac5317d9f651db6f29105de4bdcaef2a4d80ddd310f7b36c4f98fc"
+  },
+  {
+    "path": "crates/liquidfun/tests/standalone_rope.rs",
+    "sha256": "0205f4a3afb82c3e524a30ce9e1f4d4a0f7716eaed76b2d4b091c9782a0938a4"
+  },
+  {
+    "path": "crates/liquidfun/tests/world_diagnostics.rs",
+    "sha256": "f1417c8022dabd2c8387869c40b4058d3b88c1024ee3a05c8f803f10e41aa1cd"
+  },
+  {
+    "path": "crates/liquidfun/tests/world_observations.rs",
+    "sha256": "cd5eb65f7a2b27aa9b9730941a6eda73caa2b6a4781fe3b0a67c392b373b36c7"
+  },
+  {
+    "path": "rust-toolchain.toml",
+    "sha256": "d5de56d1101f9e3ba0d694a777665be841781229b16408c262294e4de9d2ca85"
+  },
+  {
+    "path": "scripts/bright-builds-auto-update.sh",
+    "sha256": "08e753689ab4f9990d86c7f52926423863142845369a2e048a769b11e57aded8"
+  },
+  {
+    "path": "scripts/bright-builds-check.ts",
+    "sha256": "5b38936f1e089ea3f33c804ca1ea6d49633f5400b8167bfdd8780b0024ec1b33"
+  },
+  {
+    "path": "scripts/install-canonical-clang.sh",
+    "sha256": "790a765bc1c111cb07f728984deb95b70eb871e26382223c418ee3520905b15c"
+  },
+  {
+    "path": "scripts/install-wasm-pack.sh",
+    "sha256": "e0ec1ce1d83d5cd42b8d5b4f7e08bf9fab92cbde5ebeba93419501b10c033342"
+  },
+  {
+    "path": "scripts/markdown-check.sh",
+    "sha256": "db4fe6f5557cc72238c290823bbe353ba0340bc75fb6baa61972306b3d94e733"
+  },
+  {
+    "path": "scripts/phase10-evidence.sh",
+    "sha256": "7ba90ea1af6c9178ca966fdb9b33155fb2edce4a06e1661b969dcaeef44e85f9"
+  },
+  {
+    "path": "scripts/phase11-evidence.sh",
+    "sha256": "3ce654c59fb8cb16b1900881867f89d4c834b7892f38647e126d179113ae2b02"
+  },
+  {
+    "path": "scripts/phase12-attempt.sh",
+    "sha256": "c9d51e53acca1377cab0fd89f258dd9b5cd28c1df32ee82c21ecd7ae2fb5033c"
+  },
+  {
+    "path": "scripts/phase12-coverage.sh",
+    "sha256": "6a6b4c9f1ded8291e5f1dd772e8c83fb2063efd98b0cc94a319659fdebc0ce4e"
+  },
+  {
+    "path": "scripts/phase12-miri.sh",
+    "sha256": "5643877bdd33b84480d61d4a4a19babfddb33b1be9eb2a97773376f4ac7fce7c"
+  },
+  {
+    "path": "scripts/phase12-performance.sh",
+    "sha256": "ba6b9a0ed48b10157c4afb87ce1a1df274f2bfa57c2cbae26c689a793bad4b4f"
+  },
+  {
+    "path": "scripts/phase12-platform.sh",
+    "sha256": "f9032b19dc690fec14843c738b55570c17acd22512a632cae8f2f04d53c8e8a1"
+  },
+  {
+    "path": "scripts/phase12-regressions.sh",
+    "sha256": "7c9e30e8819e77c47963afee8a2207abf72f94da8973c208fec6f2a172d0383f"
+  },
+  {
+    "path": "scripts/phase12-release-evidence.sh",
+    "sha256": "ebe5fe6c9fb23ecd02ce34abf16d94c6255aedb86fb10d1f28bac25f2d6554c3"
+  },
+  {
+    "path": "scripts/phase12-release-evidence/aggregation.sh",
+    "sha256": "1669ff2b6c0653b2022410213c4e539f43efb51c277ad18928140b38205e7a84"
+  },
+  {
+    "path": "scripts/phase12-release-evidence/common.sh",
+    "sha256": "3f25db51e9698883cf18d3de3f063734dd55e96ea40ab12b5049a44afd8ce90f"
+  },
+  {
+    "path": "scripts/phase12-release-evidence/identity_validation.sh",
+    "sha256": "ee987ad58bb81ab47a96f7618712e147c0e91b520bfacac67424268e8fb922cf"
+  },
+  {
+    "path": "scripts/phase12-release-evidence/package_import.sh",
+    "sha256": "ff16230644f98a7586571cb5ddc7e4b329acdb3f74cb046f9e124b488af66541"
+  },
+  {
+    "path": "scripts/phase12-release-evidence/producer_validation.sh",
+    "sha256": "7c11280db15fe7402e24cedfa2c5071014c4952871ec835fc46b5814f849ece9"
+  },
+  {
+    "path": "scripts/phase12-release-evidence/raw_payloads.sh",
+    "sha256": "d3b0e7c3f4e51bb89fb5c8aa17a3e9506a9129636c4c9f013416b16a3eee42cc"
+  },
+  {
+    "path": "scripts/phase12-rust-sanitizers.sh",
+    "sha256": "d1b38c3d5ee3b87350b97e832c2b2a2d438381d16f2c7a74f784ddca87a42025"
+  },
+  {
+    "path": "scripts/phase13-1-gap-verification-manifest.json",
+    "sha256": "3e27be510c34a79d418e57844080ffec41409fff44da31b3f4ad3e2d6bb7d6cb"
+  },
+  {
+    "path": "scripts/phase13-1-gap-verification.sh",
+    "sha256": "5c590e66374c0ed2dbc20fff4079a073ac87e6078c1a4a08676ac5a6019854c9"
+  },
+  {
+    "path": "scripts/phase13-1-validate-gap-evidence.sh",
+    "sha256": "c88c0898f105f2ab79c214ac1b3eb6e659aa31ce60d35ee27478ce76c4db31a2"
+  },
+  {
+    "path": "scripts/phase13-evidence-archive.py",
+    "sha256": "f002a34cae109d186708e16ade9b1eae3ee4bbda079504822cea148b76051d9e"
+  },
+  {
+    "path": "scripts/phase13-evidence-query.py",
+    "sha256": "47bbe954fb7c5a98d6141320521eb6980968f9a71a780048f84984d3595b537f"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence.sh",
+    "sha256": "7cff3175d31c4ff443d48b13dad7452e8d6d6f3e5b5be62136bacf56e3533e26"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/common.py",
+    "sha256": "1c4685295b55ed52fd63f329604731f0aba18274f4df6357cc65ad135a793417"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/dispatch.py",
+    "sha256": "0d2355448457fd0598af983193127c60a981c1b54e5070289098e6ccea3795ad"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/dispatch.sh",
+    "sha256": "603f68c7c4fbc782c3575de90b64d75590681651a6d35d4f611141a7ca755ad7"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/docs_ci.py",
+    "sha256": "4173078b0db9a78bddd135df576bb0488a4d653be10828c0edd43ebb4f134fb4"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/main.py",
+    "sha256": "59ccf0fa6be1f134c8d9e11d38e642d5291bc609a9b6f890c164afef3fea809a"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/payloads.py",
+    "sha256": "9901593176bf9effdd116c4c7681d5af6dfd9d6e1e8dd1112e3eacca8285dad7"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/retention.py",
+    "sha256": "98067e402c3c0c6c6c98a9df400011fc640f2a39067118a3e8b7f9d9c72de06b"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/retention.sh",
+    "sha256": "3883b0499a4f769f9ead2ce9e8bcff85c0aae5839e5b8e8fdd0f5bcf64328a0b"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/validate.sh",
+    "sha256": "f73702e67c6056ce94576da8f010114ee300e54375b8126e482b5e323252357a"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/windows_capture.py",
+    "sha256": "cf33823b8543cfe69235a4106598c4f250731b45c6562fdf4fab5267bebf8b62"
+  },
+  {
+    "path": "scripts/phase15-candidate-evidence/windows_job.py",
+    "sha256": "55005cec5bffbd5675ef908ebd07a46aafc8309033cba0c96d9bc4ac2b01753d"
+  },
+  {
+    "path": "scripts/phase15-docs-check.sh",
+    "sha256": "ec96758bc3bbac5821352808aea2c465415312855f2d2ee4f5c586bd7f13ba62"
+  },
+  {
+    "path": "scripts/phase15-inventory-check.sh",
+    "sha256": "cbacf0496e8a00232661ec38ba7af160ef33967156f4b74aa5bd3065cd710285"
+  },
+  {
+    "path": "scripts/phase16-closure.ts",
+    "sha256": "278d70ad1f674dc12146adb5fa236e71c554fd83cb41565be3c0ebb967ddf42b"
+  },
+  {
+    "path": "scripts/phase16/browser-evidence.test.ts",
+    "sha256": "9fa8c7017f01b7d3bf1ad4cb3b5783b927214d886b458e5670b710869a9036aa"
+  },
+  {
+    "path": "scripts/phase16/browser-evidence.ts",
+    "sha256": "9c5accde275a4fdc48b0d4a5a3f70b925a5c705226c65ec74ff6e9ec4d6e4918"
+  },
+  {
+    "path": "scripts/phase16/closure-runner.test.ts",
+    "sha256": "49427bfd3179de546bba42f5343abd8d709788d21a05d66055e5a6ea07028c3f"
+  },
+  {
+    "path": "scripts/phase16/closure-runner.ts",
+    "sha256": "34e5a25204ce3518469f09666428e62f6affddacd6a30c1f7b6593800a270047"
+  },
+  {
+    "path": "scripts/phase16/source-identity.test.ts",
+    "sha256": "a55215cd01a1731faf9dad297eb250bbd52bb3d1d6c618779c936d0488ac8ea2"
+  },
+  {
+    "path": "scripts/phase16/source-identity.ts",
+    "sha256": "3c17209d7733a83c1308c5fc68235b72c909783dc76de06282bcef5f6594af88"
+  },
+  {
+    "path": "scripts/phase9-evidence.sh",
+    "sha256": "58cb126faab9032f246d102bb8042ac8de51722db12d0d7458a9594a450b3777"
+  },
+  {
+    "path": "scripts/portable-command.sh",
+    "sha256": "b4b6bfc98675bd9a2eab38ffa6e6a94be38362e268403171e3512e3b7e8db253"
+  },
+  {
+    "path": "scripts/publish-readme-svg.sh",
+    "sha256": "5ff56abe25586cfea4e0f106d9b6adc1359001e3995b1d1e5e75489d0d8b5daa"
+  },
+  {
+    "path": "scripts/web-build.ts",
+    "sha256": "e47d72c7bb3b823563952fe76bf28cfadd211f30c7515045063806ca3ffce9d3"
+  },
+  {
+    "path": "web/benchmarks/tesla-valve/benchmark.ts",
+    "sha256": "52faef978ed8e9965378db87addbe862dc234578f9cab00bec995b63f882afd8"
+  },
+  {
+    "path": "web/benchmarks/tesla-valve/index.html",
+    "sha256": "12330e80963abd52398ee50ab581b1c76285d3c7a1aee2e2fa382f00ca915417"
+  },
+  {
+    "path": "web/benchmarks/tesla-valve/live.ts",
+    "sha256": "462d2f1caddc62384481c2d54312393d5490dd652ca090967d5db3b83c44caff"
+  },
+  {
+    "path": "web/benchmarks/tesla-valve/worker-quality.ts",
+    "sha256": "64a7cfd1d1c3ba01d8482df9f90adcd64e7d53b3188a86576ff6ccf155fc6fdb"
+  },
+  {
+    "path": "web/bun.lock",
+    "sha256": "7f2d28a09068fa4b1ed9c01646b2103abd7bdb3ec7286696eee03374b17cc810"
+  },
+  {
+    "path": "web/e2e/animated-svg.spec.ts",
+    "sha256": "1aa8100b78a20a9f82e2e7f59fa3064c6945707094a24e4588ff43e83afb7965"
+  },
+  {
+    "path": "web/e2e/canvas-stage.spec.ts",
+    "sha256": "a313cfeb0de8d96eb0f6376064c90738d02236ea13c884e34a80daaa505da6b9"
+  },
+  {
+    "path": "web/e2e/demo-media-clock.spec.ts",
+    "sha256": "8b318d2c0c35afc2ce337d6010b87466961a233cc6143d606c6cacd79c3a0a87"
+  },
+  {
+    "path": "web/e2e/live-worker.spec.ts",
+    "sha256": "e17042e6f04ac706a24eff3f84ef2751e0e4f177e577b3b9a1b1e1e5d4714679"
+  },
+  {
+    "path": "web/e2e/player-helpers.ts",
+    "sha256": "633a59b7299c08e618abb590e79b3ce106fb92274371ad438c0e2986156ee6b7"
+  },
+  {
+    "path": "web/e2e/player.spec.ts",
+    "sha256": "8086a0cb6d7797e24e3a54faf1d84544474518f4262a4f2b9866865f1a56e58f"
+  },
+  {
+    "path": "web/e2e/reset-honesty.spec.ts",
+    "sha256": "0969bfaf7bd3fd3b0f1ee399d10c164dc2540dc38f951a19a900a92db3cf3a74"
+  },
+  {
+    "path": "web/e2e/rust-wasm-proof.spec.ts",
+    "sha256": "122a25fc43a4a26e4c079ccc3ef8e2dd1d1f205bcadc904e972baf8aa044de77"
+  },
+  {
+    "path": "web/e2e/shell.spec.ts",
+    "sha256": "30012311116b79e2bd516defda3b38a907b3accb0843110be40e7da3a9f1ec52"
+  },
+  {
+    "path": "web/e2e/worker-quality-fixture.ts",
+    "sha256": "f29f35b7d4a07dc19400eadd4a5e9df9470324eed4d352ee23f5bab1bb3cd8ff"
+  },
+  {
+    "path": "web/index.html",
+    "sha256": "4e01ca08e2dd3d7b74e181af8eaac33dfb6655a19387b3979816ca67265d22a0"
+  },
+  {
+    "path": "web/licenses/kobalte-core-0.13.12-MIT.provenance.md",
+    "sha256": "fa78837797f129e674bad684b7fb474579867a652219ac4e2512c6bf7c28b9a3"
+  },
+  {
+    "path": "web/licenses/kobalte-core-0.13.12-MIT.txt",
+    "sha256": "c917e031100ed852c478f53e2d04b1b950efb44933b2c9ca3d15f8057e0b5c86"
+  },
+  {
+    "path": "web/licenses/kobalte-core-0.13.12-NOTICE.txt",
+    "sha256": "9551c913b61690d90de1a3d5bb9214b230631e442fab081545d2114ab2b7a211"
+  },
+  {
+    "path": "web/licenses/kobalte-runtime-closure.json",
+    "sha256": "7ac4d19fbda49fe37ef897fe79cd3e3879460431020bb7ba83b2eade5004c84b"
+  },
+  {
+    "path": "web/package.json",
+    "sha256": "f1486b6640676beb00a0248fc9e74958796b6683597c003f2116d1ab78cf74d7"
+  },
+  {
+    "path": "web/playwright.config.ts",
+    "sha256": "fb251bb396b9caa26c12e82fe09da6b06e5d9af46da5eed0d865b72448749b90"
+  },
+  {
+    "path": "web/scripts/bench-tesla.ts",
+    "sha256": "c0b97813ba5460331c229949d9ec380ebdf4f9ad886063774a92636c0cfb5ec5"
+  },
+  {
+    "path": "web/scripts/bench-tesla/browser.ts",
+    "sha256": "5d1c2f9023905cd56209f4e6f20296fbacdb1f4cd7cc1a73f3b95d2503918e62"
+  },
+  {
+    "path": "web/scripts/bench-tesla/compare.ts",
+    "sha256": "e77676789aa1c530e4a6386759380087f3453cfb71b5cf8fb7e5a6031210e5e8"
+  },
+  {
+    "path": "web/scripts/bench-tesla/contracts.ts",
+    "sha256": "a8a72d3e75596f4c9e69c406a2c201621755177ce09ec3589ccd32ab84f2878b"
+  },
+  {
+    "path": "web/scripts/bench-tesla/fingerprint.ts",
+    "sha256": "c320896adb99073243d214aa4ca6218efad94480da1562bbe1d515c26e9414a3"
+  },
+  {
+    "path": "web/scripts/bench-tesla/identity.ts",
+    "sha256": "ce840c392ec8789843af1177f62f025f248d19dd267ee71783c74e41f540618b"
+  },
+  {
+    "path": "web/scripts/bench-tesla/model.ts",
+    "sha256": "8bf32ccd7a6ee037f98ad51cd06901aa2b861ed11463dd367bcef62406967b8b"
+  },
+  {
+    "path": "web/scripts/bench-tesla/options.ts",
+    "sha256": "52aba8b8a20a6876cf3d40cc0772df10bec5f55a89f42a1d90129548c132f07e"
+  },
+  {
+    "path": "web/scripts/bench-tesla/results.ts",
+    "sha256": "a9cb5cefd3b27ff703dde1ada1b442a4b5f2644427486d3e6486e742f21b1924"
+  },
+  {
+    "path": "web/scripts/bench-tesla/validation.ts",
+    "sha256": "f2fd7d13563b027c0c1c61d57b30ecbfbb5766ab5cc52f84b21422dbac5d0e2a"
+  },
+  {
+    "path": "web/scripts/demo-media.ts",
+    "sha256": "fe4f02e60b85f72cb6d67c3770690078b8da414eee4db615ed14e34641f32c2f"
+  },
+  {
+    "path": "web/scripts/demo-media/artifacts.ts",
+    "sha256": "4fd988676417ba5b31c762464376f642bfd30c78684d80a55a38b9dad452e43a"
+  },
+  {
+    "path": "web/scripts/demo-media/capture.ts",
+    "sha256": "831a1c0284b2e89cfa389bfbe0f9199feafbdf8f106f7478477779e6636167dc"
+  },
+  {
+    "path": "web/scripts/demo-media/font.ts",
+    "sha256": "d84b86eb78b9879d18ece4aaaa592574faa6049b031ef62a004864c9d63e2e7f"
+  },
+  {
+    "path": "web/scripts/demo-media/model.ts",
+    "sha256": "83b896065a3438158506f81487b31370f9cf3a68ea5761dae31d9c555499a1a6"
+  },
+  {
+    "path": "web/scripts/demo-media/preview.ts",
+    "sha256": "33c54521c6fa12b2158a22775d66edbcd22e6458c763efa635270f7f0a4e1fce"
+  },
+  {
+    "path": "web/scripts/demo-media/webp.ts",
+    "sha256": "ff483e54664016e4ea85fb1edbbff6a3480a0b2be9647265fa83c77ee93367be"
+  },
+  {
+    "path": "web/scripts/readme-svg.ts",
+    "sha256": "1776963e0f32d3835ff0ce3c89875090eb5ad0c65e4f256064cf021e1bf9d2ff"
+  },
+  {
+    "path": "web/scripts/readme-svg/capture.ts",
+    "sha256": "1e7edc4858818f9e73a9ee47635a29e10fc23ce33c785ab29c0d4ff94766730d"
+  },
+  {
+    "path": "web/scripts/readme-svg/encode.ts",
+    "sha256": "a6a2c1347e2747198e95eae3a258828d1d823fc979b5ddc283e063afa59c7e78"
+  },
+  {
+    "path": "web/scripts/readme-svg/paint.ts",
+    "sha256": "158aac8c0a6621aced9ec9b31def53ac07a584c85f81047d7a724bc571edde07"
+  },
+  {
+    "path": "web/scripts/readme-svg/plans.ts",
+    "sha256": "6b38380862574c1aab8f15554e1a8c1d63144fa9f26d06985c939e7592e2228a"
+  },
+  {
+    "path": "web/scripts/readme-svg/schedule.ts",
+    "sha256": "843f1ab2dc5887ad61927d90a51d4d37509bd31ccad8b461b0d6487465b774ea"
+  },
+  {
+    "path": "web/scripts/readme-svg/section.ts",
+    "sha256": "73ab12273277bea055b7bd17355d2a3b2884af835090c3142bbbfa9bdb3e9400"
+  },
+  {
+    "path": "web/scripts/readme-svg/webp.ts",
+    "sha256": "15f692faf123165c0160b0c379c12b3346798d0d883a1ef70ae287dc2fcdbfea"
+  },
+  {
+    "path": "web/scripts/verify-kobalte-licenses.ts",
+    "sha256": "481bae25d1a0b58b7332249222d8954d1363a19139c6b936823ee9b1ff32c6eb"
+  },
+  {
+    "path": "web/src/App.tsx",
+    "sha256": "ff9401a4fd86e06b861324ceeaadd5cf5d93d95dceec1fadc519740309807616"
+  },
+  {
+    "path": "web/src/app.css",
+    "sha256": "3e217697834f6067bd3dbdbdd4023eacdb05a000f3611332840810b1a62e7a0d"
+  },
+  {
+    "path": "web/src/build-info.ts",
+    "sha256": "ee520cf3c1f7ee1c420ab0cacbe5d2b20e6ba80a4d7413a6c2f1b744945a2232"
+  },
+  {
+    "path": "web/src/catalog/gravity-slider.ts",
+    "sha256": "bdb202de2ca30ca84e31377cceb73ddea3f10d7fc86fe76e6a655d27cc359e59"
+  },
+  {
+    "path": "web/src/catalog/hydraulic-fountain-gap.ts",
+    "sha256": "545b7c08598fc5105fb3f19a5748d98f95907de02fcfb34b0a633af01fc9386c"
+  },
+  {
+    "path": "web/src/catalog/links.ts",
+    "sha256": "25ee9fcdf051f5eec46f688b6661bda2db7e48671451431d0556f5aa58d7d94a"
+  },
+  {
+    "path": "web/src/catalog/portrait-bounds.ts",
+    "sha256": "2763452113830d68e687b56a93c67e4baecf52686fba6e2e7347f1e5a0ad2298"
+  },
+  {
+    "path": "web/src/catalog/previews.tsx",
+    "sha256": "3b50566d286ee31b19ce4ad9bc481f6f3dfe18b972c4bc7b043f9b6a43ecba10"
+  },
+  {
+    "path": "web/src/catalog/scene-record-shared.ts",
+    "sha256": "c01cc9adbc5d787810cc76b4674ee9a80e364b033fb1fbe4f4944cf2d4fd40e8"
+  },
+  {
+    "path": "web/src/catalog/scene-records.ts",
+    "sha256": "4b1d2a459d13aac0236c6b23ebb0b1e909b95006b04632b3faeea7553e2da0ff"
+  },
+  {
+    "path": "web/src/catalog/scenes.ts",
+    "sha256": "bcd9c2801979f23a671af0d3fb75d658ac3d074a12bd7e4828b7ba7acd61c37e"
+  },
+  {
+    "path": "web/src/catalog/tesla-valve-controls.ts",
+    "sha256": "9e9c313952368daf28608452c68d88dd51a99ac16ffe589512bc90b10f54c30d"
+  },
+  {
+    "path": "web/src/catalog/washing-machine-speed.ts",
+    "sha256": "6100a99ee30366614c99feb8eb451aec65048562460a2f15179bc714f554f68f"
+  },
+  {
+    "path": "web/src/catalog/wave-machine-speed.ts",
+    "sha256": "47dbc16dbe22be3485d3203fc206d8cbe4593ac77529f079c9d2232fde08f5ee"
+  },
+  {
+    "path": "web/src/catalog/wave-tank-controls.ts",
+    "sha256": "dc07cce5ebfc10a1348e8d5806f5cce78a3f498a24c7d8883d62e984547ca3a3"
+  },
+  {
+    "path": "web/src/components/AnimatedSvgPane.tsx",
+    "sha256": "a71d6afde08ef31ccae4b8b7e28a6413beb90d86861be14ba1100db563dfa9b8"
+  },
+  {
+    "path": "web/src/components/CanvasStage.tsx",
+    "sha256": "51390bda6aac1333c544d938ba18f4d57cb5fbd471de5003a7f5739ff456a55d"
+  },
+  {
+    "path": "web/src/components/DebugReadout.tsx",
+    "sha256": "fd4746055b19e8e96e11193c9b5d7379f3567dcc5d5e8419d813555ab1279144"
+  },
+  {
+    "path": "web/src/components/DemoNavigation.tsx",
+    "sha256": "548798d0c203f7b55dc687dfeb31ed3405ceba67cdf8e2c81034da8a36a2aae0"
+  },
+  {
+    "path": "web/src/components/FallbackPanel.tsx",
+    "sha256": "85b49af5f713e04dd4fd4944be975843cb62dae18ee8fd655e2872770e1faa35"
+  },
+  {
+    "path": "web/src/components/GravityArrow.tsx",
+    "sha256": "6100a1c45ddaeb4af063d059a1eed89f52b06a80fe128da6e490ba2b096f9406"
+  },
+  {
+    "path": "web/src/components/PlayerPanel.tsx",
+    "sha256": "8b36b542627c5dbfdddc14b58485b1ecde1b77c3ca6d0fd051a461c6aaaad949"
+  },
+  {
+    "path": "web/src/components/PlayerSceneChrome.tsx",
+    "sha256": "55144a7b17992e2bc1c14af12e5c89be2683fec3cfdd08ffa18abff074e3533b"
+  },
+  {
+    "path": "web/src/components/PlaygroundShell.tsx",
+    "sha256": "2aaf0f3902d9301b172b813d94d75c4c0587249508679625d099ea78b73be246"
+  },
+  {
+    "path": "web/src/components/PlaygroundStage.tsx",
+    "sha256": "8ba93604cd0154e52deec652b1961db087e00f78641acd9bd7ffe2bdf875bb3a"
+  },
+  {
+    "path": "web/src/components/ScaleLegend.tsx",
+    "sha256": "2fafcc8490f99aafd54bcb5e3d34aea93bff8585f07db40cfdf012f0b445179b"
+  },
+  {
+    "path": "web/src/components/SceneControls.tsx",
+    "sha256": "58dad760b6eff63da45358f5340ccd10a0f511997d8454c3847dae8df4346d1b"
+  },
+  {
+    "path": "web/src/components/SceneCredits.tsx",
+    "sha256": "831de3931faa4874a3b51d58bc204a875b78dc67a4b697bc155ed86101dc7bb4"
+  },
+  {
+    "path": "web/src/components/SiteFooter.tsx",
+    "sha256": "b89e0982c9d2f2efa8f93fcbd15a41143fd313a29d1584ce029b0f9ccf8d79c7"
+  },
+  {
+    "path": "web/src/components/SiteHeader.tsx",
+    "sha256": "81abf3f5025c2cacb53b44740d4abb6b5f6c211d850cee0cffa84784bd513f7d"
+  },
+  {
+    "path": "web/src/components/SpinnerControl.tsx",
+    "sha256": "e2b4ec68328e43d260f969c35a07fb957d0702afb5473c80f2e8402c40724035"
+  },
+  {
+    "path": "web/src/components/ViewportTools.tsx",
+    "sha256": "20c628b40bd2cb76e363a0d85a9a29313b55d3efc9c5f9ac3b86df930c196fce"
+  },
+  {
+    "path": "web/src/components/debug-readout.ts",
+    "sha256": "7c1d593db3fa18276cb4945e1f0ad45fa588cdd0483ee5284462c5f085d813c4"
+  },
+  {
+    "path": "web/src/components/fps-meter.ts",
+    "sha256": "4af0767e63f20bf7bc1f650e7048be9c88df030052a9b1ebbffd90a503ee319e"
+  },
+  {
+    "path": "web/src/components/gravity-arrow.ts",
+    "sha256": "140c033383853238a1d211298fc02a45bf1287765f705b65fafeb046398d81d6"
+  },
+  {
+    "path": "web/src/components/range-control.ts",
+    "sha256": "70af27bf621347011f1ed42f628bb8fdf7281cc2b517b64d21667cc7ba8377b4"
+  },
+  {
+    "path": "web/src/components/scene-controls.ts",
+    "sha256": "42c2b100ad98f2da8aa6d5d4a3b97967089ce7df0a7c593e2c1a9ab30ba88822"
+  },
+  {
+    "path": "web/src/components/scene-credits.ts",
+    "sha256": "99be6d199f7fde16362c54050fff81aa2d357e27adde803ef5a8732a64a47ed9"
+  },
+  {
+    "path": "web/src/components/sidebar-scroll.ts",
+    "sha256": "de8d511e992f97677f1472fe2205c992a53f7c54c2d06916778b6842ba8dd80b"
+  },
+  {
+    "path": "web/src/components/ui/button.tsx",
+    "sha256": "c38c77169ae85cd4f87ea4e8929b8618def0487cc1eb1230cf2b3bb39ee23195"
+  },
+  {
+    "path": "web/src/components/ui/drawer.tsx",
+    "sha256": "12108b276a066a29b23e17a082ae81bbaa0f960c7f70d3ef4271a64ba09abdb9"
+  },
+  {
+    "path": "web/src/components/ui/sidebar-context.tsx",
+    "sha256": "e8d93649e513db35aae16ba1d77e4b17da8e4d1d86933bd2e4f3d30ba80575d0"
+  },
+  {
+    "path": "web/src/components/ui/sidebar.tsx",
+    "sha256": "a4941a942d352ac7dd379c19e2f81c854e04b6204543d86241bb2cde8d2fe167"
+  },
+  {
+    "path": "web/src/export/animated-svg.ts",
+    "sha256": "012bb12d78e0897f6eb3e5c3db8e2cf57a0de50d7ed303a5b0cb645a1ca12396"
+  },
+  {
+    "path": "web/src/export/client.ts",
+    "sha256": "d19eefd2d0fb1a72317c09d7743d9491c05952e4d3cb52378ef0117469b5ccb7"
+  },
+  {
+    "path": "web/src/export/duration.ts",
+    "sha256": "40b49fe1d5e6b72612a1982c6f507b50d93f0b9febab31da8b1d756d72ec3bc7"
+  },
+  {
+    "path": "web/src/export/messages.ts",
+    "sha256": "14e38504ed7b705bd7e64d0b3d9470702723eca648001afcf89fcb34b2254cca"
+  },
+  {
+    "path": "web/src/export/presets.ts",
+    "sha256": "b35ab0ff41ad17496d83119ce7259ce395d57a9289807e0abb1ec37b10d759f3"
+  },
+  {
+    "path": "web/src/export/project.ts",
+    "sha256": "5313df6a728f5b151026ef37f910b6949e1ea2e588111f83b8c51e65bd2c93f5"
+  },
+  {
+    "path": "web/src/export/record.ts",
+    "sha256": "f6b68711705a754e1bf48e944441509989ffff3729305eaa1922fffa4c3cbcce"
+  },
+  {
+    "path": "web/src/export/svg-export-worker.ts",
+    "sha256": "ca108dc1e893fb7171932590271dd845838dee5be1301793c79683cedffd24e2"
+  },
+  {
+    "path": "web/src/hooks/use-mobile.ts",
+    "sha256": "e0e9f33ade36e996de64682046300d1b00ca8b410d577d3204b53795a02828c9"
+  },
+  {
+    "path": "web/src/input/canvas-pointer.ts",
+    "sha256": "7cb5801dc6076f400ad1b558ec6d58ff1e4e1fec8f7f06688cfe81036ece672d"
+  },
+  {
+    "path": "web/src/input/gravity-slider.ts",
+    "sha256": "1b57f326dce5403441df12a3c7220c4b1f25fe813464006c8eb72f4755aa89b6"
+  },
+  {
+    "path": "web/src/input/pointer.ts",
+    "sha256": "1b7e4e122b87fbed1cb938151d62b7da31704774fa2cf5cf9da27d93faf54914"
+  },
+  {
+    "path": "web/src/input/tilt-binding.ts",
+    "sha256": "13d203f37c92b59541e4a7b000086ad5fe1b2c021a1b02d7c6a2df9fd4ace29d"
+  },
+  {
+    "path": "web/src/input/tilt-gravity.ts",
+    "sha256": "fa553a364751cd80433a75491adb6ad8086b979ab6bef6d64c49a78cee141a8b"
+  },
+  {
+    "path": "web/src/lib/call-handler.ts",
+    "sha256": "669dcfefb21c360b9a28c9c8e29e5f7f70f44e744488413fe4bf454d63d3ae6b"
+  },
+  {
+    "path": "web/src/lib/combine-style.ts",
+    "sha256": "f9c935911409df234155c5d5f3883c5c00bebf7cdc01a86b322e32b8091da110"
+  },
+  {
+    "path": "web/src/lib/cva.ts",
+    "sha256": "64ad2d8172bf54ff4e74ca59db7de05d73c04c3b5d81def9b3dceb1b3a17cf37"
+  },
+  {
+    "path": "web/src/main.tsx",
+    "sha256": "95aba53c00f50caf9ac43c5909b903beaa1d4fb3cae3274be8550bb6175bd05d"
+  },
+  {
+    "path": "web/src/physics/clock.ts",
+    "sha256": "b50a618af0859ddfe97e33cdffdac72297032cf3a54725dae5192a9eb62c0dfb"
+  },
+  {
+    "path": "web/src/physics/frame.ts",
+    "sha256": "0225db52f8795fa813995eff5597e5f4ff8214e452d51c66eacff96712d002c7"
+  },
+  {
+    "path": "web/src/physics/live-session.ts",
+    "sha256": "60648e78e1460e296aed878c6ee864ae1eb897ca3ca00fa7d037941f706f70f2"
+  },
+  {
+    "path": "web/src/physics/loader.ts",
+    "sha256": "c71f43bb00e8c83293bae734a3a581d621f4c28330f8e843d1864deb21979d2d"
+  },
+  {
+    "path": "web/src/physics/session.ts",
+    "sha256": "070a802d5bea77c7cb236b15b8f56b5ebd1b66d286a6488dbf161f501aae84c8"
+  },
+  {
+    "path": "web/src/physics/simulation-worker.ts",
+    "sha256": "fb51f4f9ae79db9a26ce14807f4c9cab0f68a4d8d0597d275022ada37a592a89"
+  },
+  {
+    "path": "web/src/physics/worker-gravity.ts",
+    "sha256": "bfd6089467da240278c7c34bf4168adba193567c09abe73e29816a55e538e5c6"
+  },
+  {
+    "path": "web/src/physics/worker-messages.ts",
+    "sha256": "f7216c1e94fc3384eff16bd18cbc4883f5df67dc91450750c81c7388cdb5a933"
+  },
+  {
+    "path": "web/src/physics/worker-session.ts",
+    "sha256": "9c4fd8a0130742ec653f79d90d3c417ec7ace69877fbe55e701cf14b19e8a875"
+  },
+  {
+    "path": "web/src/player/appearance.ts",
+    "sha256": "24a81bdb8a581e0fa82f1b536477419e7d41ae563b1b80a431638fa0fc705da4"
+  },
+  {
+    "path": "web/src/player/frame-loop.ts",
+    "sha256": "faf4b3cdaaaf032a896025fa5d22b4487a30f7a0940d8bd8450ef45281ac0532"
+  },
+  {
+    "path": "web/src/player/fullscreen-capability.ts",
+    "sha256": "5a8e2444b16d08e86b17b4c220949a9de8e9b272242f794dd8d1384f6f938589"
+  },
+  {
+    "path": "web/src/player/generation.ts",
+    "sha256": "3c0ecb09f3606a57e45b35f778bb3bd0df48dfcd81927437ee0e21ad12e14a15"
+  },
+  {
+    "path": "web/src/player/navigation.ts",
+    "sha256": "35b25470ad5de06a80a346758529d18143a364eb92ba3b8052733afd991d1d06"
+  },
+  {
+    "path": "web/src/player/observe.ts",
+    "sha256": "52f126c61a12ca577f2c2b8920f65819a630d186ec60ef0b1a651aa53021d9aa"
+  },
+  {
+    "path": "web/src/player/playground-session.ts",
+    "sha256": "2587f5d990dca59d1c2ae1994d715a2f56f8d0bedf9dd7da4956f8390dda3739"
+  },
+  {
+    "path": "web/src/player/runtime.ts",
+    "sha256": "17874f3e35dc688fac9b8b07a422953778180c3dd706dd47b1f2ddf40d64fc9b"
+  },
+  {
+    "path": "web/src/player/scene-lifecycle.ts",
+    "sha256": "24fcb5ef3fc5692183719ca536d6be42fa73c779d36840d8d12b001fe49834c0"
+  },
+  {
+    "path": "web/src/player/scene-runtime.ts",
+    "sha256": "b8d262e62ee701f1f12e5b43f5048b334b6d5fb5ee709d51a37fa0d0a0242428"
+  },
+  {
+    "path": "web/src/player/scene-surface.ts",
+    "sha256": "2a6d1f936876ee61ae453a6934ea0dd3428c5e22ae95af782956f12a54edd873"
+  },
+  {
+    "path": "web/src/player/screen-shell.ts",
+    "sha256": "9de4475373bf963d6d11bb2339e8a04936b5cdec793df1e26f8c331fa8106f72"
+  },
+  {
+    "path": "web/src/player/view.ts",
+    "sha256": "0828fda9d2af7839e637bfae0a5e50f471f8fd6342db0ab58ef14ed2ea10d493"
+  },
+  {
+    "path": "web/src/player/viewport.ts",
+    "sha256": "279f0e916ec070c11629bb16328508aa7cbcce4a1d8a30f865fce16abd26e285"
+  },
+  {
+    "path": "web/src/player/visual-viewport.ts",
+    "sha256": "aff9f28aecc84c5cc68684beeb7e36d327e9ae1db10cc923a32f043706d9ea68"
+  },
+  {
+    "path": "web/src/player/worker-controls.ts",
+    "sha256": "c6820b83defa2e9cf2f7023558e4005d62f8d157b2016fc6c0b9c176aaed96b5"
+  },
+  {
+    "path": "web/src/player/worker-frame-loop.ts",
+    "sha256": "9cfc33580027d7b66e44e97da91481a8399545c61ec8a8114c44e10636e5b8d1"
+  },
+  {
+    "path": "web/src/render/alpha-threshold.ts",
+    "sha256": "35c30a9f1d93e87e80838de5e2f28ead08fd724c6ae84760a93f5a6e2264d3f6"
+  },
+  {
+    "path": "web/src/render/camera.ts",
+    "sha256": "748c51b59da6949cf957568c4b8aaafa9970dbb4b2a40823f1211ba5b524149f"
+  },
+  {
+    "path": "web/src/render/canvas.ts",
+    "sha256": "fcab9044dd185517ed0cef90482428eb4828c2e1ffc99b16ebd7d55535c53ccb"
+  },
+  {
+    "path": "web/src/render/contour.ts",
+    "sha256": "f600eaeaeb6c12b201899f9a0e8c01380f59b24aea44669d519df5c5d13a0bd8"
+  },
+  {
+    "path": "web/src/render/density-shade.ts",
+    "sha256": "c3afafe6053713af2a26ee601746bcb9374b69d929b9aad8fd5a61d4bcab2a22"
+  },
+  {
+    "path": "web/src/render/metaball.ts",
+    "sha256": "fabaced5bdccef6238a374cf4fa4ba2139d11d6cff795b41fb35e08cc5cdddc6"
+  },
+  {
+    "path": "web/src/render/mode.ts",
+    "sha256": "48d21b88d9e612b9864a0cffe4d6dc330164f822e71b57fae56fbd1b978c3b69"
+  },
+  {
+    "path": "web/src/render/particle-limit.ts",
+    "sha256": "14136cddd7d7b3f110806499d9ef6a1d8e019454552b823d22c375cf6ebb0e98"
+  },
+  {
+    "path": "web/src/render/present-frame.ts",
+    "sha256": "d389b5a5f74f9f20129f523dd129993455a62ab7ab813b0629cd65dc14bf84d5"
+  },
+  {
+    "path": "web/src/render/projected-particle.ts",
+    "sha256": "3956f6bbb23cd3a1a314e4d2c5f4659ff109d51fd45638c78e914f928ae1d171"
+  },
+  {
+    "path": "web/src/render/scale-legend.ts",
+    "sha256": "20fee816409fa44e963fc8ffeda57a6e11b75621bb3faf20cb22a80354f9351f"
+  },
+  {
+    "path": "web/src/render/scratch-canvas.ts",
+    "sha256": "3d2e65f825088a0ee049df2f0c0302f65ccecf67a670e78a36b4a794cb2c5265"
+  },
+  {
+    "path": "web/src/render/stroke-width.ts",
+    "sha256": "b34765bed2c2fc000fa9c6ec328ac8cf92e86730c8981b8842a5302da0cae1fd"
+  },
+  {
+    "path": "web/src/render/triangle-wire.ts",
+    "sha256": "d92616221d4d55b7199d3b6d34f09a014e3a194007ff1e0473ac6f9cf03da185"
+  },
+  {
+    "path": "web/src/render/webgl-particles.ts",
+    "sha256": "77cbb7b45274b31a01254e77c2952efc7985ef14708f371be7ba2734af150275"
+  },
+  {
+    "path": "web/src/routing/hash.ts",
+    "sha256": "c293fe36e9531ded98682614ddc5591c95acdc7a5396c57600ec55a94e515abe"
+  },
+  {
+    "path": "web/src/styles/canvas-stage.css",
+    "sha256": "3f5a742a27e84821d8dfd1af437d21d3c050d8d575753750e0bed93c12ba9689"
+  },
+  {
+    "path": "web/src/styles/player-chrome.css",
+    "sha256": "e2c7be5fa5283d8c7a59f1f163fda15aa3fc86a329b81756af0d5a810a423d12"
+  },
+  {
+    "path": "web/src/styles/player-controls.css",
+    "sha256": "d304268e58fef80df64d7e6349752576c439f3ca7c14cbde7c6fa45c71e65707"
+  },
+  {
+    "path": "web/src/styles/player-overlay.css",
+    "sha256": "42d0c2b7d88e20e61b4ca5e320a75be0fef1703bd6facb985052ce13534a14ff"
+  },
+  {
+    "path": "web/src/styles/player-status.css",
+    "sha256": "244d64c650d8e100bf0d191585c6a9c081fc9ce4460d4d5462b720e6d6092fad"
+  },
+  {
+    "path": "web/src/styles/player-viewport.css",
+    "sha256": "199ae786036362b0da45dd12ddd2ad5d8fcd0fd5a4a69a2c9cbd3927914fba49"
+  },
+  {
+    "path": "web/src/styles/responsive.css",
+    "sha256": "04b92d8c421137ba58893265d64efee604d8a327dbf4666ebf55e1fa0614e81d"
+  },
+  {
+    "path": "web/src/styles/scene-controls.css",
+    "sha256": "d03cb31956b5e87b5057709b343c5529b53f387a7a79eaaef5b378fee9dc218e"
+  },
+  {
+    "path": "web/src/styles/tailwind.css",
+    "sha256": "3bbf59d331210730dc25ea253fb891daab4539afb323d3b161d085a0c06ff983"
+  },
+  {
+    "path": "web/tests/alpha-threshold.test.ts",
+    "sha256": "e8800aa180a7011aeec3e2ef943936a4fc15ea9b89cb409bba2c6d89870a4c1f"
+  },
+  {
+    "path": "web/tests/animated-svg.test.ts",
+    "sha256": "27f7a7be3d7a694a74b246224c96e2586251f864e202b535f793a972b76df2a6"
+  },
+  {
+    "path": "web/tests/bench-tesla-fixture.ts",
+    "sha256": "9e42873cd786d791a7abb3340472877a1c2701c2988b429f701d1a1e6b620228"
+  },
+  {
+    "path": "web/tests/bench-tesla.test.ts",
+    "sha256": "9bf361221cc0f9fbec40a5d1d30be3bf79d7d25de16e2840e6ec93bce6132eaf"
+  },
+  {
+    "path": "web/tests/build-info.test.ts",
+    "sha256": "9c154d34074f191520637e4fbe1d6434cd1d7337211465d4837aef8a9372d0df"
+  },
+  {
+    "path": "web/tests/camera.test.ts",
+    "sha256": "335e4db6ac1a341999228c19494fbc4c4588baa80d0a02caade25b17d481a219"
+  },
+  {
+    "path": "web/tests/canvas-pointer-async.test.ts",
+    "sha256": "6a820bb86a209fa5e4fcf0751646d1fe06d51399f2cc8509f5eff03db517ccf2"
+  },
+  {
+    "path": "web/tests/canvas.test.ts",
+    "sha256": "65000eaf374b00d6263ef8c22593baab365c2dc6c33a78774e55dd5942fcfc29"
+  },
+  {
+    "path": "web/tests/clock.test.ts",
+    "sha256": "e15f5284b1ea2a299ed9a8a3981cc4cd88354247b6f302289afc23d7b89c4e87"
+  },
+  {
+    "path": "web/tests/contour.test.ts",
+    "sha256": "3301f663d971edf2528f438c5f7f42ade3ba9861bccb42cd341f35bc31c08cfd"
+  },
+  {
+    "path": "web/tests/controls.test.ts",
+    "sha256": "47342a40df533b92138f2349821170838176e97084521883e342c1098c0e29d7"
+  },
+  {
+    "path": "web/tests/credits.test.ts",
+    "sha256": "8ce6174a12723206e8e3c9550f09e0770e1aa4d54904c838da536e2fee35cd1b"
+  },
+  {
+    "path": "web/tests/debug-readout.test.ts",
+    "sha256": "117ccc84c83aecd5d87c71308d2d0698ee8f83a36615bddb78304abe8ec40d28"
+  },
+  {
+    "path": "web/tests/demo-media-artifacts.test.ts",
+    "sha256": "28742f9880c9f3fe06603802b59dd4a18c3baa38946bbac744a4b688dc1e4382"
+  },
+  {
+    "path": "web/tests/demo-media-cli.test.ts",
+    "sha256": "59a5acb00a5db34221183acdd79671c61f018e3af5be5ec1df0c768596f1a5a3"
+  },
+  {
+    "path": "web/tests/demo-media-model.test.ts",
+    "sha256": "aa81b2a3c2c801cacedf551d70e4f07e90d4392d9d9c302f3f6ea16d5d10bc87"
+  },
+  {
+    "path": "web/tests/demo-media-preview.test.ts",
+    "sha256": "75b2f2a81816f60a3fdfd709095f2ae4ad70770216821702c8bc33d26904b6a1"
+  },
+  {
+    "path": "web/tests/density-shade.test.ts",
+    "sha256": "afee03b1e209a482fece09545f6fc4bfab2a0c362cc80b3bab4490aa61c9f754"
+  },
+  {
+    "path": "web/tests/fps-meter.test.ts",
+    "sha256": "7c9f0e6b32c584cef5b3ee75c074db9118de382192f04df5bea9cd60742d0cfb"
+  },
+  {
+    "path": "web/tests/frame-loop-worker.test.ts",
+    "sha256": "d1358c74226caddfadbd5166c31d1a7e49493f99085e300b0cdb603315438115"
+  },
+  {
+    "path": "web/tests/frame.test.ts",
+    "sha256": "f893f2aa5c66feef8e0a8f0cfb46195e86741d1f286719d964ef9888f33dad38"
+  },
+  {
+    "path": "web/tests/fullscreen-capability.test.ts",
+    "sha256": "bd807c9ae98468785016f6f4229539dc8731b10238f392c6649a7341fc28e754"
+  },
+  {
+    "path": "web/tests/generation.test.ts",
+    "sha256": "a726b8988a2c68412cd430729323f65375aed3935ca80d4cf120cb41d6c24477"
+  },
+  {
+    "path": "web/tests/gravity-arrow.test.ts",
+    "sha256": "98c51c3ac24eb5cead7419c9b000884b509c7cb0539086d87baf1d6057f690d0"
+  },
+  {
+    "path": "web/tests/gravity-slider.test.ts",
+    "sha256": "290fb50e44424a9326014ae20d59070ede338fbe690220d211f0d9609db7d9fd"
+  },
+  {
+    "path": "web/tests/hash.test.ts",
+    "sha256": "6aeb1ea48bac3ce4510c212a9f3fdfd26e0985df62009045516fb9b039c3c79f"
+  },
+  {
+    "path": "web/tests/input-session-fixture.ts",
+    "sha256": "15c1f29a07b789ae1504a473c63fbf79ae6ec00e18eda8dbc5ee5013709c25d4"
+  },
+  {
+    "path": "web/tests/kobalte-licenses.test.ts",
+    "sha256": "8aa0bf48a103ff039e4271ebe7626e543b0ef6181400b3dc2ecf9724bd82f64a"
+  },
+  {
+    "path": "web/tests/links.test.ts",
+    "sha256": "3d4c64d141a0d51d2ce846615070826b56f9230927245938667c3ad0e9d3a454"
+  },
+  {
+    "path": "web/tests/navigation.test.ts",
+    "sha256": "3ea39288ee243dd19876c57a64ec021ffdf809109aa2e99cdf3112dd26921f30"
+  },
+  {
+    "path": "web/tests/particle-limit.test.ts",
+    "sha256": "6ad8e081796d2350c4a8015953e99047e1f92d87d856072fce6fc05f7de30657"
+  },
+  {
+    "path": "web/tests/pointer.test.ts",
+    "sha256": "dcc96bb4975fcb134b3dd1d0b2d07b2657a4c0b44b186ee1567f47033deceafd"
+  },
+  {
+    "path": "web/tests/portrait-bounds.test.ts",
+    "sha256": "ff02fcdbd0f251f46ba700bc5f2a8573181f28a458604eb029db0b76a601f648"
+  },
+  {
+    "path": "web/tests/readme-svg-schedule.test.ts",
+    "sha256": "0b7112eaeab4424cfc7926b83276aa560c4a60a30e92ee742d878db94d7eb383"
+  },
+  {
+    "path": "web/tests/readme-svg-webp.test.ts",
+    "sha256": "a123b302657fdd02830223c17e78260b426922f35302b90d8ad395309e67ba73"
+  },
+  {
+    "path": "web/tests/readme-svg.test.ts",
+    "sha256": "5d8dad818f57b4af98239d5f7f9ef8cb6a84d3cdbacb58bc3891b756a710db53"
+  },
+  {
+    "path": "web/tests/render-mode.test.ts",
+    "sha256": "aeef717e704770df4ba6e08d073ac9460e1cd91167a4d57495d4e101dcde2ee9"
+  },
+  {
+    "path": "web/tests/runtime.test.ts",
+    "sha256": "47854abe5e0cc04dee4f16c5e43f1c738d78ee683d5c7a3f9d5c9db247c48f45"
+  },
+  {
+    "path": "web/tests/scale-legend.test.ts",
+    "sha256": "09bcaf593a3c94314199bafaec2b3710af581bdcb34ad4905613d9343fab655c"
+  },
+  {
+    "path": "web/tests/scene-catalog-controls.test.ts",
+    "sha256": "1e2ecfbe1946d2121edcb496a6b39908fe40964a618acdbb64f8f4c0ca9d82f8"
+  },
+  {
+    "path": "web/tests/scene-catalog-credits.test.ts",
+    "sha256": "279133d2093683f14312d19821baf11f0a30638f82f76e9c0f6a765b370085b8"
+  },
+  {
+    "path": "web/tests/scene-lifecycle-worker.test.ts",
+    "sha256": "3171b64fd62f6741af6004dc464ad49dcf2d85b5a2ba3e4af341eac554a814e2"
+  },
+  {
+    "path": "web/tests/scene-surface.test.ts",
+    "sha256": "893c6d9fcf2007dc7f13f397689316b2c0763f90775ccedccb05c8cf22508b63"
+  },
+  {
+    "path": "web/tests/scenes.test.ts",
+    "sha256": "97001708aabfaa45dd6011af6be921575fadfbb0b46966830bc0082e512afb9b"
+  },
+  {
+    "path": "web/tests/session.test.ts",
+    "sha256": "cfa1d3c9e50351cf46f30f698d903f2fd02ed5db3b9176138b385a1fd6b7b56e"
+  },
+  {
+    "path": "web/tests/sidebar-scroll.test.ts",
+    "sha256": "081a6997704bf12dcc1422d1822df1cdd4174287fdabe3fa9e00ea95a33bf00f"
+  },
+  {
+    "path": "web/tests/stroke-width.test.ts",
+    "sha256": "63ae517a7859887c7ba83ae3a637459cbe8855acbd5a94b06f45e13488975933"
+  },
+  {
+    "path": "web/tests/tilt-binding-async.test.ts",
+    "sha256": "beb9ae23c77b74a80daa7949e28bd699332066e5e9c08c0b88527d5296b26fc8"
+  },
+  {
+    "path": "web/tests/tilt-gravity.test.ts",
+    "sha256": "58d0c870ae305bbfd587eacc1ad10a03493a54acaebf5aa1e3c681bc6c14c6a1"
+  },
+  {
+    "path": "web/tests/triangle-wire.test.ts",
+    "sha256": "e0955c6b0cd1049da5573db416fdf75868f9f32e1b8f7b8953505ac6a6097ea6"
+  },
+  {
+    "path": "web/tests/view.test.ts",
+    "sha256": "af3a713a175f11296ffc10215db280a34e08102d2bf61c71809a2f82986075d7"
+  },
+  {
+    "path": "web/tests/visual-viewport.test.ts",
+    "sha256": "3a8911bfebcf2cb8ead16548c8bfd98a3bef08346467adfb6a480b8fcc27de1c"
+  },
+  {
+    "path": "web/tests/worker-control-races.test.ts",
+    "sha256": "67fe9464744b17b2e323bd109465fe6f8af137d55804542be5a327d6f791f9f6"
+  },
+  {
+    "path": "web/tests/worker-gravity.test.ts",
+    "sha256": "93264f3d0a183cbd0f9d7ba18effcd66f45ec7fd1c07b8f1e104c9ddb9ced3d3"
+  },
+  {
+    "path": "web/tests/worker-loop-fixture.ts",
+    "sha256": "db0ed60336a616e45804820d26107b4f5ab0ed45c2c30ff8153bc2e634daf9cf"
+  },
+  {
+    "path": "web/tests/worker-messages.test.ts",
+    "sha256": "b5f8424488b6424abcdbb4d83108fedd6a3cb12c522b352a36396fdbc5123d52"
+  },
+  {
+    "path": "web/tests/worker-session.test.ts",
+    "sha256": "467533da9215a8ede058bcb1a8d24393b5ce2d35634f97e595efa7728e3e0b5a"
+  },
+  {
+    "path": "web/tsconfig.json",
+    "sha256": "f9be211c4f4e750178f3c13868e57d5981dddcadc34234a72474f1a2edc93acc"
+  },
+  {
+    "path": "web/vite.config.ts",
+    "sha256": "b3a3ccb42257d25a523a3fc4b9cf4d8bc813b227ad285b1894dbc273a4f9c1fa"
+  },
+  {
+    "path": "web/vitest.config.ts",
+    "sha256": "73105c1f5a2ca3e53da4ac4e965c441533529505dcd53bc700d08c356e09f7df"
+  }
+]

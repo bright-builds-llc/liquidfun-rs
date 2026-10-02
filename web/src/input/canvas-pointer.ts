@@ -1,4 +1,4 @@
-import type { SceneSession } from "../physics/session";
+import { finishOperation, type PlayerSession } from "../physics/live-session";
 import { unprojectPoint, type Camera, type Point } from "../render/camera";
 import {
   cssPointFromClient,
@@ -54,7 +54,7 @@ export function syncCanvasInteractive(
 }
 
 export function forwardScenePointer(
-  maybeSession: SceneSession | undefined,
+  maybeSession: PlayerSession | undefined,
   viewKind: string,
   kind: PointerKind,
   worldX: number,
@@ -62,6 +62,7 @@ export function forwardScenePointer(
   onAccepted: (kind: PointerKind) => void,
   onAcceptedCount: (update: (count: number) => number) => void,
   onFailure: (error: unknown) => void,
+  maybeIsCurrent?: () => boolean,
 ): void {
   if (
     maybeSession === undefined ||
@@ -71,11 +72,17 @@ export function forwardScenePointer(
   }
 
   try {
-    maybeSession.pointerAction(kind, worldX, worldY);
-    onAccepted(kind);
-    onAcceptedCount((count) => count + 1);
+    finishOperation(
+      maybeSession.pointerAction(kind, worldX, worldY),
+      maybeIsCurrent ?? (() => true),
+      () => {
+        onAccepted(kind);
+        onAcceptedCount((count) => count + 1);
+      },
+      onFailure,
+    );
   } catch (error) {
-    onFailure(error);
+    if (maybeIsCurrent?.() !== false) onFailure(error);
   }
 }
 
@@ -136,7 +143,10 @@ export function attachCanvasPointer(options: {
         maybeCss !== undefined &&
         maybeLastPanCss !== undefined
       ) {
-        onPanBy?.(maybeCss.x - maybeLastPanCss.x, maybeCss.y - maybeLastPanCss.y);
+        onPanBy?.(
+          maybeCss.x - maybeLastPanCss.x,
+          maybeCss.y - maybeLastPanCss.y,
+        );
         maybeLastPanCss = maybeCss;
       }
       return;

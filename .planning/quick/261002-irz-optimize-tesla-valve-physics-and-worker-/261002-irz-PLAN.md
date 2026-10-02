@@ -154,3 +154,6 @@ Parent creates .planning/quick/261002-irz-optimize-tesla-valve-physics-and-worke
 ## Execution scheduling clarification
 
 After the committed Stage1 gate, frontend Stage4 preparation may run in a separate managed worktree based on01728fd. Main-checkout integration and all accepted measurements remain serial: Stage2, Stage3, then Stage4, then Stage5. The worker agent must not mutate the measured main checkout or run heavy jobs during canonical timing. Revalidate the complete frontend integration against the accepted Stage3 core before Stage4 measurement. This preserves isolation and attribution while reducing idle preparation time.
+
+
+Stage5 preparation may also run in the isolated frontend worktree after Stage4 main source is frozen. Only rendering files/tests may change there; main integration waits for the Stage4 accepted evidence commit. No heavy parallel jobs run during timing, and the rendering-only patch is independently applied and revalidated against current main.

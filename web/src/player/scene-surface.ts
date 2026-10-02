@@ -7,7 +7,10 @@ import {
   forwardScenePointer,
 } from "../input/canvas-pointer";
 import type { PointerKind } from "../input/pointer";
-import { changeTiltGravity, reapplyStoredTiltGravity } from "../input/tilt-binding";
+import {
+  changeTiltGravity,
+  reapplyStoredTiltGravity,
+} from "../input/tilt-binding";
 import type { RenderFrame } from "../physics/frame";
 import {
   cancelPendingFrame,
@@ -28,6 +31,8 @@ import {
 import { maybeParseRenderedParticleLimit } from "../render/particle-limit";
 import { svgRenderMode } from "../render/mode";
 import type { SceneRuntime } from "./scene-runtime";
+import { isWorkerSession } from "../physics/live-session";
+import { applyWorkerAction, applyWorkerControl } from "./worker-controls";
 
 function paintHeldFrame(session: SceneRuntime): void {
   const maybeFrame = session.clock.maybePreviousFrame;
@@ -64,7 +69,9 @@ function drawSceneFrame(
 }
 
 function refreshCamera(session: SceneRuntime): void {
-  if (!isUsableViewport(session.clock.viewportWidth, session.clock.viewportHeight)) {
+  if (
+    !isUsableViewport(session.clock.viewportWidth, session.clock.viewportHeight)
+  ) {
     return;
   }
 
@@ -116,6 +123,8 @@ function sendPointer(
   worldX: number,
   worldY: number,
 ): void {
+  const owner = session.maybeSession,
+    generation = session.generation;
   forwardScenePointer(
     session.maybeSession,
     session.view().kind,
@@ -125,6 +134,7 @@ function sendPointer(
     session.setLastPointerKind,
     session.setPointerAccepted,
     session.failScene,
+    () => session.maybeSession === owner && session.generation === generation,
   );
 }
 
@@ -196,6 +206,17 @@ function applySceneControl(
     (control) => control.id === name,
   );
   const recreates = maybeControl?.recreates === true;
+  if (isWorkerSession(maybeOwnedSession)) {
+    const generation = session.generation;
+    void applyWorkerControl(session, name, value).catch((error: unknown) => {
+      if (
+        session.maybeSession === maybeOwnedSession &&
+        session.generation === generation
+      )
+        session.failScene(error);
+    });
+    return;
+  }
 
   try {
     if (recreates) {
@@ -246,6 +267,17 @@ function applySceneAction(session: SceneRuntime, name: string): void {
     session.failScene(new Error("Scene session owner is unavailable"));
     return;
   }
+  if (isWorkerSession(maybeOwnedSession)) {
+    const generation = session.generation;
+    void applyWorkerAction(session, name).catch((error: unknown) => {
+      if (
+        session.maybeSession === maybeOwnedSession &&
+        session.generation === generation
+      )
+        session.failScene(error);
+    });
+    return;
+  }
 
   try {
     maybeOwnedSession.applyAction(name);
@@ -275,7 +307,8 @@ function createSvgExportRequest(
   durationSeconds: number,
 ): SvgExportRequest | undefined {
   const maybeId = maybeReadySceneId(session.route());
-  const maybeScene = maybeId === undefined ? undefined : maybeSceneById(maybeId);
+  const maybeScene =
+    maybeId === undefined ? undefined : maybeSceneById(maybeId);
   if (
     maybeScene === undefined ||
     !isUsableViewport(
@@ -335,6 +368,12 @@ export function bindSurface(session: SceneRuntime): void {
   session.createSvgExportRequest = (durationSeconds) =>
     createSvgExportRequest(session, durationSeconds);
   session.changeTiltGravityEnabled = (enabled) => {
+    const owner = session.maybeSession,
+      generation = session.generation;
+    const fail = (error: unknown) => {
+      if (session.maybeSession === owner && session.generation === generation)
+        session.failScene(error);
+    };
     void changeTiltGravity(
       session.tiltBinding,
       enabled,
@@ -342,6 +381,7 @@ export function bindSurface(session: SceneRuntime): void {
       session.gravitySliderMagnitude,
       session.setTiltGravityEnabled,
       session.setTiltDebug,
-    );
+      fail,
+    ).catch(fail);
   };
 }

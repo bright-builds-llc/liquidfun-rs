@@ -1,0 +1,7 @@
+{
+  "runId": "20261002-stage4-after-01",
+  "accepted": false,
+  "reason": "Independent review found accepted control completion while hidden can leave paused held geometry stale after visibility restoration. Timing/checkpoint results alone do not close lifecycle quality.",
+  "sourceRevision": "8ac4b5d",
+  "nextAction": "Targeted visibility fix, full checks and a fresh Stage4 after run against Stage3; never use this candidate as the accepted predecessor."
+}

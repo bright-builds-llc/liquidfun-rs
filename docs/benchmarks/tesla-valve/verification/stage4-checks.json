@@ -1,0 +1,35 @@
+{
+  "stage": "stage4",
+  "run": "20261002-stage4-after-02",
+  "beforeRun": "20261002-stage3-after-01",
+  "rejectedCandidate": "20261002-stage4-after-01",
+  "checks": [
+    "ordered Cargo fmt/clippy/build/test passed:1050 native including doctests",
+    "299 release WASM tests including four Tesla rate/direction cases passed",
+    "456 web unit tests, typecheck, fresh production build passed",
+    "61 browser tests passed;1 existing optional forensic skip",
+    "managed all and Markdown passed",
+    "same WASM bytes as Stage3; exact original fixed checkpoints and fixed/live warmup hashes; actual worker backend and timings",
+    "independent full source audit: no remaining source findings after six protocol/lifecycle race fixes"
+  ],
+  "sourcePatchSha256": "944218ccd9740f9ecb168505677725c04642bce27cda1ec080b2af8ffd590efd",
+  "physicsMeansMs": {
+    "forward": 5.980833323796591,
+    "reverse": 31.57416667540868
+  },
+  "livePresentedFps": {
+    "forward": 59.52951730856079,
+    "reverse": 29.91249117612741
+  },
+  "timerLatenessProxyMs": {
+    "forward": {
+      "beforeMeanMs": 1.3799956991749425,
+      "afterMeanMs": 0.3504000104268392
+    },
+    "reverse": {
+      "beforeMeanMs": 45.805570829226355,
+      "afterMeanMs": 0.37110686441451785
+    }
+  },
+  "interpretation": "Solver bytes unchanged; worker improves main-thread responsiveness. Direct fixed timing differences are not worker CPU acceleration. Reverse throughput remains about30steps/s."
+}
