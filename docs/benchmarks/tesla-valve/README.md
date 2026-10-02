@@ -26,8 +26,13 @@ The five stages retain geometry, particle radius, source rates, four particle it
 
 The original run used the unchanged physics implementation at `8c419c4c42aaf99cdfdf8d3d297c184c25d5ae8f`. Its source manifest includes the then-uncommitted benchmark harness; the report records that exact producer diff and artifact hashes. Measurements below are means of three replicate means on Apple M4 Max, Chromium 153, ANGLE Metal, on 2026-10-02.
 
-| Stage    | Forward physics (ms/step) | Reverse physics (ms/step) | Forward live paints/s | Reverse live paints/s | Evidence                                            |
-| -------- | ------------------------- | ------------------------- | --------------------- | --------------------- | --------------------------------------------------- |
-| Original | 31.374                    | 110.849                   | 31.3                  | 9.1                   | [Raw report](runs/20261002-original-01/report.json) |
+| Stage                    | Forward physics (ms/step) | Reverse physics (ms/step) | Forward live paints/s | Reverse live paints/s | Evidence                                                |
+| ------------------------ | ------------------------- | ------------------------- | --------------------- | --------------------- | ------------------------------------------------------- |
+| Original                 | 31.374                    | 110.849                   | 31.3                  | 9.1                   | [Raw report](runs/20261002-original-01/report.json)     |
+| 1. Spatial wall contacts | 6.268                     | 32.533                    | 53.7                  | 29.6                  | [Raw report](runs/20261002-stage1-after-01/report.json) |
 
 The original fixed checkpoints matched across all replicates and the live warmup. Forward checkpoint counts were 2852 to 2857; reverse were 9051 to 9662. The reverse live probe advanced fewer steps, reaching 9389 particles, which is why live count and fixed-checkpoint count must be read separately. Render submission averaged 0.126 ms forward and 0.187 ms reverse; physics dominated this baseline. Later rows report each isolated stage against its immediate predecessor and preserve the original as the cumulative reference.
+
+## Stage 1: Spatial wall contacts
+
+The original report is this stage's before record. The indexed contact path reduced mean physics time by about 80% forward and 71% reverse. All six fixed checkpoint pairs matched the original exactly, including contacts, particle positions and wall geometry. Five regression tests independently compare the legacy full scan, including stateful filter ordering, stale indices, overflow and strict AABB edges. Full native and299 release WASM tests, including all four rate/direction containment cases, passed.

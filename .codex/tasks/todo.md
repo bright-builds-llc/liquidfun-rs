@@ -386,7 +386,7 @@ Completion review: source `3de2929` makes all four loop return walls actual cont
 ## task-tesla-performance | 2026-10-02 18:31 UTC | Optimize physics and live playback with staged evidence
 
 - [x] Establish and commit a repeatable original benchmark with immutable raw reports, source/runtime/hardware identity and semantic checkpoints.
-- [ ] Spatially filter wall contacts; preserve ordering and collision behavior; benchmark and commit Stage 1.
+- [x] Spatially filter wall contacts; preserve ordering and collision behavior; benchmark and commit Stage 1.
 - [ ] Share immutable collision geometry and reuse transaction-safe buffers; benchmark and commit Stage 2.
 - [ ] Remove unnecessary neighbour-pair construction from drain queries; benchmark and commit Stage 3.
 - [ ] Move Tesla live playback into an ordered, bounded worker lifecycle; retain direct export/testing paths; benchmark and commit Stage 4.

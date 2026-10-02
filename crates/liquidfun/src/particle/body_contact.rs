@@ -7,6 +7,37 @@ use crate::math::{Transform, Vec2, settings};
 use crate::{BodyId, FixtureId, ParticleFlags, ParticleId};
 
 use super::ParticleSystemView;
+use super::contact_scan::ContactProxy;
+use super::proxy::visit_sorted_tag_indices_in_aabb;
+
+#[cfg(test)]
+mod tests;
+
+fn collect_candidate_rows(
+    proxies: &[ContactProxy],
+    bounds: Aabb,
+    diameter: f32,
+    rows: &mut Vec<usize>,
+) -> bool {
+    rows.clear();
+    if visit_sorted_tag_indices_in_aabb(
+        proxies.len(),
+        |index| proxies[index].tag,
+        diameter,
+        bounds,
+        |index| rows.push(proxies[index].row),
+    )
+    .is_err()
+    {
+        rows.clear();
+        return false;
+    }
+    // Queries visit spatial tag order; solver contacts and filter callbacks
+    // must retain the original fixture-child-ascending-row order.
+    rows.sort_unstable();
+    rows.dedup();
+    true
+}
 
 const MAX_STRICT_CONTACTS_PER_PARTICLE: usize = 4;
 
@@ -136,13 +167,27 @@ pub(crate) fn generate(
     let inverse_stride = inverse_diameter * (1.0 / settings::PARTICLE_STRIDE);
     let particle_inverse_mass = (1.0 / density) * inverse_stride * inverse_stride;
     let mut contacts = Vec::new();
+    let maybe_proxies = view.maybe_current_contact_proxies(diameter);
+    let mut candidate_rows = Vec::new();
 
     for source in sources {
         for child in 0..source.shape.child_count() {
             let child = ChildIndex::new(child, source.shape.child_count())
                 .expect("enumerated shape child remains valid");
             let maybe_aabb = expanded_fixture_aabb(source, child, diameter);
-            for (row, particle) in view.particle_ids().iter().copied().enumerate() {
+            let indexed = if let (Some(proxies), Some(aabb)) = (maybe_proxies, maybe_aabb) {
+                collect_candidate_rows(proxies, aabb, diameter, &mut candidate_rows)
+            } else {
+                candidate_rows.clear();
+                false
+            };
+            let fallback_count = if indexed {
+                0
+            } else {
+                view.particle_ids().len()
+            };
+            for row in candidate_rows.iter().copied().chain(0..fallback_count) {
+                let particle = view.particle_ids()[row];
                 let position = view.positions()[row];
                 if let Some(aabb) = maybe_aabb
                     && !aabb_contains_point(aabb, position)

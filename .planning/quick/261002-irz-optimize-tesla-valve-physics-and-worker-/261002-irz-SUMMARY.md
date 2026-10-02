@@ -14,3 +14,7 @@ Verification: ordered Cargo fmt/clippy/build/test,1032 native tests including do
 ## Remaining stages
 
 Spatial contacts, immutable collision sharing plus scratch reuse, query-only drain, bounded live worker, and rendering cache/batch changes are serial gates. Each accepted predecessor is the next stage's before record; a fresh after record measures the isolated source diff using unchanged fixed workloads. Quality and exact fixed semantic fingerprints remain required.
+
+## Stage 1
+
+Spatial wall contacts use one validated current-index check per pass, collect candidates in stable row order and retain exact fallback/narrowphase behavior. Five legacy-equivalence tests added. Accepted original→stage1 report:6.268ms forward/32.533ms reverse versus31.374/110.849ms. Exact checkpoints match; full native1037/WASM299 and managed/Markdown checks pass. Independent AI review bound to digest6f997a2034a76831600b939079f8926a789a0f0514dbadb58b14ad434ee60844 at2026-10-02 20:17:35UTC. No residual physical behavior change observed.

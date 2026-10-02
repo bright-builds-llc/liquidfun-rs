@@ -1,6 +1,8 @@
 //! Borrow-scoped semantic inspection of one particle system.
 
 use crate::math::Vec2;
+use crate::particle::contact_scan::ContactProxy;
+use crate::particle::proxy::checked_tag;
 use crate::particle::storage::lanes::{
     ParticleBodyContact, ParticleContact, ParticlePair, ParticleTriad,
 };
@@ -58,6 +60,34 @@ impl<'a> ParticleSystemView<'a> {
 
     pub(crate) fn stored_particle_contacts(&self) -> &[ParticleContact] {
         self.storage.particle_contacts()
+    }
+
+    /// Checks the cached index once per pass. Kinematic edits can retain its
+    /// allocation, so matching length alone cannot establish spatial validity.
+    pub(in crate::particle) fn maybe_current_contact_proxies(
+        &self,
+        diameter: f32,
+    ) -> Option<&[ContactProxy]> {
+        if !diameter.is_finite() || diameter <= 0.0 {
+            return None;
+        }
+        let inverse = 1.0 / diameter;
+        let proxies = self.storage.contact_proxies();
+        let positions = self.storage.positions();
+        if proxies.len() != positions.len() {
+            return None;
+        }
+        let mut maybe_previous = None;
+        for proxy in proxies {
+            let position = positions.get(proxy.row)?;
+            let tag = checked_tag(inverse * position.x, inverse * position.y).ok()?;
+            let key = (tag, proxy.row);
+            if tag != proxy.tag || maybe_previous.is_some_and(|previous| previous >= key) {
+                return None;
+            }
+            maybe_previous = Some(key);
+        }
+        Some(proxies)
     }
 
     /// Returns positions in meters, aligned with [`Self::particle_ids`].

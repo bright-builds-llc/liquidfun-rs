@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "tesla-valve-v1",
+  "runId": "20261002-stage1-after-01",
+  "stage": "stage1",
+  "role": "after",
+  "createdAtUtc": "2026-10-02T20:12:44.771Z",
+  "workload": {
+    "purpose": "canonical",
+    "sceneId": "tesla-valve",
+    "rate": 1440,
+    "timestepSeconds": 0.016666666666666666,
+    "particleIterations": 4,
+    "particleRadius": 0.005,
+    "rigidVelocityIterations": 8,
+    "rigidPositionIterations": 3,
+    "gravity": {
+      "x": 0,
+      "y": -10
+    },
+    "inletSpeed": 2,
+    "particleDamping": 0.2,
+    "wallFriction": 0.05,
+    "maximumParticleCount": 16384,
+    "channelClearWidth": 0.06,
+    "physicalSettingsProvenance": "declared from frozen production source; source manifest and semantic checkpoints retained",
+    "viewport": {
+      "width": 1280,
+      "height": 960
+    },
+    "devicePixelRatio": 1,
+    "cameraBounds": {
+      "minX": -0.7,
+      "minY": -0.12,
+      "maxX": 0.58,
+      "maxY": 4.32
+    },
+    "cameraView": {
+      "zoom": 1,
+      "panX": 0,
+      "panY": 0
+    },
+    "renderMode": "shaded-blob",
+    "densityShading": true,
+    "maxRenderedParticles": 16384,
+    "wireframeStrokeWidth": 0.3,
+    "sampleCount": 40,
+    "liveDurationMs": 2000,
+    "repetitions": 3,
+    "cases": [
+      {
+        "id": "forward",
+        "direction": "1",
+        "warmupSteps": 360
+      },
+      {
+        "id": "reverse",
+        "direction": "-1",
+        "warmupSteps": 384
+      }
+    ]
+  },
+  "producer": {
+    "revision": "f6398f205bded23292fbf61e3eca9425d7e95cce",
+    "sourceDiffSha256": "e25d19a4693fc32bda0a5b39500da4d0fe6ce0b82171733858f1037444b5a329",
+    "sourceFilesSha256": "7d07a729b63b1ffebbdd2274da40e03f24c929822ef79b3d9b44e6a3e5051eb7",
+    "sourcePaths": [
+      "Cargo.toml",
+      "Cargo.lock",
+      ".cargo",
+      "rust-toolchain.toml",
+      "crates/liquidfun",
+      "crates/liquidfun-wasm",
+      "web",
+      "scripts"
+    ],
+    "wasmSha256": "0ed7b515769d0db29aaa39d11076f11b8ab54d69dbcc5a9081b7dfc6bc717610",
+    "generatedBindingsSha256": "1fe5f8a001d6bb64dc78158727f781670d460d080669b50196daf60d3f61e056",
+    "rustToolchain": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "executionBackend": "direct",
+    "buildProfile": "release",
+    "wasmTarget": "wasm32-unknown-unknown",
+    "wasmPackVersion": "wasm-pack 0.15.0",
+    "rustflags": "unset",
+    "cargoEncodedRustflags": "unset",
+    "benchmarkBundleSha256": "f8234be97ca88e7e01c7caf2082e80dd202bcfe66802f1918415f7dd0e3fc5db"
+  },
+  "sourceDiffInterpretation": "SHA-256 of canonical tracked git diff plus untracked source file path/content hashes; sourceFilesSha256 covers every declared source path"
+}

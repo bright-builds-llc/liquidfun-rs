@@ -1,0 +1,1129 @@
+{
+  "caseId": "reverse",
+  "repetition": 1,
+  "fixedStepBackend": "direct",
+  "renderer": {
+    "backend": "webgl2",
+    "contextLost": false,
+    "vendor": "WebKit",
+    "renderer": "WebKit WebGL",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "unmaskedVendor": "Google Inc. (Apple)",
+    "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)",
+    "softwareClassification": "not-identified-as-software"
+  },
+  "start": {
+    "stepIndex": 384,
+    "particleCount": 9051,
+    "bodyContactCount": 7436,
+    "stuckCandidateCount": 0,
+    "maxSpeed": 2.4000000953674316,
+    "rigidShapeCount": 468,
+    "sha256": "e1f3e6370d277c20b73bc705a8e2313f3c7c92a81f1e535d01d4fa7c0c008b29",
+    "positionsSha256": "67aa6eae0992b1d3d9a69da52586134dbcd705658fcac469e251aca4f3ebc542",
+    "colorsSha256": "39a6e4e9bd518f5cf217710b7054cc396aa781478340429dfce2a3a8bd02d842",
+    "radiiSha256": "20b6b68f64a1273a5cf2ecfa5bb305a5fadb6ee681295b9d5fbaf442c26a493a",
+    "geometrySha256": "beaaaef449934a28a19ba4f431df886e81c4def18b67f974c1e0c7ba5d1a8f22"
+  },
+  "end": {
+    "stepIndex": 424,
+    "particleCount": 9662,
+    "bodyContactCount": 7723,
+    "stuckCandidateCount": 0,
+    "maxSpeed": 2.5691967010498047,
+    "rigidShapeCount": 468,
+    "sha256": "57c2977cd4f9dc7d16af6b2d57274786a1f85d228a0c392b01d94317dd2fd032",
+    "positionsSha256": "16d53f1be31d2efcb8c31f6c88b1f4430438dd31dcc504edc259e9dd04360658",
+    "colorsSha256": "c18f5e3cd53cd8a0fcf130938d2bca1e41b89c541fbd359614b3e338d664a355",
+    "radiiSha256": "dd0ca45d833c8b3ed41c61fc89cc73430fcb5e7af00979b83a50a51b1daae5e1",
+    "geometrySha256": "beaaaef449934a28a19ba4f431df886e81c4def18b67f974c1e0c7ba5d1a8f22"
+  },
+  "samples": [
+    {
+      "stepIndex": 385,
+      "particleCount": 9069,
+      "advanceMs": 31.90000009536743,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.9000000953674316,
+      "renderSubmitMs": 0.39999961853027344
+    },
+    {
+      "stepIndex": 386,
+      "particleCount": 9084,
+      "advanceMs": 31.200000286102295,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.3000001907348633,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 387,
+      "particleCount": 9106,
+      "advanceMs": 31.59999990463257,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.5
+    },
+    {
+      "stepIndex": 388,
+      "particleCount": 9129,
+      "advanceMs": 31.90000009536743,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.20000028610229492
+    },
+    {
+      "stepIndex": 389,
+      "particleCount": 9149,
+      "advanceMs": 31.90000009536743,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.2999997138977051,
+      "renderSubmitMs": 0.20000028610229492
+    },
+    {
+      "stepIndex": 390,
+      "particleCount": 9164,
+      "advanceMs": 32.09999990463257,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.3000001907348633,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 391,
+      "particleCount": 9184,
+      "advanceMs": 32.09999990463257,
+      "captureMs": 0.10000038146972656,
+      "copyValidateMs": 0.2999997138977051,
+      "renderSubmitMs": 0.09999990463256836
+    },
+    {
+      "stepIndex": 392,
+      "particleCount": 9199,
+      "advanceMs": 32.30000019073486,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.2999997138977051
+    },
+    {
+      "stepIndex": 393,
+      "particleCount": 9211,
+      "advanceMs": 32.200000286102295,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.2999997138977051,
+      "renderSubmitMs": 0.20000028610229492
+    },
+    {
+      "stepIndex": 394,
+      "particleCount": 9228,
+      "advanceMs": 32.299999713897705,
+      "captureMs": 0.10000038146972656,
+      "copyValidateMs": 0.2999997138977051,
+      "renderSubmitMs": 0.20000028610229492
+    },
+    {
+      "stepIndex": 395,
+      "particleCount": 9245,
+      "advanceMs": 32.799999713897705,
+      "captureMs": 0.20000028610229492,
+      "copyValidateMs": 0.09999990463256836,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 396,
+      "particleCount": 9260,
+      "advanceMs": 32.30000019073486,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.3000001907348633,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 397,
+      "particleCount": 9280,
+      "advanceMs": 32.59999990463257,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.3000001907348633,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 398,
+      "particleCount": 9302,
+      "advanceMs": 31.40000009536743,
+      "captureMs": 0.20000028610229492,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 399,
+      "particleCount": 9318,
+      "advanceMs": 31.90000009536743,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.2999997138977051
+    },
+    {
+      "stepIndex": 400,
+      "particleCount": 9334,
+      "advanceMs": 32.200000286102295,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 401,
+      "particleCount": 9356,
+      "advanceMs": 31.800000190734863,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.40000009536743164,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 402,
+      "particleCount": 9371,
+      "advanceMs": 31.90000009536743,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 403,
+      "particleCount": 9389,
+      "advanceMs": 32.09999990463257,
+      "captureMs": 0.20000028610229492,
+      "copyValidateMs": 0.09999990463256836,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 404,
+      "particleCount": 9405,
+      "advanceMs": 32.40000009536743,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.10000038146972656,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 405,
+      "particleCount": 9422,
+      "advanceMs": 33,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 406,
+      "particleCount": 9430,
+      "advanceMs": 32.19999980926514,
+      "captureMs": 0.10000038146972656,
+      "copyValidateMs": 0.2999997138977051,
+      "renderSubmitMs": 2.200000286102295
+    },
+    {
+      "stepIndex": 407,
+      "particleCount": 9445,
+      "advanceMs": 32.299999713897705,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 2,
+      "renderSubmitMs": 0.5
+    },
+    {
+      "stepIndex": 408,
+      "particleCount": 9464,
+      "advanceMs": 32.700000286102295,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.09999990463256836,
+      "renderSubmitMs": 0.3000001907348633
+    },
+    {
+      "stepIndex": 409,
+      "particleCount": 9476,
+      "advanceMs": 31.699999809265137,
+      "captureMs": 0.10000038146972656,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 410,
+      "particleCount": 9491,
+      "advanceMs": 32.80000019073486,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.10000038146972656,
+      "renderSubmitMs": 0.2999997138977051
+    },
+    {
+      "stepIndex": 411,
+      "particleCount": 9508,
+      "advanceMs": 32.59999990463257,
+      "captureMs": 0.20000028610229492,
+      "copyValidateMs": 0.09999990463256836,
+      "renderSubmitMs": 0.3000001907348633
+    },
+    {
+      "stepIndex": 412,
+      "particleCount": 9526,
+      "advanceMs": 32.799999713897705,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.2999997138977051
+    },
+    {
+      "stepIndex": 413,
+      "particleCount": 9538,
+      "advanceMs": 34,
+      "captureMs": 0.10000038146972656,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.3000001907348633
+    },
+    {
+      "stepIndex": 414,
+      "particleCount": 9551,
+      "advanceMs": 33.5,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.40000009536743164,
+      "renderSubmitMs": 0.2999997138977051
+    },
+    {
+      "stepIndex": 415,
+      "particleCount": 9562,
+      "advanceMs": 32.5,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 416,
+      "particleCount": 9568,
+      "advanceMs": 32.80000019073486,
+      "captureMs": 0,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.3000001907348633
+    },
+    {
+      "stepIndex": 417,
+      "particleCount": 9584,
+      "advanceMs": 33.90000009536743,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.20000028610229492
+    },
+    {
+      "stepIndex": 418,
+      "particleCount": 9592,
+      "advanceMs": 33.09999990463257,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.20000028610229492,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 419,
+      "particleCount": 9603,
+      "advanceMs": 32.90000009536743,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.3000001907348633,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 420,
+      "particleCount": 9618,
+      "advanceMs": 33.09999990463257,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.3000001907348633,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 421,
+      "particleCount": 9632,
+      "advanceMs": 33.40000009536743,
+      "captureMs": 0,
+      "copyValidateMs": 0.40000009536743164,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 422,
+      "particleCount": 9641,
+      "advanceMs": 32.90000009536743,
+      "captureMs": 0.20000028610229492,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.19999980926513672
+    },
+    {
+      "stepIndex": 423,
+      "particleCount": 9649,
+      "advanceMs": 33.10000038146973,
+      "captureMs": 0.09999990463256836,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.20000028610229492
+    },
+    {
+      "stepIndex": 424,
+      "particleCount": 9662,
+      "advanceMs": 33,
+      "captureMs": 0.19999980926513672,
+      "copyValidateMs": 0.19999980926513672,
+      "renderSubmitMs": 0.10000038146972656
+    }
+  ],
+  "summary": {
+    "advanceMs": {
+      "count": 40,
+      "mean": 32.48000003099442,
+      "median": 32.35000014305115,
+      "p95": 33.5,
+      "min": 31.200000286102295,
+      "max": 34
+    },
+    "captureMs": {
+      "count": 40,
+      "mean": 0.1274999976158142,
+      "median": 0.09999990463256836,
+      "p95": 0.20000028610229492,
+      "min": 0,
+      "max": 0.20000028610229492
+    },
+    "copyValidateMs": {
+      "count": 40,
+      "mean": 0.2900000333786011,
+      "median": 0.20000028610229492,
+      "p95": 0.40000009536743164,
+      "min": 0.09999990463256836,
+      "max": 2
+    },
+    "renderSubmitMs": {
+      "count": 40,
+      "mean": 0.2874999403953552,
+      "median": 0.19999980926513672,
+      "p95": 0.5,
+      "min": 0.09999990463256836,
+      "max": 2.200000286102295
+    }
+  },
+  "live": {
+    "driver": "production-frame-loop",
+    "executionBackend": "direct",
+    "renderer": {
+      "backend": "webgl2",
+      "contextLost": false,
+      "vendor": "WebKit",
+      "renderer": "WebKit WebGL",
+      "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "unmaskedVendor": "Google Inc. (Apple)",
+      "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)",
+      "softwareClassification": "not-identified-as-software"
+    },
+    "start": {
+      "stepIndex": 384,
+      "particleCount": 9051,
+      "bodyContactCount": 7436,
+      "stuckCandidateCount": 0,
+      "maxSpeed": 2.4000000953674316,
+      "rigidShapeCount": 468,
+      "sha256": "e1f3e6370d277c20b73bc705a8e2313f3c7c92a81f1e535d01d4fa7c0c008b29",
+      "positionsSha256": "67aa6eae0992b1d3d9a69da52586134dbcd705658fcac469e251aca4f3ebc542",
+      "colorsSha256": "39a6e4e9bd518f5cf217710b7054cc396aa781478340429dfce2a3a8bd02d842",
+      "radiiSha256": "20b6b68f64a1273a5cf2ecfa5bb305a5fadb6ee681295b9d5fbaf442c26a493a",
+      "geometrySha256": "beaaaef449934a28a19ba4f431df886e81c4def18b67f974c1e0c7ba5d1a8f22"
+    },
+    "end": {
+      "stepIndex": 443,
+      "particleCount": 9808,
+      "bodyContactCount": 7874,
+      "stuckCandidateCount": 0,
+      "maxSpeed": 2.4000000953674316,
+      "rigidShapeCount": 468,
+      "sha256": "8976deb865ed9bd4076b8fd5b08bec9e2a5fe61215d2d49e01d536691ee7d06a",
+      "positionsSha256": "29141cb6df1755185d3899491a2d3886288d046f98ddb822ba4563e37ba3d2ce",
+      "colorsSha256": "4bd3e11aae4a0315b5d37909da1d594a672f824e2c4f8e96dafbed7868992a62",
+      "radiiSha256": "db8205255a3c49d3980490097f1cbff753c159af3df86db5e394d0ab77e4e95b",
+      "geometrySha256": "beaaaef449934a28a19ba4f431df886e81c4def18b67f974c1e0c7ba5d1a8f22"
+    },
+    "elapsedMs": 2007.6999998092651,
+    "startedAtMs": 31169.599999904633,
+    "presentedFps": 29.386860589532848,
+    "simulationStepsPerSecond": 29.386860589532848,
+    "paints": [
+      {
+        "presentedAtMs": 31203.599999904633,
+        "rafTimestampMs": 31163.7,
+        "simSteps": 1,
+        "stepIndex": 385,
+        "particleCount": 9069,
+        "bodyContactCount": 7378,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31236.299999713898,
+        "rafTimestampMs": 31197,
+        "simSteps": 1,
+        "stepIndex": 386,
+        "particleCount": 9084,
+        "bodyContactCount": 7417,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31269,
+        "rafTimestampMs": 31230.3,
+        "simSteps": 1,
+        "stepIndex": 387,
+        "particleCount": 9106,
+        "bodyContactCount": 7428,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31301.39999961853,
+        "rafTimestampMs": 31263.7,
+        "simSteps": 1,
+        "stepIndex": 388,
+        "particleCount": 9129,
+        "bodyContactCount": 7456,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31334.199999809265,
+        "rafTimestampMs": 31297,
+        "simSteps": 1,
+        "stepIndex": 389,
+        "particleCount": 9149,
+        "bodyContactCount": 7487,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31366.799999713898,
+        "rafTimestampMs": 31330.3,
+        "simSteps": 1,
+        "stepIndex": 390,
+        "particleCount": 9164,
+        "bodyContactCount": 7516,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31400.099999904633,
+        "rafTimestampMs": 31363.7,
+        "simSteps": 1,
+        "stepIndex": 391,
+        "particleCount": 9184,
+        "bodyContactCount": 7565,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31433.5,
+        "rafTimestampMs": 31397,
+        "simSteps": 1,
+        "stepIndex": 392,
+        "particleCount": 9199,
+        "bodyContactCount": 7485,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31466.099999904633,
+        "rafTimestampMs": 31430.4,
+        "simSteps": 1,
+        "stepIndex": 393,
+        "particleCount": 9211,
+        "bodyContactCount": 7459,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31498.699999809265,
+        "rafTimestampMs": 31463.7,
+        "simSteps": 1,
+        "stepIndex": 394,
+        "particleCount": 9228,
+        "bodyContactCount": 7503,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31532.199999809265,
+        "rafTimestampMs": 31497,
+        "simSteps": 1,
+        "stepIndex": 395,
+        "particleCount": 9245,
+        "bodyContactCount": 7521,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31564.799999713898,
+        "rafTimestampMs": 31530.4,
+        "simSteps": 1,
+        "stepIndex": 396,
+        "particleCount": 9260,
+        "bodyContactCount": 7520,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31597.599999904633,
+        "rafTimestampMs": 31563.7,
+        "simSteps": 1,
+        "stepIndex": 397,
+        "particleCount": 9280,
+        "bodyContactCount": 7527,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31631.299999713898,
+        "rafTimestampMs": 31597,
+        "simSteps": 1,
+        "stepIndex": 398,
+        "particleCount": 9302,
+        "bodyContactCount": 7491,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31664.299999713898,
+        "rafTimestampMs": 31630.3,
+        "simSteps": 1,
+        "stepIndex": 399,
+        "particleCount": 9318,
+        "bodyContactCount": 7488,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31697.699999809265,
+        "rafTimestampMs": 31663.7,
+        "simSteps": 1,
+        "stepIndex": 400,
+        "particleCount": 9334,
+        "bodyContactCount": 7629,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31730.799999713898,
+        "rafTimestampMs": 31697,
+        "simSteps": 1,
+        "stepIndex": 401,
+        "particleCount": 9356,
+        "bodyContactCount": 7531,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31765.199999809265,
+        "rafTimestampMs": 31730.4,
+        "simSteps": 1,
+        "stepIndex": 402,
+        "particleCount": 9371,
+        "bodyContactCount": 7623,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31798.699999809265,
+        "rafTimestampMs": 31763.7,
+        "simSteps": 1,
+        "stepIndex": 403,
+        "particleCount": 9389,
+        "bodyContactCount": 7569,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31832.89999961853,
+        "rafTimestampMs": 31797,
+        "simSteps": 1,
+        "stepIndex": 404,
+        "particleCount": 9405,
+        "bodyContactCount": 7612,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31866.5,
+        "rafTimestampMs": 31830.3,
+        "simSteps": 1,
+        "stepIndex": 405,
+        "particleCount": 9422,
+        "bodyContactCount": 7645,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31900.39999961853,
+        "rafTimestampMs": 31863.7,
+        "simSteps": 1,
+        "stepIndex": 406,
+        "particleCount": 9430,
+        "bodyContactCount": 7561,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31934.199999809265,
+        "rafTimestampMs": 31897,
+        "simSteps": 1,
+        "stepIndex": 407,
+        "particleCount": 9445,
+        "bodyContactCount": 7746,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 31967.799999713898,
+        "rafTimestampMs": 31930.4,
+        "simSteps": 1,
+        "stepIndex": 408,
+        "particleCount": 9464,
+        "bodyContactCount": 7718,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32001.39999961853,
+        "rafTimestampMs": 31963.7,
+        "simSteps": 1,
+        "stepIndex": 409,
+        "particleCount": 9476,
+        "bodyContactCount": 7685,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32035.599999904633,
+        "rafTimestampMs": 31997,
+        "simSteps": 1,
+        "stepIndex": 410,
+        "particleCount": 9491,
+        "bodyContactCount": 7660,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32069.39999961853,
+        "rafTimestampMs": 32030.3,
+        "simSteps": 1,
+        "stepIndex": 411,
+        "particleCount": 9508,
+        "bodyContactCount": 7679,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32103.099999904633,
+        "rafTimestampMs": 32063.7,
+        "simSteps": 1,
+        "stepIndex": 412,
+        "particleCount": 9526,
+        "bodyContactCount": 7738,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32137.199999809265,
+        "rafTimestampMs": 32097,
+        "simSteps": 1,
+        "stepIndex": 413,
+        "particleCount": 9538,
+        "bodyContactCount": 7768,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32171.5,
+        "rafTimestampMs": 32130.3,
+        "simSteps": 1,
+        "stepIndex": 414,
+        "particleCount": 9551,
+        "bodyContactCount": 7791,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32206.299999713898,
+        "rafTimestampMs": 32163.7,
+        "simSteps": 1,
+        "stepIndex": 415,
+        "particleCount": 9562,
+        "bodyContactCount": 7883,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32240.5,
+        "rafTimestampMs": 32197,
+        "simSteps": 1,
+        "stepIndex": 416,
+        "particleCount": 9568,
+        "bodyContactCount": 7787,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32274.799999713898,
+        "rafTimestampMs": 32230.3,
+        "simSteps": 1,
+        "stepIndex": 417,
+        "particleCount": 9584,
+        "bodyContactCount": 7603,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32309.199999809265,
+        "rafTimestampMs": 32263.6,
+        "simSteps": 1,
+        "stepIndex": 418,
+        "particleCount": 9592,
+        "bodyContactCount": 7750,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32343.39999961853,
+        "rafTimestampMs": 32297,
+        "simSteps": 1,
+        "stepIndex": 419,
+        "particleCount": 9603,
+        "bodyContactCount": 7717,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32378.299999713898,
+        "rafTimestampMs": 32330.3,
+        "simSteps": 1,
+        "stepIndex": 420,
+        "particleCount": 9618,
+        "bodyContactCount": 7753,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32412.39999961853,
+        "rafTimestampMs": 32363.7,
+        "simSteps": 1,
+        "stepIndex": 421,
+        "particleCount": 9632,
+        "bodyContactCount": 7782,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32446.89999961853,
+        "rafTimestampMs": 32397,
+        "simSteps": 1,
+        "stepIndex": 422,
+        "particleCount": 9641,
+        "bodyContactCount": 7794,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32480.799999713898,
+        "rafTimestampMs": 32430.3,
+        "simSteps": 1,
+        "stepIndex": 423,
+        "particleCount": 9649,
+        "bodyContactCount": 7737,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32514.89999961853,
+        "rafTimestampMs": 32480.3,
+        "simSteps": 1,
+        "stepIndex": 424,
+        "particleCount": 9662,
+        "bodyContactCount": 7723,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32549.699999809265,
+        "rafTimestampMs": 32513.6,
+        "simSteps": 1,
+        "stepIndex": 425,
+        "particleCount": 9668,
+        "bodyContactCount": 7803,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32584.599999904633,
+        "rafTimestampMs": 32547,
+        "simSteps": 1,
+        "stepIndex": 426,
+        "particleCount": 9680,
+        "bodyContactCount": 7765,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32619.199999809265,
+        "rafTimestampMs": 32580.3,
+        "simSteps": 1,
+        "stepIndex": 427,
+        "particleCount": 9693,
+        "bodyContactCount": 7745,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32653.599999904633,
+        "rafTimestampMs": 32613.6,
+        "simSteps": 1,
+        "stepIndex": 428,
+        "particleCount": 9699,
+        "bodyContactCount": 7859,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32688.699999809265,
+        "rafTimestampMs": 32646.9,
+        "simSteps": 1,
+        "stepIndex": 429,
+        "particleCount": 9708,
+        "bodyContactCount": 7973,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32724,
+        "rafTimestampMs": 32680.3,
+        "simSteps": 1,
+        "stepIndex": 430,
+        "particleCount": 9718,
+        "bodyContactCount": 7883,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32758.89999961853,
+        "rafTimestampMs": 32713.6,
+        "simSteps": 1,
+        "stepIndex": 431,
+        "particleCount": 9723,
+        "bodyContactCount": 7936,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32793.59999990463,
+        "rafTimestampMs": 32746.9,
+        "simSteps": 1,
+        "stepIndex": 432,
+        "particleCount": 9734,
+        "bodyContactCount": 7841,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32828.39999961853,
+        "rafTimestampMs": 32780.3,
+        "simSteps": 1,
+        "stepIndex": 433,
+        "particleCount": 9744,
+        "bodyContactCount": 7851,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32862.5,
+        "rafTimestampMs": 32813.6,
+        "simSteps": 1,
+        "stepIndex": 434,
+        "particleCount": 9753,
+        "bodyContactCount": 7819,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32897.09999990463,
+        "rafTimestampMs": 32847,
+        "simSteps": 1,
+        "stepIndex": 435,
+        "particleCount": 9764,
+        "bodyContactCount": 7818,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32932.5,
+        "rafTimestampMs": 32896.9,
+        "simSteps": 1,
+        "stepIndex": 436,
+        "particleCount": 9773,
+        "bodyContactCount": 7892,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 32967.7999997139,
+        "rafTimestampMs": 32930.3,
+        "simSteps": 1,
+        "stepIndex": 437,
+        "particleCount": 9775,
+        "bodyContactCount": 7932,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 33002.199999809265,
+        "rafTimestampMs": 32963.6,
+        "simSteps": 1,
+        "stepIndex": 438,
+        "particleCount": 9787,
+        "bodyContactCount": 7963,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 33037.699999809265,
+        "rafTimestampMs": 32997,
+        "simSteps": 1,
+        "stepIndex": 439,
+        "particleCount": 9789,
+        "bodyContactCount": 7939,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 33072.5,
+        "rafTimestampMs": 33030.3,
+        "simSteps": 1,
+        "stepIndex": 440,
+        "particleCount": 9800,
+        "bodyContactCount": 7952,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 33107.2999997139,
+        "rafTimestampMs": 33063.6,
+        "simSteps": 1,
+        "stepIndex": 441,
+        "particleCount": 9804,
+        "bodyContactCount": 7932,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 33142.199999809265,
+        "rafTimestampMs": 33096.9,
+        "simSteps": 1,
+        "stepIndex": 442,
+        "particleCount": 9806,
+        "bodyContactCount": 7947,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      },
+      {
+        "presentedAtMs": 33177.2999997139,
+        "rafTimestampMs": 33130.3,
+        "simSteps": 1,
+        "stepIndex": 443,
+        "particleCount": 9808,
+        "bodyContactCount": 7874,
+        "workerComputeMs": null,
+        "workerCaptureMs": null,
+        "workerRoundTripMs": null
+      }
+    ],
+    "timerTaskLatenessMs": [
+      50.799999713897705,
+      49.200000286102295,
+      49.299999713897705,
+      50.80000019073486,
+      49.19999980926514,
+      17.5,
+      49.40000009536743,
+      50.59999990463257,
+      50.5,
+      52,
+      51.700000286102295,
+      51.799999713897705,
+      51.10000038146973,
+      52.09999990463257,
+      51.69999980926514,
+      18.300000190734863,
+      53,
+      52.799999713897705,
+      52.90000009536743,
+      52.700000286102295,
+      52.09999990463257,
+      53.59999990463257,
+      53.09999990463257,
+      19.09999990463257,
+      19.200000286102295,
+      53.59999990463257,
+      52.90000009536743,
+      18.699999809265137,
+      54.5,
+      54,
+      53.700000286102295
+    ],
+    "responsivenessProxy": "16ms-main-thread-timer-lateness",
+    "includesProductChrome": false,
+    "minimumParticleCount": 9051,
+    "maximumParticleCount": 9808
+  }
+}
