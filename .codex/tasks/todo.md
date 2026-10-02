@@ -323,3 +323,14 @@ Completion review: source commit `0fa50e1` is on `origin/main`. Ordered Rust che
 Guidance: AGENTS.md standing authorization and hobby scope, AGENTS.bright-builds.md, standards-overrides.md, and local architecture, code-shape, verification, testing, Rust, and frontend standards. GSD quick task: 261001-tvf.
 
 Completion review: source commit `7d7ca9d` replaces the unilateral loops with four alternating lobes and closed solid islands. Ordered core Rust checks (1032 tests), affected WASM checks (287 tests), web typecheck and 402 unit tests, 44 browser tests, production build, managed checks, Markdown and diff checks passed. Desktop/phone previews and the regenerated ten-second SVG/WebP match the new silhouette. Independent AI reviewer `/root/tesla_review` acknowledged source digest `b9c646fe9a40f438e69b2bce8d049bc875fcb1eea25cf42f2c4212a7e8a09f47` at 2026-10-02 02:53:08 UTC. Four-stage throughput uses a six-second window with the existing 80-particle margin, earlier drain arrival and continuous containment. Local WebP text uses an explicit Arial font path while CI retains DejaVu. Ordinary main publication uses standing authorization. This records experimental simulation evidence, not a measured real-world valve performance claim.
+
+## task-tesla-wider-necks | 2026-10-01 22:01 CDT | Increase Tesla Valve throughput
+
+- [x] Measure current drainage at the default source rate.
+- [x] Widen all stage necks with shared render/collision geometry and preserve direction/control/containment regressions.
+- [x] Demonstrate higher drainage at the same rate, refresh gallery and browser preview, and run required Rust/web/Markdown/managed checks.
+- [x] Record independent review, commit, and verify the main push.
+
+Guidance: continue the GSD quick workflow (261001-uk9), AGENTS.md standing authorization and hobby scope, the Bright Builds sidecar/overrides, and loaded Rust, architecture, testing and verification standards.
+
+Completion review: `a849c09` widens all four stage necks through one shared geometry parameter; collision and drawing remain aligned. Native/production WASM ten-second forward discharge at unchanged 180 particles/s rises from 853 to 1526 (about 79% more over that startup window), with continuous native conduit containment and preserved forward preference. Ordered core checks (1032 tests), full affected WASM checks (289 tests), 402 web unit tests, 44 browser tests, production build, managed/Markdown/diff checks and independent AI review pass. Reviewer `/root/tesla_review` acknowledged exact source digest `aca3482aa908243cde39ee43a7ac5a915864b26daaad5bc35751c5a514d79b20` at 2026-10-02 03:13:26 UTC. Gallery and existing in-app preview show the wider gaps. This is fixed-window simulation evidence, not a steady-state or physical-valve efficiency claim. Ordinary main publication uses standing authorization.
