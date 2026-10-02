@@ -3,7 +3,7 @@
 use wasm_bindgen::prelude::*;
 
 const MAX_PARTICLE_COUNT: usize = 16_384;
-const MAX_RIGID_SEGMENTS: usize = 64;
+const MAX_RIGID_SEGMENTS: usize = 512;
 const MAX_RIGID_CIRCLES: usize = 48;
 const PARTICLE_POSITION_STRIDE: usize = 2;
 const PARTICLE_COLOR_STRIDE: usize = 4;
@@ -338,6 +338,33 @@ mod tests {
 
         // Assert
         assert!(matches!(result, Err(FrameError::ParticleCountExceeded)));
+    }
+
+    #[test]
+    fn accepts_dense_segment_lanes_through_the_limit() {
+        for segment_count in [256, 512] {
+            // Arrange
+            let segments = vec![1.0; segment_count * RIGID_SEGMENT_STRIDE];
+
+            // Act
+            let data = FrameData::new(
+                0,
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                segments,
+                Vec::new(),
+                FrameDiagnostics::at_rest(),
+            );
+
+            // Assert
+            let frame = ProofFrame::from(data.expect("dense geometry should fit the frame lane"));
+            assert_eq!(frame.rigid_shape_count(), segment_count);
+            assert_eq!(
+                frame.rigid_segments().len(),
+                segment_count * RIGID_SEGMENT_STRIDE
+            );
+        }
     }
 
     #[test]

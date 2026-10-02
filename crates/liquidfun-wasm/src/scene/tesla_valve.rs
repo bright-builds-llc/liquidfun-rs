@@ -11,7 +11,10 @@ mod geometry;
 #[cfg(test)]
 mod tests;
 
-use liquidfun::collision::{FilterData, PolygonShape, Shape};
+#[cfg(test)]
+mod flow_tests;
+
+use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::{Transform, Vec2};
 use liquidfun::{
     BodyDef, BodyId, FixtureDef, ParticleColor, ParticleDef, ParticleFlags, ParticleSystemDef,
@@ -21,8 +24,8 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 use geometry::{
-    DRAIN_CENTER, DRAIN_HALF_HEIGHT, DRAIN_HALF_WIDTH, MIRROR_Y, PARTICLE_RADIUS, SPAWN_XS,
-    SPAWN_Y, collision_polygons, outline_segments,
+    DRAIN_CENTER, DRAIN_HALF_HEIGHT, DRAIN_HALF_WIDTH, MIRROR_Y, PARTICLE_RADIUS,
+    WALL_HALF_THICKNESS, outline_segments, source_position, valve_geometry, wall_boxes,
 };
 
 /// Extra substeps so particles stay inside the curved heads.
@@ -30,17 +33,17 @@ pub(crate) const PARTICLE_ITERATIONS: u32 = 4;
 
 const FLOW_RATE_CONTROL: &str = "flow-rate";
 const FLOW_DIRECTION_CONTROL: &str = "flow-direction";
-const FLOW_RATE_MAX: u16 = 720;
+const FLOW_RATE_MAX: u16 = 2880;
 const FLOW_RATE_STEP: u16 = 30;
-const DEFAULT_FLOW_RATE: u16 = 180;
-const MAXIMUM_PARTICLE_COUNT: usize = 4_096;
+const DEFAULT_FLOW_RATE: u16 = 1440;
+const MAXIMUM_PARTICLE_COUNT: usize = 16_384;
 const PARTICLE_DAMPING: f32 = 0.2;
 const WALL_FRICTION: f32 = 0.05;
 const SIM_DT: f32 = 1.0 / 60.0;
 const SPAWN_SPEED: f32 = 2.0;
 const PARTICLE_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
-const MAX_EMIT_PER_STEP: u32 = 24;
+const MAX_EMIT_PER_STEP: u32 = 48;
 
 struct TeslaValveHooks {
     forward: bool,
@@ -64,8 +67,7 @@ fn build_tesla_valve() -> Result<BuiltScene, SceneError> {
         .set_gravity(GRAVITY)
         .map_err(|_error| SceneError::Gravity)?;
 
-    let polygons = collision_polygons(true);
-    let valve_body = create_valve_body(&mut world, &polygons)?;
+    let valve_body = create_valve_body(&mut world, true)?;
     let particle_system = create_particle_system(&mut world)?;
 
     Ok(BuiltScene {
@@ -83,27 +85,35 @@ fn build_tesla_valve() -> Result<BuiltScene, SceneError> {
     })
 }
 
-fn create_valve_body(world: &mut World, polygons: &[Vec<Vec2>]) -> Result<BodyId, SceneError> {
+fn create_valve_body(world: &mut World, forward: bool) -> Result<BodyId, SceneError> {
     let body = world
         .create_body(&BodyDef::default())
         .map_err(|_error| SceneError::Body)?;
-    for polygon in polygons {
-        attach_polygon(world, body, polygon)?;
+    let geometry = valve_geometry(forward);
+    for wall in wall_boxes(&geometry.outer_paths) {
+        let polygon = PolygonShape::oriented_box(
+            wall.half_length,
+            WALL_HALF_THICKNESS,
+            wall.center,
+            wall.angle,
+        )
+        .map_err(|_error| SceneError::Geometry)?;
+        attach_shape(world, body, Shape::from(polygon))?;
+    }
+    for island in geometry.splitters {
+        let circle = CircleShape::new(island.center, island.radius)
+            .map_err(|_error| SceneError::Geometry)?;
+        let triangle =
+            PolygonShape::new(&island.triangle).map_err(|_error| SceneError::Geometry)?;
+        attach_shape(world, body, Shape::from(circle))?;
+        attach_shape(world, body, Shape::from(triangle))?;
     }
     Ok(body)
 }
 
-fn attach_polygon(world: &mut World, body: BodyId, corners: &[Vec2]) -> Result<(), SceneError> {
-    let polygon = PolygonShape::new(corners).map_err(|_error| SceneError::Geometry)?;
-    let definition = FixtureDef::new(
-        Shape::from(polygon),
-        0.0,
-        WALL_FRICTION,
-        0.0,
-        false,
-        FilterData::default(),
-    )
-    .map_err(|_error| SceneError::Fixture)?;
+fn attach_shape(world: &mut World, body: BodyId, shape: Shape) -> Result<(), SceneError> {
+    let definition = FixtureDef::new(shape, 0.0, WALL_FRICTION, 0.0, false, FilterData::default())
+        .map_err(|_error| SceneError::Fixture)?;
     world
         .create_fixture(body, &definition)
         .map_err(|_error| SceneError::Fixture)?;
@@ -153,7 +163,7 @@ fn emit_due(hooks: &mut TeslaValveHooks, world: &mut World, system: ParticleSyst
             return;
         }
         hooks.credit -= 1.0;
-        hooks.cursor = hooks.cursor.wrapping_add(1);
+        hooks.cursor = (hooks.cursor + 1) % MAX_EMIT_PER_STEP;
         spawned += 1;
     }
 }
@@ -162,8 +172,7 @@ fn spawn_one(world: &mut World, system: ParticleSystemId, cursor: u32) -> bool {
     if world.reserve_particle_creations(system, 1).is_err() {
         return false;
     }
-    let column = usize::try_from(cursor).map_or(0, |index| index % SPAWN_XS.len());
-    let position = Vec2::new(SPAWN_XS[column], SPAWN_Y);
+    let position = source_position(cursor);
     let velocity = Vec2::new(0.0, -SPAWN_SPEED);
     let Ok(definition) = ParticleDef::default()
         .with_flags(ParticleFlags::WATER)
@@ -206,9 +215,8 @@ fn flip_valve(
     if forward == hooks.forward {
         return Ok(());
     }
-    let polygons = collision_polygons(forward);
     let new_body =
-        create_valve_body(world, &polygons).map_err(|_error| SessionError::SceneConstruction)?;
+        create_valve_body(world, forward).map_err(|_error| SessionError::SceneConstruction)?;
     clear_playfield(world, system)?;
     world
         .destroy_body(hooks.valve_body)

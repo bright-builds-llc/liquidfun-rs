@@ -217,11 +217,27 @@ describe("parseRenderFrame", () => {
     expect(frame.particleRadii.length).toBe(16384);
   });
 
-  it("rejects segment counts above 64", () => {
+  it.each([256, 512])("accepts a dense frame of %i segments", (segmentCount) => {
     // Arrange
     const rawFrame = new FakeRawProofFrame({
-      rigidShapeCount: 65,
-      rigidSegments: new Float32Array(65 * 4),
+      rigidShapeCount: segmentCount,
+      rigidSegments: new Float32Array(segmentCount * 4).fill(1),
+      rigidCircles: new Float32Array(),
+    });
+
+    // Act
+    const frame = parseRenderFrame(rawFrame);
+
+    // Assert
+    expect(frame.rigidShapeCount).toBe(segmentCount);
+    expect(frame.rigidSegments.length).toBe(segmentCount * 4);
+  });
+
+  it("rejects segment counts above 512", () => {
+    // Arrange
+    const rawFrame = new FakeRawProofFrame({
+      rigidShapeCount: 513,
+      rigidSegments: new Float32Array(513 * 4),
       rigidCircles: new Float32Array(),
     });
 

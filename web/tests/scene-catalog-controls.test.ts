@@ -378,6 +378,12 @@ describe("scene catalog controls", () => {
       GRAVITY_CONTROL,
     ]);
     expect(FLOW_RATE_CONTROL.recreates).toBe(false);
+    expect(FLOW_RATE_CONTROL).toMatchObject({
+      min: 0,
+      max: 2880,
+      step: 30,
+      defaultValue: 1440,
+    });
     expect(FLOW_DIRECTION_CONTROL.recreates).toBe(false);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
   });

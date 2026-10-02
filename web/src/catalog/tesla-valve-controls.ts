@@ -5,13 +5,13 @@ export const FLOW_RATE_MIN = 0;
 /**
  * Fast pour, in particles per second.
  *
- * Three columns can accept one particle each per frame, so this stays under
- * the spawn overlap limit at 60 Hz.
+ * The inlet distributes each frame's burst across distinct grid positions.
+ * The maximum creates 48 particles per frame at 60 Hz.
  */
-export const FLOW_RATE_MAX = 720;
+export const FLOW_RATE_MAX = 2880;
 export const FLOW_RATE_STEP = 30;
 /** A steady stream that still leaves room in the valve. */
-export const FLOW_RATE_DEFAULT = 180;
+export const FLOW_RATE_DEFAULT = 1440;
 export const FLOW_RATE_TICKS = [
   FLOW_RATE_MIN,
   FLOW_RATE_DEFAULT,
