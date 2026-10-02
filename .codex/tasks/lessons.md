@@ -81,3 +81,10 @@
 1. What went wrong: Independently fitted valve wall curves looked smooth but produced oval bends and varying flow-channel widths; the owner requested semicircular bends and constant cross-sections.
 1. Preventive rule: Build matching boundaries from one centerline and clear-width parameter, use concentric circular arcs and parallel line offsets, and preserve circles with rigid transforms. Verify radial and normal clearances separately from visual smoothness.
 1. Trigger signal to catch it earlier: A pipe or valve is described as circular or constant-width while its two sides use unrelated control points or unequal axis scales.
+
+## lesson-loop-return-defines-trunk | 2026-10-02 15:58 UTC
+
+1. Date: 2026-10-02 15:58 UTC
+1. What went wrong: The Tesla Valve loops rejoined a separately authored winding trunk through short branch stems; the owner clarified that each returning outer loop wall should continue as the main pipe wall.
+1. Preventive rule: Establish the channel boundary's connectivity and tangent continuation before fitting curves. For a loop whose return becomes the trunk, derive the downstream pipe from that returning wall and its parallel width offset rather than attaching it to an independent trunk.
+1. Trigger signal to catch it earlier: A loop stem ends at a kink or side-branch junction where the reference shows one continuous downstream wall.
