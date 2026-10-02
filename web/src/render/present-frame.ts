@@ -34,5 +34,7 @@ export function presentSceneFrame(
     maxRenderedParticles,
     webglCovered,
     densityShading,
+    undefined,
+    devicePixelRatio,
   );
 }

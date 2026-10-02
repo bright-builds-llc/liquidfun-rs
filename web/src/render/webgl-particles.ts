@@ -1,22 +1,9 @@
 import type { RenderFrame } from "../physics/frame";
 import { cappedDevicePixelRatio } from "./canvas";
 import type { Camera } from "./camera";
-import { PARTICLE_KERNEL_REACH } from "./contour";
-import {
-  DENSITY_SHADE_END,
-  DENSITY_SHADE_FLOOR,
-  DENSITY_SHADE_START,
-} from "./density-shade";
-import { eachProjectedParticle } from "./projected-particle";
-
-/** Sprite diameter scale that places the shaded iso-surface near the particle radius. */
-const INFLUENCE_DIAMETER = PARTICLE_KERNEL_REACH * 2;
-
-const CANVAS_BACKGROUND: readonly [number, number, number] = [
-  7 / 255,
-  16 / 255,
-  24 / 255,
-];
+import { fillProjectedParticleArrays } from "./projected-particle";
+import { createBlobUniforms } from "./blob-uniforms";
+import { createParticleMetadataCache } from "./particle-metadata";
 
 const POINT_VERTEX = `#version 300 es
 in vec2 aPosition;
@@ -97,6 +84,8 @@ type WebglResources = {
   readonly fieldTexture: WebGLTexture;
   readonly fieldFramebuffer: WebGLFramebuffer;
   readonly maxPointSize: number;
+  readonly uniforms: ReturnType<typeof createBlobUniforms>;
+  readonly metadata: ReturnType<typeof createParticleMetadataCache>;
 };
 
 type WebglSurface = {
@@ -157,12 +146,18 @@ function requireBuffer(gl: WebGL2RenderingContext): GlBuffer | undefined {
   return gl.createBuffer() ?? undefined;
 }
 
-function createResources(gl: WebGL2RenderingContext): WebglResources | undefined {
+function createResources(
+  gl: WebGL2RenderingContext,
+): WebglResources | undefined {
   if (gl.getExtension("EXT_color_buffer_float") === null) {
     return undefined;
   }
   const pointProgram = linkProgram(gl, POINT_VERTEX, POINT_FRAGMENT);
-  const compositeProgram = linkProgram(gl, COMPOSITE_VERTEX, COMPOSITE_FRAGMENT);
+  const compositeProgram = linkProgram(
+    gl,
+    COMPOSITE_VERTEX,
+    COMPOSITE_FRAGMENT,
+  );
   const positionBuffer = requireBuffer(gl);
   const radiusBuffer = requireBuffer(gl);
   const colorBuffer = requireBuffer(gl);
@@ -217,7 +212,9 @@ function createResources(gl: WebGL2RenderingContext): WebglResources | undefined
   gl.vertexAttribPointer(clipLocation, 2, gl.FLOAT, false, 0, 0);
   gl.bindVertexArray(null);
 
-  const range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array | null;
+  const range = gl.getParameter(
+    gl.ALIASED_POINT_SIZE_RANGE,
+  ) as Float32Array | null;
   const maxPointSize = range?.[1] ?? 64;
 
   return {
@@ -232,6 +229,8 @@ function createResources(gl: WebGL2RenderingContext): WebglResources | undefined
     fieldTexture,
     fieldFramebuffer,
     maxPointSize,
+    uniforms: createBlobUniforms(gl, pointProgram, compositeProgram),
+    metadata: createParticleMetadataCache(),
   };
 }
 
@@ -277,36 +276,42 @@ function uploadParticles(
   colors: Float32Array,
 ): number {
   const gl = resources.gl;
-  let count = 0;
-  eachProjectedParticle(
+  const { radiiChanged, colorsChanged } = resources.metadata.changes(
+    frame,
+    camera.scale,
+  );
+  const count = fillProjectedParticleArrays(
     frame,
     camera,
-    Number.POSITIVE_INFINITY,
-    (x, y, radius, red, green, blue, alpha) => {
-      const positionIndex = count * 2;
-      const colorIndex = count * 4;
-      positions[positionIndex] = x;
-      positions[positionIndex + 1] = y;
-      radii[count] = radius;
-      colors[colorIndex] = red / 255;
-      colors[colorIndex + 1] = green / 255;
-      colors[colorIndex + 2] = blue / 255;
-      colors[colorIndex + 3] = alpha;
-      count += 1;
-    },
+    positions,
+    radii,
+    colors,
+    radiiChanged,
+    colorsChanged,
   );
 
   gl.bindBuffer(gl.ARRAY_BUFFER, resources.positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, positions.subarray(0, count * 2), gl.DYNAMIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, resources.radiusBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, radii.subarray(0, count), gl.DYNAMIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, resources.colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, colors.subarray(0, count * 4), gl.DYNAMIC_DRAW);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    positions.subarray(0, count * 2),
+    gl.DYNAMIC_DRAW,
+  );
+  if (radiiChanged) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, resources.radiusBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, radii.subarray(0, count), gl.DYNAMIC_DRAW);
+  }
+  if (colorsChanged) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, resources.colorBuffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      colors.subarray(0, count * 4),
+      gl.DYNAMIC_DRAW,
+    );
+  }
   return count;
 }
 
-function createWebglSurface(): WebglSurface {
-  let maybeCanvas: HTMLCanvasElement | undefined;
+function createWebglSurface(canvas: HTMLCanvasElement): WebglSurface {
   let maybeResources: WebglResources | undefined;
   let fieldWidth = 0;
   let fieldHeight = 0;
@@ -314,16 +319,23 @@ function createWebglSurface(): WebglSurface {
   let radii = new Float32Array(0);
   let colors = new Float32Array(0);
   let shadersAvailable = true;
+  const reset = () => {
+    maybeResources = undefined;
+    fieldWidth = 0;
+    fieldHeight = 0;
+    shadersAvailable = true;
+  };
+  canvas.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    reset();
+  });
+  canvas.addEventListener("webglcontextrestored", reset);
 
   function resourcesFor(canvas: HTMLCanvasElement): WebglResources | undefined {
     if (!shadersAvailable) {
       return undefined;
     }
-    if (
-      maybeResources !== undefined &&
-      maybeCanvas === canvas &&
-      !maybeResources.gl.isContextLost()
-    ) {
+    if (maybeResources !== undefined && !maybeResources.gl.isContextLost()) {
       return maybeResources;
     }
 
@@ -337,12 +349,12 @@ function createWebglSurface(): WebglSurface {
     if (gl === null) {
       return undefined;
     }
+    if (gl.isContextLost()) return undefined;
     const created = createResources(gl);
     if (created === undefined) {
       shadersAvailable = false;
       return undefined;
     }
-    maybeCanvas = canvas;
     maybeResources = created;
     fieldWidth = 0;
     fieldHeight = 0;
@@ -363,7 +375,10 @@ function createWebglSurface(): WebglSurface {
         return false;
       }
       const width = Math.max(1, Math.round(camera.viewport.width * pixelRatio));
-      const height = Math.max(1, Math.round(camera.viewport.height * pixelRatio));
+      const height = Math.max(
+        1,
+        Math.round(camera.viewport.height * pixelRatio),
+      );
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
@@ -387,7 +402,14 @@ function createWebglSurface(): WebglSurface {
       }
 
       const gl = resources.gl;
-      const count = uploadParticles(resources, frame, camera, positions, radii, colors);
+      const count = uploadParticles(
+        resources,
+        frame,
+        camera,
+        positions,
+        radii,
+        colors,
+      );
       gl.bindFramebuffer(gl.FRAMEBUFFER, resources.fieldFramebuffer);
       gl.viewport(0, 0, width, height);
       gl.clearColor(0, 0, 0, 0);
@@ -397,12 +419,12 @@ function createWebglSurface(): WebglSurface {
         gl.blendFunc(gl.ONE, gl.ONE);
         gl.useProgram(resources.pointProgram);
         gl.bindVertexArray(resources.pointVao);
-        const resolution = gl.getUniformLocation(resources.pointProgram, "uResolution");
-        const pointScale = gl.getUniformLocation(resources.pointProgram, "uPointScale");
-        const maxPoint = gl.getUniformLocation(resources.pointProgram, "uMaxPointSize");
-        gl.uniform2f(resolution, camera.viewport.width, camera.viewport.height);
-        gl.uniform1f(pointScale, INFLUENCE_DIAMETER * pixelRatio);
-        gl.uniform1f(maxPoint, resources.maxPointSize);
+        resources.uniforms.point(
+          camera.viewport.width,
+          camera.viewport.height,
+          pixelRatio,
+          resources.maxPointSize,
+        );
         gl.drawArrays(gl.POINTS, 0, count);
         gl.disable(gl.BLEND);
       }
@@ -413,21 +435,7 @@ function createWebglSurface(): WebglSurface {
       gl.bindVertexArray(resources.compositeVao);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, resources.fieldTexture);
-      const field = gl.getUniformLocation(resources.compositeProgram, "uField");
-      const background = gl.getUniformLocation(resources.compositeProgram, "uBackground");
-      const shadeStart = gl.getUniformLocation(resources.compositeProgram, "uShadeStart");
-      const shadeEnd = gl.getUniformLocation(resources.compositeProgram, "uShadeEnd");
-      const shadeFloor = gl.getUniformLocation(resources.compositeProgram, "uShadeFloor");
-      gl.uniform1i(field, 0);
-      gl.uniform3f(
-        background,
-        CANVAS_BACKGROUND[0],
-        CANVAS_BACKGROUND[1],
-        CANVAS_BACKGROUND[2],
-      );
-      gl.uniform1f(shadeStart, DENSITY_SHADE_START);
-      gl.uniform1f(shadeEnd, DENSITY_SHADE_END);
-      gl.uniform1f(shadeFloor, densityShading ? DENSITY_SHADE_FLOOR : 1);
+      resources.uniforms.composite(densityShading);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.bindVertexArray(null);
       return true;
@@ -435,7 +443,7 @@ function createWebglSurface(): WebglSurface {
   };
 }
 
-let maybeSurface: WebglSurface | undefined;
+const surfaces = new WeakMap<HTMLCanvasElement, WebglSurface>();
 
 /**
  * Draws the shaded blob into the particle canvas.
@@ -455,7 +463,11 @@ export function drawShadedBlob(
     return false;
   }
 
-  maybeSurface ??= createWebglSurface();
+  let maybeSurface = surfaces.get(canvas);
+  if (maybeSurface === undefined) {
+    maybeSurface = createWebglSurface(canvas);
+    surfaces.set(canvas, maybeSurface);
+  }
   return maybeSurface.draw(
     canvas,
     frame,

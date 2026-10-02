@@ -1,0 +1,5 @@
+{
+  "runId": "20261002-stage5-after-02",
+  "selectedForFinalComparison": false,
+  "reason": "Corrected metadata overhead, but render timing remained variable. Final comparison uses fresh adjacent before01/after03, preserving all earlier data without picking a best replicate."
+}

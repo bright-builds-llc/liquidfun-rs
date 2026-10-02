@@ -157,3 +157,8 @@ After the committed Stage1 gate, frontend Stage4 preparation may run in a separa
 
 
 Stage5 preparation may also run in the isolated frontend worktree after Stage4 main source is frozen. Only rendering files/tests may change there; main integration waits for the Stage4 accepted evidence commit. No heavy parallel jobs run during timing, and the rendering-only patch is independently applied and revalidated against current main.
+
+
+## Rendering measurement re-plan
+
+The first two Stage5 timing candidates passed physical/pixel quality but did not show a clear render CPU benefit. After identifying/removing volatile-count snapshot overhead, measure a fresh adjacent before/after pair with identical current core/worker/harness/hardware. Restore only the backed-up agent-owned renderer/test diff to committed3992aee for the before run; reapply the verified8cb3d768 source patch for after. Keep every raw report, previous comparisons and rejection reason. Source byte guards remain active; no parallel heavy jobs. Base acceptance on truthful paired evidence, not a required positive percentage or selective replicate.

@@ -51,3 +51,72 @@ export function eachProjectedParticle(
     );
   }
 }
+
+/** Packs every current position, with a straight-line full-metadata path for volatile streams. */
+export function fillProjectedParticleArrays(
+  frame: RenderFrame,
+  camera: Camera,
+  positions: Float32Array,
+  radii: Float32Array,
+  colors: Float32Array,
+  writeRadii: boolean,
+  writeColors: boolean,
+): number {
+  let count = 0;
+  const full = (
+    x: number,
+    y: number,
+    radius: number,
+    red: number,
+    green: number,
+    blue: number,
+    alpha: number,
+  ) => {
+    const positionIndex = count * 2,
+      colorIndex = count * 4;
+    positions[positionIndex] = x;
+    positions[positionIndex + 1] = y;
+    radii[count] = radius;
+    colors[colorIndex] = red / 255;
+    colors[colorIndex + 1] = green / 255;
+    colors[colorIndex + 2] = blue / 255;
+    colors[colorIndex + 3] = alpha;
+    count += 1;
+  };
+  const positionOnly = (x: number, y: number) => {
+    const index = count * 2;
+    positions[index] = x;
+    positions[index + 1] = y;
+    count += 1;
+  };
+  const partial = (
+    x: number,
+    y: number,
+    radius: number,
+    red: number,
+    green: number,
+    blue: number,
+    alpha: number,
+  ) => {
+    const positionIndex = count * 2,
+      colorIndex = count * 4;
+    positions[positionIndex] = x;
+    positions[positionIndex + 1] = y;
+    if (writeRadii) radii[count] = radius;
+    if (writeColors) {
+      colors[colorIndex] = red / 255;
+      colors[colorIndex + 1] = green / 255;
+      colors[colorIndex + 2] = blue / 255;
+      colors[colorIndex + 3] = alpha;
+    }
+    count += 1;
+  };
+  const visit =
+    writeRadii && writeColors
+      ? full
+      : writeRadii || writeColors
+        ? partial
+        : positionOnly;
+  eachProjectedParticle(frame, camera, Number.POSITIVE_INFINITY, visit);
+  return count;
+}

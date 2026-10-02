@@ -19,6 +19,7 @@ import {
 } from "./mode";
 import { eachProjectedParticle } from "./projected-particle";
 import { triangleWireVertices } from "./triangle-wire";
+import { paintStableSegments } from "./static-layer";
 import {
   DEFAULT_WIREFRAME_STROKE_WIDTH,
   maybeParseWireframeStrokeWidth,
@@ -33,7 +34,10 @@ const MAX_DEVICE_PIXEL_RATIO = 2;
 
 /** Caps the backing-store scale shared by the 2D and shaded-blob canvases. */
 export function cappedDevicePixelRatio(devicePixelRatio: number): number {
-  return Math.min(requirePositiveFinite(devicePixelRatio), MAX_DEVICE_PIXEL_RATIO);
+  return Math.min(
+    requirePositiveFinite(devicePixelRatio),
+    MAX_DEVICE_PIXEL_RATIO,
+  );
 }
 
 /** Particle surface painters. Tests replace these so node can skip real canvases. */
@@ -58,10 +62,7 @@ function requirePositiveFinite(value: number): number {
   return value;
 }
 
-function valueAt(
-  values: Float32Array | Uint8Array,
-  index: number,
-): number {
+function valueAt(values: Float32Array | Uint8Array, index: number): number {
   const value = values[index];
   if (value === undefined) {
     throw new Error(INVALID_RENDER_FRAME_MESSAGE);
@@ -183,6 +184,15 @@ function drawTriangleParticles(
   );
 }
 
+function prepareSegmentStroke(
+  context: CanvasRenderingContext2D,
+  renderMode: CircleRenderMode,
+  wireframeStrokeWidth: number,
+): void {
+  context.strokeStyle = BASIN_STROKE_COLOR;
+  context.lineWidth = outlineWidth(renderMode, wireframeStrokeWidth);
+}
+
 function drawSegments(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
@@ -190,8 +200,7 @@ function drawSegments(
   renderMode: CircleRenderMode,
   wireframeStrokeWidth: number,
 ): void {
-  context.strokeStyle = BASIN_STROKE_COLOR;
-  context.lineWidth = outlineWidth(renderMode, wireframeStrokeWidth);
+  prepareSegmentStroke(context, renderMode, wireframeStrokeWidth);
 
   for (
     let segmentIndex = 0;
@@ -245,7 +254,12 @@ function drawCircles(
       context.fill();
     }
     context.stroke();
-    drawCircleLabel(context, frame.circleLabels[circleIndex / 3], center, radius);
+    drawCircleLabel(
+      context,
+      frame.circleLabels[circleIndex / 3],
+      center,
+      radius,
+    );
   }
 }
 
@@ -323,7 +337,13 @@ function drawParticleSurface(
     return;
   }
   if (renderMode === "contour") {
-    painters.paintContour(context, frame, camera, particleLimit, densityShading);
+    painters.paintContour(
+      context,
+      frame,
+      camera,
+      particleLimit,
+      densityShading,
+    );
     return;
   }
   if (renderMode === "shaded-blob" && webglCovered) {
@@ -344,6 +364,7 @@ export function drawRenderFrame(
   webglCovered = false,
   densityShading = true,
   painters: SurfacePainters = DEFAULT_SURFACE_PAINTERS,
+  maybeDevicePixelRatio?: number,
 ): void {
   clearFrame(context, camera, webglCovered);
   drawParticleSurface(
@@ -358,6 +379,19 @@ export function drawRenderFrame(
     painters,
   );
   const rigidMode = rigidRenderMode(renderMode);
-  drawSegments(context, frame, camera, rigidMode, wireframeStrokeWidth);
+  if (maybeDevicePixelRatio === undefined) {
+    drawSegments(context, frame, camera, rigidMode, wireframeStrokeWidth);
+  } else {
+    paintStableSegments(
+      context,
+      frame,
+      camera,
+      renderMode,
+      wireframeStrokeWidth,
+      cappedDevicePixelRatio(maybeDevicePixelRatio),
+      drawSegments,
+      prepareSegmentStroke,
+    );
+  }
   drawCircles(context, frame, camera, rigidMode, wireframeStrokeWidth);
 }

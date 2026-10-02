@@ -1,0 +1,54 @@
+{
+  "stage": "stage5",
+  "run": "20261002-stage5-after-03",
+  "beforeRun": "20261002-stage5-before-01",
+  "earlierRunsRetained": [
+    "20261002-stage5-after-01",
+    "20261002-stage5-after-02"
+  ],
+  "checks": [
+    "ordered Cargo fmt/clippy/build/test passed:1050 native including doctests",
+    "299 release WASM tests including four Tesla rate/direction cases passed",
+    "472 web unit tests, typecheck, fresh production build passed",
+    "61 browser tests passed;1 existing optional forensic skip",
+    "managed all and Markdown passed",
+    "same solver WASM bytes; exact original fixed checkpoints; actual worker backend",
+    "26 focused cache/packing tests and14 exact Chromium pixel comparisons passed"
+  ],
+  "sourcePatchSha256": "8cb3d768be7d9b00f44ae12f1c18b333e7ee516f76ff4b59a696d552b69a9d84",
+  "physicsMeansMs": {
+    "forward": 5.9783333301544195,
+    "reverse": 31.65583335558573
+  },
+  "livePresentedFps": {
+    "forward": 59.47720301325466,
+    "reverse": 29.057952329919182
+  },
+  "renderSubmissionMs": {
+    "forward": {
+      "beforeMeanMs": 0.11749999523162842,
+      "afterMeanMs": 0.1408333460489909,
+      "beforeRangeMs": [
+        0.0899999737739563,
+        0.13250004053115844
+      ],
+      "afterRangeMs": [
+        0.1249999761581421,
+        0.16750004291534423
+      ]
+    },
+    "reverse": {
+      "beforeMeanMs": 0.19916664361953737,
+      "afterMeanMs": 0.27833333412806194,
+      "beforeRangeMs": [
+        0.1549999475479126,
+        0.28749998807907107
+      ],
+      "afterRangeMs": [
+        0.23750002384185792,
+        0.3349999785423279
+      ]
+    }
+  },
+  "interpretation": "Mixed result, no rendering speedup established. Mean submission increased by about0.024/0.079ms; reverse ranges overlap; live cadence nearly unchanged. Requested exact caches implemented, large gains originate in wall contacts and worker responsiveness."
+}

@@ -390,7 +390,7 @@ Completion review: source `3de2929` makes all four loop return walls actual cont
 - [x] Share immutable collision geometry and reuse transaction-safe buffers; benchmark and commit Stage 2.
 - [x] Remove unnecessary neighbour-pair construction from drain queries; benchmark and commit Stage 3.
 - [x] Move Tesla live playback into an ordered, bounded worker lifecycle; retain direct export/testing paths; benchmark and commit Stage 4.
-- [ ] Cache/batch rendering with correct invalidation and unchanged particle/geometry presentation; benchmark and commit Stage 5.
+- [x] Cache/batch rendering with correct invalidation and unchanged particle/geometry presentation; benchmark and commit Stage 5.
 - [ ] Complete native/WASM/web/browser and four-case flow checks, independent review, historical comparison, normal main publication and refreshed live preview.
 
 Plan: GSD quick coordinator 261002-irz and bounded serial execution prompts. Starting source is 8c419c4, clean and synced. Preserve 6 cm geometry, 5 mm particles, four particle iterations, fixed 1/60 timestep, 1440/2880 source settings and the existing inlet policy. Primary timed workloads are default-rate forward/reverse at fixed simulated checkpoints; extended maximum-rate timing is optional and must remain a separate comparable configuration. All four rate/direction quality cases remain required. Reports live under docs/benchmarks/tesla-valve; no optimization may start before the original baseline is persisted. Core and frontend implementations are gated sequentially for attribution. Current hobby scope, standing authority, loaded Bright Builds guidance and active lessons apply.

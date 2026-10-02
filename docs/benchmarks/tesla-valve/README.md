@@ -26,13 +26,14 @@ The five stages retain geometry, particle radius, source rates, four particle it
 
 The original run used the unchanged physics implementation at `8c419c4c42aaf99cdfdf8d3d297c184c25d5ae8f`. Its source manifest includes the then-uncommitted benchmark harness; the report records that exact producer diff and artifact hashes. Measurements below are means of three replicate means on Apple M4 Max, Chromium 153, ANGLE Metal, on 2026-10-02.
 
-| Stage                           | Forward physics (ms/step) | Reverse physics (ms/step) | Forward live paints/s | Reverse live paints/s | Evidence                                                |
-| ------------------------------- | ------------------------- | ------------------------- | --------------------- | --------------------- | ------------------------------------------------------- |
-| Original                        | 31.374                    | 110.849                   | 31.3                  | 9.1                   | [Raw report](runs/20261002-original-01/report.json)     |
-| 1. Spatial wall contacts        | 6.268                     | 32.533                    | 53.7                  | 29.6                  | [Raw report](runs/20261002-stage1-after-01/report.json) |
-| 2. Geometry sharing and buffers | 6.125                     | 32.282                    | 52.1                  | 29.9                  | [Raw report](runs/20261002-stage2-after-02/report.json) |
-| 3. Query-only drain index       | 6.042                     | 31.957                    | 50.1                  | 30.2                  | [Raw report](runs/20261002-stage3-after-01/report.json) |
-| 4. Live simulation worker       | 5.981                     | 31.574                    | 59.5                  | 29.9                  | [Raw report](runs/20261002-stage4-after-02/report.json) |
+| Stage                            | Forward physics (ms/step) | Reverse physics (ms/step) | Forward live paints/s | Reverse live paints/s | Evidence                                                |
+| -------------------------------- | ------------------------- | ------------------------- | --------------------- | --------------------- | ------------------------------------------------------- |
+| Original                         | 31.374                    | 110.849                   | 31.3                  | 9.1                   | [Raw report](runs/20261002-original-01/report.json)     |
+| 1. Spatial wall contacts         | 6.268                     | 32.533                    | 53.7                  | 29.6                  | [Raw report](runs/20261002-stage1-after-01/report.json) |
+| 2. Geometry sharing and buffers  | 6.125                     | 32.282                    | 52.1                  | 29.9                  | [Raw report](runs/20261002-stage2-after-02/report.json) |
+| 3. Query-only drain index        | 6.042                     | 31.957                    | 50.1                  | 30.2                  | [Raw report](runs/20261002-stage3-after-01/report.json) |
+| 4. Live simulation worker        | 5.981                     | 31.574                    | 59.5                  | 29.9                  | [Raw report](runs/20261002-stage4-after-02/report.json) |
+| 5. Paths and GPU metadata caches | 5.978                     | 31.656                    | 59.5                  | 29.1                  | [Raw report](runs/20261002-stage5-after-03/report.json) |
 
 The original fixed checkpoints matched across all replicates and the live warmup. Forward checkpoint counts were 2852 to 2857; reverse were 9051 to 9662. The reverse live probe advanced fewer steps, reaching 9389 particles, which is why live count and fixed-checkpoint count must be read separately. Render submission averaged 0.126 ms forward and 0.187 ms reverse; physics dominated this baseline. Later rows report each isolated stage against its immediate predecessor and preserve the original as the cumulative reference.
 
@@ -61,3 +62,13 @@ Accepted Stage3 is the before record. The corrected worker run retains identical
 The 16ms main-thread timer-lateness proxy fell from 1.380 to 0.350ms forward and 45.806 to 0.371ms reverse (means of three replicate means). This measures responsiveness, not physics throughput or end-to-end input latency. Reverse simulation still delivers about30steps/s at this workload. Only newly delivered snapshots count as paints.
 
 All1050 native/299 WASM/456 web unit tests passed;61 browser tests passed with one existing optional forensic skip. Independent source review closed protocol ownership, gravity rejection, abort, control/transport, hidden completion and paused redraw races. A test-only isolated fixture serves worker-quality tests without adding diagnostics to the production app. Rejected candidate01 and failed validation attempts remain identified separately.
+
+## Stage 5: Static native paths and GPU metadata
+
+The final comparison uses a [fresh before run](runs/20261002-stage5-before-01/report.json) with exactly committed Stage4 rendering and the [corrected after run](runs/20261002-stage5-after-03/report.json). Core, worker, workload and hardware are unchanged. The before run links accepted Stage4. All physical checkpoints remain exactly original, and solver WASM bytes are unchanged.
+
+CPU render submission means changed from 0.117 to 0.141ms forward and 0.199 to 0.278ms reverse. Reverse replicate ranges overlap; live cadence changed from59.62/28.75 to59.48/29.06frames per second. These results do not establish a rendering speedup. The added mean submission cost is about0.024/0.079ms against roughly6/32ms physics. The requested exact path/uniform/stable-attribute caches remain implemented; their benefit depends on stability and this workload is dominated by physics.
+
+The first [after candidate](runs/20261002-stage5-after-01/report.json) exposed copies of metadata snapshots on constantly changing particle counts. After profiling and a targeted fix, the [second run](runs/20261002-stage5-after-02/report.json) still had variable render timings; both exploratory results remain retained and are not selected as final predecessors. The final candidate uses full straight-line uploads during count churn and exact capacity-reused snapshots when counts stabilize. Native paths retain separate stroke order and current transforms/styles; moving outlines, circles and labels remain live. No particle/resolution reductions or approximate metadata comparisons were introduced.
+
+All1050 native/299 WASM/472 web unit tests and61 browser tests passed, with the same optional skip. [Main Chromium appearance checks](verification/stage5-appearance-final.json) show zero differing bytes across14 comparisons. A raster-layer experiment failed exact antialiasing checks and was replaced by native paths without relaxing pixel tolerance.

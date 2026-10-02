@@ -1,0 +1,103 @@
+{
+  "recordedAtUtc": "2026-10-02T23:05:38.807193+00:00",
+  "sourcePatchSha256": "8cb3d768be7d9b00f44ae12f1c18b333e7ee516f76ff4b59a696d552b69a9d84",
+  "qualification": "Corrected main renderer; handcrafted owned lanes, no physics producer used. Raw probe qualification correction is recorded separately in diagnostic evidence.",
+  "browserVersion": "153.0.8010.12",
+  "identity": {
+    "backend": "webgl2",
+    "contextLost": false,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4 Max, Unspecified Version)"
+  },
+  "results": [
+    {
+      "mode": "solid",
+      "dpr": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "mode": "circle-wireframe",
+      "dpr": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "mode": "triangle-wireframe",
+      "dpr": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "mode": "shaded-blob",
+      "dpr": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "mode": "solid",
+      "dpr": 2,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "mode": "circle-wireframe",
+      "dpr": 2,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "mode": "triangle-wireframe",
+      "dpr": 2,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "mode": "shaded-blob",
+      "dpr": 2,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "kind": "GPU",
+      "step": 0,
+      "ratio": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "kind": "GPU",
+      "step": 1,
+      "ratio": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "kind": "GPU",
+      "step": 2,
+      "ratio": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "kind": "GPU",
+      "step": 3,
+      "ratio": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "kind": "GPU",
+      "step": 4,
+      "ratio": 1,
+      "maximum": 0,
+      "differingBytes": 0
+    },
+    {
+      "kind": "GPU",
+      "step": 5,
+      "ratio": 2,
+      "maximum": 0,
+      "differingBytes": 0
+    }
+  ]
+}

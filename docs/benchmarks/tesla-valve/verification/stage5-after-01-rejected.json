@@ -1,0 +1,7 @@
+{
+  "runId": "20261002-stage5-after-01",
+  "accepted": false,
+  "reason": "Exact physical/pixel checks passed but canonical render CPU submission increased. Repeated metadata snapshot copies during particle-count churn and cache key overhead were investigated and corrected before final acceptance.",
+  "beforeRun": "20261002-stage4-after-02",
+  "nextAction": "Fresh corrected Stage5 after run against accepted Stage4; do not chain initial candidate."
+}
