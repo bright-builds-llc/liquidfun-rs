@@ -100,7 +100,7 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
   "hydraulic-fountain":
     "Use Gap to set the opening between the platforms. It starts at 9 cm. Labeled controls also work from the keyboard.",
   "wave-tank":
-    "Use Platform width, Platform slant, Platform speed, and Platform amplitude to drive the wave. Width starts at 4.0 m. Slant starts at 10 degrees. Speed starts at 0.6× the original rate, and amplitude starts at 0.5 m. Labeled controls also work from the keyboard.",
+    "Use Platform width, Platform slant, Platform speed, and Platform amplitude to drive the wave. Width starts at 0.92 m. Slant starts at 5 degrees. Speed starts at 0.4× the original rate, and amplitude starts at 0.168 m. Labeled controls also work from the keyboard.",
   "liquid-bubbler": WATCH_FIRST_HINT,
   "stacked-drip": WATCH_FIRST_HINT,
   "washing-machine":

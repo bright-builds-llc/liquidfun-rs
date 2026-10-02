@@ -1,4 +1,4 @@
-//! A 50 m pool: a dynamic end platform lifts one end and sends a wave along it.
+//! A 4 m pool: a dynamic end platform lifts one end and sends a wave along it.
 //!
 //! Motor speed is a sine of simulation time. Limits sit outside that stroke.
 //! Width and slant rebuild the tank. Speed and amplitude change the live motor.
@@ -17,8 +17,10 @@ use liquidfun::{
 use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
 use crate::session::SessionError;
 
-/// About 16.5 cm, one and a half times the previous droplets.
-const PARTICLE_RADIUS: f32 = 0.11 * 1.5;
+/// Lengths are the former 50 m pool, shrunk so the inner width is 4 m.
+const LENGTH_SCALE: f32 = 4.0 / 50.0;
+/// About 13 mm, the previous droplets at the 4 m scale.
+const PARTICLE_RADIUS: f32 = 0.11 * 1.5 * LENGTH_SCALE;
 /// `LiquidFun`'s usual spacing: 0.75 of the particle diameter.
 const PARTICLE_SPACING: f32 = 1.5 * PARTICLE_RADIUS;
 /// Full rows across the pool, then a short top row, for 2500 particles.
@@ -29,27 +31,22 @@ const PARTICLE_DAMPING: f32 = 0.2;
 const GROUP_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 const GRAVITY: Vec2 = Vec2::new(0.0, -10.0);
 const SIM_DT: f32 = 1.0 / 60.0;
-/// Five times the earlier period, so 0.6× rises in about two seconds.
+/// Five times the earlier period, so 0.4× rises in about three seconds.
 const BASE_PERIOD: f32 = 2.4;
-const DEFAULT_STROKE: f32 = 0.5;
-/// Six tenths of the original unit rate.
-const DEFAULT_SPEED: f32 = 0.6;
-const LIMIT_MARGIN: f32 = 0.05;
+const DEFAULT_STROKE: f32 = 0.168;
+/// Four tenths of the original unit rate.
+const DEFAULT_SPEED: f32 = 0.4;
+const LIMIT_MARGIN: f32 = 0.05 * LENGTH_SCALE;
 const MAX_MOTOR_FORCE: f32 = 1.0e6;
 const PLATFORM_DENSITY: f32 = 1.0;
 const WALL_FRICTION: f32 = 0.2;
-/// One meter thick, several particle diameters, so water stays in the pool.
-const WALL_HALF: f32 = 0.5;
+/// Several particle diameters, so water stays in the pool.
+const WALL_HALF: f32 = 0.5 * LENGTH_SCALE;
 /// The moving pad stays a thin plate on top of the floor.
-const PAD_HALF: f32 = 0.1;
-const DEFAULT_PLATFORM_WIDTH: f32 = 4.0;
-const WIDTH_MIN_TENTHS: u16 = 20;
-const WIDTH_MAX_TENTHS: u16 = 120;
-const WIDTH_STEP_TENTHS: u16 = 5;
-const SPEED_MAX_TENTHS: u16 = 40;
-const AMPLITUDE_MAX_TENTHS: u16 = 40;
-const AMPLITUDE_MAX: f32 = 4.0;
-const DEFAULT_SLANT_DEGREES: u16 = 10;
+const PAD_HALF: f32 = 0.1 * LENGTH_SCALE;
+const DEFAULT_PLATFORM_WIDTH: f32 = 0.92;
+const AMPLITUDE_MAX: f32 = 4.0 * LENGTH_SCALE;
+const DEFAULT_SLANT_DEGREES: u16 = 5;
 const SLANT_MAX_DEGREES: u16 = 30;
 const SLAB_THICKNESS: f32 = PAD_HALF * 2.0;
 const PLATFORM_WIDTH_CONTROL: &str = "platform-width";
@@ -61,10 +58,10 @@ const NEAR_WALL_INNER_X: f32 = 0.0;
 /// the near wall and the fixed floor without sticking.
 const TANK_FILTER: FilterData = FilterData::new(0x0001, 0xffff, -1);
 /// Far wall stays put while the platform width slider moves the joint anchor.
-const TANK_RIGHT: f32 = 50.0;
+const TANK_RIGHT: f32 = 50.0 * LENGTH_SCALE;
 const FLOOR_BOTTOM_Y: f32 = -(WALL_HALF * 2.0);
-/// Side walls clear the deeper pool plus a 4 m stroke and some splash.
-const WALL_TOP_Y: f32 = 12.0;
+/// Side walls clear the deeper pool plus a full stroke and some splash.
+const WALL_TOP_Y: f32 = 12.0 * LENGTH_SCALE;
 const FILL_INSET: f32 = 2.0 * PARTICLE_SPACING;
 
 struct WallBox {
@@ -108,11 +105,11 @@ fn construction_from_presets(presets: &[(String, String)]) -> Result<(f32, f32),
     for (name, value) in presets {
         match name.as_str() {
             PLATFORM_WIDTH_CONTROL => {
-                width = parse_platform_width(value).ok_or(SessionError::UnknownControl)?;
+                width = slider::parse_platform_width(value).ok_or(SessionError::UnknownControl)?;
             }
             PLATFORM_SLANT_CONTROL => {
-                let degrees =
-                    parse_degrees(value, SLANT_MAX_DEGREES).ok_or(SessionError::UnknownControl)?;
+                let degrees = slider::parse_degrees(value, SLANT_MAX_DEGREES)
+                    .ok_or(SessionError::UnknownControl)?;
                 slant = slant_radians(degrees);
             }
             _ => return Err(SessionError::UnknownControl),
@@ -438,63 +435,6 @@ fn box_corners(center: Vec2, half_width: f32, half_height: f32) -> [Vec2; 4] {
     ]
 }
 
-/// Accepts one-decimal tokens on a tenth step, from `min_tenths` through `max_tenths`.
-fn parse_tenths(value: &str, min_tenths: u16, max_tenths: u16, step_tenths: u16) -> Option<f32> {
-    let (whole, fraction) = value.split_once('.')?;
-    if fraction.len() != 1 || !fraction.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
-    }
-    if whole.is_empty() || !whole.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
-    }
-    if whole.len() > 1 && whole.starts_with('0') {
-        return None;
-    }
-
-    let whole_value = whole.parse::<u16>().ok()?;
-    let tenth_byte = fraction.as_bytes().first().copied()?;
-    let tenth = u16::from(tenth_byte.checked_sub(b'0')?);
-    if step_tenths == 0 {
-        return None;
-    }
-    let tenths = whole_value.checked_mul(10)?.checked_add(tenth)?;
-    if tenths < min_tenths || tenths > max_tenths {
-        return None;
-    }
-    if !(tenths - min_tenths).is_multiple_of(step_tenths) {
-        return None;
-    }
-
-    Some(f32::from(tenths) / 10.0)
-}
-
-fn parse_platform_width(value: &str) -> Option<f32> {
-    parse_tenths(value, WIDTH_MIN_TENTHS, WIDTH_MAX_TENTHS, WIDTH_STEP_TENTHS)
-}
-
-fn parse_platform_speed(value: &str) -> Option<f32> {
-    parse_tenths(value, 0, SPEED_MAX_TENTHS, 1)
-}
-
-fn parse_platform_amplitude(value: &str) -> Option<f32> {
-    parse_tenths(value, 0, AMPLITUDE_MAX_TENTHS, 1)
-}
-
-/// Whole degrees from 0 through `max_degrees`. The slider step is one degree.
-fn parse_degrees(value: &str, max_degrees: u16) -> Option<f32> {
-    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
-    }
-    if value.len() > 1 && value.starts_with('0') {
-        return None;
-    }
-    let degrees = value.parse::<u16>().ok()?;
-    if degrees > max_degrees {
-        return None;
-    }
-    Some(f32::from(degrees))
-}
-
 fn write_motor(
     world: &mut World,
     joint: JointId,
@@ -534,25 +474,25 @@ impl SceneHooks for WaveTankHooks {
     ) -> Result<ControlEffect, SessionError> {
         match name {
             PLATFORM_WIDTH_CONTROL => {
-                if parse_platform_width(value).is_none() {
+                if slider::parse_platform_width(value).is_none() {
                     return Err(SessionError::UnknownControl);
                 }
                 return Ok(ControlEffect::Recreated);
             }
             PLATFORM_SLANT_CONTROL => {
-                if parse_degrees(value, SLANT_MAX_DEGREES).is_none() {
+                if slider::parse_degrees(value, SLANT_MAX_DEGREES).is_none() {
                     return Err(SessionError::UnknownControl);
                 }
                 return Ok(ControlEffect::Recreated);
             }
             PLATFORM_SPEED_CONTROL => {
-                let Some(speed) = parse_platform_speed(value) else {
+                let Some(speed) = slider::parse_platform_speed(value) else {
                     return Err(SessionError::UnknownControl);
                 };
                 self.speed = speed;
             }
             PLATFORM_AMPLITUDE_CONTROL => {
-                let Some(stroke) = parse_platform_amplitude(value) else {
+                let Some(stroke) = slider::parse_platform_amplitude(value) else {
                     return Err(SessionError::UnknownControl);
                 };
                 self.stroke = stroke;
@@ -613,6 +553,8 @@ impl SceneHooks for WaveTankHooks {
         Ok(Vec::new())
     }
 }
+
+mod slider;
 
 #[cfg(test)]
 mod tests;

@@ -1,12 +1,12 @@
 import type { SceneControl } from "./scenes";
 
 /** Narrowest platform. The fixed floor still reaches the far wall. */
-export const WAVE_TANK_WIDTH_MIN = 2;
+export const WAVE_TANK_WIDTH_MIN = 0.16;
 /** Widest platform that still leaves a fixed channel. */
-export const WAVE_TANK_WIDTH_MAX = 12;
-export const WAVE_TANK_WIDTH_STEP = 0.5;
-/** A few meters of paddle on a 50 m pool. */
-export const WAVE_TANK_WIDTH_DEFAULT = 4;
+export const WAVE_TANK_WIDTH_MAX = 0.96;
+export const WAVE_TANK_WIDTH_STEP = 0.04;
+/** A long paddle on a 4 m pool, leaving a fixed channel. */
+export const WAVE_TANK_WIDTH_DEFAULT = 0.92;
 export const WAVE_TANK_WIDTH_TICKS = [
   WAVE_TANK_WIDTH_MIN,
   WAVE_TANK_WIDTH_DEFAULT,
@@ -34,8 +34,8 @@ export const WAVE_TANK_SPEED_MIN = 0;
 /** Four times the original rise-and-fall rate. */
 export const WAVE_TANK_SPEED_MAX = 4;
 export const WAVE_TANK_SPEED_STEP = 0.1;
-/** Six tenths of the original unit rate. */
-export const WAVE_TANK_SPEED_DEFAULT = 0.6;
+/** Four tenths of the original unit rate. */
+export const WAVE_TANK_SPEED_DEFAULT = 0.4;
 export const WAVE_TANK_SPEED_TICKS = [
   WAVE_TANK_SPEED_MIN,
   WAVE_TANK_SPEED_DEFAULT,
@@ -60,11 +60,11 @@ export const WAVE_TANK_SPEED_CONTROL: SceneControl = {
 
 /** Level. The platform does not rise. */
 export const WAVE_TANK_AMPLITUDE_MIN = 0;
-/** Tallest stroke that still stays under the 12 m side walls. */
-export const WAVE_TANK_AMPLITUDE_MAX = 4;
-export const WAVE_TANK_AMPLITUDE_STEP = 0.1;
-/** About half a meter, enough to send a wave down the pool. */
-export const WAVE_TANK_AMPLITUDE_DEFAULT = 0.5;
+/** Tallest stroke that still stays under the side walls. */
+export const WAVE_TANK_AMPLITUDE_MAX = 0.32;
+export const WAVE_TANK_AMPLITUDE_STEP = 0.008;
+/** 16.8 cm of rise, enough to send a wave down the pool. */
+export const WAVE_TANK_AMPLITUDE_DEFAULT = 0.168;
 export const WAVE_TANK_AMPLITUDE_TICKS = [
   WAVE_TANK_AMPLITUDE_MIN,
   WAVE_TANK_AMPLITUDE_DEFAULT,
@@ -89,11 +89,11 @@ export const WAVE_TANK_AMPLITUDE_CONTROL: SceneControl = {
 
 /** Level plate. Water sits until the platform rises. */
 export const WAVE_TANK_SLANT_MIN = 0;
-/** Steep enough that water runs off, still a short ramp on a 4 m paddle. */
+/** Steep enough that water runs off, still a short ramp on a 0.92 m paddle. */
 export const WAVE_TANK_SLANT_MAX = 30;
 export const WAVE_TANK_SLANT_STEP = 1;
 /** A gentle slope so the pool starts already sliding toward the spill edge. */
-export const WAVE_TANK_SLANT_DEFAULT = 10;
+export const WAVE_TANK_SLANT_DEFAULT = 5;
 export const WAVE_TANK_SLANT_TICKS = [
   WAVE_TANK_SLANT_MIN,
   WAVE_TANK_SLANT_DEFAULT,

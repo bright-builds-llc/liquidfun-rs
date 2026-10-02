@@ -325,25 +325,25 @@ describe("scene catalog controls", () => {
       kind: "range",
       recreates: true,
       surface: "hud",
-      defaultValue: 4,
+      defaultValue: 0.92,
     });
     expect(waveTank?.controls[1]).toMatchObject({
       label: "Platform slant",
       kind: "range",
       recreates: true,
-      defaultValue: 10,
+      defaultValue: 5,
       max: 30,
     });
     expect(waveTank?.controls[2]).toMatchObject({
       label: "Platform speed",
       recreates: false,
-      defaultValue: 0.6,
+      defaultValue: 0.4,
     });
     expect(waveTank?.controls[3]).toMatchObject({
       label: "Platform amplitude",
       recreates: false,
-      defaultValue: 0.5,
-      max: 4,
+      defaultValue: 0.168,
+      max: 0.32,
     });
     expect(waveTank?.controls[4]).toEqual(GRAVITY_CONTROL);
     expect(
