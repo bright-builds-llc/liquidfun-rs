@@ -1,43 +1,50 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Reference Testbed Scenes
-status: complete
-stopped_at: Completed quick task 261002-irz; v1.3 remains archived
-last_updated: "2026-10-02T23:42:02Z"
-last_activity: 2026-10-02
+milestone: v1.4
+milestone_name: Scenario Performance
+status: planning
+stopped_at: v1.4 roadmap initialized; Phase 34 ready to plan
+last_updated: "2026-10-03T19:45:14Z"
+last_activity: 2026-10-03
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 38
-  completed_plans: 38
-  percent: 100
+  total_phases: 27
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-09-28)
+See: `.planning/PROJECT.md` (updated 2026-10-03)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Planning next milestone
+**Current focus:** Phase 34 — Measurement Harness and Original Campaign
 
 ## Current Position
 
-Phase: none
-Plan: none
-Status: v1.3 archived — no active milestone
-Last activity: 2026-10-02 — completed quick task 261002-irz, five Tesla performance changes with serial benchmark history
+Current Phase: 34
+Current Phase Name: Measurement Harness and Original Campaign
+Total Phases: 27
+Current Plan: 0
+Total Plans in Phase: 0
 
-Progress: [██████████] 100%
+Phase: 34 of 60 — Measurement Harness and Original Campaign (1 of 27 in v1.4)
+Plan: Not started; TBD during Phase 34 planning
+**Status:** Ready to plan
+Last activity: 2026-10-03 — v1.4 roadmap initialized; 36/36 requirements mapped
 
-v1.3 Reference Testbed Scenes is archived. Phase numbering continues after 33. No package publication or release tag.
+**Progress:** 0% [░░░░░░░░░░]
+
+v1.3 remains archived. Historical phase directories and evidence are retained. This milestone definition does not execute scenario optimizations or authorize package publication or release tags.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
+- v1.4: Phases 34–60 — common original campaign, 25 catalog-order scene investigations, final whole-catalog closure.
 - Phase 30 added: Periodic hydraulic fountain
 - Phase 31 added: Sinusoidal wave tank
 - Phase 32 added: Liquid motion bubbler
@@ -48,6 +55,9 @@ v1.3 Reference Testbed Scenes is archived. Phase numbering continues after 33. N
 v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key Decisions.
 
 - [v1.3]: Archive is a planning label. No crate publication. Annotated tag `v1.3` marks the archive.
+- [v1.4]: Speed takes priority over compact memory; bounded measured increases are allowed. Preserve authored physics/settings, ordering, visuals and lifecycle; no promised percentage/FPS gain.
+- [v1.4]: Finish the unchanged-source original all-25 campaign before hot-path edits; each scene then needs fresh current-before, simulation/render profiles, attributable changes/after and independent review. Evidence-backed no-safe-gain closure is allowed.
+- [v1.4]: All-six-mode fidelity/default+full-count rendering, affected predecessor canaries and final all-25 coverage apply throughout; raw original/failed attempts remain immutable.
 - The recorded ≤ 3× pair stays bound to git `89d34564`. A fresh unprofiled pair is required before claiming that ratio for later HEAD.
 
 ### Pending Todos
@@ -56,7 +66,7 @@ None.
 
 ### Blockers/Concerns
 
-None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3× ratio for any HEAD after `89d34564`.
+No roadmap blocker. Phase 34 must probe actual WASM/worker attribution, GPU/memory availability, live step-indexed input observation and original witnessed workload windows. No new performance/capability evidence exists yet. A fresh unprofiled pair is required before claiming the ≤ 3× ratio for any HEAD after `89d34564`.
 
 ## Retained Context
 
@@ -100,6 +110,6 @@ None for roadmap. A fresh unprofiled pair is required before claiming the ≤ 3�
 
 ## Session Continuity
 
-Last session: 2026-10-02T23:42:02Z
-Stopped at: Completed quick task 261002-irz; v1.3 remains archived
+Last session: 2026-10-03T19:45:14Z
+Stopped at: v1.4 roadmap initialized; Phase 34 ready to plan
 Resume file: None

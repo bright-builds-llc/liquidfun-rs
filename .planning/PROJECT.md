@@ -4,7 +4,7 @@
 
 `liquidfun-rs` is a fun, experimental, open-source Rust implementation of Google's LiquidFun physics engine for learning, games, simulations, and visualization. It develops useful native Rust behavior incrementally against a pinned upstream reference; complete parity and production certification are optional ambitions.
 
-Visitors can also explore twenty-three native scenes in a SolidJS GitHub Pages playground compiled from this engine to WebAssembly. The repository retains upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
+Visitors can also explore twenty-five native scenes in a SolidJS GitHub Pages playground compiled from this engine to WebAssembly. The repository retains upstream C++ LiquidFun as a read-only development oracle for research, differential testing, reference data, and benchmark comparison. Ordinary users of the published Rust library must not need the upstream source, a C++ compiler, Bazel, or any cross-language runtime component.
 
 ## Core Value
 
@@ -16,7 +16,9 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-v1.3 Reference Testbed Scenes is archived (2026-09-28): 8 phases, 38 plans, and 76 tasks. The playground lists twenty-three ready scenes. That is the twelve missing JavaScript testbed ports, the six earlier scenes, Liquid Tumbler, and four original scenes: Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. Credits for the ports cite the pinned LiquidFun tests. `MAX_ADVANCE_STEPS` stays 4. The audit passed 15/15 requirements. This is not sealed C++ parity or crate publication. Annotated tag `v1.3` marks the planning archive. See `.planning/MILESTONES.md` and `.planning/milestones/v1.3-REQUIREMENTS.md`.
+Milestone v1.4 Scenario Performance is initialized on 2026-10-03. All 25 current playground scenes receive fresh reproducible baselines, individual simulation/rendering hot-path analysis, evidence-led fixes and persisted before/after comparisons. The user prioritizes simulation and rendering speed over memory compactness and explicitly selected preservation of existing behavior and visual fidelity. Larger reusable buffers, caches and precomputed data are permitted; lifetime, invalidation and bounded ownership still matter. A common initial campaign precedes shared changes, each scene receives a fresh immediate before record, and final whole-catalog comparisons expose cumulative effects and regressions. The completed Tesla quick-task reports remain historical evidence, not the new campaign baseline.
+
+v1.3 Reference Testbed Scenes is archived (2026-09-28): 8 phases, 38 plans, and 76 tasks. At archive time the playground listed twenty-three ready scenes. That was the twelve missing JavaScript testbed ports, the six earlier scenes, Liquid Tumbler, and four original scenes: Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. Credits for the ports cite the pinned LiquidFun tests. `MAX_ADVANCE_STEPS` stays 4. The audit passed 15/15 requirements. This is not sealed C++ parity or crate publication. Annotated tag `v1.3` marks the planning archive. See `.planning/MILESTONES.md` and `.planning/milestones/v1.3-REQUIREMENTS.md`.
 
 v1.2 Native Performance Closing is archived (2026-09-21): 4 phases, 23 plans, and 47 tasks. Unprofiled Dam Break Medium on one macOS host recorded `rust_over_cpp_ratio` `2.956857456935513` at stamp `2026-09-21T20-38-50Z` (git `89d3456406c3c79ed500192bca9491c707033647`). `reviewed_reports` stays empty. README and crates.io have no universal “Rust is N×” claim. `just web-player-smoke` recorded 37 Chromium tests, compared with native Rust only. This is not crate publication and not a git release tag. Commit `77fbd84` (zero the force buffer after SolveForce) is after that stamp, so the ratio is not a measurement of later HEAD. See `.planning/MILESTONES.md` and `.planning/milestones/v1.2-REQUIREMENTS.md`.
 
@@ -75,17 +77,35 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 </details>
 
-## Next Milestone Goals
+## Current Milestone: v1.4 Scenario Performance
 
-No new milestone scope is chosen. Use `/gsd-new-milestone` to question, research, and write a fresh requirements file. Phase numbering continues after 33.
+**Goal:** Improve simulation and rendering speed across every current playground scenario through individual profiling and reproducible persisted performance evidence, allowing increased memory use while preserving behavior and fidelity.
 
-Still unmapped until a later milestone adopts them: DRAW-02 (full Drawing Particles material matrix), PRESET-01 (Impulse and Liquid Timer presets), PARITY-01 (sealed per-scene differential evidence), and BOX2D-01 (Box2D-only tests the JavaScript testbed leaves commented out). An explicit SIMD or parallel opt-in, relaxing `unsafe_code = "forbid"`, Phase 12 sealed-matrix calibration, and a public speed claim stay out until separately chosen. Package publication and a git release tag remain separately authorized.
+**Target features:**
+
+- A versioned workload manifest for all 25 catalog scenes, including nonempty interaction cases, meaningful scene-cycle windows and representative load/control variants.
+- Fresh same-source campaign baselines before optimizations, plus fresh immediate before/after measurements for each scene's iteration.
+- Per-scenario attribution of simulation, scene hooks, frame capture/copy, worker or direct execution, rendering submission and available GPU work; profiling artifacts stay separate from unprofiled timing authority.
+- Scene-by-scene hot-path fixes, including larger reusable buffers, caches or precomputed structures when measurement supports them.
+- Source-bound immutable raw samples, profiler identities, semantic checkpoints, memory observations and readable before/after history.
+- Regression canaries after shared changes and a final whole-catalog comparison against the initial campaign.
+
+Phase numbering continues at 34. Existing phase directories and archived research/evidence stay intact. Scope covers the current 25-scene web catalog, not every native/upstream catalog entry. Matched native headless diagnostics can support those scenes without turning C++ comparison or strict certification into milestone prerequisites.
+
+Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims, package publication and release tags. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized by the memory-for-speed priority.
 
 ## Requirements
 
 ### Active
 
-None. PLAY-01, FX-01, and FX-02 were validated in Phase 29.
+- [ ] Capture fresh, reproducible initial baselines for all 25 current playground scenarios.
+- [ ] Attribute simulation and rendering hot paths independently for each scenario and representative workload.
+- [ ] Apply profile-supported fixes prioritizing speed, accepting measured memory increases.
+- [ ] Persist matched immediate before/after evidence and cumulative campaign comparisons.
+- [ ] Preserve existing scenario behavior, physical settings, entity counts and visual fidelity.
+- [ ] Verify cross-scenario effects of shared changes and close with a final full-catalog pass.
+
+Detailed atomic requirements and phase traceability are defined in REQUIREMENTS.md and ROADMAP.md for v1.4. PLAY-01, FX-01 and FX-02 remain validated in Phase 29.
 
 ### Validated
 
@@ -230,6 +250,7 @@ The snapshots below describe their original phases, not current work or next ste
 
 ## Constraints
 
+- **v1.4 performance priority**: Prioritize measured simulation/rendering speed over memory compactness. Larger bounded caches, reusable buffers and precomputed structures are allowed. Existing behavior and fidelity are preserved; source settings are not reduced to manufacture performance gains. Track memory increases with the scope/availability of the measurement.
 - **Implementation**: Production physics behavior must be native Rust — runtime delegation to upstream C++ is prohibited.
 - **Reference isolation**: FFI and C++ builds are limited to differential testing, comparison, reference generation, benchmark comparison, and upstream test/example execution — published crates remain independent.
 - **Build system**: Cargo is primary and sufficient for normal users — Bazel, CMake, or hybrid orchestration requires a documented evidence-based decision.
@@ -278,6 +299,9 @@ The snapshots below describe their original phases, not current work or next ste
 | Treat v1.2 as a planning label, not a package or git release tag | Archive completion is not publication | Accepted 2026-09-21; same policy as v1.0 and v1.1 |
 | Port the twelve missing JavaScript testbed scenes in the existing player, then four original scenes | Recognizable behavior with honest credits; Fountain, Wave Machine, Water Wheel, and Liquid Timer stay | ✓ Shipped in v1.3; the catalog has 23 ready scenes |
 | Treat v1.3 as a planning label, not a package release | Archive completion is not crate publication | Accepted 2026-09-28. The owner later authorized annotated tag `v1.3` as a milestone marker, not a crates.io release |
+| Prioritize scenario simulation/rendering speed over memory compactness in v1.4 | User explicitly accepts increased memory usage to obtain speed | Selected 2026-10-03; gains must be demonstrated on matched workloads |
+| Preserve existing behavior and fidelity while optimizing v1.4 | User selected this policy in milestone questioning | Selected 2026-10-03; no default lower-quality fast modes |
+| Keep all-scene original baselines plus fresh scene-local before/after records | Shared engine/renderer fixes can change later scenes before their own turn | Selected for v1.4 evidence design; implementation pending |
 
 ## Open Questions
 
@@ -309,4 +333,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-09-28 after v1.3 milestone. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-10-03 after initializing v1.4 Scenario Performance. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
