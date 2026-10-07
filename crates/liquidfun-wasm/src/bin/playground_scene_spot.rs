@@ -1,4 +1,4 @@
-//! Native five-scene playground spot-check timer.
+//! Native all-catalog playground scene survey timer.
 
 use std::env;
 use std::error::Error;
@@ -6,7 +6,7 @@ use std::process::ExitCode;
 
 use liquidfun_wasm::{
     run_scene_spot,
-    scene_spot::{DEFAULT_MEASURED_STEPS, DEFAULT_WARMUP_STEPS},
+    scene_spot::{DEFAULT_MEASURED_STEPS, DEFAULT_RUNS, DEFAULT_WARMUP_STEPS},
 };
 
 fn main() -> ExitCode {
@@ -21,17 +21,18 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().skip(1).collect();
-    let (warmup_steps, measured_steps) = parse_counts(&args)?;
-    let samples = run_scene_spot(warmup_steps, measured_steps)?;
+    let (warmup_steps, measured_steps, runs) = parse_counts(&args)?;
+    let samples = run_scene_spot(warmup_steps, measured_steps, runs)?;
     for sample in samples {
         println!("{}", sample.to_json());
     }
     Ok(())
 }
 
-fn parse_counts(args: &[String]) -> Result<(u32, u32), Box<dyn Error>> {
+fn parse_counts(args: &[String]) -> Result<(u32, u32, u32), Box<dyn Error>> {
     let mut warmup_steps = DEFAULT_WARMUP_STEPS;
     let mut measured_steps = DEFAULT_MEASURED_STEPS;
+    let mut runs = DEFAULT_RUNS;
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
@@ -43,15 +44,19 @@ fn parse_counts(args: &[String]) -> Result<(u32, u32), Box<dyn Error>> {
                 measured_steps = parse_flag_value(args, index, "--steps")?;
                 index += 2;
             }
+            "--runs" => {
+                runs = parse_flag_value(args, index, "--runs")?;
+                index += 2;
+            }
             unknown => {
                 return Err(format!(
-                    "unknown argument `{unknown}`; expected `--warmup <n>` and/or `--steps <n>`"
+                    "unknown argument `{unknown}`; expected `--warmup <n>`, `--steps <n>`, and/or `--runs <n>`"
                 )
                 .into());
             }
         }
     }
-    Ok((warmup_steps, measured_steps))
+    Ok((warmup_steps, measured_steps, runs))
 }
 
 fn parse_flag_value(args: &[String], index: usize, flag: &str) -> Result<u32, Box<dyn Error>> {
