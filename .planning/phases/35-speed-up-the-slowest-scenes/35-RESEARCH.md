@@ -481,15 +481,18 @@ Local developer tooling and engine internals only; no network, auth, or user dat
 | A4 | A sound conservative iteration-0 filter for moving fixtures is feasible with float slop | Pitfall 8 / 35-04 | Medium-High: the soundness argument needs care; fallback is per-fixture validation hoisting (smaller gain) |
 | A5 | Local dev-server command for the optional D-03 browser glance | Open Questions | Low: optional check |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should proxy-order retention live in `ParticleStorage` or `ParticleStepScratch`?**
    - Known: `ParticleStepScratch` is per world and taken out during the solve. `ParticleStorage` is per system, derives `PartialEq`/`Clone`, and is cloned per step for rollback.
    - Recommendation: a storage field wrapped in an always-equal newtype. It is simplest and per-system; the prototype used it and all tests passed.
+   - RESOLVED: a `ParticleStorage` field in the always-equal `ProxyOrderCache` newtype (35-03 Task 1).
 1. **Fingerprint table placement.**
    - Recommendation: a separate "Fingerprints" list plus a JSON field, keeping the ranked table shape for Phase 36.
+   - RESOLVED: a per-scene JSON `fingerprint` field in the bin output and the stamp's scenes array only. There is no separate stdout list or `scene_filter` stamp field (lightweight process; later plans read the bin's JSON lines). The ranked table shape is unchanged (35-01).
 1. **D-03 browser glance.**
    - Optional. `web/package.json` has no `dev` script. `cd web && bunx vite` (dev) or `just web-build` followed by `bun run preview` (serves `dist/` on 127.0.0.1:4173) should work, but this is unverified [ASSUMED]. Rust changes need `just web-wasm` first. If the check is skipped, record "not run" in `35-PROFILES.md`.
+   - RESOLVED: optional and light; recorded in 35-PROFILES.md, with a `Not run: <reason>` fallback that keeps the native top five as the target set (35-02 Task 2).
 
 ## Sources
 
