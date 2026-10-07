@@ -1,14 +1,14 @@
 ---
-gsd_state_version: "1.0"
+gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
-current_phase: "34"
+current_phase: 34
 current_phase_name: Scene Timing Survey
-current_plan: "0"
-status: ready_to_plan
-stopped_at: v1.4 simplified to three phases; Phase 34 ready to plan
-last_updated: "2026-10-06T00:00:00.000Z"
-last_activity: "2026-10-06"
+current_plan: 0
+status: planning
+stopped_at: Phase 34 context gathered
+last_updated: "2026-10-07T05:25:40.442Z"
+last_activity: 2026-10-06 — v1.4 simplified from 27 phases to 3; Phase 34 harness work shelved on `wip/v1.4-phase34-harness`
 progress:
   total_phases: 3
   completed_phases: 0
@@ -112,6 +112,6 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 
 ## Session Continuity
 
-Last session: 2026-10-06
-Stopped at: v1.4 simplified to three phases; Phase 34 ready to plan
-Resume file: None
+Last session: 2026-10-07T05:25:40.433Z
+Stopped at: Phase 34 context gathered
+Resume file: .planning/phases/34-scene-timing-survey/34-CONTEXT.md
