@@ -152,6 +152,18 @@ fn run_scene_spot_rejects_zero_runs() {
 }
 
 #[test]
+fn run_scene_spot_rejects_zero_measured_steps() {
+    // Arrange
+    let measured_steps = 0;
+
+    // Act
+    let result = run_scene_spot(0, measured_steps, 1);
+
+    // Assert
+    assert_eq!(result, Err(SceneSpotError::ZeroMeasuredSteps));
+}
+
+#[test]
 fn to_json_reports_survey_fields() {
     // Arrange
     let sample = SceneSpotSample {

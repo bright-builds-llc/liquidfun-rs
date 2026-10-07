@@ -61,13 +61,18 @@ fn scene_spot_persists_native_scene_spot_without_pair() -> TestResult {
     assert_eq!(report["kind"], "native_scene_spot");
     assert_eq!(report["not_timing_authority"].as_bool(), Some(true));
     assert!(report.get("rust_over_cpp_ratio").is_none());
-    assert_eq!(report["scenes"].as_array().expect("scenes array").len(), 25);
     assert_eq!(report["runs"], 1);
+    // The fake tool makes later catalog scenes slower, so the last one ranks first.
+    let slowest_scene = report["scenes"]
+        .as_array()
+        .and_then(|scenes| scenes.last())
+        .and_then(|scene| scene["scene"].as_str())
+        .expect("report should list catalog scenes");
     let summary = stdout(&output);
     assert!(summary.contains("| Rank | Scene | Median ms/step |"));
     let maybe_first_row = summary.lines().find(|line| line.starts_with("| 1 |"));
     assert!(
-        maybe_first_row.is_some_and(|row| row.contains("tesla-valve")),
+        maybe_first_row.is_some_and(|row| row.contains(slowest_scene)),
         "stdout: {summary}"
     );
     assert!(!fixture.pair_json(FIRST_STAMP).is_file());

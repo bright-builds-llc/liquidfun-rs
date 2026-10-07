@@ -122,8 +122,15 @@ pub enum SceneSpotError {
         /// Hyphenated scene id.
         scene: &'static str,
     },
+    /// Reading the live particle count after the timed loop failed.
+    ParticleSnapshot {
+        /// Hyphenated scene id.
+        scene: &'static str,
+    },
     /// The caller asked for zero runs per scene.
     ZeroRuns,
+    /// The caller asked for zero timed steps per run.
+    ZeroMeasuredSteps,
 }
 
 impl Display for SceneSpotError {
@@ -141,7 +148,14 @@ impl Display for SceneSpotError {
                 "{scene} exceeded {}s wall timeout",
                 SCENE_WALL_TIMEOUT.as_secs()
             ),
+            Self::ParticleSnapshot { scene } => {
+                write!(
+                    formatter,
+                    "{scene} live particle count failed after the timed loop"
+                )
+            }
             Self::ZeroRuns => write!(formatter, "--runs must be greater than 0"),
+            Self::ZeroMeasuredSteps => write!(formatter, "--steps must be greater than 0"),
         }
     }
 }
@@ -212,10 +226,7 @@ pub fn run_scene_spot(
         return Err(SceneSpotError::ZeroRuns);
     }
     if measured_steps == 0 {
-        return Err(SceneSpotError::StepFailed {
-            scene: "all",
-            phase: "measured",
-        });
+        return Err(SceneSpotError::ZeroMeasuredSteps);
     }
 
     let mut samples = Vec::with_capacity(SURVEY_SCENES.len());
@@ -315,7 +326,7 @@ fn time_run(
     let timed_ms = duration_as_millis(measured_started.elapsed());
     let end_particles = session
         .live_particle_count()
-        .map_err(|_error| SceneSpotError::SceneConstruction { scene })?;
+        .map_err(|_error| SceneSpotError::ParticleSnapshot { scene })?;
 
     Ok(RunSample {
         ms_per_step: timed_ms / f64::from(measured_steps),

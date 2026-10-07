@@ -10,11 +10,11 @@ after the shared-path gate. Do not copy these numbers into
 `reference/performance/manifest.toml`. Do not summarize them as a Rust-versus-C++
 ratio.
 
-## Reproduce
+## How the sample was produced
 
-```console
-just playground-scene-spot
-```
+The sample came from `just playground-scene-spot` on 2026-09-21. Running that
+recipe today produces the full catalog survey instead; see
+[Playground scene survey](benchmarks/scene-survey.md).
 
 At that time the recipe ran `SessionCore::create(SceneId::…)` for Fountain,
 Float or Sink, Color Mixer, Jelly Drop, and Water Wheel, then looped `advance(1)`
@@ -23,7 +23,7 @@ run, so Fountain and Water Wheel emit. Dam Break is not in this table; the unpro
 the 3× authority. The stamp kind is `native_scene_spot` with
 `not_timing_authority` true and no `rust_over_cpp_ratio`.
 
-## Current recorded sample
+## Historical recorded sample (2026-09-21)
 
 Exclusive stamp `target/dam-break-perf/2026-09-21T21-10-50Z/scene-spot.json`.
 This stamp has no `pair.json`. Gate pair stamps
