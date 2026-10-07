@@ -6,8 +6,8 @@ current_phase: 35
 current_phase_name: speed up the slowest scenes
 current_plan: Not started
 status: planning
-stopped_at: Completed 34-02-PLAN.md
-last_updated: "2026-10-07T09:09:52.580Z"
+stopped_at: Phase 35 context gathered
+last_updated: "2026-10-07T17:32:12.456Z"
 last_activity: 2026-10-07
 progress:
   total_phases: 3
@@ -117,6 +117,6 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 
 ## Session Continuity
 
-Last session: 2026-10-07T06:22:08.556Z
-Stopped at: Completed 34-02-PLAN.md
-Resume file: None
+Last session: 2026-10-07T17:32:12.447Z
+Stopped at: Phase 35 context gathered
+Resume file: .planning/phases/35-speed-up-the-slowest-scenes/35-CONTEXT.md
