@@ -84,7 +84,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 **Plans**: 2 plans
 
 Plans:
-- [ ] 34-01-PLAN.md — Extend the native stepper and xtask driver to every catalog scene with runs, cues, catalog coverage test and ranked table
+- [x] 34-01-PLAN.md — Extend the native stepper and xtask driver to every catalog scene with runs, cues, catalog coverage test and ranked table
 - [ ] 34-02-PLAN.md — Run the survey on committed source and commit docs/benchmarks/scene-survey.md
 
 ### Phase 35: Speed Up the Slowest Scenes
@@ -137,7 +137,7 @@ Plans:
 | 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 32. Liquid motion bubbler | v1.3 | 4/4 | Complete    | 2026-09-27 |
 | 33. Stacked drip fidget | v1.3 | 4/4 | Complete   | 2026-09-28 |
-| 34. Scene Timing Survey | v1.4 | 0/TBD | Not started | - |
+| 34. Scene Timing Survey | v1.4 | 1/2 | In Progress|  |
 | 35. Speed Up the Slowest Scenes | v1.4 | 0/TBD | Not started | - |
 | 36. Re-survey and Wrap Up | v1.4 | 0/TBD | Not started | - |
 

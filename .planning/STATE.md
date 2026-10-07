@@ -4,17 +4,17 @@ milestone: v1.4
 milestone_name: milestone
 current_phase: 34
 current_phase_name: Scene Timing Survey
-current_plan: 0
+current_plan: 2
 status: executing
-stopped_at: Phase 34 context gathered
-last_updated: "2026-10-07T05:53:08.493Z"
-last_activity: 2026-10-07 -- Phase 34 planning complete
+stopped_at: Completed 34-01-PLAN.md
+last_updated: "2026-10-07T06:19:25.679Z"
+last_activity: 2026-10-07
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 2
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # Project State
@@ -31,14 +31,15 @@ See: `.planning/PROJECT.md` (updated 2026-10-06)
 Current Phase: 34
 Current Phase Name: Scene Timing Survey
 Total Phases: 3
-Current Plan: 0
+Current Plan: 2
 Total Plans in Phase: 2
 
-Phase: 34 (Scene Timing Survey) — READY TO PLAN
+Phase: 34 (Scene Timing Survey) — EXECUTING
+Plan: 2 of 2
 **Status:** Ready to execute
-Last activity: 2026-10-07 -- Phase 34 planning complete
+Last activity: 2026-10-07
 
-**Progress:** [░░░░░░░░░░] 0%
+**Progress:** [█████░░░░░] 50%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -60,6 +61,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [v1.4]: Speed takes priority over compact memory; bounded measured increases are allowed. Preserve authored physics/settings, ordering, visuals and lifecycle; no promised percentage/FPS gain.
 - [v1.4]: Simplified 2026-10-06. Survey all scenes, fix only the slowest few with profile-backed before/after gains; keep measurement out of production scene code. The Phase 34 harness (plans 1–9, ~150k lines, ~3.8 GB evidence) is shelved on `wip/v1.4-phase34-harness`; evidence moved to `~/Archives/liquidfun-rs-v1.4-phase34-evidence/`.
 - The recorded ≤ 3× pair stays bound to git `89d34564`. A fresh unprofiled pair is required before claiming that ratio for later HEAD.
+- [Phase 34]: Scene survey SCENE_WALL_TIMEOUT applies per run; start_particles read before the survey cue; even-run median averages middle values
 
 ### Pending Todos
 
@@ -109,9 +111,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 33 P02 | 7 min | 2 tasks | 13 files |
 | Phase 33 P03 | 3 min | 2 tasks | 1 files |
 | Phase 33 P04 | 25 min | 2 tasks | 4 files |
+| Phase 34 P01 | 26min | 2 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-10-07T05:25:40.433Z
-Stopped at: Phase 34 context gathered
-Resume file: .planning/phases/34-scene-timing-survey/34-CONTEXT.md
+Last session: 2026-10-07T06:19:25.677Z
+Stopped at: Completed 34-01-PLAN.md
+Resume file: None
