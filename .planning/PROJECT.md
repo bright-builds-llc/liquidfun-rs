@@ -79,18 +79,15 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 ## Current Milestone: v1.4 Scenario Performance
 
-**Goal:** Improve simulation and rendering speed across every current playground scenario through individual profiling and reproducible persisted performance evidence, allowing increased memory use while preserving behavior and fidelity.
+**Goal:** Make the playground scenes that actually feel slow faster, allowing increased memory use while preserving behavior and fidelity.
+
+**Simplified 2026-10-06.** The first v1.4 plan (2026-10-03) gave each of the 25 scenes its own evidence phase behind a shared measurement-harness phase. That harness phase grew to ~150k lines of tooling, intrusive observers in scene code and ~3.8 GB of evidence over three days without producing a speedup, contrary to the hobby scope in PROJECT-SCOPE.md. It is shelved on branch `wip/v1.4-phase34-harness`; its one real finding (a wasm32 overflow in particle group join bounds that capped Drawing near ~1,600 particles) shipped separately.
 
 **Target features:**
 
-- A versioned workload manifest for all 25 catalog scenes, including nonempty interaction cases, meaningful scene-cycle windows and representative load/control variants.
-- Fresh same-source campaign baselines before optimizations, plus fresh immediate before/after measurements for each scene's iteration.
-- Per-scenario attribution of simulation, scene hooks, frame capture/copy, worker or direct execution, rendering submission and available GPU work; profiling artifacts stay separate from unprofiled timing authority.
-- Scene-by-scene hot-path fixes, including larger reusable buffers, caches or precomputed structures when measurement supports them.
-- Source-bound immutable raw samples, profiler identities, semantic checkpoints, memory observations and readable before/after history.
-- Regression canaries after shared changes and a final whole-catalog comparison against the initial campaign.
-
-Phase numbering continues at 34. Existing phase directories and archived research/evidence stay intact. Scope covers the current 25-scene web catalog, not every native/upstream catalog entry. Matched native headless diagnostics can support those scenes without turning C++ comparison or strict certification into milestone prerequisites.
+- One command times every catalog scene natively and ranks them (extends `just playground-scene-spot`).
+- Profile-guided fixes for the slowest few scenes, each kept only with a measured before/after gain.
+- A final whole-catalog before/after table.
 
 Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims, package publication and release tags. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized by the memory-for-speed priority.
 
@@ -98,14 +95,12 @@ Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product
 
 ### Active
 
-- [ ] Capture fresh, reproducible initial baselines for all 25 current playground scenarios.
-- [ ] Attribute simulation and rendering hot paths independently for each scenario and representative workload.
-- [ ] Apply profile-supported fixes prioritizing speed, accepting measured memory increases.
-- [ ] Persist matched immediate before/after evidence and cumulative campaign comparisons.
+- [ ] Rank all 25 current playground scenes by native simulation cost with one command.
+- [ ] Apply profile-supported fixes to the slowest scenes, prioritizing speed and accepting measured memory increases.
 - [ ] Preserve existing scenario behavior, physical settings, entity counts and visual fidelity.
-- [ ] Verify cross-scenario effects of shared changes and close with a final full-catalog pass.
+- [ ] Publish a final whole-catalog before/after table.
 
-Detailed atomic requirements and phase traceability are defined in REQUIREMENTS.md and ROADMAP.md for v1.4. PLAY-01, FX-01 and FX-02 remain validated in Phase 29.
+Detailed requirements and phase traceability are in REQUIREMENTS.md and ROADMAP.md for v1.4. PLAY-01, FX-01 and FX-02 remain validated in Phase 29.
 
 ### Validated
 
@@ -301,7 +296,8 @@ The snapshots below describe their original phases, not current work or next ste
 | Treat v1.3 as a planning label, not a package release | Archive completion is not crate publication | Accepted 2026-09-28. The owner later authorized annotated tag `v1.3` as a milestone marker, not a crates.io release |
 | Prioritize scenario simulation/rendering speed over memory compactness in v1.4 | User explicitly accepts increased memory usage to obtain speed | Selected 2026-10-03; gains must be demonstrated on matched workloads |
 | Preserve existing behavior and fidelity while optimizing v1.4 | User selected this policy in milestone questioning | Selected 2026-10-03; no default lower-quality fast modes |
-| Keep all-scene original baselines plus fresh scene-local before/after records | Shared engine/renderer fixes can change later scenes before their own turn | Selected for v1.4 evidence design; implementation pending |
+| Keep all-scene original baselines plus fresh scene-local before/after records | Shared engine/renderer fixes can change later scenes before their own turn | Superseded 2026-10-06 by the simplified survey-and-targeted-fix plan |
+| Simplify v1.4 to a timing survey plus targeted fixes | The per-scene evidence campaign spent its harness phase without a speedup; hobby scope favors fast useful iteration | Selected 2026-10-06; harness shelved on `wip/v1.4-phase34-harness` |
 
 ## Open Questions
 
@@ -333,4 +329,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-10-03 after initializing v1.4 Scenario Performance. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-10-06 after simplifying v1.4 Scenario Performance. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
