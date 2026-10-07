@@ -151,18 +151,21 @@ fn combination_limit(count: usize, width: usize) -> Result<usize, ParticleStorag
     if count < width {
         return Ok(0);
     }
-    match width {
-        2 => count
-            .checked_mul(count - 1)
-            .map(|value| value / 2)
-            .ok_or(ParticleStorageError::InvalidLaneBundle),
-        3 => count
-            .checked_mul(count - 1)
-            .and_then(|value| value.checked_mul(count - 2))
-            .map(|value| value / 6)
-            .ok_or(ParticleStorageError::InvalidLaneBundle),
-        _ => Err(ParticleStorageError::InvalidLaneBundle),
+    let mut factors = match width {
+        2 => [count, count - 1, 1],
+        3 => [count, count - 1, count - 2],
+        _ => return Err(ParticleStorageError::InvalidLaneBundle),
+    };
+    // Cancel the factorial before multiplying, including on wasm32. Bounds
+    // beyond usize::MAX cannot further constrain actual Vec lengths.
+    for divisor in 2..=width {
+        let factor = factors
+            .iter_mut()
+            .find(|factor| **factor % divisor == 0)
+            .expect("consecutive pair/triad factors contain each factorial divisor");
+        *factor /= divisor;
     }
+    Ok(factors.into_iter().fold(1, usize::saturating_mul))
 }
 
 fn validate_join_handles(

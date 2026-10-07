@@ -12,6 +12,8 @@ use crate::particle::{ParticleFlags, ParticleGroupFlags};
 
 use super::{JoinPlanError, JoinTopologyParameters};
 
+mod portable_bounds;
+
 const DIAMETER: f32 = 1.0;
 
 struct Fixture {
@@ -426,4 +428,84 @@ fn bounded_topology_failure_leaves_the_complete_storage_snapshot_unchanged() {
     // Assert
     assert!(matches!(result, Err(JoinPlanError::Constraints(_))));
     assert!(fixture.storage == before);
+}
+
+#[test]
+fn water_append_preserves_group_and_members_across_wasm_connection_boundaries() {
+    // Arrange
+    use crate::World;
+    use crate::particle::{
+        ParticleCapacity, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
+        ParticleSystemDef,
+    };
+
+    let positions = (0..4_789_u16)
+        .map(|index| Vec2::new(f32::from(index % 64) * 4.0, f32::from(index / 64) * 4.0))
+        .collect::<Vec<_>>();
+    let mut world = World::new().expect("test world key remains available");
+    let definition = ParticleSystemDef::default()
+        .with_capacity(ParticleCapacity::fixed(positions.len()).expect("capacity is positive"))
+        .expect("capacity supports the system");
+    let system = world
+        .create_particle_system_with_def(&definition)
+        .expect("test system fits");
+    let source = ParticleGroupSource::positions(positions[..1_559].to_vec())
+        .expect("initial water positions are finite");
+    let target = world
+        .create_particle_group(
+            system,
+            &ParticleGroupRecipe::new(source, ParticleGroupDestination::New),
+        )
+        .expect("initial water group fits");
+    let original_members = world
+        .particle_group_view(target)
+        .expect("target is live")
+        .member_ids()
+        .to_vec();
+
+    // Act
+    let mut previous_end = original_members.len();
+    let mut outcomes = Vec::new();
+    for end in [1_626, 1_627, 2_954, 2_955, 4_789] {
+        let source = ParticleGroupSource::positions(positions[previous_end..end].to_vec())
+            .expect("append positions are finite");
+        let returned = world
+            .create_particle_group(
+                system,
+                &ParticleGroupRecipe::new(source, ParticleGroupDestination::AppendTo(target)),
+            )
+            .expect("sparse water append fits even when theoretical triad bound overflows");
+        let view = world
+            .particle_group_view(target)
+            .expect("target stays live");
+        outcomes.push((returned, view.member_count()));
+        previous_end = end;
+    }
+
+    // Assert
+    assert_eq!(
+        outcomes,
+        [1_626, 1_627, 2_954, 2_955, 4_789].map(|count| (target, count))
+    );
+    let view = world
+        .particle_group_view(target)
+        .expect("target stays live");
+    assert_eq!(
+        &view.member_ids()[..original_members.len()],
+        original_members
+    );
+    assert_eq!(
+        world
+            .particle_system_view(system)
+            .expect("system stays live")
+            .positions(),
+        positions
+    );
+    assert_eq!(
+        world
+            .particle_system_statistics(system)
+            .expect("system stays live")
+            .group_count(),
+        1
+    );
 }

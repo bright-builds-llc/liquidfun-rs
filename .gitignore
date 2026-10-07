@@ -1,4 +1,5 @@
 /target/
+/crates/liquidfun-wasm/target/
 /fuzz/target/
 /web/node_modules/
 /web/src/generated/liquidfun-wasm/
