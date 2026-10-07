@@ -264,10 +264,11 @@ fn survey_scene_ids_resolve_through_parse_scene_id() {
 | A2 | Even-count median = mean of the two middle values | Pattern 2 | None for default runs=3 |
 | A3 | Per-run (not per-scene-total) timeout is acceptable under D-06 "keep the per-scene wall timeout" | Pattern 2 | If per-scene total is wanted, wrap all runs in one `Instant`; still far under 3 min |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should the old `docs/playground-scene-spot-check.md` be rewritten or only pointed at the new doc?**
    - Recommendation: add a short note at the top that links to `docs/benchmarks/scene-survey.md` and say its five-scene table is historical. That is the minimal edit. Run `just markdown-check`.
+   - RESOLVED: add pointer + mark five-scene table historical (34-02 Task 2).
 
 ## Environment Availability
 
@@ -285,7 +286,7 @@ Note: the first run of a freshly linked xtask test binary was observed stalled a
 - `cargo fmt --all --check`
 - `cargo clippy -p liquidfun-wasm -p xtask --all-targets --all-features -- -D warnings`
 - `cargo test -p liquidfun-wasm --lib scene_spot` (coverage, summarize and cue tests)
-- `cargo test -p xtask --lib playground::spot` and `cargo test -p xtask --test playground_cli spot` (fixture CLI test + justfile pin)
+- `cargo test -p xtask --bin xtask playground::spot` and `cargo test -p xtask --test playground_cli spot` (fixture CLI test + justfile pin)
 - `just playground-scene-spot` (real run, about 30 s; produces the table for the doc)
 - `just markdown-check` after writing `docs/benchmarks/scene-survey.md` / editing the old spot doc
 
