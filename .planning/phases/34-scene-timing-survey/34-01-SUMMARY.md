@@ -1,4 +1,8 @@
 ---
+generated_by: gsd-executor
+lifecycle_mode: yolo
+phase_lifecycle_id: 34-2026-10-07T05-23-23
+generated_at: 2026-10-07T06:19:37Z
 phase: 34-scene-timing-survey
 plan: "01"
 subsystem: testing

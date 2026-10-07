@@ -1,13 +1,13 @@
 ---
 phase: 34-scene-timing-survey
-verified: 2026-10-07T09:20:00Z
+verified: 2026-10-07T09:08:50Z
 status: passed
 score: 4/4 roadmap success criteria verified (11/11 merged must-haves)
 generated_by: gsd-verifier
 lifecycle_mode: yolo
 phase_lifecycle_id: 34-2026-10-07T05-23-23
-generated_at: 2026-10-07T09:20:00Z
-lifecycle_validated: false
+generated_at: 2026-10-07T09:08:50Z
+lifecycle_validated: true
 overrides_applied: 0
 ---
 
@@ -19,6 +19,8 @@ overrides_applied: 0
 **Re-verification:** No. This is the initial verification.
 
 Lifecycle note: CONTEXT.md and both PLAN.md files share `lifecycle_mode: yolo` and `phase_lifecycle_id: 34-2026-10-07T05-23-23`. Neither SUMMARY.md has `generated_by`, `lifecycle_mode` or `phase_lifecycle_id` frontmatter. Because the provenance chain is incomplete, `lifecycle_validated` is false. This is a bookkeeping gap, not a goal gap.
+
+Orchestrator follow-up (2026-10-07T09:10Z): the missing SUMMARY.md provenance fields were added with their true values (`generated_by: gsd-executor`, this lifecycle id, `generated_at` taken from each file's commit time). The verifier's `verified`/`generated_at` timestamp was corrected to its actual commit time. `gsd-tools verify lifecycle 34 --require-plans --require-verification` then accepted context, plans, summaries and verification, so `lifecycle_validated` is now true. The goal verdict is unchanged.
 
 ## Goal Achievement
 
