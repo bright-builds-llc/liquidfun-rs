@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-Milestone v1.4 Scenario Performance is initialized on 2026-10-03. All 25 current playground scenes receive fresh reproducible baselines, individual simulation/rendering hot-path analysis, evidence-led fixes and persisted before/after comparisons. The user prioritizes simulation and rendering speed over memory compactness and explicitly selected preservation of existing behavior and visual fidelity. Larger reusable buffers, caches and precomputed data are permitted; lifetime, invalidation and bounded ownership still matter. A common initial campaign precedes shared changes, each scene receives a fresh immediate before record, and final whole-catalog comparisons expose cumulative effects and regressions. The completed Tesla quick-task reports remain historical evidence, not the new campaign baseline.
+Milestone v1.4 Scenario Performance was initialized on 2026-10-03 and simplified on 2026-10-06 to three phases: a timing survey, targeted fixes for the slowest scenes, and a final re-survey. Existing behavior, settings and visuals stay unchanged, and measured memory increases are allowed. Phase 34 is complete (2026-10-07): `just playground-scene-spot` times all 25 catalog scenes natively (median of 3 fresh runs) and ranks them. `docs/benchmarks/scene-survey.md` records the first table from commit `96a3ac6a6`. Liquid Tumbler leads at about 24.4 ms/step, ahead of Tesla Valve, Stacked Drip, Washing Machine and Particles. These are local observations, not public speed claims. Phase 35 targets the slowest scenes.
 
 v1.3 Reference Testbed Scenes is archived (2026-09-28): 8 phases, 38 plans, and 76 tasks. At archive time the playground listed twenty-three ready scenes. That was the twelve missing JavaScript testbed ports, the six earlier scenes, Liquid Tumbler, and four original scenes: Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. Credits for the ports cite the pinned LiquidFun tests. `MAX_ADVANCE_STEPS` stays 4. The audit passed 15/15 requirements. This is not sealed C++ parity or crate publication. Annotated tag `v1.3` marks the planning archive. See `.planning/MILESTONES.md` and `.planning/milestones/v1.3-REQUIREMENTS.md`.
 
@@ -95,7 +95,6 @@ Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product
 
 ### Active
 
-- [ ] Rank all 25 current playground scenes by native simulation cost with one command.
 - [ ] Apply profile-supported fixes to the slowest scenes, prioritizing speed and accepting measured memory increases.
 - [ ] Preserve existing scenario behavior, physical settings, entity counts and visual fidelity.
 - [ ] Publish a final whole-catalog before/after table.
@@ -103,6 +102,8 @@ Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product
 Detailed requirements and phase traceability are in REQUIREMENTS.md and ROADMAP.md for v1.4. PLAY-01, FX-01 and FX-02 remain validated in Phase 29.
 
 ### Validated
+
+- [x] Phase 34 completed PERF-07: `just playground-scene-spot` ranks all 25 catalog scenes by native median ms/step, and a test fails when a catalog scene is missing. The first table is in `docs/benchmarks/scene-survey.md`. Local observations only. Validated in Phase 34: Scene Timing Survey.
 
 - ✓ v1.3 Reference Testbed Scenes — 15/15 requirements, 8 phases, 38 plans, audit passed 2026-09-28. Twenty-three playground scenes, including the twelve missing testbed ports and four original scenes. Not a crate release.
 
@@ -329,4 +330,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-10-06 after simplifying v1.4 Scenario Performance. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-10-07 after Phase 34 Scene Timing Survey. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
