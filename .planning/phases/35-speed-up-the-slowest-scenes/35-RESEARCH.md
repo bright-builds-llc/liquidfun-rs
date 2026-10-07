@@ -179,8 +179,8 @@ The `DiagnosticStepProfile` phase timers (`SessionCore::advance_profiled`) only 
 
 **`--scene` (repeatable):**
 - **Bin** (`src/bin/playground_scene_spot.rs`): parse `--scene <id>` into a list. Pass it to a `run_scene_spot` variant (for example `run_scene_spot(warmup, steps, runs, &scene_filter)`, where an empty filter means the full catalog). Reject unknown ids with a closed error (`SceneSpotError::UnknownScene`) using `SURVEY_SCENES` ids. Reject or dedupe duplicates. Output stays in catalog order.
-- **xtask** (`tools/xtask/src/playground/spot.rs`): parse repeatable `--scene`, validate each id against `catalog_scene_ids(CATALOG_SCENES_TS)`, and forward `--scene <id>` to the bin. **Coverage check:** with no filter, keep `validate_scene_samples` exactly as is (full catalog). With a filter, require the output set to equal the requested set. Require a 16-hex `fingerprint` field per sample. Record `scene_filter` in the stamp JSON. spot.rs is at 547/628 lines, so put argument parsing and validation in a new `spot/args.rs` (or similar) submodule.
-- **Ranked table:** keep the table columns unchanged so Phase 36 can paste the same shape. Print fingerprints in a separate `Fingerprints` list under the table, and keep them in the JSON.
+- **xtask** (`tools/xtask/src/playground/spot.rs`): parse repeatable `--scene`, validate each id against `catalog_scene_ids(CATALOG_SCENES_TS)`, and forward `--scene <id>` to the bin. **Coverage check:** with no filter, keep `validate_scene_samples` exactly as is (full catalog). With a filter, require the output set to equal the requested set. Require a 16-hex `fingerprint` field per sample. spot.rs is at 547/628 lines, so put argument parsing and validation in a new `spot/args.rs` (or similar) submodule.
+- **Ranked table:** keep the table columns unchanged so Phase 36 can paste the same shape. Keep fingerprints in the JSON only (superseded: no stdout list; see Open Questions).
 - **Fake tool** `tools/xtask/tests/fixtures/fake_upstream_tool.rs::print_scene_spot_sample` must honor `--scene` and print a `fingerprint` field, or the CLI integration test fails.
 
 **Tests that pin output and need updates:**
