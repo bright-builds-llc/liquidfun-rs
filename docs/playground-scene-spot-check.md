@@ -1,5 +1,9 @@
 # Playground scene spot-check
 
+The recipe now times every playground catalog scene. The current ranked table is
+in [Playground scene survey](benchmarks/scene-survey.md). The five-scene sample
+below is historical and came from the earlier five-scene version of the recipe.
+
 **Unreviewed local sample.** Not a C++ pair, not Phase 12, and not the Dam Break
 3× number. This is a native `--release` headless walk of five playground scenes
 after the shared-path gate. Do not copy these numbers into
@@ -12,10 +16,10 @@ ratio.
 just playground-scene-spot
 ```
 
-That recipe runs `SessionCore::create(SceneId::…)` for Fountain, Float or Sink,
-Color Mixer, Jelly Drop, and Water Wheel, then loops `advance(1)` for 60 untimed
-warmup steps plus 120 measured steps. Scene `on_advance` hooks run, so Fountain
-and Water Wheel emit. Dam Break is not in this table; the unprofiled pair remains
+At that time the recipe ran `SessionCore::create(SceneId::…)` for Fountain,
+Float or Sink, Color Mixer, Jelly Drop, and Water Wheel, then looped `advance(1)`
+for 60 untimed warmup steps plus 120 measured steps. Scene `on_advance` hooks
+run, so Fountain and Water Wheel emit. Dam Break is not in this table; the unprofiled pair remains
 the 3× authority. The stamp kind is `native_scene_spot` with
 `not_timing_authority` true and no `rust_over_cpp_ratio`.
 
