@@ -31,7 +31,16 @@ fn scene_spot_persists_native_scene_spot_without_pair() -> TestResult {
     // Arrange
     let fixture = RepositoryFixture::new()?;
     let mut command = fixture.command()?;
-    command.args(["playground", "scene-spot", "--warmup", "0", "--steps", "1"]);
+    command.args([
+        "playground",
+        "scene-spot",
+        "--warmup",
+        "0",
+        "--steps",
+        "1",
+        "--runs",
+        "1",
+    ]);
 
     // Act
     let output = command.output()?;
@@ -52,23 +61,14 @@ fn scene_spot_persists_native_scene_spot_without_pair() -> TestResult {
     assert_eq!(report["kind"], "native_scene_spot");
     assert_eq!(report["not_timing_authority"].as_bool(), Some(true));
     assert!(report.get("rust_over_cpp_ratio").is_none());
-    let names: std::collections::BTreeSet<&str> = report["scenes"]
-        .as_array()
-        .expect("scenes array")
-        .iter()
-        .map(|scene| scene["scene"].as_str().expect("scene name"))
-        .collect();
-    assert_eq!(
-        names,
-        [
-            "color-mixer",
-            "float-or-sink",
-            "fountain",
-            "jelly-drop",
-            "water-wheel",
-        ]
-        .into_iter()
-        .collect()
+    assert_eq!(report["scenes"].as_array().expect("scenes array").len(), 25);
+    assert_eq!(report["runs"], 1);
+    let summary = stdout(&output);
+    assert!(summary.contains("| Rank | Scene | Median ms/step |"));
+    let maybe_first_row = summary.lines().find(|line| line.starts_with("| 1 |"));
+    assert!(
+        maybe_first_row.is_some_and(|row| row.contains("tesla-valve")),
+        "stdout: {summary}"
     );
     assert!(!fixture.pair_json(FIRST_STAMP).is_file());
     fixture.cleanup()?;

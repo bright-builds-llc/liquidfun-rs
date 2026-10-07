@@ -1,4 +1,4 @@
-//! Persist native five-scene spot-checks into a new evidence stamp.
+//! Persist the native all-catalog playground scene survey into a new evidence stamp.
 
 use std::collections::BTreeSet;
 use std::env;
@@ -12,23 +12,25 @@ use super::PlaygroundError;
 use super::identity::{host_identity, repository_root};
 use super::stamp;
 
+mod survey_table;
+
+use survey_table::{RankedScene, catalog_scene_ids, rank_scene_samples, render_ranked_table};
+
 const SPOT_FILE_NAME: &str = "scene-spot.json";
 const REQUIRED_KIND: &str = "native_scene_spot";
 const DEFAULT_WARMUP_STEPS: u32 = 60;
 const DEFAULT_MEASURED_STEPS: u32 = 120;
-const REQUIRED_SCENES: [&str; 5] = [
-    "fountain",
-    "float-or-sink",
-    "color-mixer",
-    "jelly-drop",
-    "water-wheel",
-];
-const DISCLAIMER: &str =
-    "Unreviewed local sample. Not a C++ pair, not Phase 12, and not the Dam Break 3× number.";
+const DEFAULT_RUNS: u32 = 3;
+/// Compile-time catalog copy; the CLI fixture repository has no `web/` tree.
+const CATALOG_SCENES_TS: &str = include_str!("../../../../web/src/catalog/scenes.ts");
+const DISCLAIMER: &str = "Unreviewed local survey of every playground catalog scene. Not a C++ pair, not Phase 12, and not the Dam Break 3× number.";
+const INTERACTION_LABELS: [&str; 2] = ["default", "scripted"];
+const SPREAD_FIELDS: [&str; 3] = ["median_ms_per_step", "min_ms_per_step", "max_ms_per_step"];
 
 struct SpotCounts {
     warmup_steps: u32,
     measured_steps: u32,
+    runs: u32,
 }
 
 pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
@@ -36,12 +38,14 @@ pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     let repository_root = repository_root()?;
     let output = run_spot_bin(&repository_root, &counts)?;
     let scenes = parse_scene_samples(&output)?;
-    validate_scene_samples(&scenes)?;
-    let report = assemble_report(&scenes, &repository_root)?;
+    let catalog = catalog_scene_ids(CATALOG_SCENES_TS)?;
+    validate_scene_samples(&scenes, &catalog)?;
+    let ranked = rank_scene_samples(&scenes)?;
+    let report = assemble_report(&scenes, &counts, &repository_root)?;
     let unix_seconds = stamp_unix_seconds()?;
     let stamp_dir = stamp::mint_exclusive_stamp(&repository_root, unix_seconds)?;
     write_spot_json(&stamp_dir, &report)?;
-    let summary = render_summary(&stamp_dir, &report);
+    let summary = render_summary(&stamp_dir, &report, &ranked);
     print!("{summary}");
     eprintln!("wrote {}", stamp_dir.join(SPOT_FILE_NAME).display());
     Ok(())
@@ -70,6 +74,8 @@ fn run_spot_bin(root: &Path, counts: &SpotCounts) -> Result<Output, PlaygroundEr
             &counts.warmup_steps.to_string(),
             "--steps",
             &counts.measured_steps.to_string(),
+            "--runs",
+            &counts.runs.to_string(),
         ])
         .output()
         .map_err(|error| {
@@ -130,44 +136,64 @@ fn extract_json_object(stdout: &str) -> Option<&str> {
     Some(&stdout[start..=end])
 }
 
-fn validate_scene_samples(scenes: &[serde_json::Value]) -> Result<(), PlaygroundError> {
-    let names: BTreeSet<&str> = scenes
+fn validate_scene_samples(
+    scenes: &[serde_json::Value],
+    catalog: &[&str],
+) -> Result<(), PlaygroundError> {
+    let names: Vec<&str> = scenes
         .iter()
         .filter_map(|scene| scene.get("scene").and_then(serde_json::Value::as_str))
         .collect();
-    let required: BTreeSet<&str> = REQUIRED_SCENES.into_iter().collect();
-    if names != required {
+    let unique: BTreeSet<&str> = names.iter().copied().collect();
+    if names.len() != scenes.len() || unique.len() != names.len() {
         return Err(PlaygroundError::new(
             "spot",
-            format!("expected scenes {required:?}, got {names:?}"),
+            format!("survey scenes must be named once each, got {names:?}"),
         ));
     }
-    for scene in scenes {
-        if scene.get("timed_out") != Some(&serde_json::Value::Bool(false)) {
+    let expected: BTreeSet<&str> = catalog.iter().copied().collect();
+    if unique != expected {
+        let missing: Vec<&str> = expected.difference(&unique).copied().collect();
+        let unexpected: Vec<&str> = unique.difference(&expected).copied().collect();
+        return Err(PlaygroundError::new(
+            "spot",
+            format!(
+                "survey scenes must match web/src/catalog/scenes.ts: missing {missing:?}, unexpected {unexpected:?}"
+            ),
+        ));
+    }
+    scenes.iter().try_for_each(validate_scene_sample)
+}
+
+fn validate_scene_sample(scene: &serde_json::Value) -> Result<(), PlaygroundError> {
+    if scene.get("timed_out") != Some(&serde_json::Value::Bool(false)) {
+        return Err(PlaygroundError::new(
+            "spot",
+            "survey scenes require timed_out false",
+        ));
+    }
+    for field in SPREAD_FIELDS {
+        let maybe_value = scene.get(field).and_then(serde_json::Value::as_f64);
+        if !maybe_value.is_some_and(f64::is_finite) {
             return Err(PlaygroundError::new(
                 "spot",
-                "spot-check scenes require timed_out false",
+                format!("survey scenes require finite {field}"),
             ));
         }
-        let maybe_wall = scene.get("wall_ms").and_then(serde_json::Value::as_f64);
-        let Some(wall_ms) = maybe_wall else {
-            return Err(PlaygroundError::new(
-                "spot",
-                "spot-check scenes require finite wall_ms",
-            ));
-        };
-        if !wall_ms.is_finite() {
-            return Err(PlaygroundError::new(
-                "spot",
-                "spot-check scenes require finite wall_ms",
-            ));
-        }
+    }
+    let maybe_interaction = scene.get("interaction").and_then(serde_json::Value::as_str);
+    if !maybe_interaction.is_some_and(|label| INTERACTION_LABELS.contains(&label)) {
+        return Err(PlaygroundError::new(
+            "spot",
+            "survey scenes require interaction `default` or `scripted`",
+        ));
     }
     Ok(())
 }
 
 fn assemble_report(
     scenes: &[serde_json::Value],
+    counts: &SpotCounts,
     repository_root: &Path,
 ) -> Result<serde_json::Value, PlaygroundError> {
     let identity = host_identity(repository_root);
@@ -181,6 +207,9 @@ fn assemble_report(
         "cpu_brand": identity.cpu_brand,
         "logical_cores": identity.logical_cores,
         "compiler": rustc_version()?,
+        "warmup_steps": counts.warmup_steps,
+        "measured_steps": counts.measured_steps,
+        "runs": counts.runs,
         "scenes": scenes,
     }))
 }
@@ -207,7 +236,7 @@ fn write_spot_json(stamp_dir: &Path, report: &serde_json::Value) -> Result<(), P
     })
 }
 
-fn render_summary(stamp_dir: &Path, report: &serde_json::Value) -> String {
+fn render_summary(stamp_dir: &Path, report: &serde_json::Value, ranked: &[RankedScene]) -> String {
     let stamp_name = stamp_dir
         .file_name()
         .and_then(|name| name.to_str())
@@ -216,15 +245,31 @@ fn render_summary(stamp_dir: &Path, report: &serde_json::Value) -> String {
         .get("scenes")
         .and_then(serde_json::Value::as_array)
         .map_or(0, Vec::len);
+    let count_field = |field: &str| {
+        report
+            .get(field)
+            .and_then(serde_json::Value::as_u64)
+            .unwrap_or_default()
+    };
     format!(
         concat!(
-            "Native playground scene spot-check (`not_timing_authority`).\n\n",
+            "Native playground scene survey (`not_timing_authority`).\n\n",
+            "{disclaimer}\n\n",
+            "{table}\n",
             "- stamp: `{stamp}`\n",
             "- scenes: `{count}`\n",
+            "- warmup steps: `{warmup}`\n",
+            "- measured steps: `{steps}`\n",
+            "- runs: `{runs}`\n",
             "- artifact: `{file}`\n"
         ),
+        disclaimer = DISCLAIMER,
+        table = render_ranked_table(ranked),
         stamp = stamp_name,
         count = scene_count,
+        warmup = count_field("warmup_steps"),
+        steps = count_field("measured_steps"),
+        runs = count_field("runs"),
         file = SPOT_FILE_NAME,
     )
 }
@@ -232,6 +277,7 @@ fn render_summary(stamp_dir: &Path, report: &serde_json::Value) -> String {
 fn parse_spot_counts(args: &[String]) -> Result<SpotCounts, PlaygroundError> {
     let mut warmup_steps = DEFAULT_WARMUP_STEPS;
     let mut measured_steps = DEFAULT_MEASURED_STEPS;
+    let mut runs = DEFAULT_RUNS;
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
@@ -241,6 +287,10 @@ fn parse_spot_counts(args: &[String]) -> Result<SpotCounts, PlaygroundError> {
             }
             "--steps" => {
                 measured_steps = parse_u32_flag(args, index, "--steps")?;
+                index += 2;
+            }
+            "--runs" => {
+                runs = parse_u32_flag(args, index, "--runs")?;
                 index += 2;
             }
             unknown => {
@@ -253,9 +303,13 @@ fn parse_spot_counts(args: &[String]) -> Result<SpotCounts, PlaygroundError> {
     if measured_steps == 0 {
         return Err(PlaygroundError::usage("--steps must be greater than 0"));
     }
+    if runs == 0 {
+        return Err(PlaygroundError::usage("--runs must be greater than 0"));
+    }
     Ok(SpotCounts {
         warmup_steps,
         measured_steps,
+        runs,
     })
 }
 
@@ -345,7 +399,32 @@ fn parse_stamp_unix(raw: &str) -> Result<u64, PlaygroundError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{REQUIRED_KIND, extract_json_object, validate_scene_samples};
+    use std::collections::BTreeSet;
+
+    use super::{
+        CATALOG_SCENES_TS, catalog_scene_ids, extract_json_object, parse_spot_counts,
+        validate_scene_samples,
+    };
+    use crate::playground::PlaygroundError;
+
+    const CATALOG: [&str; 3] = ["a", "b", "c"];
+
+    fn valid_sample(scene: &str) -> serde_json::Value {
+        serde_json::json!({
+            "scene": scene,
+            "interaction": "default",
+            "median_ms_per_step": 1.0,
+            "min_ms_per_step": 0.9,
+            "max_ms_per_step": 1.1,
+            "start_particles": 1,
+            "end_particles": 2,
+            "timed_out": false,
+        })
+    }
+
+    fn full_catalog_samples() -> Vec<serde_json::Value> {
+        CATALOG.iter().map(|scene| valid_sample(scene)).collect()
+    }
 
     #[test]
     fn extract_json_object_skips_leading_noise() {
@@ -360,20 +439,109 @@ mod tests {
     }
 
     #[test]
-    fn validate_scene_samples_requires_five_named_scenes() {
+    fn embedded_catalog_has_unique_ids_including_dam_break() {
         // Arrange
-        let ok = vec![
-            serde_json::json!({"scene":"fountain","wall_ms":1.0,"timed_out":false}),
-            serde_json::json!({"scene":"float-or-sink","wall_ms":1.0,"timed_out":false}),
-            serde_json::json!({"scene":"color-mixer","wall_ms":1.0,"timed_out":false}),
-            serde_json::json!({"scene":"jelly-drop","wall_ms":1.0,"timed_out":false}),
-            serde_json::json!({"scene":"water-wheel","wall_ms":1.0,"timed_out":false}),
-        ];
-        let missing = vec![ok[0].clone()];
+        let source = CATALOG_SCENES_TS;
 
-        // Act / Assert
-        assert!(validate_scene_samples(&ok).is_ok());
-        assert!(validate_scene_samples(&missing).is_err());
-        assert_eq!(REQUIRED_KIND, "native_scene_spot");
+        // Act
+        let ids = catalog_scene_ids(source).expect("embedded catalog should parse");
+
+        // Assert
+        let unique: BTreeSet<&str> = ids.iter().copied().collect();
+        assert_eq!(unique.len(), ids.len());
+        assert!(ids.contains(&"dam-break"));
+    }
+
+    #[test]
+    fn validate_scene_samples_accepts_full_catalog() {
+        // Arrange
+        let samples = full_catalog_samples();
+
+        // Act
+        let result = validate_scene_samples(&samples, &CATALOG);
+
+        // Assert
+        assert_eq!(result, Ok(()));
+    }
+
+    #[test]
+    fn validate_scene_samples_rejects_missing_scene() {
+        // Arrange
+        let mut samples = full_catalog_samples();
+        samples.pop();
+
+        // Act
+        let result = validate_scene_samples(&samples, &CATALOG);
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_scene_samples_rejects_duplicate_scene() {
+        // Arrange
+        let samples = vec![valid_sample("a"), valid_sample("a"), valid_sample("b")];
+
+        // Act
+        let result = validate_scene_samples(&samples, &CATALOG);
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_scene_samples_rejects_timed_out() {
+        // Arrange
+        let mut samples = full_catalog_samples();
+        samples[0]["timed_out"] = serde_json::Value::Bool(true);
+
+        // Act
+        let result = validate_scene_samples(&samples, &CATALOG);
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_scene_samples_rejects_missing_median() {
+        // Arrange
+        let mut samples = full_catalog_samples();
+        samples[1]
+            .as_object_mut()
+            .expect("sample object")
+            .remove("median_ms_per_step");
+
+        // Act
+        let result = validate_scene_samples(&samples, &CATALOG);
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_spot_counts_rejects_zero_runs() {
+        // Arrange
+        let args = ["--runs".to_owned(), "0".to_owned()];
+
+        // Act
+        let result = parse_spot_counts(&args).map(|counts| counts.runs);
+
+        // Assert
+        assert_eq!(
+            result,
+            Err(PlaygroundError::usage("--runs must be greater than 0"))
+        );
+    }
+
+    #[test]
+    fn parse_spot_counts_defaults_to_three_runs() {
+        // Arrange
+        let args: [String; 0] = [];
+
+        // Act
+        let result = parse_spot_counts(&args).map(|counts| counts.runs);
+
+        // Assert
+        assert_eq!(result, Ok(3));
     }
 }

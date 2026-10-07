@@ -14,7 +14,7 @@ mod timers;
 
 pub(crate) use error::PlaygroundError;
 
-const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-profile|dam-break-timers|dam-break-audit-bundle|dam-break-heap|scene-spot> [--warmup <n>] [--steps <n>] [--pair-stamp <utc>] [--profile-stamp <utc>] [--stamp <utc>]";
+const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-profile|dam-break-timers|dam-break-audit-bundle|dam-break-heap|scene-spot> [--warmup <n>] [--steps <n>] [--runs <n>] [--pair-stamp <utc>] [--profile-stamp <utc>] [--stamp <utc>]";
 
 /// Runs exploratory playground Dam Break pair, CPU-profile, or timer commands.
 ///

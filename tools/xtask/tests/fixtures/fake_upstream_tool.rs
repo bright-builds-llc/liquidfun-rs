@@ -266,21 +266,45 @@ fn print_scene_spot_sample(args: &[String]) -> ExitCode {
         Ok(value) => value,
         Err(code) => return code,
     };
-    let scenes = [
-        "fountain",
-        "float-or-sink",
-        "color-mixer",
-        "jelly-drop",
-        "water-wheel",
-    ];
+    let runs = match parse_u32_flag(args, "--runs", 3) {
+        Ok(value) => value,
+        Err(code) => return code,
+    };
+    let Some(scenes) = catalog_scene_ids(include_str!("../../../../web/src/catalog/scenes.ts"))
+    else {
+        eprintln!("web/src/catalog/scenes.ts is missing `export const SCENE_IDS = [`");
+        return ExitCode::FAILURE;
+    };
     for (index, scene) in scenes.iter().enumerate() {
+        let interaction = match *scene {
+            "float-or-sink" | "impulse" | "drawing-particles" => "scripted",
+            _ => "default",
+        };
+        let median = 1.0 + index as f64 * 0.25;
+        let min = median - 0.1;
+        let max = median + 0.1;
         let start_particles = 100 + index * 10;
         let end_particles = start_particles + 5;
         println!(
-            "{{\"scene\":\"{scene}\",\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"start_particles\":{start_particles},\"end_particles\":{end_particles},\"wall_ms\":1.0,\"ms_per_step\":1.0,\"timed_out\":false}}"
+            "{{\"scene\":\"{scene}\",\"interaction\":\"{interaction}\",\"runs\":{runs},\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"start_particles\":{start_particles},\"end_particles\":{end_particles},\"median_ms_per_step\":{median:.6},\"min_ms_per_step\":{min:.6},\"max_ms_per_step\":{max:.6},\"timed_out\":false}}"
         );
     }
     ExitCode::SUCCESS
+}
+
+/// Inline copy of the xtask `SCENE_IDS` bracket/comma split; the fixture builds with plain rustc.
+fn catalog_scene_ids(source: &str) -> Option<Vec<&str>> {
+    let marker = "export const SCENE_IDS = [";
+    let start = source.find(marker)?;
+    let body = &source[start + marker.len()..];
+    let close = body.find(']')?;
+    Some(
+        body[..close]
+            .split(',')
+            .map(|item| item.trim().trim_matches('"'))
+            .filter(|item| !item.is_empty())
+            .collect(),
+    )
 }
 
 fn print_timer_sample(args: &[String]) -> ExitCode {
