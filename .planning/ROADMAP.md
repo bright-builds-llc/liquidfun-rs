@@ -81,7 +81,11 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 1. Scenes that are idle by default (for example Drawing or Sparky) get a small scripted interaction so their timing reflects real use; the table says which.
 1. `docs/benchmarks/scene-survey.md` records the ranked table with commit, machine and command.
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 34-01-PLAN.md — Extend the native stepper and xtask driver to every catalog scene with runs, cues, catalog coverage test and ranked table
+- [ ] 34-02-PLAN.md — Run the survey on committed source and commit docs/benchmarks/scene-survey.md
 
 ### Phase 35: Speed Up the Slowest Scenes
 
