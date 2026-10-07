@@ -409,8 +409,8 @@ impl SessionCore {
             .map(ParticleSystemSnapshot::particle_count)
     }
 
-    /// Reads the live particle system after a step, for scene tests.
-    #[cfg(test)]
+    /// Reads the live particle system, for scene tests and the native survey fingerprint.
+    #[cfg(any(test, not(target_arch = "wasm32")))]
     pub(crate) fn read_particles<T>(&self, read: impl FnOnce(&World, ParticleSystemId) -> T) -> T {
         read(&self.world, self.particle_system)
     }

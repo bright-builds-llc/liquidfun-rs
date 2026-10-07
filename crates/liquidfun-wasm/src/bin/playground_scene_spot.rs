@@ -21,18 +21,33 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().skip(1).collect();
-    let (warmup_steps, measured_steps, runs) = parse_counts(&args)?;
-    let samples = run_scene_spot(warmup_steps, measured_steps, runs)?;
+    let spot_args = parse_args(&args)?;
+    let scene_refs: Vec<&str> = spot_args.scenes.iter().map(String::as_str).collect();
+    let samples = run_scene_spot(
+        spot_args.warmup_steps,
+        spot_args.measured_steps,
+        spot_args.runs,
+        &scene_refs,
+    )?;
     for sample in samples {
         println!("{}", sample.to_json());
     }
     Ok(())
 }
 
-fn parse_counts(args: &[String]) -> Result<(u32, u32, u32), Box<dyn Error>> {
+/// Parsed survey flags; an empty `scenes` list means the full catalog.
+struct SpotArgs {
+    warmup_steps: u32,
+    measured_steps: u32,
+    runs: u32,
+    scenes: Vec<String>,
+}
+
+fn parse_args(args: &[String]) -> Result<SpotArgs, Box<dyn Error>> {
     let mut warmup_steps = DEFAULT_WARMUP_STEPS;
     let mut measured_steps = DEFAULT_MEASURED_STEPS;
     let mut runs = DEFAULT_RUNS;
+    let mut scenes = Vec::new();
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
@@ -48,15 +63,28 @@ fn parse_counts(args: &[String]) -> Result<(u32, u32, u32), Box<dyn Error>> {
                 runs = parse_flag_value(args, index, "--runs")?;
                 index += 2;
             }
+            "--scene" => {
+                let Some(scene) = args.get(index + 1).filter(|value| !value.starts_with("--"))
+                else {
+                    return Err("--scene requires a scene id".into());
+                };
+                scenes.push(scene.clone());
+                index += 2;
+            }
             unknown => {
                 return Err(format!(
-                    "unknown argument `{unknown}`; expected `--warmup <n>`, `--steps <n>`, and/or `--runs <n>`"
+                    "unknown argument `{unknown}`; expected `--warmup <n>`, `--steps <n>`, `--runs <n>`, and/or `--scene <id>`"
                 )
                 .into());
             }
         }
     }
-    Ok((warmup_steps, measured_steps, runs))
+    Ok(SpotArgs {
+        warmup_steps,
+        measured_steps,
+        runs,
+        scenes,
+    })
 }
 
 fn parse_flag_value(args: &[String], index: usize, flag: &str) -> Result<u32, Box<dyn Error>> {

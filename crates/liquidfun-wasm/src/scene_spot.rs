@@ -7,6 +7,10 @@ use std::time::{Duration, Instant};
 use crate::scene::SceneId;
 use crate::session::SessionCore;
 
+use self::fingerprint::{end_state_fingerprint, fingerprint_hex};
+
+mod fingerprint;
+
 /// Untimed first-contact steps before the measured sample.
 pub const DEFAULT_WARMUP_STEPS: u32 = 60;
 /// Timed `advance(1)` count. Shorter than Dam Break's 600-step gate recipe.
@@ -127,6 +131,26 @@ pub enum SceneSpotError {
         /// Hyphenated scene id.
         scene: &'static str,
     },
+    /// Hashing the end state after the timed loop failed.
+    Fingerprint {
+        /// Hyphenated scene id.
+        scene: &'static str,
+    },
+    /// Two runs of one scene ended with different fingerprints.
+    NondeterministicRun {
+        /// Hyphenated scene id.
+        scene: &'static str,
+    },
+    /// A `--scene` id is not in the playground catalog.
+    UnknownScene {
+        /// The rejected id, as given.
+        scene: String,
+    },
+    /// A `--scene` id was given more than once.
+    DuplicateScene {
+        /// The repeated id.
+        scene: String,
+    },
     /// The caller asked for zero runs per scene.
     ZeroRuns,
     /// The caller asked for zero timed steps per run.
@@ -154,6 +178,20 @@ impl Display for SceneSpotError {
                     "{scene} live particle count failed after the timed loop"
                 )
             }
+            Self::Fingerprint { scene } => {
+                write!(formatter, "{scene} end-state fingerprint failed")
+            }
+            Self::NondeterministicRun { scene } => {
+                write!(
+                    formatter,
+                    "{scene} end-state fingerprint differed between runs"
+                )
+            }
+            Self::UnknownScene { scene } => write!(
+                formatter,
+                "unknown --scene `{scene}`; expected a playground catalog id"
+            ),
+            Self::DuplicateScene { scene } => write!(formatter, "duplicate --scene `{scene}`"),
             Self::ZeroRuns => write!(formatter, "--runs must be greater than 0"),
             Self::ZeroMeasuredSteps => write!(formatter, "--steps must be greater than 0"),
         }
@@ -187,6 +225,8 @@ pub struct SceneSpotSample {
     pub max_ms_per_step: f64,
     /// Always false on success; timeouts fail the process instead.
     pub timed_out: bool,
+    /// FNV-1a 64 end-state fingerprint after warmup plus measured steps of the first run, 16 lowercase hex digits.
+    pub fingerprint: String,
 }
 
 impl SceneSpotSample {
@@ -194,7 +234,7 @@ impl SceneSpotSample {
     #[must_use]
     pub fn to_json(&self) -> String {
         format!(
-            "{{\"scene\":\"{}\",\"interaction\":\"{}\",\"runs\":{},\"warmup_steps\":{},\"measured_steps\":{},\"start_particles\":{},\"end_particles\":{},\"median_ms_per_step\":{:.6},\"min_ms_per_step\":{:.6},\"max_ms_per_step\":{:.6},\"timed_out\":{}}}",
+            "{{\"scene\":\"{}\",\"interaction\":\"{}\",\"runs\":{},\"warmup_steps\":{},\"measured_steps\":{},\"start_particles\":{},\"end_particles\":{},\"median_ms_per_step\":{:.6},\"min_ms_per_step\":{:.6},\"max_ms_per_step\":{:.6},\"timed_out\":{},\"fingerprint\":\"{}\"}}",
             json_escape(self.scene),
             json_escape(self.interaction),
             self.runs,
@@ -206,21 +246,24 @@ impl SceneSpotSample {
             self.min_ms_per_step,
             self.max_ms_per_step,
             self.timed_out,
+            json_escape(&self.fingerprint),
         )
     }
 }
 
-/// Builds every playground catalog scene `runs` times and times `advance(1)`.
+/// Builds the selected playground catalog scenes (all of them when `scene_filter` is empty) `runs` times and times `advance(1)`.
 ///
 /// # Errors
 ///
-/// Returns a closed error when `runs` or `measured_steps` is zero, or when
-/// construction, a survey cue, a step, a live particle snapshot, or the
-/// per-run wall timeout fails.
+/// Returns a closed error when `runs` or `measured_steps` is zero, when a
+/// `scene_filter` id is unknown or repeated, or when construction, a survey
+/// cue, a step, a live particle snapshot, the end-state fingerprint, the
+/// cross-run fingerprint agreement, or the per-run wall timeout fails.
 pub fn run_scene_spot(
     warmup_steps: u32,
     measured_steps: u32,
     runs: u32,
+    scene_filter: &[&str],
 ) -> Result<Vec<SceneSpotSample>, SceneSpotError> {
     if runs == 0 {
         return Err(SceneSpotError::ZeroRuns);
@@ -228,9 +271,10 @@ pub fn run_scene_spot(
     if measured_steps == 0 {
         return Err(SceneSpotError::ZeroMeasuredSteps);
     }
+    let selected = resolve_scene_filter(scene_filter)?;
 
-    let mut samples = Vec::with_capacity(SURVEY_SCENES.len());
-    for (scene, id, cue) in SURVEY_SCENES {
+    let mut samples = Vec::with_capacity(selected.len());
+    for (scene, id, cue) in selected {
         samples.push(survey_scene(
             scene,
             id,
@@ -243,6 +287,28 @@ pub fn run_scene_spot(
     Ok(samples)
 }
 
+/// Selects survey entries in catalog order; an empty filter selects every scene.
+fn resolve_scene_filter(
+    filter: &[&str],
+) -> Result<Vec<(&'static str, SceneId, SurveyCue)>, SceneSpotError> {
+    for (index, requested) in filter.iter().enumerate() {
+        if !SURVEY_SCENES.iter().any(|(id, _, _)| id == requested) {
+            return Err(SceneSpotError::UnknownScene {
+                scene: (*requested).to_owned(),
+            });
+        }
+        if filter[..index].contains(requested) {
+            return Err(SceneSpotError::DuplicateScene {
+                scene: (*requested).to_owned(),
+            });
+        }
+    }
+    Ok(SURVEY_SCENES
+        .into_iter()
+        .filter(|(id, _, _)| filter.is_empty() || filter.contains(id))
+        .collect())
+}
+
 fn survey_scene(
     scene: &'static str,
     id: SceneId,
@@ -252,13 +318,22 @@ fn survey_scene(
     runs: u32,
 ) -> Result<SceneSpotSample, SceneSpotError> {
     let mut ms_per_step = Vec::with_capacity(runs as usize);
+    let mut maybe_first_fingerprint = None;
     let mut maybe_last_run = None;
     for _ in 0..runs {
         let run = time_run(scene, id, cue, warmup_steps, measured_steps)?;
         ms_per_step.push(run.ms_per_step);
+        let first_fingerprint = *maybe_first_fingerprint.get_or_insert(run.fingerprint);
+        if run.fingerprint != first_fingerprint {
+            return Err(SceneSpotError::NondeterministicRun { scene });
+        }
         maybe_last_run = Some(run);
     }
-    let (Some(spread), Some(last_run)) = (summarize(&mut ms_per_step), maybe_last_run) else {
+    let (Some(spread), Some(last_run), Some(first_fingerprint)) = (
+        summarize(&mut ms_per_step),
+        maybe_last_run,
+        maybe_first_fingerprint,
+    ) else {
         return Err(SceneSpotError::ZeroRuns);
     };
 
@@ -274,6 +349,7 @@ fn survey_scene(
         min_ms_per_step: spread.min,
         max_ms_per_step: spread.max,
         timed_out: false,
+        fingerprint: fingerprint_hex(first_fingerprint),
     })
 }
 
@@ -282,6 +358,7 @@ struct RunSample {
     ms_per_step: f64,
     start_particles: usize,
     end_particles: usize,
+    fingerprint: u64,
 }
 
 fn time_run(
@@ -327,11 +404,15 @@ fn time_run(
     let end_particles = session
         .live_particle_count()
         .map_err(|_error| SceneSpotError::ParticleSnapshot { scene })?;
+    let fingerprint = session
+        .read_particles(end_state_fingerprint)
+        .ok_or(SceneSpotError::Fingerprint { scene })?;
 
     Ok(RunSample {
         ms_per_step: timed_ms / f64::from(measured_steps),
         start_particles,
         end_particles,
+        fingerprint,
     })
 }
 

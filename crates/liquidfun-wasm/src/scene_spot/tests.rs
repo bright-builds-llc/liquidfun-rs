@@ -1,8 +1,9 @@
+use super::fingerprint::{Fnv1a, end_state_fingerprint, fingerprint_hex};
 use super::{
     RunSpread, SURVEY_SCENES, SceneSpotError, SceneSpotSample, SurveyCue, apply_cue,
-    run_scene_spot, summarize,
+    resolve_scene_filter, run_scene_spot, summarize,
 };
-use crate::scene::parse_scene_id;
+use crate::scene::{SceneId, parse_scene_id};
 use crate::session::SessionCore;
 
 const CATALOG_SCENES_TS: &str = include_str!("../../../../web/src/catalog/scenes.ts");
@@ -145,7 +146,7 @@ fn run_scene_spot_rejects_zero_runs() {
     let runs = 0;
 
     // Act
-    let result = run_scene_spot(0, 1, runs);
+    let result = run_scene_spot(0, 1, runs, &[]);
 
     // Assert
     assert_eq!(result, Err(SceneSpotError::ZeroRuns));
@@ -157,7 +158,7 @@ fn run_scene_spot_rejects_zero_measured_steps() {
     let measured_steps = 0;
 
     // Act
-    let result = run_scene_spot(0, measured_steps, 1);
+    let result = run_scene_spot(0, measured_steps, 1, &[]);
 
     // Assert
     assert_eq!(result, Err(SceneSpotError::ZeroMeasuredSteps));
@@ -178,6 +179,7 @@ fn to_json_reports_survey_fields() {
         min_ms_per_step: 0.8,
         max_ms_per_step: 1.0,
         timed_out: false,
+        fingerprint: "00000000000000ab".to_owned(),
     };
 
     // Act
@@ -194,6 +196,144 @@ fn to_json_reports_survey_fields() {
     ] {
         assert!(json.contains(expected), "missing {expected} in {json}");
     }
+    assert!(
+        json.ends_with("\"timed_out\":false,\"fingerprint\":\"00000000000000ab\"}"),
+        "fingerprint should follow timed_out last in {json}"
+    );
     assert!(!json.contains("wall_ms"));
     assert!(!json.contains("rust_over_cpp_ratio"));
+}
+
+#[test]
+fn fnv1a_of_empty_input_is_offset_basis() {
+    // Arrange
+    let hasher = Fnv1a::new();
+
+    // Act
+    let value = hasher.finish();
+
+    // Assert
+    assert_eq!(value, 0xcbf2_9ce4_8422_2325);
+}
+
+#[test]
+fn fnv1a_mixes_u32_little_endian_bytes() {
+    // Arrange
+    let mut hasher = Fnv1a::new();
+    let mut expected: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in [0x61_u8, 0x00, 0x00, 0x00] {
+        expected ^= u64::from(byte);
+        expected = expected.wrapping_mul(0x0100_0000_01b3);
+    }
+
+    // Act
+    hasher.mix_u32(0x0000_0061);
+
+    // Assert
+    assert_eq!(hasher.finish(), expected);
+}
+
+#[test]
+fn fingerprint_hex_is_sixteen_lowercase_digits() {
+    // Arrange
+    let value = 0xab;
+
+    // Act
+    let hex = fingerprint_hex(value);
+
+    // Assert
+    assert_eq!(hex, "00000000000000ab");
+}
+
+fn dam_break_fingerprint_after(steps: u32) -> Option<u64> {
+    let mut session = SessionCore::create(SceneId::DamBreak).expect("dam break should build");
+    session.advance(steps).expect("dam break should step");
+    session.read_particles(end_state_fingerprint)
+}
+
+#[test]
+fn end_state_fingerprint_is_deterministic_for_fresh_sessions() {
+    // Arrange
+    let steps = 3;
+
+    // Act
+    let first = dam_break_fingerprint_after(steps);
+    let second = dam_break_fingerprint_after(steps);
+
+    // Assert
+    assert!(first.is_some(), "fingerprint should succeed");
+    assert_eq!(first, second);
+}
+
+#[test]
+fn end_state_fingerprint_changes_after_a_step() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::DamBreak).expect("dam break should build");
+    let before = session.read_particles(end_state_fingerprint);
+
+    // Act
+    session.advance(1).expect("dam break should step");
+    let after = session.read_particles(end_state_fingerprint);
+
+    // Assert
+    assert_ne!(before, after);
+}
+
+#[test]
+fn scene_filter_keeps_catalog_order() {
+    // Arrange
+    let filter = ["tesla-valve", "liquid-tumbler"];
+
+    // Act
+    let resolved = resolve_scene_filter(&filter).expect("known ids should resolve");
+
+    // Assert
+    let ids: Vec<&str> = resolved.iter().map(|(id, _, _)| *id).collect();
+    assert_eq!(ids, ["liquid-tumbler", "tesla-valve"]);
+}
+
+#[test]
+fn scene_filter_rejects_unknown_id() {
+    // Arrange
+    let filter = ["not-a-scene"];
+
+    // Act
+    let result = resolve_scene_filter(&filter);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(SceneSpotError::UnknownScene {
+            scene: "not-a-scene".to_owned()
+        })
+    );
+}
+
+#[test]
+fn scene_filter_rejects_duplicate_id() {
+    // Arrange
+    let filter = ["soup", "soup"];
+
+    // Act
+    let result = resolve_scene_filter(&filter);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(SceneSpotError::DuplicateScene {
+            scene: "soup".to_owned()
+        })
+    );
+}
+
+#[test]
+fn empty_scene_filter_selects_full_catalog() {
+    // Arrange
+    let filter: [&str; 0] = [];
+
+    // Act
+    let resolved = resolve_scene_filter(&filter).expect("empty filter should resolve");
+
+    // Assert
+    assert_eq!(resolved, SURVEY_SCENES.to_vec());
 }
