@@ -137,7 +137,7 @@ Plans:
 | 31. Sinusoidal wave tank | v1.3 | 3/3 | Complete    | 2026-09-27 |
 | 32. Liquid motion bubbler | v1.3 | 4/4 | Complete    | 2026-09-27 |
 | 33. Stacked drip fidget | v1.3 | 4/4 | Complete   | 2026-09-28 |
-| 34. Scene Timing Survey | v1.4 | 2/2 | Complete   | 2026-10-07 |
+| 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
 | 35. Speed Up the Slowest Scenes | v1.4 | 0/TBD | Not started | - |
 | 36. Re-survey and Wrap Up | v1.4 | 0/TBD | Not started | - |
 
