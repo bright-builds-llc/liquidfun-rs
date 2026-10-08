@@ -128,6 +128,7 @@ impl ParticleStorage {
             group_records: Vec::new(),
             solver_state: SolverState::new(),
             contact_proxies: Vec::new(),
+            proxy_order_cache: crate::particle::contact_scan::ProxyOrderCache::default(),
         })
     }
 

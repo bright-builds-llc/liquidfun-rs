@@ -22,6 +22,19 @@ pub(crate) struct ContactProxy {
     pub(crate) row: usize,
 }
 
+/// Last sorted proxy order, kept across solver iterations only as a sort hint.
+///
+/// It never changes results: `(tag, row)` is a total order, so sorting any
+/// permutation of the rows yields the same buffer. Equality ignores it.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ProxyOrderCache(pub(crate) Vec<ContactProxy>);
+
+impl PartialEq for ProxyOrderCache {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
+
 #[derive(Debug)]
 pub(crate) enum ContactFillError {
     Proxy(ParticleProxyError),
@@ -119,6 +132,11 @@ fn rebuild_proxies(
         ));
     }
 
+    if retag_retained_order(positions, inverse_diameter, proxies) {
+        proxies.sort_unstable_by_key(|proxy| (proxy.tag, proxy.row));
+        return Ok(());
+    }
+
     proxies.clear();
     proxies.reserve(positions.len());
     for (row, position) in positions.iter().copied().enumerate() {
@@ -128,6 +146,35 @@ fn rebuild_proxies(
     }
     proxies.sort_by(|left, right| left.tag.cmp(&right.tag).then(left.row.cmp(&right.row)));
     Ok(())
+}
+
+/// Recomputes tags in place on the previous iteration's sorted order.
+///
+/// A retained buffer whose length equals `positions.len()` is a permutation of
+/// rows `0..len`: it only ever comes from a full rebuild at that length or a
+/// re-sort of one. Creation, destruction and compaction change which particle a
+/// row names but keep the rows a permutation while the length matches. Returns
+/// false when the caller must rebuild in row order instead, including on any
+/// tag error, so errors still come from the first failing row in row order.
+fn retag_retained_order(
+    positions: &[Vec2],
+    inverse_diameter: f32,
+    proxies: &mut [ContactProxy],
+) -> bool {
+    if positions.is_empty() || proxies.len() != positions.len() {
+        return false;
+    }
+    for proxy in proxies.iter_mut() {
+        let Some(position) = positions.get(proxy.row) else {
+            return false;
+        };
+        let Ok(tag) = checked_tag(inverse_diameter * position.x, inverse_diameter * position.y)
+        else {
+            return false;
+        };
+        proxy.tag = tag;
+    }
+    true
 }
 
 fn consider_window<F: FnMut(&ParticleContact) -> bool>(
@@ -186,6 +233,162 @@ mod tests {
     use crate::World;
     use crate::math::Vec2;
     use crate::particle::{ParticleContactUpdate, ParticleDef, ParticleNeighborhood};
+
+    const DIAMETER: f32 = 1.0;
+
+    /// Flags and ids for `count` live particles; positions are supplied per scan.
+    fn lanes(count: usize) -> (Vec<ParticleFlags>, Vec<ParticleId>) {
+        let mut world = World::new().expect("test world key remains available");
+        let system = world
+            .create_particle_system()
+            .expect("particle system should fit");
+        for _ in 0..count {
+            let _ = world
+                .create_particle_with_def(system, None, &ParticleDef::default())
+                .expect("particle should fit");
+        }
+        let view = world
+            .particle_system_view(system)
+            .expect("particle system should remain live");
+        (view.flags().to_vec(), view.particle_ids().to_vec())
+    }
+
+    /// An irregular cluster so neighbors and tags vary from row to row.
+    fn scattered_positions(count: usize) -> Vec<Vec2> {
+        (0..count)
+            .map(|row| {
+                let step = f32::from(u16::try_from(row).expect("test rows fit in u16"));
+                Vec2::new((step * 0.37) % 3.1 - 1.2, (step * 0.61) % 2.3 - 0.4)
+            })
+            .collect()
+    }
+
+    fn mirrored(positions: &[Vec2]) -> Vec<Vec2> {
+        positions
+            .iter()
+            .map(|position| Vec2::new(-position.x, position.y + 0.25))
+            .collect()
+    }
+
+    fn scan(
+        positions: &[Vec2],
+        lanes: &(Vec<ParticleFlags>, Vec<ParticleId>),
+        diameter: f32,
+        proxies: &mut Vec<ContactProxy>,
+    ) -> (Result<(), ContactFillError>, Vec<StoredParticleContact>) {
+        let mut contacts = Vec::new();
+        let result = fill_stored_contacts(
+            positions,
+            &lanes.0[..positions.len()],
+            &lanes.1[..positions.len()],
+            diameter,
+            proxies,
+            &mut contacts,
+            &mut |_contact| true,
+        );
+        (result, contacts)
+    }
+
+    fn sorted_scan(
+        positions: &[Vec2],
+        lanes: &(Vec<ParticleFlags>, Vec<ParticleId>),
+    ) -> Vec<ContactProxy> {
+        let mut proxies = Vec::new();
+        let (result, _contacts) = scan(positions, lanes, DIAMETER, &mut proxies);
+        result.expect("in-range positions should scan");
+        proxies
+    }
+
+    #[test]
+    fn retained_order_matches_fresh_rebuild_after_motion() {
+        // Arrange
+        let lanes = lanes(40);
+        let before = scattered_positions(40);
+        let after = mirrored(&before);
+        let mut retained = sorted_scan(&before, &lanes);
+        let mut fresh = Vec::new();
+
+        // Act
+        let (retained_result, retained_contacts) = scan(&after, &lanes, DIAMETER, &mut retained);
+        let (fresh_result, fresh_contacts) = scan(&after, &lanes, DIAMETER, &mut fresh);
+
+        // Assert
+        retained_result.expect("retained order should scan");
+        fresh_result.expect("fresh order should scan");
+        assert_ne!(sorted_scan(&before, &lanes), fresh);
+        assert_eq!(retained, fresh);
+        assert!(!fresh_contacts.is_empty());
+        assert_eq!(retained_contacts, fresh_contacts);
+    }
+
+    #[test]
+    fn retained_order_with_other_length_falls_back() {
+        // Arrange
+        let lanes = lanes(40);
+        let positions = scattered_positions(40);
+        let mut retained = sorted_scan(&positions[..39], &lanes);
+        let mut fresh = Vec::new();
+
+        // Act
+        let (retained_result, _) = scan(&positions, &lanes, DIAMETER, &mut retained);
+        let (fresh_result, _) = scan(&positions, &lanes, DIAMETER, &mut fresh);
+
+        // Assert
+        retained_result.expect("retained order should scan");
+        fresh_result.expect("fresh order should scan");
+        assert_eq!(retained.len(), 40);
+        assert_eq!(retained, fresh);
+    }
+
+    #[test]
+    fn retained_order_reports_the_same_tag_error() {
+        // Arrange
+        let lanes = lanes(40);
+        let mut positions = scattered_positions(40);
+        let mut retained = sorted_scan(&positions, &lanes);
+        positions[17] = Vec2::new(1.0e30, 0.0);
+        let mut fresh = Vec::new();
+
+        // Act
+        let (retained_result, _) = scan(&positions, &lanes, DIAMETER, &mut retained);
+        let (fresh_result, _) = scan(&positions, &lanes, DIAMETER, &mut fresh);
+
+        // Assert
+        assert!(matches!(
+            retained_result,
+            Err(ContactFillError::Proxy(
+                ParticleProxyError::PositionOutOfTagRange
+            ))
+        ));
+        assert!(matches!(
+            fresh_result,
+            Err(ContactFillError::Proxy(
+                ParticleProxyError::PositionOutOfTagRange
+            ))
+        ));
+        assert_eq!(retained, fresh);
+    }
+
+    #[test]
+    fn retained_order_reports_the_same_diameter_error() {
+        // Arrange
+        let lanes = lanes(40);
+        let positions = scattered_positions(40);
+        let mut retained = sorted_scan(&positions, &lanes);
+        let expected = retained.clone();
+
+        // Act
+        let (result, _) = scan(&positions, &lanes, 0.0, &mut retained);
+
+        // Assert
+        assert!(matches!(
+            result,
+            Err(ContactFillError::Proxy(
+                ParticleProxyError::NonPositiveDiameter
+            ))
+        ));
+        assert_eq!(retained, expected);
+    }
 
     #[test]
     fn stepped_scan_matches_neighborhood_contacts() {

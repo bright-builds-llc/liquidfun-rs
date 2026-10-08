@@ -125,6 +125,8 @@ pub(crate) struct ParticleStorage {
     solver_state: SolverState,
     /// Reused spatial proxies for one solver iteration. Cleared before a step returns.
     contact_proxies: Vec<crate::particle::contact_scan::ContactProxy>,
+    /// Sorted order from the last iteration; a sort hint only (see `ProxyOrderCache`).
+    proxy_order_cache: crate::particle::contact_scan::ProxyOrderCache,
 }
 
 struct CreateCandidate {

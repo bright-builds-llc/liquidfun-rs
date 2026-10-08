@@ -315,9 +315,13 @@ impl ParticleStorage {
         &self.contact_proxies
     }
 
+    /// Hands out the current proxies, or the retained sorted order after a scan clear.
     pub(crate) fn take_contact_proxies(
         &mut self,
     ) -> Vec<crate::particle::contact_scan::ContactProxy> {
+        if self.contact_proxies.is_empty() {
+            return std::mem::take(&mut self.proxy_order_cache.0);
+        }
         std::mem::take(&mut self.contact_proxies)
     }
 
@@ -328,7 +332,11 @@ impl ParticleStorage {
         self.contact_proxies = proxies;
     }
 
+    /// Empties the current proxies and keeps their sorted order as the next sort hint.
     pub(crate) fn clear_contact_scan(&mut self) {
+        if !self.contact_proxies.is_empty() {
+            std::mem::swap(&mut self.contact_proxies, &mut self.proxy_order_cache.0);
+        }
         self.contact_proxies.clear();
     }
 

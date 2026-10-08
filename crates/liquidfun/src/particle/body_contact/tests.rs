@@ -297,6 +297,39 @@ fn strict_aabb_edges_and_tiny_position_edits_match_legacy_selection() {
 
 // Preserve the pre-index loop as an independent witness, including arithmetic
 // grouping and callback timing. Only unchanged strict/listener rules are shared.
+#[test]
+fn clear_contact_scan_empties_current_proxies_and_keeps_the_order() {
+    // Arrange
+    let mut storage = storage(&[Vec2::new(0.2, 0.05), Vec2::new(-0.2, 0.0)], 0.1);
+    let installed = storage.contact_proxies().to_vec();
+
+    // Act
+    storage.clear_contact_scan();
+
+    // Assert
+    assert!(!installed.is_empty());
+    assert!(storage.contact_proxies().is_empty());
+    assert_eq!(storage.take_contact_proxies(), installed);
+}
+
+#[test]
+fn storage_equality_ignores_retained_proxy_order() {
+    // Arrange
+    let storage = storage(&[Vec2::new(0.2, 0.05), Vec2::new(-0.2, 0.0)], 0.1);
+    let mut retained = storage.clone();
+    let mut plain = storage.clone();
+
+    // Act
+    retained.clear_contact_scan();
+    let _ = plain.take_contact_proxies();
+
+    // Assert
+    assert!(retained.contact_proxies().is_empty() && plain.contact_proxies().is_empty());
+    assert!(!retained.clone().take_contact_proxies().is_empty());
+    assert!(plain.clone().take_contact_proxies().is_empty());
+    assert!(retained == plain);
+}
+
 fn legacy(
     view: &ParticleSystemView<'_>,
     sources: &[FixtureContactSource],
