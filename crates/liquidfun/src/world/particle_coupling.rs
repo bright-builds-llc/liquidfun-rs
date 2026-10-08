@@ -11,7 +11,7 @@ use scratch::CollisionBuffers;
 pub(super) use scratch::ParticleStepScratch;
 
 use crate::arena::Arena;
-use crate::collision::{Aabb, ChildIndex, EdgeShape, RayCastInput, Shape};
+use crate::collision::{Aabb, ChildIndex, RayCastInput, Shape};
 use crate::math::{Transform, Vec2, max, min};
 use crate::particle::body_contact::{self, FixtureContactSource};
 use crate::particle::contact::{
@@ -129,20 +129,21 @@ impl World {
         let proxies_match = proxies.len() == candidate.positions.len();
         for fixture in fixtures {
             let static_fixture = fixture.previous_transform == fixture.current_transform;
-            for ccd_child in &fixture.children {
+            for (child, maybe_aabb) in &fixture.children {
                 // Later iterations raycast from the current position, so the
                 // fixture AABB plus the max travel pad is a superset for
                 // moving fixtures too. Iteration 0 remaps the ray start
                 // through the previous body transform.
                 let spatially_filtered =
                     proxies_match && (static_fixture || particle_iteration != 0);
-                if spatially_filtered && let Some(aabb) = ccd_child.maybe_aabb {
+                if spatially_filtered && let Some(aabb) = *maybe_aabb {
                     let queried =
                         query_particles_for_fixture(proxies, diameter, aabb, motion, |row| {
                             push_fixture_particle_hit(
                                 candidate,
                                 fixture,
-                                ccd_child,
+                                *child,
+                                maybe_aabb.as_ref(),
                                 row,
                                 time_step,
                                 particle_iteration,
@@ -158,7 +159,8 @@ impl World {
                     push_fixture_particle_hit(
                         candidate,
                         fixture,
-                        ccd_child,
+                        *child,
+                        maybe_aabb.as_ref(),
                         particle,
                         time_step,
                         particle_iteration,
@@ -286,18 +288,7 @@ struct CcdFixtureRecord {
     body_local_center: Vec2,
     is_circle: bool,
     shape: Shape,
-    children: Vec<CcdChild>,
-}
-
-/// One fixture child with its expanded bounds and, for chains, its edge.
-///
-/// Chain edges are built once per child per pass; `ChainShape::ray_cast` is
-/// exactly `child_edge(child)?.ray_cast(..)`, so casting on the prebuilt edge
-/// keeps the same float operations.
-struct CcdChild {
-    index: ChildIndex,
-    maybe_aabb: Option<Aabb>,
-    maybe_edge: Option<EdgeShape>,
+    children: Vec<(ChildIndex, Option<Aabb>)>,
 }
 
 fn max_particle_motion(velocities: &[Vec2], time_step: f32) -> f32 {
@@ -358,7 +349,8 @@ fn query_particles_for_fixture(
 fn push_fixture_particle_hit<H: CollisionDecisionHook>(
     candidate: &BoundaryCandidate,
     fixture: &CcdFixtureRecord,
-    ccd_child: &CcdChild,
+    child: ChildIndex,
+    maybe_aabb: Option<&Aabb>,
     particle: usize,
     time_step: f32,
     particle_iteration: u32,
@@ -381,20 +373,17 @@ fn push_fixture_particle_hit<H: CollisionDecisionHook>(
         return Ok(());
     }
     let maybe_travel = particle_travel_aabb(start, end);
-    if let (Some(travel), Some(aabb)) = (maybe_travel, ccd_child.maybe_aabb)
+    if let (Some(travel), Some(aabb)) = (maybe_travel, maybe_aabb.copied())
         && !travel.overlaps(aabb)
     {
         return Ok(());
     }
     let input = RayCastInput::new(start, end, 1.0)
         .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
-    let Some(hit) = match &ccd_child.maybe_edge {
-        Some(edge) => edge.ray_cast(input, fixture.current_transform),
-        None => fixture
-            .shape
-            .ray_cast(input, fixture.current_transform, ccd_child.index),
-    }
-    .map_err(|_error| StepError::ParticleLifecycleInvariant)?
+    let Some(hit) = fixture
+        .shape
+        .ray_cast(input, fixture.current_transform, child)
+        .map_err(|_error| StepError::ParticleLifecycleInvariant)?
     else {
         return Ok(());
     };
@@ -465,15 +454,7 @@ fn ccd_fixture_records(
                     .child_index(child)
                     .map_err(|_error| StepError::ParticleLifecycleInvariant)?;
                 let maybe_aabb = expanded_shape_aabb(&shape, current_transform, child, expansion);
-                let maybe_edge = match &shape {
-                    Shape::Chain(chain) => chain.child_edge(child).ok(),
-                    _ => None,
-                };
-                children.push(CcdChild {
-                    index: child,
-                    maybe_aabb,
-                    maybe_edge,
-                });
+                children.push((child, maybe_aabb));
             }
             buffers.fixtures.push(CcdFixtureRecord {
                 body: *body_id,
