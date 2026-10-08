@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 current_phase: 35
-current_phase_name: speed up the slowest scenes
-current_plan: Not started
+current_phase_name: Speed Up the Slowest Scenes
+current_plan: 2
 status: executing
-stopped_at: Phase 35 context gathered
-last_updated: "2026-10-07T18:20:53.195Z"
-last_activity: 2026-10-07 -- Phase 35 planning complete
+stopped_at: Completed 35-01-PLAN.md
+last_updated: "2026-10-08T01:47:49.876Z"
+last_activity: 2026-10-08
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 2
-  percent: 20
+  completed_plans: 3
+  percent: 30
 ---
 
 # Project State
@@ -24,22 +24,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-06)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 34 — Scene Timing Survey
+**Current focus:** Phase 35 — Speed Up the Slowest Scenes
 
 ## Current Position
 
 Current Phase: 35
-Current Phase Name: speed up the slowest scenes
+Current Phase Name: Speed Up the Slowest Scenes
 Total Phases: 3
-Current Plan: Not started
+Current Plan: 2
 Total Plans in Phase: 8
 
-Phase: 34 (Scene Timing Survey) — EXECUTING
-Plan: 2 of 2
+Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
+Plan: 2 of 8
 **Status:** Ready to execute
-Last activity: 2026-10-07 -- Phase 35 planning complete
+Last activity: 2026-10-08
 
-**Progress:** [██████████] 100%
+**Progress:** [███░░░░░░░] 30%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -63,6 +63,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - The recorded ≤ 3× pair stays bound to git `89d34564`. A fresh unprofiled pair is required before claiming that ratio for later HEAD.
 - [Phase 34]: Scene survey SCENE_WALL_TIMEOUT applies per run; start_particles read before the survey cue; even-run median averages middle values
 - [Phase 34]: Recorded scene survey: stamp 2026-10-07T06-20-54Z on 96a3ac6a6; top 5 liquid-tumbler, tesla-valve, stacked-drip, washing-machine, particles
+- [Phase 35]: Survey fingerprint is FNV-1a 64 over f32 bits (particles, color lane marker, bodies) after the first run; runs in one invocation must agree
+- [Phase 35]: Survey scene filter (repeatable --scene) in bin and xtask; unknown or duplicate ids fail closed before any stamp
 
 ### Pending Todos
 
@@ -114,9 +116,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 33 P04 | 25 min | 2 tasks | 4 files |
 | Phase 34 P01 | 26min | 2 tasks | 8 files |
 | Phase 34 P02 | 5min | 2 tasks | 2 files |
+| Phase 35 P01 | 445min | 2 tasks | 11 files |
 
 ## Session Continuity
 
-Last session: 2026-10-07T17:32:12.447Z
-Stopped at: Phase 35 context gathered
-Resume file: .planning/phases/35-speed-up-the-slowest-scenes/35-CONTEXT.md
+Last session: 2026-10-08T01:47:43.235Z
+Stopped at: Completed 35-01-PLAN.md
+Resume file: None
