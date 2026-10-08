@@ -1,6 +1,6 @@
 //! Fresh collider metadata and workspace restoration across step errors.
 use super::*;
-use crate::collision::{CircleShape, FilterData, PolygonShape};
+use crate::collision::{ChainShape, CircleShape, FilterData, PolygonShape};
 use crate::{
     BodyDef, BodyType, FixtureDef, NoDecisionHook, ParticleDef, ParticleSystemDef, StepLimits,
 };
@@ -157,5 +157,60 @@ fn repeated_limit_errors_restore_workspace_and_keep_legacy_rollback_state() {
             .positions()
             .len(),
         1
+    );
+}
+
+#[test]
+fn ccd_children_carry_chain_edges_only() {
+    // Arrange
+    let mut world = World::new().expect("world");
+    let body = world.create_body(&BodyDef::default()).expect("body");
+    let chain = ChainShape::closed(&[
+        Vec2::new(-1.0, -1.0),
+        Vec2::new(1.0, -1.0),
+        Vec2::new(1.0, 1.0),
+        Vec2::new(-1.0, 1.0),
+    ])
+    .expect("chain");
+    world
+        .create_fixture(
+            body,
+            &FixtureDef::new(
+                Shape::from(chain.clone()),
+                0.0,
+                0.2,
+                0.0,
+                false,
+                FilterData::default(),
+            )
+            .expect("chain fixture"),
+        )
+        .expect("chain fixture");
+    fixture(&mut world, body);
+    let mut buffers = CollisionBuffers::default();
+
+    // Act
+    ccd_fixture_records(&world, &world.bodies, Vec2::ZERO, &mut buffers).expect("records");
+
+    // Assert
+    let find = |is_chain: bool| {
+        buffers
+            .fixtures
+            .iter()
+            .find(|record| matches!(record.shape, Shape::Chain(_)) == is_chain)
+            .expect("record")
+    };
+    let (chain_record, polygon_record) = (find(true), find(false));
+    assert_eq!(buffers.fixtures.len(), 2);
+    assert_eq!(chain_record.children.len(), 4);
+    for child in &chain_record.children {
+        let expected = chain.child_edge(child.index).expect("child edge");
+        assert_eq!(child.maybe_edge.as_ref(), Some(&expected));
+    }
+    assert!(
+        polygon_record
+            .children
+            .iter()
+            .all(|child| child.maybe_edge.is_none())
     );
 }
