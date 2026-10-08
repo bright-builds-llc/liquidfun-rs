@@ -12,36 +12,35 @@ use super::PlaygroundError;
 use super::identity::{host_identity, repository_root};
 use super::stamp;
 
+mod args;
 mod survey_table;
 
+use args::{SpotArgs, parse_spot_args};
 use survey_table::{RankedScene, catalog_scene_ids, rank_scene_samples, render_ranked_table};
 
 const SPOT_FILE_NAME: &str = "scene-spot.json";
 const REQUIRED_KIND: &str = "native_scene_spot";
-const DEFAULT_WARMUP_STEPS: u32 = 60;
-const DEFAULT_MEASURED_STEPS: u32 = 120;
-const DEFAULT_RUNS: u32 = 3;
 /// Compile-time catalog copy; the CLI fixture repository has no `web/` tree.
 const CATALOG_SCENES_TS: &str = include_str!("../../../../web/src/catalog/scenes.ts");
 const DISCLAIMER: &str = "Unreviewed local survey of every playground catalog scene. Not a C++ pair, not Phase 12, and not the Dam Break 3× number.";
 const INTERACTION_LABELS: [&str; 2] = ["default", "scripted"];
 const SPREAD_FIELDS: [&str; 3] = ["median_ms_per_step", "min_ms_per_step", "max_ms_per_step"];
-
-struct SpotCounts {
-    warmup_steps: u32,
-    measured_steps: u32,
-    runs: u32,
-}
+const FINGERPRINT_DIGITS: usize = 16;
 
 pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
-    let counts = parse_spot_counts(args)?;
-    let repository_root = repository_root()?;
-    let output = run_spot_bin(&repository_root, &counts)?;
-    let scenes = parse_scene_samples(&output)?;
     let catalog = catalog_scene_ids(CATALOG_SCENES_TS)?;
-    validate_scene_samples(&scenes, &catalog)?;
+    let spot_args = parse_spot_args(args, &catalog)?;
+    let expected: Vec<&str> = if spot_args.scenes.is_empty() {
+        catalog
+    } else {
+        spot_args.scenes.iter().map(String::as_str).collect()
+    };
+    let repository_root = repository_root()?;
+    let output = run_spot_bin(&repository_root, &spot_args)?;
+    let scenes = parse_scene_samples(&output)?;
+    validate_scene_samples(&scenes, &expected)?;
     let ranked = rank_scene_samples(&scenes)?;
-    let report = assemble_report(&scenes, &counts, &repository_root)?;
+    let report = assemble_report(&scenes, &spot_args, &repository_root)?;
     let unix_seconds = stamp_unix_seconds()?;
     let stamp_dir = stamp::mint_exclusive_stamp(&repository_root, unix_seconds)?;
     write_spot_json(&stamp_dir, &report)?;
@@ -57,33 +56,34 @@ fn cargo_program() -> OsString {
         .unwrap_or_else(|| OsString::from("cargo"))
 }
 
-fn run_spot_bin(root: &Path, counts: &SpotCounts) -> Result<Output, PlaygroundError> {
+fn run_spot_bin(root: &Path, spot_args: &SpotArgs) -> Result<Output, PlaygroundError> {
     let cargo = cargo_program();
-    Command::new(&cargo)
-        .current_dir(root)
-        .args([
-            "run",
-            "-p",
-            "liquidfun-wasm",
-            "--release",
-            "--quiet",
-            "--bin",
-            "playground-scene-spot",
-            "--",
-            "--warmup",
-            &counts.warmup_steps.to_string(),
-            "--steps",
-            &counts.measured_steps.to_string(),
-            "--runs",
-            &counts.runs.to_string(),
-        ])
-        .output()
-        .map_err(|error| {
-            PlaygroundError::new(
-                "spot",
-                format!("{}: {error}", PathBuf::from(&cargo).display()),
-            )
-        })
+    let mut command = Command::new(&cargo);
+    command.current_dir(root).args([
+        "run",
+        "-p",
+        "liquidfun-wasm",
+        "--release",
+        "--quiet",
+        "--bin",
+        "playground-scene-spot",
+        "--",
+        "--warmup",
+        &spot_args.warmup_steps.to_string(),
+        "--steps",
+        &spot_args.measured_steps.to_string(),
+        "--runs",
+        &spot_args.runs.to_string(),
+    ]);
+    for scene in &spot_args.scenes {
+        command.args(["--scene", scene]);
+    }
+    command.output().map_err(|error| {
+        PlaygroundError::new(
+            "spot",
+            format!("{}: {error}", PathBuf::from(&cargo).display()),
+        )
+    })
 }
 
 fn parse_scene_samples(output: &Output) -> Result<Vec<serde_json::Value>, PlaygroundError> {
@@ -136,9 +136,10 @@ fn extract_json_object(stdout: &str) -> Option<&str> {
     Some(&stdout[start..=end])
 }
 
+/// Requires exactly the `expected` ids (the catalog, or the `--scene` filter), each valid.
 fn validate_scene_samples(
     scenes: &[serde_json::Value],
-    catalog: &[&str],
+    expected: &[&str],
 ) -> Result<(), PlaygroundError> {
     let names: Vec<&str> = scenes
         .iter()
@@ -151,14 +152,14 @@ fn validate_scene_samples(
             format!("survey scenes must be named once each, got {names:?}"),
         ));
     }
-    let expected: BTreeSet<&str> = catalog.iter().copied().collect();
+    let expected: BTreeSet<&str> = expected.iter().copied().collect();
     if unique != expected {
         let missing: Vec<&str> = expected.difference(&unique).copied().collect();
         let unexpected: Vec<&str> = unique.difference(&expected).copied().collect();
         return Err(PlaygroundError::new(
             "spot",
             format!(
-                "survey scenes must match web/src/catalog/scenes.ts: missing {missing:?}, unexpected {unexpected:?}"
+                "survey scenes must match the requested web/src/catalog/scenes.ts ids: missing {missing:?}, unexpected {unexpected:?}"
             ),
         ));
     }
@@ -188,12 +189,26 @@ fn validate_scene_sample(scene: &serde_json::Value) -> Result<(), PlaygroundErro
             "survey scenes require interaction `default` or `scripted`",
         ));
     }
+    let maybe_fingerprint = scene.get("fingerprint").and_then(serde_json::Value::as_str);
+    if !maybe_fingerprint.is_some_and(is_fingerprint) {
+        return Err(PlaygroundError::new(
+            "spot",
+            "survey scenes require a 16-digit lowercase hex fingerprint",
+        ));
+    }
     Ok(())
+}
+
+fn is_fingerprint(value: &str) -> bool {
+    value.len() == FINGERPRINT_DIGITS
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 fn assemble_report(
     scenes: &[serde_json::Value],
-    counts: &SpotCounts,
+    spot_args: &SpotArgs,
     repository_root: &Path,
 ) -> Result<serde_json::Value, PlaygroundError> {
     let identity = host_identity(repository_root);
@@ -207,9 +222,9 @@ fn assemble_report(
         "cpu_brand": identity.cpu_brand,
         "logical_cores": identity.logical_cores,
         "compiler": rustc_version()?,
-        "warmup_steps": counts.warmup_steps,
-        "measured_steps": counts.measured_steps,
-        "runs": counts.runs,
+        "warmup_steps": spot_args.warmup_steps,
+        "measured_steps": spot_args.measured_steps,
+        "runs": spot_args.runs,
         "scenes": scenes,
     }))
 }
@@ -272,55 +287,6 @@ fn render_summary(stamp_dir: &Path, report: &serde_json::Value, ranked: &[Ranked
         runs = count_field("runs"),
         file = SPOT_FILE_NAME,
     )
-}
-
-fn parse_spot_counts(args: &[String]) -> Result<SpotCounts, PlaygroundError> {
-    let mut warmup_steps = DEFAULT_WARMUP_STEPS;
-    let mut measured_steps = DEFAULT_MEASURED_STEPS;
-    let mut runs = DEFAULT_RUNS;
-    let mut index = 0;
-    while index < args.len() {
-        match args[index].as_str() {
-            "--warmup" => {
-                warmup_steps = parse_u32_flag(args, index, "--warmup")?;
-                index += 2;
-            }
-            "--steps" => {
-                measured_steps = parse_u32_flag(args, index, "--steps")?;
-                index += 2;
-            }
-            "--runs" => {
-                runs = parse_u32_flag(args, index, "--runs")?;
-                index += 2;
-            }
-            unknown => {
-                return Err(PlaygroundError::usage(format!(
-                    "unknown argument `{unknown}`"
-                )));
-            }
-        }
-    }
-    if measured_steps == 0 {
-        return Err(PlaygroundError::usage("--steps must be greater than 0"));
-    }
-    if runs == 0 {
-        return Err(PlaygroundError::usage("--runs must be greater than 0"));
-    }
-    Ok(SpotCounts {
-        warmup_steps,
-        measured_steps,
-        runs,
-    })
-}
-
-fn parse_u32_flag(args: &[String], index: usize, flag: &str) -> Result<u32, PlaygroundError> {
-    let Some(raw) = args.get(index + 1) else {
-        return Err(PlaygroundError::usage(format!(
-            "{flag} requires a non-negative integer"
-        )));
-    };
-    raw.parse::<u32>()
-        .map_err(|_error| PlaygroundError::usage(format!("{flag} requires a non-negative integer")))
 }
 
 fn rustc_version() -> Result<String, PlaygroundError> {
@@ -402,10 +368,8 @@ mod tests {
     use std::collections::BTreeSet;
 
     use super::{
-        CATALOG_SCENES_TS, catalog_scene_ids, extract_json_object, parse_spot_counts,
-        validate_scene_samples,
+        CATALOG_SCENES_TS, catalog_scene_ids, extract_json_object, validate_scene_samples,
     };
-    use crate::playground::PlaygroundError;
 
     const CATALOG: [&str; 3] = ["a", "b", "c"];
 
@@ -419,6 +383,7 @@ mod tests {
             "start_particles": 1,
             "end_particles": 2,
             "timed_out": false,
+            "fingerprint": "0123456789abcdef",
         })
     }
 
@@ -519,29 +484,47 @@ mod tests {
     }
 
     #[test]
-    fn parse_spot_counts_rejects_zero_runs() {
+    fn validate_scene_samples_accepts_filtered_set() {
         // Arrange
-        let args = ["--runs".to_owned(), "0".to_owned()];
+        let samples = vec![valid_sample("c"), valid_sample("a")];
 
         // Act
-        let result = parse_spot_counts(&args).map(|counts| counts.runs);
+        let result = validate_scene_samples(&samples, &["a", "c"]);
 
         // Assert
-        assert_eq!(
-            result,
-            Err(PlaygroundError::usage("--runs must be greater than 0"))
-        );
+        assert_eq!(result, Ok(()));
     }
 
     #[test]
-    fn parse_spot_counts_defaults_to_three_runs() {
+    fn validate_scene_samples_rejects_missing_fingerprint() {
         // Arrange
-        let args: [String; 0] = [];
+        let mut samples = full_catalog_samples();
+        samples[2]
+            .as_object_mut()
+            .expect("sample object")
+            .remove("fingerprint");
 
         // Act
-        let result = parse_spot_counts(&args).map(|counts| counts.runs);
+        let result = validate_scene_samples(&samples, &CATALOG);
 
         // Assert
-        assert_eq!(result, Ok(3));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_scene_samples_rejects_malformed_fingerprint() {
+        // Arrange
+        let malformed = ["XYZ", "0123456789abcde", "0123456789ABCDEF"];
+
+        for fingerprint in malformed {
+            let mut samples = full_catalog_samples();
+            samples[0]["fingerprint"] = serde_json::Value::from(fingerprint);
+
+            // Act
+            let result = validate_scene_samples(&samples, &CATALOG);
+
+            // Assert
+            assert!(result.is_err(), "{fingerprint} should be rejected");
+        }
     }
 }

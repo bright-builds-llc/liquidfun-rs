@@ -16,6 +16,12 @@ The recipe runs `cargo xtask playground scene-spot`, which runs
 Each run builds a fresh `SessionCore`, takes 60 untimed `advance(1)` steps, then
 times 120 `advance(1)` steps. Scenes run serially in catalog order.
 
+Pass `--scene <id>` (repeatable) to time only those catalog scenes, for example
+`cargo xtask playground scene-spot --scene liquid-tumbler`. Each JSON line also
+carries `fingerprint`, a 64-bit FNV-1a hash of the live particle positions,
+velocities and colors plus body transforms and velocities after the first run's
+warmup and timed steps. Equal fingerprints mean a bit-identical trajectory.
+
 ## Recorded run
 
 - stamp: `target/dam-break-perf/2026-10-07T06-20-54Z/scene-spot.json`

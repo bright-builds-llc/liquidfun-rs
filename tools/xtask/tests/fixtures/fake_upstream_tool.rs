@@ -275,7 +275,19 @@ fn print_scene_spot_sample(args: &[String]) -> ExitCode {
         eprintln!("web/src/catalog/scenes.ts is missing `export const SCENE_IDS = [`");
         return ExitCode::FAILURE;
     };
+    let requested: Vec<&str> = args
+        .windows(2)
+        .filter(|pair| pair[0] == "--scene")
+        .map(|pair| pair[1].as_str())
+        .collect();
+    if let Some(unknown) = requested.iter().find(|id| !scenes.contains(*id)) {
+        eprintln!("unknown --scene `{unknown}`");
+        return ExitCode::FAILURE;
+    }
     for (index, scene) in scenes.iter().enumerate() {
+        if !requested.is_empty() && !requested.contains(scene) {
+            continue;
+        }
         let interaction = match *scene {
             "float-or-sink" | "impulse" | "drawing-particles" => "scripted",
             _ => "default",
@@ -286,7 +298,7 @@ fn print_scene_spot_sample(args: &[String]) -> ExitCode {
         let start_particles = 100 + index * 10;
         let end_particles = start_particles + 5;
         println!(
-            "{{\"scene\":\"{scene}\",\"interaction\":\"{interaction}\",\"runs\":{runs},\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"start_particles\":{start_particles},\"end_particles\":{end_particles},\"median_ms_per_step\":{median:.6},\"min_ms_per_step\":{min:.6},\"max_ms_per_step\":{max:.6},\"timed_out\":false}}"
+            "{{\"scene\":\"{scene}\",\"interaction\":\"{interaction}\",\"runs\":{runs},\"warmup_steps\":{warmup_steps},\"measured_steps\":{measured_steps},\"start_particles\":{start_particles},\"end_particles\":{end_particles},\"median_ms_per_step\":{median:.6},\"min_ms_per_step\":{min:.6},\"max_ms_per_step\":{max:.6},\"timed_out\":false,\"fingerprint\":\"{index:016x}\"}}"
         );
     }
     ExitCode::SUCCESS
