@@ -4,17 +4,17 @@ milestone: v1.4
 milestone_name: milestone
 current_phase: 35
 current_phase_name: Speed Up the Slowest Scenes
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 35-02-PLAN.md
-last_updated: "2026-10-08T02:29:07.186Z"
+stopped_at: Completed 35-03-PLAN.md
+last_updated: "2026-10-08T14:42:27.941Z"
 last_activity: 2026-10-08
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 4
-  percent: 40
+  completed_plans: 5
+  percent: 50
 ---
 
 # Project State
@@ -31,15 +31,15 @@ See: `.planning/PROJECT.md` (updated 2026-10-06)
 Current Phase: 35
 Current Phase Name: Speed Up the Slowest Scenes
 Total Phases: 3
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 8
 
 Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 **Status:** Ready to execute
 Last activity: 2026-10-08
 
-**Progress:** [████░░░░░░] 40%
+**Progress:** [█████░░░░░] 50%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -67,6 +67,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 35]: Survey scene filter (repeatable --scene) in bin and xtask; unknown or duplicate ids fail closed before any stamp
 - [Phase 35]: Phase before binary target/phase35/bin/spot-before at 809582431; every keep decision uses ABBA runs of saved binaries plus keep_rule.py against before-full.jsonl fingerprints
 - [Phase 35]: Target hot paths: damping (liquid-tumbler 22.9%, stacked-drip 17.1%, particles 22.8% self), visit_sorted_tag_indices_in_aabb 13.7% (tesla-valve), full-scan CCD push_fixture_particle_hit 15.2% self / 29.1% incl (washing-machine); D-03 browser check not run
+- [Phase 35]: 35-03 A1 kept (91b27a6d6): retained sorted contact-proxy order + sort_unstable_by_key((tag,row)); liquid-tumbler ~24.2-24.4 -> 23.3 ms/step in ABBA, gains also for stacked-drip and particles, 25/25 fingerprints equal
+- [Phase 35]: 35-03 A2 reverted: bounded insertion sort beat A1 on liquid-tumbler/stacked-drip but particles and washing-machine regressed in both pairs; diff in target/phase35/attempts/A2.patch
 
 ### Pending Todos
 
@@ -120,9 +122,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 34 P02 | 5min | 2 tasks | 2 files |
 | Phase 35 P01 | 445min | 2 tasks | 11 files |
 | Phase 35 P02 | 40min | 2 tasks | 1 files |
+| Phase 35 P03 | 732min | 2 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-10-08T02:29:07.184Z
-Stopped at: Completed 35-02-PLAN.md
+Last session: 2026-10-08T14:42:27.938Z
+Stopped at: Completed 35-03-PLAN.md
 Resume file: None
