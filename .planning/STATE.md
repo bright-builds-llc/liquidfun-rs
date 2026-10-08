@@ -4,17 +4,17 @@ milestone: v1.4
 milestone_name: milestone
 current_phase: 35
 current_phase_name: Speed Up the Slowest Scenes
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 35-01-PLAN.md
-last_updated: "2026-10-08T01:47:49.876Z"
+stopped_at: Completed 35-02-PLAN.md
+last_updated: "2026-10-08T02:29:07.186Z"
 last_activity: 2026-10-08
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 3
-  percent: 30
+  completed_plans: 4
+  percent: 40
 ---
 
 # Project State
@@ -31,15 +31,15 @@ See: `.planning/PROJECT.md` (updated 2026-10-06)
 Current Phase: 35
 Current Phase Name: Speed Up the Slowest Scenes
 Total Phases: 3
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 8
 
 Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 **Status:** Ready to execute
 Last activity: 2026-10-08
 
-**Progress:** [███░░░░░░░] 30%
+**Progress:** [████░░░░░░] 40%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -65,6 +65,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 34]: Recorded scene survey: stamp 2026-10-07T06-20-54Z on 96a3ac6a6; top 5 liquid-tumbler, tesla-valve, stacked-drip, washing-machine, particles
 - [Phase 35]: Survey fingerprint is FNV-1a 64 over f32 bits (particles, color lane marker, bodies) after the first run; runs in one invocation must agree
 - [Phase 35]: Survey scene filter (repeatable --scene) in bin and xtask; unknown or duplicate ids fail closed before any stamp
+- [Phase 35]: Phase before binary target/phase35/bin/spot-before at 809582431; every keep decision uses ABBA runs of saved binaries plus keep_rule.py against before-full.jsonl fingerprints
+- [Phase 35]: Target hot paths: damping (liquid-tumbler 22.9%, stacked-drip 17.1%, particles 22.8% self), visit_sorted_tag_indices_in_aabb 13.7% (tesla-valve), full-scan CCD push_fixture_particle_hit 15.2% self / 29.1% incl (washing-machine); D-03 browser check not run
 
 ### Pending Todos
 
@@ -117,9 +119,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 34 P01 | 26min | 2 tasks | 8 files |
 | Phase 34 P02 | 5min | 2 tasks | 2 files |
 | Phase 35 P01 | 445min | 2 tasks | 11 files |
+| Phase 35 P02 | 40min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-08T01:47:43.235Z
-Stopped at: Completed 35-01-PLAN.md
+Last session: 2026-10-08T02:29:07.184Z
+Stopped at: Completed 35-02-PLAN.md
 Resume file: None
