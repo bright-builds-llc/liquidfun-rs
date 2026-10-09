@@ -105,6 +105,7 @@ fn current_spatial_candidates_skip_far_rows_and_keep_source_row_order() {
         bounds,
         0.1,
         &mut rows,
+        &mut Vec::new(),
     );
 
     // Assert
@@ -190,6 +191,7 @@ fn overflowing_fixture_query_falls_back_before_any_filter_effects() {
         bounds,
         0.1,
         &mut rows,
+        &mut Vec::new(),
     );
     let mut expected_trace = Vec::new();
     let expected = legacy(
@@ -412,4 +414,143 @@ fn legacy(
         Vec::new()
     };
     ParticleBodyContactUpdate { contacts, effects }
+}
+
+/// `sort_unstable` plus `dedup` over the query's rows, the order before A5.
+fn reference_rows(proxies: &[ContactProxy], bounds: Aabb, diameter: f32) -> Vec<usize> {
+    let mut rows = Vec::new();
+    visit_sorted_tag_indices_in_aabb(
+        proxies.len(),
+        |index| proxies[index].tag,
+        diameter,
+        bounds,
+        |index| rows.push(proxies[index].row),
+    )
+    .expect("reference query stays in the tag domain");
+    rows.sort_unstable();
+    rows.dedup();
+    rows
+}
+
+/// A 25-column grid whose rows are a fixed permutation of its cells, so row
+/// order differs from tag order and several particles share a tag cell.
+fn scrambled_grid(count: u16) -> Vec<Vec2> {
+    (0..count)
+        .map(|index| {
+            let cell = (u32::from(index) * 7_919) % u32::from(count);
+            let column = u16::try_from(cell % 25).expect("column fits");
+            let row = u16::try_from(cell / 25).expect("row fits");
+            Vec2::new(
+                f32::from(column) * 0.07 - 0.875,
+                f32::from(row) * 0.07 - 0.7,
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn candidate_rows_match_sorted_dedup() {
+    // Arrange
+    let storage = storage(&scrambled_grid(500), 0.1);
+    let view = ParticleSystemView::new(&storage);
+    let proxies = view
+        .maybe_current_contact_proxies(0.1)
+        .expect("current proxies");
+    let cases = [
+        Aabb::new(Vec2::new(-0.05, -0.05), Vec2::new(0.05, 0.05)).expect("small"),
+        Aabb::new(Vec2::new(-0.3, -0.2), Vec2::new(0.3, 0.2)).expect("middle"),
+        Aabb::new(Vec2::new(-0.9, -0.1), Vec2::new(0.9, 0.0)).expect("wide"),
+        Aabb::new(Vec2::new(0.4, -0.8), Vec2::new(0.5, 0.8)).expect("tall"),
+        Aabb::new(Vec2::new(-2.0, -2.0), Vec2::new(2.0, 2.0)).expect("everything"),
+        Aabb::new(Vec2::new(5.0, 5.0), Vec2::new(6.0, 6.0)).expect("nothing"),
+    ];
+    let expected: Vec<Vec<usize>> = cases
+        .iter()
+        .map(|&bounds| reference_rows(proxies, bounds, 0.1))
+        .collect();
+    let mut rows = Vec::new();
+    let mut row_marks = Vec::new();
+
+    // Act
+    let actual: Vec<Vec<usize>> = cases
+        .iter()
+        .map(|&bounds| {
+            assert!(collect_candidate_rows(
+                proxies,
+                bounds,
+                0.1,
+                &mut rows,
+                &mut row_marks
+            ));
+            rows.clone()
+        })
+        .collect();
+
+    // Assert
+    assert!(
+        expected.iter().any(|rows| rows.len() >= 32),
+        "some cases should take the bitset walk"
+    );
+    assert!(
+        expected
+            .iter()
+            .any(|rows| !rows.is_empty() && rows.len() < 32),
+        "some cases should take the small sort"
+    );
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn candidate_rows_small_query_uses_same_order() {
+    // Arrange
+    let storage = storage(
+        &[
+            Vec2::new(0.3, 0.0),
+            Vec2::new(5.0, 5.0),
+            Vec2::new(-0.3, 0.0),
+            Vec2::new(0.0, 0.2),
+        ],
+        0.1,
+    );
+    let view = ParticleSystemView::new(&storage);
+    let bounds = Aabb::new(Vec2::new(-0.5, -0.5), Vec2::new(0.5, 0.5)).expect("bounds");
+    let mut rows = Vec::new();
+
+    // Act
+    let indexed = collect_candidate_rows(
+        view.maybe_current_contact_proxies(0.1)
+            .expect("current proxies"),
+        bounds,
+        0.1,
+        &mut rows,
+        &mut Vec::new(),
+    );
+
+    // Assert
+    assert!(indexed);
+    assert_eq!(rows, [0, 2, 3]);
+}
+
+#[test]
+fn candidate_rows_failed_query_returns_false_and_empty() {
+    // Arrange
+    let storage = storage(&scrambled_grid(64), 0.1);
+    let view = ParticleSystemView::new(&storage);
+    let bounds = Aabb::new(Vec2::new(0.0, 0.0), Vec2::new(1.0e6, 1.0)).expect("bounds");
+    let mut rows = vec![7, 13];
+    let mut row_marks = Vec::new();
+
+    // Act
+    let indexed = collect_candidate_rows(
+        view.maybe_current_contact_proxies(0.1)
+            .expect("current proxies"),
+        bounds,
+        0.1,
+        &mut rows,
+        &mut row_marks,
+    );
+
+    // Assert
+    assert!(!indexed);
+    assert!(rows.is_empty());
 }

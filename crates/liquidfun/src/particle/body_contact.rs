@@ -13,11 +13,18 @@ use super::proxy::visit_sorted_tag_indices_in_aabb;
 #[cfg(test)]
 mod tests;
 
+/// Fewer visited rows than this are sorted; more are ordered by a bitset walk.
+const MIN_ROWS_FOR_ROW_MARKS: usize = 32;
+
+/// Collects the ascending unique rows of particles whose tags may overlap `bounds`.
+///
+/// `row_marks` is scratch space that is all zero between calls.
 fn collect_candidate_rows(
     proxies: &[ContactProxy],
     bounds: Aabb,
     diameter: f32,
     rows: &mut Vec<usize>,
+    row_marks: &mut Vec<u64>,
 ) -> bool {
     rows.clear();
     if visit_sorted_tag_indices_in_aabb(
@@ -34,9 +41,44 @@ fn collect_candidate_rows(
     }
     // Queries visit spatial tag order; solver contacts and filter callbacks
     // must retain the original fixture-child-ascending-row order.
-    rows.sort_unstable();
-    rows.dedup();
+    if rows.len() < MIN_ROWS_FOR_ROW_MARKS {
+        rows.sort_unstable();
+        rows.dedup();
+    } else {
+        order_rows_with_marks(rows, proxies.len(), row_marks);
+    }
     true
+}
+
+/// Rewrites `rows`, each below `row_count`, as its ascending unique values.
+///
+/// One bit marks each row. Reading the words in index order, and each word
+/// from its lowest set bit, yields every marked row once in ascending order,
+/// which is exactly what `sort_unstable` plus `dedup` produces. Rows are plain
+/// indices, so no float order is involved. Each word is cleared as it is read,
+/// so `row_marks` is all zero again on return.
+fn order_rows_with_marks(rows: &mut Vec<usize>, row_count: usize, row_marks: &mut Vec<u64>) {
+    let word_count = row_count.div_ceil(64);
+    if row_marks.len() < word_count {
+        row_marks.resize(word_count, 0);
+    }
+    let mut first_word = usize::MAX;
+    let mut last_word = 0;
+    for &row in rows.iter() {
+        let word = row / 64;
+        row_marks[word] |= 1 << (row % 64);
+        first_word = first_word.min(word);
+        last_word = last_word.max(word);
+    }
+    rows.clear();
+    for (word, marks) in row_marks[first_word..=last_word].iter_mut().enumerate() {
+        let base = (first_word + word) * 64;
+        let mut bits = std::mem::take(marks);
+        while bits != 0 {
+            rows.push(base + bits.trailing_zeros() as usize);
+            bits &= bits - 1;
+        }
+    }
 }
 
 const MAX_STRICT_CONTACTS_PER_PARTICLE: usize = 4;
@@ -169,6 +211,7 @@ pub(crate) fn generate(
     let mut contacts = Vec::new();
     let maybe_proxies = view.maybe_current_contact_proxies(diameter);
     let mut candidate_rows = Vec::new();
+    let mut row_marks: Vec<u64> = Vec::new();
 
     for source in sources {
         for child in 0..source.shape.child_count() {
@@ -176,7 +219,7 @@ pub(crate) fn generate(
                 .expect("enumerated shape child remains valid");
             let maybe_aabb = expanded_fixture_aabb(source, child, diameter);
             let indexed = if let (Some(proxies), Some(aabb)) = (maybe_proxies, maybe_aabb) {
-                collect_candidate_rows(proxies, aabb, diameter, &mut candidate_rows)
+                collect_candidate_rows(proxies, aabb, diameter, &mut candidate_rows, &mut row_marks)
             } else {
                 candidate_rows.clear();
                 false
