@@ -4,17 +4,17 @@ milestone: v1.4
 milestone_name: milestone
 current_phase: 35
 current_phase_name: Speed Up the Slowest Scenes
-current_plan: 4
+current_plan: 5
 status: executing
-stopped_at: Completed 35-03-PLAN.md
-last_updated: "2026-10-08T14:42:27.941Z"
-last_activity: 2026-10-08
+stopped_at: Completed 35-04-PLAN.md
+last_updated: "2026-10-09T01:43:19.708Z"
+last_activity: 2026-10-09
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 5
-  percent: 50
+  completed_plans: 6
+  percent: 60
 ---
 
 # Project State
@@ -31,15 +31,15 @@ See: `.planning/PROJECT.md` (updated 2026-10-06)
 Current Phase: 35
 Current Phase Name: Speed Up the Slowest Scenes
 Total Phases: 3
-Current Plan: 4
+Current Plan: 5
 Total Plans in Phase: 8
 
 Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 **Status:** Ready to execute
-Last activity: 2026-10-08
+Last activity: 2026-10-09
 
-**Progress:** [█████░░░░░] 50%
+**Progress:** [██████░░░░] 60%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -69,6 +69,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 35]: Target hot paths: damping (liquid-tumbler 22.9%, stacked-drip 17.1%, particles 22.8% self), visit_sorted_tag_indices_in_aabb 13.7% (tesla-valve), full-scan CCD push_fixture_particle_hit 15.2% self / 29.1% incl (washing-machine); D-03 browser check not run
 - [Phase 35]: 35-03 A1 kept (91b27a6d6): retained sorted contact-proxy order + sort_unstable_by_key((tag,row)); liquid-tumbler ~24.2-24.4 -> 23.3 ms/step in ABBA, gains also for stacked-drip and particles, 25/25 fingerprints equal
 - [Phase 35]: 35-03 A2 reverted: bounded insertion sort beat A1 on liquid-tumbler/stacked-drip but particles and washing-machine regressed in both pairs; diff in target/phase35/attempts/A2.patch
+- [Phase 35]: 35-04 A3 reverted (0a2fe8cb8, revert 7f0b36b18): chain child edge hoist cut liquid-tumbler 9.4%/10.4% with 25/25 fingerprints, but soup-stirrer (no chain) exceeded its base max in both isolated pairs
+- [Phase 35]: 35-04 A3b reverted (never committed, attempts/A3b.patch): no-branch Shape::Edge variant cut liquid-tumbler 7.6%/7.3% with 25/25 fingerprints, but fountain (no chain) exceeded its base max in both isolated pairs; neither regression reproduced in a later diagnostic pair
 
 ### Pending Todos
 
@@ -123,9 +125,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 35 P01 | 445min | 2 tasks | 11 files |
 | Phase 35 P02 | 40min | 2 tasks | 1 files |
 | Phase 35 P03 | 732min | 2 tasks | 6 files |
+| Phase 35 P04 | 659min | 2 tasks | 7 files |
 
 ## Session Continuity
 
-Last session: 2026-10-08T14:42:27.938Z
-Stopped at: Completed 35-03-PLAN.md
+Last session: 2026-10-09T01:43:19.706Z
+Stopped at: Completed 35-04-PLAN.md
 Resume file: None
