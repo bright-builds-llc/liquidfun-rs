@@ -105,7 +105,7 @@ Plans:
 - [x] 35-02-PLAN.md — fresh before run, saved before binary, samply profiles of the five targets, 35-PROFILES.md method and keep rule
 - [x] 35-03-PLAN.md — reuse sorted particle proxy order across iterations (liquid-tumbler, stacked-drip, particles)
 - [x] 35-04-PLAN.md — build chain child edges once per child in body contacts and CCD (liquid-tumbler)
-- [ ] 35-05-PLAN.md — per-row AABB tag query and candidate-row bitset (tesla-valve, stacked-drip, liquid-tumbler)
+- [x] 35-05-PLAN.md — per-row AABB tag query and candidate-row bitset (tesla-valve, stacked-drip, liquid-tumbler)
 - [ ] 35-06-PLAN.md — conservative spatial query for moving fixtures at iteration 0 (washing-machine)
 - [ ] 35-07-PLAN.md — cheaper ungrouped particle creation and lifetime eviction index (tesla-valve)
 - [ ] 35-08-PLAN.md — final 25/25 fingerprint check, cumulative A/B, Rust and web checks, phase summary
@@ -148,7 +148,7 @@ Plans:
 | 32. Liquid motion bubbler | v1.3 | 4/4 | Complete    | 2026-09-27 |
 | 33. Stacked drip fidget | v1.3 | 4/4 | Complete   | 2026-09-28 |
 | 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
-| 35. Speed Up the Slowest Scenes | v1.4 | 4/8 | In Progress|  |
+| 35. Speed Up the Slowest Scenes | v1.4 | 5/8 | In Progress|  |
 | 36. Re-survey and Wrap Up | v1.4 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
