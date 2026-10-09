@@ -2,11 +2,15 @@
 
 mod body_coupling;
 mod executor;
+mod moving_fixture_query;
 mod scratch;
 
 #[cfg(test)]
+mod moving_fixture_query_tests;
+#[cfg(test)]
 mod scratch_tests;
 
+use moving_fixture_query::moving_fixture_query_pad;
 use scratch::CollisionBuffers;
 pub(super) use scratch::ParticleStepScratch;
 
@@ -123,55 +127,16 @@ impl World {
         buffers.recycle_records();
         ccd_fixture_records(self, bodies, expansion, buffers)?;
         buffers.hits.clear();
-        let fixtures = &buffers.fixtures;
-        let hits = &mut buffers.hits;
-        let motion = max_particle_motion(&candidate.velocities, time_step);
-        let proxies_match = proxies.len() == candidate.positions.len();
-        for fixture in fixtures {
-            let static_fixture = fixture.previous_transform == fixture.current_transform;
-            for (child, maybe_aabb) in &fixture.children {
-                // Later iterations raycast from the current position, so the
-                // fixture AABB plus the max travel pad is a superset for
-                // moving fixtures too. Iteration 0 remaps the ray start
-                // through the previous body transform.
-                let spatially_filtered =
-                    proxies_match && (static_fixture || particle_iteration != 0);
-                if spatially_filtered && let Some(aabb) = *maybe_aabb {
-                    let queried =
-                        query_particles_for_fixture(proxies, diameter, aabb, motion, |row| {
-                            push_fixture_particle_hit(
-                                candidate,
-                                fixture,
-                                *child,
-                                maybe_aabb.as_ref(),
-                                row,
-                                time_step,
-                                particle_iteration,
-                                hook_run,
-                                hits,
-                            )
-                        })?;
-                    if queried {
-                        continue;
-                    }
-                }
-                for particle in 0..candidate.positions.len() {
-                    push_fixture_particle_hit(
-                        candidate,
-                        fixture,
-                        *child,
-                        maybe_aabb.as_ref(),
-                        particle,
-                        time_step,
-                        particle_iteration,
-                        hook_run,
-                        hits,
-                    )?;
-                }
-            }
-        }
-        hits.sort_by_key(|hit| hit.particle);
-        Ok(())
+        collect_fixture_hits(
+            candidate,
+            &buffers.fixtures,
+            time_step,
+            particle_iteration,
+            hook_run,
+            proxies,
+            diameter,
+            &mut buffers.hits,
+        )
     }
 
     fn update_particle_contacts<H: CollisionDecisionHook>(
@@ -278,6 +243,94 @@ impl World {
         )
         .map_err(|_error| StepError::ParticleLifecycleInvariant)
     }
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the fixture loop keeps the candidate, records, and sorted proxies explicit"
+)]
+fn collect_fixture_hits<H: CollisionDecisionHook>(
+    candidate: &BoundaryCandidate,
+    fixtures: &[CcdFixtureRecord],
+    time_step: f32,
+    particle_iteration: u32,
+    hook_run: &mut ContactHookRun<'_, H>,
+    proxies: &[ContactProxy],
+    diameter: f32,
+    hits: &mut Vec<FilteredCollisionHit>,
+) -> Result<(), StepError> {
+    let motion = max_particle_motion(&candidate.velocities, time_step);
+    let proxies_match = proxies.len() == candidate.positions.len();
+    // A non-finite velocity makes the full scan fail at that particle; the
+    // moving-fixture pad cannot bound it, so such candidates keep the scan.
+    let mut maybe_velocities_finite = None;
+    for fixture in fixtures {
+        let static_fixture = fixture.previous_transform == fixture.current_transform;
+        for (child, maybe_aabb) in &fixture.children {
+            // Later iterations raycast from the current position, so the
+            // fixture AABB plus the max travel pad is a superset for moving
+            // fixtures too. Iteration 0 remaps the ray start through the
+            // previous body transform; `moving_fixture_query_pad` bounds that
+            // remap. Query order differs from row order, so a stateful
+            // FIXTURE_CONTACT_FILTER hook sees another call order (as on the
+            // static path); the stable sort below keeps the hit list itself.
+            let maybe_pad = match *maybe_aabb {
+                Some(_) if !proxies_match => None,
+                Some(_) if static_fixture || particle_iteration != 0 => Some(motion),
+                Some(aabb)
+                    if *maybe_velocities_finite.get_or_insert_with(|| {
+                        candidate
+                            .velocities
+                            .iter()
+                            .all(|velocity| velocity.is_valid())
+                    }) =>
+                {
+                    moving_fixture_query_pad(
+                        aabb,
+                        motion,
+                        fixture.previous_transform,
+                        fixture.current_transform,
+                        fixture.body_local_center,
+                        fixture.is_circle,
+                    )
+                }
+                _ => None,
+            };
+            if let (Some(pad), Some(aabb)) = (maybe_pad, *maybe_aabb) {
+                let queried = query_particles_for_fixture(proxies, diameter, aabb, pad, |row| {
+                    push_fixture_particle_hit(
+                        candidate,
+                        fixture,
+                        *child,
+                        maybe_aabb.as_ref(),
+                        row,
+                        time_step,
+                        particle_iteration,
+                        hook_run,
+                        hits,
+                    )
+                })?;
+                if queried {
+                    continue;
+                }
+            }
+            for particle in 0..candidate.positions.len() {
+                push_fixture_particle_hit(
+                    candidate,
+                    fixture,
+                    *child,
+                    maybe_aabb.as_ref(),
+                    particle,
+                    time_step,
+                    particle_iteration,
+                    hook_run,
+                    hits,
+                )?;
+            }
+        }
+    }
+    hits.sort_by_key(|hit| hit.particle);
+    Ok(())
 }
 
 struct CcdFixtureRecord {
