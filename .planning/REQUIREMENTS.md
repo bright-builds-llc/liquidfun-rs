@@ -11,8 +11,8 @@ Make the playground scenes that actually feel slow faster, without changing thei
 The original 2026-10-03 definition (PERF-07–17 plus SCN-01–25, one phase per scene) was shelved on 2026-10-06 because its measurement-harness phase grew to ~150k lines of tooling and ~3.8 GB of evidence without producing a speedup. It remains in git history at commit `011e80e`; the harness work is on branch `wip/v1.4-phase34-harness`.
 
 - [x] **PERF-07**: Maintainers can time every playground catalog scene natively with one command and see the scenes ranked by median ms/step, with a check that fails when a catalog scene is missing.
-- [ ] **PERF-08**: Maintainers can inspect profile-guided fixes for the slowest scenes, each kept only with a before/after survey gain beyond run-to-run noise.
-- [ ] **PERF-09**: Visitors see unchanged scene behavior, settings, controls and visuals after the fixes; existing Rust and web tests stay green.
+- [x] **PERF-08**: Maintainers can inspect profile-guided fixes for the slowest scenes, each kept only with a before/after survey gain beyond run-to-run noise.
+- [x] **PERF-09**: Visitors see unchanged scene behavior, settings, controls and visuals after the fixes; existing Rust and web tests stay green.
 - [ ] **PERF-10**: Maintainers can read a whole-catalog before/after timing table for the final v1.4 source.
 
 ## Acceptance
@@ -42,8 +42,8 @@ The original 2026-10-03 definition (PERF-07–17 plus SCN-01–25, one phase per
 | Requirement | Phase | Status |
 | --- | --- | --- |
 | PERF-07 | Phase 34 | Complete |
-| PERF-08 | Phase 35 | Pending |
-| PERF-09 | Phase 35 | Pending |
+| PERF-08 | Phase 35 | Complete |
+| PERF-09 | Phase 35 | Complete |
 | PERF-10 | Phase 36 | Pending |
 
 **Coverage:** 4/4 milestone requirements mapped exactly once.
