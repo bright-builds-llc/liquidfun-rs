@@ -275,3 +275,51 @@ Planned attempts: 35-03 proxy order reuse.
 - stacked-drip: profile recorded (hot path `pressure::damping` 17.1%); attempts: A1 kept, A2 reverted, A4 reverted (per-row AABB query, −0.9% / +1.2%, no gain), A5 kept (candidate-row bitset walk; gain in targeted pair 1 only, −1.7% / −1.5%); current median 2.48–2.55 ms/step (`spot-A5` in the 35-05 pairs, base 2.52–2.58); status: open
 - washing-machine: profile recorded (hot path `push_fixture_particle_hit` 15.2%); attempts: A6 kept (conservative spatial query for moving fixtures at iteration 0, −29.0% / −28.9%); A7 not tried; current median 1.435–1.436 ms/step (`spot-A6` in the 35-06 pairs, base 2.018–2.024); status: open
 - particles: profile recorded (hot path `pressure::damping` 22.8%); attempts: A1 kept, A2 reverted (particles regressed); current median 1.55–1.56 ms/step (A1 ABBA after, base 1.58–1.63); status: open
+
+## Final verification
+
+- Final commit: `2020757911f1757356d2c2ec80e55055aa0eeaa0` (35-07 close-out). The last engine commit is `f7041fc75` (A9); `git diff f7041fc75 HEAD -- crates/` is empty, so the final engine is A1 + A5 + A6 + A8 + A9.
+- Final binary: `target/phase35/bin/spot-final`, a hard link of `spot-A9` (SHA-256 `bd2b2eb5…`). `target/release/playground-scene-spot` on this tree has the same SHA-256, and 35-07 showed that a release rebuild of the committed source is byte-identical, so no new binary was linked. Both `spot-final` and `spot-before` were launched once with `--warmup 1 --steps 1 --runs 1 --scene particles` before timing (both started at once).
+- Timing ran 2026-10-10 00:24:56–00:27:27Z with no cargo build or test of this repository running (`target/phase35/final.sh`; `uptime` lines in `target/phase35/final.uptime`). Load averages rose from 5.64 to 8.87. Another repository's `cargo test` was in progress the whole time; it was mostly waiting at launch. A second one in a third repository started at about 00:25Z. ABBA interleaving is the mitigation.
+
+### Fingerprints
+
+`spot-final --runs 3 > target/phase35/final-full.jsonl` (25 lines, all `timed_out` false), then `python3 target/phase35/keep_rule.py target/phase35/before-full.jsonl target/phase35/final-full.jsonl liquid-tumbler,tesla-valve,stacked-drip,washing-machine,particles`:
+
+- `fingerprint mismatches: none`: **25/25 equal** to the phase before run.
+- `medians above before max (any scene without a gain): none`. The five targets all printed `gain=True` against `before-full.jsonl`. Every one of the 25 final medians is below its `before-full.jsonl` median, but that file was recorded on 2026-10-08 under a different load. The cumulative evidence is the back-to-back pairs below, and the whole-catalog table belongs to Phase 36.
+- The four ABBA files (`final-b1`, `final-a1`, `final-a2`, `final-b2`) also matched their before fingerprints. No bisect or revert was needed.
+
+### Cumulative ABBA (spot-before vs spot-final)
+
+`--scene liquid-tumbler --scene tesla-valve --scene stacked-drip --scene washing-machine --scene particles --runs 5`, in the order before, final, final, before. `keep_rule.py final-b1 final-a1` and `keep_rule.py final-b2 final-a2` printed `gain=True` for all five targets in both pairs, `fingerprint mismatches: none` and no medians above the before max.
+
+| Target | Pair 1: before median (min-max) → final median | Pair 2: before median (min-max) → final median | Change (pair 1 / pair 2) |
+| --- | --- | --- | --- |
+| liquid-tumbler | 25.135 (24.735-25.699) → 23.670 | 25.346 (25.133-25.454) → 23.204 | −5.8% / −8.5% |
+| tesla-valve | 4.056 (3.965-4.407) → 3.258 | 4.028 (3.980-4.061) → 3.440 | −19.7% / −14.6% |
+| stacked-drip | 2.764 (2.713-2.808) → 2.489 | 2.719 (2.658-2.766) → 2.546 | −9.9% / −6.4% |
+| washing-machine | 2.161 (2.094-2.280) → 1.474 | 2.182 (2.131-2.190) → 1.490 | −31.8% / −31.7% |
+| particles | 1.657 (1.627-1.673) → 1.573 | 1.713 (1.662-2.025) → 1.587 | −5.1% / −7.4% |
+
+Particles has the smallest margin: 1.573 against a before minimum of 1.627 in pair 1. Its pair 2 before run had one slow run at 2.025.
+
+### Checks on the final HEAD
+
+These ran sequentially after the timing, 00:28–01:35Z (`target/phase35/checks-08.sh`, log `checks-08.log`, exit codes in `checks-08.results`):
+
+- `cargo fmt --all --check`: pass
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: pass
+- `cargo build --workspace --all-targets --all-features`: pass
+- `cargo build -p liquidfun-wasm --target wasm32-unknown-unknown`: **fail (pre-existing, deferred in 35-01)**. Exit 101 with E0432 in the native-only bins `dam-break-bench`, `dam-break-timers` and `playground-scene-spot`, which import items gated `#[cfg(not(target_arch = "wasm32"))]`. These are the same errors recorded in `deferred-items.md` before any engine change.
+- `cargo build -p liquidfun-wasm --lib --target wasm32-unknown-unknown`: pass. Plans 35-03 through 35-07 used this wasm32 check.
+- `bun scripts/bright-builds-check.ts all`: pass
+- `cargo test --all-features` (default member `liquidfun`): pass, 75 `test result: ok`, 1,079 passed, 0 failed, 52 min 30 s
+- `cargo test -p liquidfun-wasm --all-features`: pass, 316 passed, 0 failed
+- `just web-build` (wasm package and site): pass. The generated files were unchanged, and the tree stayed clean.
+- `cd web && bun run test:unit`: pass, 56 files, 472 tests
+- `just web-smoke` (optional): **failed, unrelated and pre-existing**. 61 of 62 passed. `e2e/rust-wasm-proof.spec.ts:170` expects the status text `Loading Rust/WASM session…`, which no file under `web/src/` contains; it also matches 4 `role=status` outputs. `web/`, `scripts/` and `justfile` are unchanged since BEFORE_COMMIT (log `target/phase35/web-smoke-08.log`).
+
+### Authored behavior (D-05)
+
+`git diff 809582431faecfdfa13b87f0d8376527bea7f0b4 HEAD --stat -- crates/liquidfun-wasm/src/scene/ web/src/` prints nothing. The full `git diff 809582431 HEAD --stat` lists only planning files under `.planning/` and engine internals plus tests under `crates/liquidfun/src/particle/` and `crates/liquidfun/src/world/` (21 files, 3,029 insertions, 95 deletions). That covers `body_contact.rs` and its tests, `contact_scan.rs`, `lifetime/eviction.rs`, `storage.rs`, `storage/creation.rs` with `creation_fast_path_tests.rs`, `storage/runtime.rs`, `particle_coupling.rs`, `moving_fixture_query.rs` and `moving_fixture_query_tests.rs`. No scene module, control, preset, web source or asset changed.

@@ -8,3 +8,7 @@
 ## From 35-04 (out of scope, pre-existing)
 
 1. `cargo build --release -p liquidfun-wasm --bin playground-scene-spot` prints `warning: unreachable expression` at `crates/liquidfun/src/particle/solver/boundary/support.rs:98`. In `validate_candidate`, the `#[cfg(not(debug_assertions))]` block returns early, so the trailing `Ok(())` is unreachable in release builds only. The warning dates from `2dcc3822a` (24-04) and appears at plan start on unchanged code. Debug clippy with `-D warnings` does not see it. A fix would put the debug-only check and the final `Ok(())` under one `cfg` so each build has one return path.
+
+## From 35-08 (out of scope, pre-existing)
+
+1. `just web-smoke` fails 1 of 62 Playwright tests: `web/e2e/rust-wasm-proof.spec.ts:170` ("runs Rust WASM, visibly moves, and freezes after disposal") expects `getByRole('status')` to read `Loading Rust/WASM session…`. No file under `web/src/` contains that text, and the page now has four `role=status` outputs (fps, session status and two scene-control outputs), so the strict locator fails. The spec was last changed in `3a047bf99` and `web/src/` in `aa48f26d0`, both before Phase 35; Phase 35 changed nothing under `web/`. A fix would update the spec to the current loading text and scope the locator to `.session-status`.
