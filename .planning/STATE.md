@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 35
 current_phase_name: Speed Up the Slowest Scenes
 current_plan: 8
-status: executing
-stopped_at: Completed 35-07-PLAN.md
-last_updated: "2026-10-10T00:13:10.763Z"
+status: verifying
+stopped_at: Completed 35-08-PLAN.md
+last_updated: "2026-10-10T01:38:14.363Z"
 last_activity: 2026-10-10
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 9
-  percent: 90
+  completed_plans: 10
+  percent: 100
 ---
 
 # Project State
@@ -36,10 +36,10 @@ Total Plans in Phase: 8
 
 Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
 Plan: 8 of 8
-**Status:** Ready to execute
+**Status:** Phase complete — ready for verification
 Last activity: 2026-10-10
 
-**Progress:** [█████████░] 90%
+**Progress:** [██████████] 100%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -76,6 +76,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 35]: 35-06 A6 kept (2256dd8cd): verified conservative query pad for moving fixtures at iteration 0 replaces the 0..n CCD scan; washing-machine -29.0%/-28.9% in ABBA, soup-stirrer/water-wheel/theo-jansen faster, 25/25 fingerprints; A7 not tried
 - [Phase 35]: 35-07 A8 kept (5695f4b39): ungrouped particle creation reuses group_records with the rebuild's empty-record normalization instead of the O(n) group-lane clone and rebuild; tesla-valve -7.8%/-12.2%, fountain and water-wheel about -20%, 25/25 fingerprints
 - [Phase 35]: 35-07 A9 kept (f7041fc75): eviction index uses an in-tree deterministic ParticleIdHasher, in-place resequence and bulk BTreeMap builds; tesla-valve -9.1%/-8.1%, fountain and water-wheel about -27%, 25/25 fingerprints
+- [Phase 35]: 35-08 close-out: final HEAD 202075791 has 25/25 fingerprints equal to the phase before; cumulative spot-before vs spot-final ABBA puts all five targets below the before min in both pairs (liquid-tumbler -5.8%/-8.5%, tesla-valve -19.7%/-14.6%, stacked-drip -9.9%/-6.4%, washing-machine -31.8%/-31.7%, particles -5.1%/-7.4%)
+- [Phase 35]: 35-08: A3/A3b stay reverted under D-11; possible host-noise evidence and a retry idea recorded in 35-PROFILES.md Notes for Phase 36
 
 ### Pending Todos
 
@@ -134,9 +136,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 35 P05 | 422min | 3 tasks | 3 files |
 | Phase 35 P06 | 478min | 2 tasks | 4 files |
 | Phase 35 P07 | 411min | 2 tasks | 5 files |
+| Phase 35 P08 | 84min | 2 tasks | 3 files |
 
 ## Session Continuity
 
-Last session: 2026-10-10T00:13:10.760Z
-Stopped at: Completed 35-07-PLAN.md
+Last session: 2026-10-10T01:38:14.360Z
+Stopped at: Completed 35-08-PLAN.md
 Resume file: None
