@@ -383,3 +383,138 @@ These ran sequentially after the timing, 00:28–01:35Z (`target/phase35/checks-
   1. A release-only `unreachable expression` warning appears at `boundary/support.rs:98`.
   1. One `web-smoke` spec expects the stale text `Loading Rust/WASM session…`.
   1. Some xtask test targets stall under syspolicyd.
+
+## D-11 calibration (quick 261010-mrp)
+
+This section is a proposal for the user. It changes no decision. D-11 in 35-CONTEXT.md, every Attempts row, the target records and the Phase summary are unchanged.
+
+### Protocol
+
+- A/A design: B is `target/phase35/bin/spot-base-ibo` (inode 545134829) and A is `target/phase35/bin/spot-AA` (inode 550580308). A is a `cp` of B, not a link. Both have SHA-256 `bd2b2eb5…`, the final Phase 35 build. A was launched once untimed before any timed leg. It started in 0.36 s.
+- Pre-registration: `target/phase35/mrp-protocol.txt` has `written_utc` 2026-10-10T21:29:57Z. The first leg in `AA1.uptime` started at 21:30:33Z. The frozen analysis script `target/phase35/aa_calib.py` has SHA-256 `0393cf95…`. It was not changed after timing, so there is no addendum. Before it was hashed, one crash on empty input was fixed, during a parse-only run with no A/A data.
+- Sequence: the §Method sequence that judged A3r in quick 261010-ibo, unchanged, through `abba-gated.sh` with the ibo gate and void rules. Each of 3 rounds ran a targeted ABBA on liquid-tumbler (`--runs 5`), the full catalog b1 then a1 (`--runs 3`), and an isolated ABBA (`--runs 5`) on every scene the full run listed.
+- Definitions: a is the A leg and b is the B leg of the same pair. `ratio% = (a_median / b_median - 1) * 100`. `excess% = (a_median / b_max - 1) * 100`. D-11 as written confirms a regression when excess% > 0 in both isolated pairs.
+- F formula, quoted from the protocol: "a confirmed regression requires the scene's after median to exceed its base median by more than F% in BOTH isolated pairs; F = max(2, floor(M) + 1) where M is the largest A/A isolated-pair ratio% across all counted rounds". The screening step stays unchanged. The full catalog still lists scenes above base max, and only listed scenes get isolated pairs.
+- An A/A test measures timing noise only. It cannot show code-layout effects of a real change.
+
+### Run notes
+
+HEAD `079de026d`. No build of this repository ran during the plan, and the executor ran no cargo or rustc command. Counted sets, all on 2026-10-10: round 1 21:49:38–21:53:30Z (1-minute load 3.06–6.72), round 2 21:54:04–21:56:54Z (3.62–6.16), round 3 21:57:09–22:01:11Z (3.56–5.78). Two sets were voided, both round 1's targeted set, because another repository's `cargo test -p open-bitcoin-node` was running at a leg end (`AA1.void-1791667895`, `AA1.void-1791667958`). Their keep output was moved into those directories unread. Before the third run, which counts regardless (`NO_VOID=1`), a result-blind wait for 300 s free of cargo and rustc took 1,005 s. It is logged as `PRE-WAIT` in `AA1.uptime`, following the ibo precedent. The third run logged no `VOID-IGNORED`, so no void condition occurred. There were 3 GATE-WAITED entries of 15 s each and no GATE-TIMEOUT. The gate and the void check mean no cargo or rustc ran at the start or end of any counted leg. The `uptime` lines are in `AA1.uptime`, `AA1-full.uptime`, `AA1-iso.uptime`, `AA2.uptime`, `AA2-full.uptime`, `AA2-iso.uptime`, `AA3.uptime`, `AA3-full.uptime` and `AA3-iso.uptime`. Per-round records are in `AA1.round`, `AA2.round` and `AA3.round`, and the analysis output is in `mrp-results.txt`.
+
+### Per-round results
+
+| Round | Full run listed above base max (a) | Isolated-pair confirmed (b) | D-11 would revert a no-op | liquid-tumbler targeted ratio% p1 / p2 (false gain?) | Fingerprints |
+| --- | --- | --- | --- | --- | --- |
+| 1 | color-mixer, float-or-sink, impulse, liquid-timer, liquid-tumbler | float-or-sink | yes | +0.619 / −0.441 (no; gain in pair 2 only) | 25/25 equal (full b1 and a1 vs `before-full.jsonl`) |
+| 2 | color-mixer, drawing-particles, liquid-timer, rigid-particles, sparky, stacked-drip, surface-tension, theo-jansen | none | no | +0.909 / +0.609 (no) | 25/25 equal |
+| 3 | color-mixer, impulse, jelly-drop, liquid-bubbler, liquid-tumbler, tesla-valve, theo-jansen | none | no | +0.514 / +0.280 (no) | 25/25 equal |
+
+In every round, the script's listing matched keep_rule's output for both the full run and the isolated pairs.
+
+Round 1 isolated pairs (`AA1-iso-*`):
+
+| Scene | ratio% p1 | ratio% p2 | excess% p1 | excess% p2 | confirmed |
+| --- | --- | --- | --- | --- | --- |
+| float-or-sink | +1.854 | +2.580 | +0.148 | +0.863 | yes |
+| color-mixer | −0.880 | +1.897 | −1.610 | −0.338 | no |
+| liquid-timer | −2.905 | −1.768 | −4.713 | −21.247 | no |
+| impulse | −3.586 | −1.846 | −4.652 | −4.182 | no |
+| liquid-tumbler | −0.147 | −0.553 | −0.400 | −2.082 | no |
+
+Round 2 isolated pairs (`AA2-iso-*`):
+
+| Scene | ratio% p1 | ratio% p2 | excess% p1 | excess% p2 | confirmed |
+| --- | --- | --- | --- | --- | --- |
+| color-mixer | +1.212 | +3.096 | −0.094 | +1.632 | no |
+| liquid-timer | −1.322 | −1.386 | −3.648 | −1.775 | no |
+| surface-tension | −4.179 | −4.977 | −5.198 | −5.709 | no |
+| rigid-particles | −3.348 | −0.409 | −4.744 | −1.946 | no |
+| theo-jansen | −6.945 | +1.828 | −8.917 | +0.054 | no |
+| drawing-particles | −4.292 | −3.491 | −6.004 | −4.302 | no |
+| sparky | −8.073 | +0.553 | −10.224 | +0.037 | no |
+| stacked-drip | +0.235 | +1.797 | −1.732 | −0.045 | no |
+
+Round 3 isolated pairs (`AA3-iso-*`):
+
+| Scene | ratio% p1 | ratio% p2 | excess% p1 | excess% p2 | confirmed |
+| --- | --- | --- | --- | --- | --- |
+| color-mixer | +2.606 | −2.000 | +1.276 | −2.331 | no |
+| jelly-drop | +2.250 | −4.754 | +2.117 | −5.356 | no |
+| impulse | +2.013 | −0.603 | −0.451 | −1.298 | no |
+| theo-jansen | −1.126 | +2.341 | −1.364 | +0.093 | no |
+| liquid-tumbler | −0.241 | −0.280 | −0.435 | −0.478 | no |
+| liquid-bubbler | −2.598 | +2.323 | −2.774 | +0.270 | no |
+| tesla-valve | +0.657 | −0.893 | −0.113 | −0.924 | no |
+
+### False-alarm count (d)
+
+D-11's regression clause as written would have reverted 1 of 3 no-op rounds (round 1, float-or-sink). The false-gain count is 0 of 3: liquid-tumbler never gained in both targeted pairs.
+
+float-or-sink's A/A ratios were +1.854% and +2.580%. Those are larger in both pairs than the confirmed ratios behind three reverts: soup-stirrer (A3, +1.515% / +1.511%), fountain (A3b, +1.781% / +1.726%) and wave-tank (A3br, +1.389% / +1.105%). In each of the five recorded confirmations, at least one of the two pairs was at or below +2.255%, inside the A/A isolated range.
+
+### Noise (e)
+
+Pair-type distributions over all three rounds (nearest-rank quantiles):
+
+| Pair type | n | ratio% min / p50 / p90 / max | excess% min / p50 / p90 / max | excess% > 0 |
+| --- | --- | --- | --- | --- |
+| targeted (liquid-tumbler) | 6 | −0.441 / +0.514 / +0.909 / +0.909 | −2.876 / −0.493 / −0.009 / −0.009 | 0 |
+| full | 75 | −6.172 / +0.001 / +2.241 / +3.075 | −7.759 / −1.300 / +0.818 / +2.778 | 20 |
+| isolated | 40 | −8.073 / −0.603 / +2.323 / +3.096 | −21.247 / −1.610 / +0.270 / +2.117 | 9 |
+
+In the full runs, 20 of 75 A/A scene medians (27%) were above the base max. In the isolated runs, 9 of 40 pairs were. With no change at all, any one isolated pair exceeded its base max about 1 time in 4.
+
+Per scene, over full and isolated pairs:
+
+| Scene | n pairs | max ratio% | max excess% | median base spread% |
+| --- | --- | --- | --- | --- |
+| wave-machine | 3 | −0.752 | −1.218 | 0.808 |
+| dam-break | 3 | +0.359 | −3.120 | 3.388 |
+| fountain | 3 | −2.461 | −3.763 | 2.126 |
+| float-or-sink | 5 | +2.580 | +0.863 | 2.171 |
+| color-mixer | 9 | +3.096 | +2.778 | 1.518 |
+| jelly-drop | 5 | +2.731 | +2.117 | 2.812 |
+| water-wheel | 3 | −0.722 | −2.028 | 2.536 |
+| particles | 3 | +0.992 | −0.050 | 1.418 |
+| liquid-timer | 7 | +3.075 | +1.659 | 2.798 |
+| surface-tension | 5 | +1.577 | +0.714 | 1.836 |
+| elastic-particles | 3 | −1.691 | −4.183 | 2.151 |
+| rigid-particles | 5 | +2.076 | +0.174 | 2.683 |
+| soup | 3 | −0.706 | −2.849 | 2.897 |
+| soup-stirrer | 3 | +1.224 | −0.305 | 2.455 |
+| impulse | 7 | +2.986 | +0.972 | 3.055 |
+| theo-jansen | 7 | +2.816 | +0.943 | 2.370 |
+| liquid-tumbler | 7 | +1.986 | +1.695 | 0.946 |
+| drawing-particles | 5 | +2.241 | +1.207 | 2.734 |
+| sparky | 5 | +2.826 | +0.536 | 1.869 |
+| hydraulic-fountain | 3 | −0.100 | −0.889 | 3.027 |
+| wave-tank | 3 | −0.634 | −1.104 | 1.444 |
+| liquid-bubbler | 5 | +2.323 | +0.270 | 1.028 |
+| stacked-drip | 5 | +1.863 | +0.609 | 2.165 |
+| washing-machine | 3 | −1.650 | −1.717 | 3.180 |
+| tesla-valve | 5 | +0.657 | +0.195 | 0.857 |
+
+Base spread is `(b_max - b_min) / b_median * 100` for the B leg of each pair. The median spread is 0.8–3.4%, so one scene's base max is often only 1–2% above its base median.
+
+### Proposed floor
+
+- M = 3.096%, from color-mixer in round 2, isolated pair 2.
+- F = max(2, floor(3.096) + 1) = **4%**.
+- Leave-one-round-out check (g): holding out round 1 gives F_1 = 4% (from round 2), holding out round 2 gives F_2 = 3% (from round 3's color-mixer +2.606%), and holding out round 3 gives F_3 = 4%. No held-out round had a scene above its F_k in both pairs. The floor moves by at most 1 point when a round is dropped.
+- Limits: the sample is 3 rounds and 40 isolated pairs at 1-minute loads of 3.06–6.72. That is close to ibo's counted sets (4.1–6.3) and below 35-04's (6.2–10.5), where A3 and A3b were judged. Under F, a real regression smaller than 4% in both pairs would not be confirmed.
+- F is a proposal for the user to accept, change or reject. D-11 is unchanged until the user decides.
+
+### What-if (informational)
+
+Under F = 4%, a scene is floor-confirmed only if its ratio% is above 4% in both isolated pairs. Each attempt's fingerprints were recomputed against `before-full.jsonl` from `A3-full.jsonl`, `A3b-full.jsonl`, `A3r-full-a1.jsonl` and `A3br-full-a1.jsonl`, and matched the recorded 25/25. The D-11-as-written recomputation reproduced every recorded confirmation.
+
+| Attempt | Base | Target gain both pairs | Fingerprints | D-11-as-written confirmed (recorded decision) | max isolated ratio% (scene, pair) | Confirmed under F | Would-be decision under F |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| A3 | `spot-base-04` | yes (−9.404% / −10.409%) | 25/25 | soup-stirrer (+1.515% / +1.511%) (reverted) | +2.231 (soup, pair 2) | none | keep |
+| A3b | `spot-base-04` | yes (−7.591% / −7.333%) | 25/25 | fountain (+1.781% / +1.726%) (reverted) | +2.500 (water-wheel, pair 1) | none | keep |
+| A3r | `spot-base-ibo` | yes (−8.832% / −10.436%) | 25/25 | jelly-drop (+1.356% / +7.074%), water-wheel (+2.248% / +2.255%) (reverted) | +7.074 (jelly-drop, pair 2) | none | keep |
+| A3br | `spot-base-ibo` | yes (−8.491% / −10.336%) | 25/25 | wave-tank (+1.389% / +1.105%) (reverted) | +9.118 (surface-tension, pair 2) | none | keep |
+
+Some single isolated pairs in the attempts were above M: A3r jelly-drop +7.074% (pair 2), liquid-timer +6.271% and particles +4.353% (pair 1), and A3br surface-tension +9.118% (pair 2). None repeated in the other pair. The A/A rounds cannot say whether such single-pair spikes are noise or a real cost.
+
+These what-ifs change no decision. A3, A3b, A3r and A3br remain reverted; any re-judgement of A3r needs a fresh run after the user agrees a floor.
