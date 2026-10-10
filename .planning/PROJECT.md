@@ -16,7 +16,7 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
-Milestone v1.4 Scenario Performance was initialized on 2026-10-03 and simplified on 2026-10-06 to three phases: a timing survey, targeted fixes for the slowest scenes, and a final re-survey. Existing behavior, settings and visuals stay unchanged, and measured memory increases are allowed. Phase 34 is complete (2026-10-07): `just playground-scene-spot` times all 25 catalog scenes natively (median of 3 fresh runs) and ranks them. `docs/benchmarks/scene-survey.md` records the first table from commit `96a3ac6a6`. Liquid Tumbler leads at about 24.4 ms/step, ahead of Tesla Valve, Stacked Drip, Washing Machine and Particles. These are local observations, not public speed claims. Phase 35 targets the slowest scenes.
+Milestone v1.4 Scenario Performance was initialized on 2026-10-03 and simplified on 2026-10-06 to three phases: a timing survey, targeted fixes for the slowest scenes, and a final re-survey. Existing behavior, settings and visuals stay unchanged, and measured memory increases are allowed. Phase 34 is complete (2026-10-07): `just playground-scene-spot` times all 25 catalog scenes natively (median of 3 fresh runs) and ranks them. `docs/benchmarks/scene-survey.md` records the first table from commit `96a3ac6a6`. Liquid Tumbler leads at about 24.4 ms/step, ahead of Tesla Valve, Stacked Drip, Washing Machine and Particles. These are local observations, not public speed claims. Phase 35 is complete (2026-10-10): profile-guided engine fixes, each kept only with a before/after gain beyond noise and bit-identical end-state fingerprints on all 25 scenes, made the five slowest scenes faster on this machine (Washing Machine about −32%, Tesla Valve −15 to −20%, Stacked Drip −6 to −10%, Liquid Tumbler −6 to −8%, Particles −5 to −7%). Reverted attempts and profiles are recorded in the phase's 35-PROFILES.md. Phase 36 re-surveys the catalog.
 
 v1.3 Reference Testbed Scenes is archived (2026-09-28): 8 phases, 38 plans, and 76 tasks. At archive time the playground listed twenty-three ready scenes. That was the twelve missing JavaScript testbed ports, the six earlier scenes, Liquid Tumbler, and four original scenes: Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. Credits for the ports cite the pinned LiquidFun tests. `MAX_ADVANCE_STEPS` stays 4. The audit passed 15/15 requirements. This is not sealed C++ parity or crate publication. Annotated tag `v1.3` marks the planning archive. See `.planning/MILESTONES.md` and `.planning/milestones/v1.3-REQUIREMENTS.md`.
 
@@ -104,6 +104,7 @@ Detailed requirements and phase traceability are in REQUIREMENTS.md and ROADMAP.
 ### Validated
 
 - [x] Phase 34 completed PERF-07: `just playground-scene-spot` ranks all 25 catalog scenes by native median ms/step, and a test fails when a catalog scene is missing. The first table is in `docs/benchmarks/scene-survey.md`. Local observations only. Validated in Phase 34: Scene Timing Survey.
+- [x] Phase 35 completed PERF-08 and PERF-09: profile-guided fixes for the five slowest scenes, each kept only with an ABBA before/after gain beyond noise; all 25 scene fingerprints unchanged; Rust workspace and web unit tests pass. Local observations only. Validated in Phase 35: Speed Up the Slowest Scenes.
 
 - ✓ v1.3 Reference Testbed Scenes — 15/15 requirements, 8 phases, 38 plans, audit passed 2026-09-28. Twenty-three playground scenes, including the twelve missing testbed ports and four original scenes. Not a crate release.
 
@@ -330,4 +331,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-10-07 after Phase 34 Scene Timing Survey. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-10-10 after Phase 35 Speed Up the Slowest Scenes. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
