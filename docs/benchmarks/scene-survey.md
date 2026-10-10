@@ -20,7 +20,8 @@ Pass `--scene <id>` (repeatable) to time only those catalog scenes, for example
 `cargo xtask playground scene-spot --scene liquid-tumbler`. Each JSON line also
 carries `fingerprint`, a 64-bit FNV-1a hash of the live particle positions,
 velocities and colors plus body transforms and velocities after the first run's
-warmup and timed steps. Equal fingerprints mean a bit-identical trajectory.
+warmup and timed steps. Equal fingerprints mean those end-state fields match
+bit for bit; particle flags, lifetimes and group records are not hashed.
 
 ## Recorded run
 
