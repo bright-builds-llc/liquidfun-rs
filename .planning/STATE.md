@@ -4,17 +4,17 @@ milestone: v1.4
 milestone_name: milestone
 current_phase: 35
 current_phase_name: Speed Up the Slowest Scenes
-current_plan: 7
+current_plan: 8
 status: executing
-stopped_at: Completed 35-06-PLAN.md
-last_updated: "2026-10-09T17:17:56.064Z"
-last_activity: 2026-10-09
+stopped_at: Completed 35-07-PLAN.md
+last_updated: "2026-10-10T00:13:10.763Z"
+last_activity: 2026-10-10
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -31,15 +31,15 @@ See: `.planning/PROJECT.md` (updated 2026-10-06)
 Current Phase: 35
 Current Phase Name: Speed Up the Slowest Scenes
 Total Phases: 3
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 8
 
 Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 **Status:** Ready to execute
-Last activity: 2026-10-09
+Last activity: 2026-10-10
 
-**Progress:** [████████░░] 80%
+**Progress:** [█████████░] 90%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -74,6 +74,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 35]: 35-05 A4 reverted: per-row AABB tag query gained on no target and regressed liquid-tumbler plus four scenes in both pairs (never committed; attempts/A4.patch)
 - [Phase 35]: 35-05 A5 kept (216de3929): bitset walk for body-contact candidate rows, liquid-tumbler -3.0%/-3.0%, tesla-valve -0.9%/-2.2%, 25/25 fingerprints
 - [Phase 35]: 35-06 A6 kept (2256dd8cd): verified conservative query pad for moving fixtures at iteration 0 replaces the 0..n CCD scan; washing-machine -29.0%/-28.9% in ABBA, soup-stirrer/water-wheel/theo-jansen faster, 25/25 fingerprints; A7 not tried
+- [Phase 35]: 35-07 A8 kept (5695f4b39): ungrouped particle creation reuses group_records with the rebuild's empty-record normalization instead of the O(n) group-lane clone and rebuild; tesla-valve -7.8%/-12.2%, fountain and water-wheel about -20%, 25/25 fingerprints
+- [Phase 35]: 35-07 A9 kept (f7041fc75): eviction index uses an in-tree deterministic ParticleIdHasher, in-place resequence and bulk BTreeMap builds; tesla-valve -9.1%/-8.1%, fountain and water-wheel about -27%, 25/25 fingerprints
 
 ### Pending Todos
 
@@ -131,9 +133,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 35 P04 | 659min | 2 tasks | 7 files |
 | Phase 35 P05 | 422min | 3 tasks | 3 files |
 | Phase 35 P06 | 478min | 2 tasks | 4 files |
+| Phase 35 P07 | 411min | 2 tasks | 5 files |
 
 ## Session Continuity
 
-Last session: 2026-10-09T17:17:56.057Z
-Stopped at: Completed 35-06-PLAN.md
+Last session: 2026-10-10T00:13:10.760Z
+Stopped at: Completed 35-07-PLAN.md
 Resume file: None
