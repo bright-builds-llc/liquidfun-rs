@@ -2,6 +2,42 @@
 
 Scope: native `--release` headless survey timing (`playground-scene-spot`) on one machine; local observations, not public speed claims.
 
+## Phase summary
+
+Final commit `2020757911f1757356d2c2ec80e55055aa0eeaa0`. The engine is BEFORE_COMMIT plus A1, A5, A6, A8 and A9. The before and final medians come from the cumulative ABBA in §Final verification (`spot-before` vs `spot-final`, `--runs 5`, 2026-10-10). "Gain beyond noise" is `yes` only when the final median is below the before minimum in both pairs. The phase promised no gain (v1.4 decision). The percentages are the measured pair changes on this shared host and are not public speed claims. The D-03 browser observation was not run, so no target was added.
+
+| Target | Hot path (profile share) | Attempts | Kept | Before median (min-max) | Final median (ABBA pair 1 / pair 2) | Gain beyond noise |
+| --- | --- | --- | --- | --- | --- | --- |
+| liquid-tumbler | `pressure::damping` 22.9% self (61 particle iterations per step; float order locked by D-07) | A0, A1, A2, A3, A3b, A4, A5 | A1, A5 | 25.135 (24.735-25.699) / 25.346 (25.133-25.454) | 23.670 / 23.204 | yes (−5.8% / −8.5%) |
+| tesla-valve | `proxy::visit_sorted_tag_indices_in_aabb` 13.7% self (CCD fixture queries 6.9%, body-contact candidate rows 6.8%); emission 8.9% and lifetime resequencing 9.0% inclusive | A4, A5, A8, A9 | A5, A8, A9 | 4.056 (3.965-4.407) / 4.028 (3.980-4.061) | 3.258 / 3.440 | yes (−19.7% / −14.6%) |
+| stacked-drip | `pressure::damping` 17.1% self, `consider_window` 13.9% self, proxy rebuild and sort 13.1% inclusive | A1, A2, A4, A5 | A1, A5 | 2.764 (2.713-2.808) / 2.719 (2.658-2.766) | 2.489 / 2.546 | yes (−9.9% / −6.4%) |
+| washing-machine | `push_fixture_particle_hit` 15.2% self (full-scan CCD for moving drum fixtures at particle iteration 0, 29.1% inclusive) | A6 (A7 not tried) | A6 | 2.161 (2.094-2.280) / 2.182 (2.131-2.190) | 1.474 / 1.490 | yes (−31.8% / −31.7%) |
+| particles | `pressure::damping` 22.8% self, `consider_window` 18.6% self, proxy rebuild and sort 8.9% inclusive | A1, A2 | A1 | 1.657 (1.627-1.673) / 1.713 (1.662-2.025) | 1.573 / 1.587 | yes (−5.1% / −7.4%; smallest margin, 1.573 vs min 1.627) |
+
+Attempts (all IDs in §Attempts):
+
+- A0 (research), rejected. A branchless damping loop was slower: its unconditional stores lengthen the dependent store-to-load chain, and D-07 locks the loop's float order.
+- A1 (35-03), kept `91b27a6d6`. Reusing the sorted contact-proxy order across particle iterations put all three targets below the base minimum in both pairs: liquid-tumbler −3.4% / −4.7%, stacked-drip −3.0% / −5.4% and particles −1.5% / −3.9%.
+- A2 (35-03), reverted. A1 plus a bounded insertion sort was faster on liquid-tumbler and stacked-drip, but particles and washing-machine regressed in both pairs, which fails D-11.
+- A3 (35-04), reverted under D-11 (`0a2fe8cb8`, reverted by `7f0b36b18`). Hoisting the chain child edge gained −9.4% / −10.4% on liquid-tumbler, but soup-stirrer, which has no chain fixture, was above its base max in both isolated pairs (+1.5% / +1.5%).
+- A3b (35-04), reverted under D-11 (never committed). The no-branch `Shape::Edge` variant gained −7.6% / −7.3% on liquid-tumbler, but fountain, which has no chain, was above its base max in both isolated pairs (+1.7% / +1.8%).
+- A4 (35-05), reverted. A per-row binary search in the AABB tag query gained on no target and regressed liquid-tumbler plus four scenes in both pairs.
+- A5 (35-05), kept `216de3929`. A bitset walk for body-contact candidate rows gained on liquid-tumbler (−3.0% / −3.0%) and tesla-valve (−0.9% / −2.2%). Stacked-drip gained in targeted pair 1 only.
+- A6 (35-06), kept `2256dd8cd`. A verified conservative query pad for moving fixtures at iteration 0 replaces the `0..n` CCD scan: washing-machine −29.0% / −28.9%, and soup-stirrer, water-wheel and theo-jansen are also faster.
+- A7 (35-06), not tried. Per-fixture transform validation was the fallback in case A6 failed, and A6 passed D-11.
+- A8 (35-07), kept `5695f4b39`. Ungrouped particle creation skips the O(n) group-record rebuild: tesla-valve −7.8% / −12.2%, and fountain and water-wheel are about −20%.
+- A9 (35-07), kept `f7041fc75`. The cheaper lifetime eviction index uses a deterministic hasher, an in-place resequence and bulk map builds: tesla-valve −9.1% / −8.1%, and fountain and water-wheel are about −27%.
+
+A3 and A3b stay reverted, and this record does not count them as kept. The flagged regressions may have been host noise:
+
+- Neither scene takes the chain path that A3 and A3b changed. A3 adds one per-row branch, and A3b adds no new per-row branch.
+- The diagnostic pairs, run after both decisions were fixed, did not reproduce the regressions. Soup-stirrer measured 1.169 / 1.173 against a base of 1.166 / 1.168 (max 1.173 / 1.182). Fountain measured 1.150 / 1.131 against a base of 1.140 / 1.133.
+- Across the 7 and 12 scenes re-checked for A3 and A3b, the check fired once per attempt.
+- Other plans show the same kind of noise on this host. A1's full run flagged fountain and drawing-particles, and neither held in isolation. A8's isolated pair 1 flagged six scenes, and pair 2 flagged none.
+- D-11 as written counts a scene above its base max in both pairs as a regression. Both decisions stand. Notes for Phase 36 lists the retry.
+
+Behavior: 25/25 fingerprints equal the phase before; authored scene settings, controls and web sources unchanged.
+
 ## Method
 
 - Host: Apple M4 Max (`sysctl -n machdep.cpu.brand_string`), `arm64` (`uname -m`), 16 logical cores, macOS 26.6.2. The host is shared with an editor, browsers and other apps; load averages are recorded next to every timing run.
@@ -270,11 +306,11 @@ Planned attempts: 35-03 proxy order reuse.
 
 ## Target records
 
-- liquid-tumbler: profile recorded (hot path `pressure::damping` 22.9%); attempts: A1 kept, A2 reverted, A3 reverted (chain edge hoist, −9.4% / −10.4% but a soup-stirrer regression under D-11), A3b reverted (no-branch variant, −7.6% / −7.3% but a fountain regression under D-11); neither regression reproduced in a later diagnostic pair; A4 reverted (per-row AABB query, +0.7% / +2.9%, no gain and regressions under D-11), A5 kept (candidate-row bitset walk, −3.0% / −3.0%); current median 22.7–23.0 ms/step (`spot-A5` in the 35-05 pairs, base 23.4–23.7); status: open
-- tesla-valve: profile recorded (hot path `visit_sorted_tag_indices_in_aabb` 13.7%); attempts: A4 reverted (per-row AABB query, +1.0% / +0.8%, no gain), A5 kept (candidate-row bitset walk, −0.9% / −2.2%), A8 kept (ungrouped particle creation without the group-record rebuild, −7.8% / −12.2%), A9 kept (cheaper lifetime eviction index, −9.1% / −8.1%); current median 3.27 ms/step (`spot-A9` in the 35-07 pairs, base `spot-A8` 3.56–3.60, `spot-A6` 3.90–3.96); status: open
-- stacked-drip: profile recorded (hot path `pressure::damping` 17.1%); attempts: A1 kept, A2 reverted, A4 reverted (per-row AABB query, −0.9% / +1.2%, no gain), A5 kept (candidate-row bitset walk; gain in targeted pair 1 only, −1.7% / −1.5%); current median 2.48–2.55 ms/step (`spot-A5` in the 35-05 pairs, base 2.52–2.58); status: open
-- washing-machine: profile recorded (hot path `push_fixture_particle_hit` 15.2%); attempts: A6 kept (conservative spatial query for moving fixtures at iteration 0, −29.0% / −28.9%); A7 not tried; current median 1.435–1.436 ms/step (`spot-A6` in the 35-06 pairs, base 2.018–2.024); status: open
-- particles: profile recorded (hot path `pressure::damping` 22.8%); attempts: A1 kept, A2 reverted (particles regressed); current median 1.55–1.56 ms/step (A1 ABBA after, base 1.58–1.63); status: open
+- liquid-tumbler: profile recorded (hot path `pressure::damping` 22.9%); attempts: A0 rejected (research, branchless damping), A1 kept, A2 reverted, A3 reverted (chain edge hoist, −9.4% / −10.4% but a soup-stirrer regression under D-11), A3b reverted (no-branch variant, −7.6% / −7.3% but a fountain regression under D-11); neither regression reproduced in a later diagnostic pair; A4 reverted (per-row AABB query, +0.7% / +2.9%, no gain and regressions under D-11), A5 kept (candidate-row bitset walk, −3.0% / −3.0%); current median 22.7–23.0 ms/step (`spot-A5` in the 35-05 pairs, base 23.4–23.7); final 23.670 / 23.204 ms/step vs before 25.135 / 25.346 in the cumulative ABBA (§Final verification); status: closed
+- tesla-valve: profile recorded (hot path `visit_sorted_tag_indices_in_aabb` 13.7%); attempts: A4 reverted (per-row AABB query, +1.0% / +0.8%, no gain), A5 kept (candidate-row bitset walk, −0.9% / −2.2%), A8 kept (ungrouped particle creation without the group-record rebuild, −7.8% / −12.2%), A9 kept (cheaper lifetime eviction index, −9.1% / −8.1%); current median 3.27 ms/step (`spot-A9` in the 35-07 pairs, base `spot-A8` 3.56–3.60, `spot-A6` 3.90–3.96); final 3.258 / 3.440 ms/step vs before 4.056 / 4.028 in the cumulative ABBA; status: closed
+- stacked-drip: profile recorded (hot path `pressure::damping` 17.1%); attempts: A1 kept, A2 reverted, A4 reverted (per-row AABB query, −0.9% / +1.2%, no gain), A5 kept (candidate-row bitset walk; gain in targeted pair 1 only, −1.7% / −1.5%); current median 2.48–2.55 ms/step (`spot-A5` in the 35-05 pairs, base 2.52–2.58); final 2.489 / 2.546 ms/step vs before 2.764 / 2.719 in the cumulative ABBA; status: closed
+- washing-machine: profile recorded (hot path `push_fixture_particle_hit` 15.2%); attempts: A6 kept (conservative spatial query for moving fixtures at iteration 0, −29.0% / −28.9%); A7 not tried; current median 1.435–1.436 ms/step (`spot-A6` in the 35-06 pairs, base 2.018–2.024); final 1.474 / 1.490 ms/step vs before 2.161 / 2.182 in the cumulative ABBA; status: closed
+- particles: profile recorded (hot path `pressure::damping` 22.8%); attempts: A1 kept, A2 reverted (particles regressed); current median 1.55–1.56 ms/step (A1 ABBA after, base 1.58–1.63); final 1.573 / 1.587 ms/step vs before 1.657 / 1.713 in the cumulative ABBA; status: closed
 
 ## Final verification
 
@@ -323,3 +359,21 @@ These ran sequentially after the timing, 00:28–01:35Z (`target/phase35/checks-
 ### Authored behavior (D-05)
 
 `git diff 809582431faecfdfa13b87f0d8376527bea7f0b4 HEAD --stat -- crates/liquidfun-wasm/src/scene/ web/src/` prints nothing. The full `git diff 809582431 HEAD --stat` lists only planning files under `.planning/` and engine internals plus tests under `crates/liquidfun/src/particle/` and `crates/liquidfun/src/world/` (21 files, 3,029 insertions, 95 deletions). That covers `body_contact.rs` and its tests, `contact_scan.rs`, `lifetime/eviction.rs`, `storage.rs`, `storage/creation.rs` with `creation_fast_path_tests.rs`, `storage/runtime.rs`, `particle_coupling.rs`, `moving_fixture_query.rs` and `moving_fixture_query_tests.rs`. No scene module, control, preset, web source or asset changed.
+
+## Notes for Phase 36
+
+- Re-survey at final commit `2020757911f1757356d2c2ec80e55055aa0eeaa0` or a later commit with the same `crates/`. The last engine change is `f7041fc75`. Its release `playground-scene-spot` has SHA-256 `bd2b2eb5…`, saved as `target/phase35/bin/spot-final`; `spot-before` remains the phase baseline.
+- `docs/benchmarks/scene-survey.md` still holds the pre-phase table (stamp 2026-10-07T06-20-54Z on `96a3ac6a6`). Phase 35 did not edit it or the README. The whole-catalog before/after table and user-facing notes are Phase 36 work.
+- `target/phase35/final-full.jsonl` gives a first look at the whole catalog. Every scene's median is below its `before-full.jsonl` median: water-wheel −54%, fountain −42%, jelly-drop −42% and theo-jansen −29%. The two files were recorded on different days under different load, so they are not before/after evidence. Run back-to-back pairs of saved binaries.
+- Leftover ideas from reverted and untried work:
+  1. The chain child edge hoist (A3 and A3b; `target/phase35/attempts/A3.patch` and `A3b.patch`) cut liquid-tumbler by 7–10%. It was reverted only because one non-chain scene was above its base max in both isolated pairs, and that did not reproduce. A retry should use more isolated pairs, or an agreed noise allowance, before the keep decision.
+  1. The bounded insertion sort for the retained proxy order (A2, `attempts/A2.patch`) helped liquid-tumbler and stacked-drip but hurt particles and washing-machine. A cheaper presortedness test that picks the strategy might keep the gain without the regressions.
+  1. Per-fixture transform validation (A7) was never tried, because A6 passed.
+  1. The particle-contact damping loop (`pressure::damping`, the top self share in three targets) is a dependent scatter whose float order D-07 locks. A0 showed that branchless stores are slower.
+  1. Other costs were seen in the profiles but never attempted. The per-step world backup clone (`Vec<Slot<ParticleSystem>>::clone`) is 2.5% in particles and 1.1% in washing-machine. Emission reallocation copies (`_platform_memmove`) are about 3% in tesla-valve.
+  1. Scene construction in particles (`create_particle_group`, O(n²) `prepare_create` on the grouped path) is outside `SessionCore::advance` and outside the timed window. It affects load time, not ms/step.
+- Unrelated pre-existing items are in `deferred-items.md`:
+  1. The wasm32 build of `liquidfun-wasm` without `--lib` fails because of the native-only bins.
+  1. A release-only `unreachable expression` warning appears at `boundary/support.rs:98`.
+  1. One `web-smoke` spec expects the stale text `Loading Rust/WASM session…`.
+  1. Some xtask test targets stall under syspolicyd.
