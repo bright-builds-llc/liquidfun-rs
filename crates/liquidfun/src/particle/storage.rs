@@ -193,3 +193,6 @@ mod editor_tests;
 
 #[cfg(test)]
 mod solver_buffer_tests;
+
+#[cfg(test)]
+mod creation_fast_path_tests;

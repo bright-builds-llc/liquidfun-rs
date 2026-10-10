@@ -1,9 +1,9 @@
 use super::{
-    CreateCandidate, HandleIdentity, Identity, IdentityEntry, IdentityState, OwnedLaneBundle,
-    ParticleBufferBundle, ParticleGroupId, ParticleGroupView, ParticleGroupViewState, ParticleId,
-    ParticleIndex, ParticleInput, ParticleSnapshot, ParticleStorage, ParticleStorageError,
-    ParticleSystemId, SolverState, Vec2, WorldKey, rebuild_group_records_for_system,
-    validate_groups,
+    CreateCandidate, GroupRecord, HandleIdentity, Identity, IdentityEntry, IdentityState,
+    OwnedLaneBundle, ParticleBufferBundle, ParticleGroupId, ParticleGroupView,
+    ParticleGroupViewState, ParticleId, ParticleIndex, ParticleInput, ParticleSnapshot,
+    ParticleStorage, ParticleStorageError, ParticleSystemId, SolverState, Vec2, WorldKey,
+    rebuild_group_records_for_system, validate_groups,
 };
 
 impl ParticleStorage {
@@ -334,7 +334,7 @@ impl ParticleStorage {
         self.create_with_diagnostic(input, 0)
     }
 
-    fn prepare_create(
+    pub(super) fn prepare_create(
         &self,
         input: ParticleInput,
         diagnostic_id: u64,
@@ -359,10 +359,13 @@ impl ParticleStorage {
             self.system.identity(),
         ));
         let dense = ParticleIndex(self.dense_to_id.len());
-        let mut groups = self.groups.clone();
-        groups.push(input.maybe_group);
-        let group_records =
-            rebuild_group_records_for_system(&self.group_records, &groups, self.system)?;
+        let group_records = if input.maybe_group.is_none() {
+            self.group_records_after_ungrouped_append()?
+        } else {
+            let mut groups = self.groups.clone();
+            groups.push(input.maybe_group);
+            rebuild_group_records_for_system(&self.group_records, &groups, self.system)?
+        };
         let solver_state = self.solver_state.prepare_append(
             &self.flags,
             input.flags,
@@ -383,7 +386,43 @@ impl ParticleStorage {
         })
     }
 
-    fn commit_create(&mut self, candidate: CreateCandidate) -> ParticleId {
+    /// Group records after appending one ungrouped row, without the O(n) rebuild.
+    ///
+    /// An appended `None` adds no membership range. When the storage invariants
+    /// hold, the rebuild keeps every non-empty record unchanged and re-applies
+    /// `retain_empty_after_member_removal` to each trailing empty record, so this
+    /// clone with the same empty-record normalization equals it.
+    fn group_records_after_ungrouped_append(
+        &self,
+    ) -> Result<Vec<GroupRecord>, ParticleStorageError> {
+        // The rebuild's `validate_groups` rejects a lane longer than `i32::MAX`.
+        if self.groups.len() >= i32::MAX as usize {
+            return Err(ParticleStorageError::InvalidGroupRange);
+        }
+        let mut group_records = self.group_records.clone();
+        for record in &mut group_records {
+            if record.first == record.last {
+                record.retain_empty_after_member_removal();
+            }
+        }
+        debug_assert_eq!(
+            Ok(&group_records),
+            rebuild_group_records_for_system(
+                &self.group_records,
+                &{
+                    let mut groups = self.groups.clone();
+                    groups.push(None);
+                    groups
+                },
+                self.system,
+            )
+            .as_ref(),
+            "ungrouped append keeps the rebuilt group records"
+        );
+        Ok(group_records)
+    }
+
+    pub(super) fn commit_create(&mut self, candidate: CreateCandidate) -> ParticleId {
         if candidate.append_identity {
             self.identities.push(IdentityEntry {
                 generation: candidate.generation,
