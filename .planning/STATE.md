@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.4
-milestone_name: milestone
-current_phase: 36
-current_phase_name: Re-survey and Wrap Up
-current_plan: Not started
-status: completed
-stopped_at: Completed 36-03-PLAN.md
-last_updated: "2026-10-11T03:43:30.920Z"
+milestone: v1.5
+milestone_name: Puzzle Mode
+current_phase: null
+current_phase_name: null
+current_plan: null
+status: defining_requirements
+stopped_at: Milestone v1.5 started
+last_updated: "2026-10-11T21:16:22.000Z"
 last_activity: 2026-10-11
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,22 +24,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Planning the next milestone (v1.4 archived 2026-10-11)
+**Current focus:** v1.5 Puzzle Mode — defining requirements
 
 ## Current Position
 
-Current Phase: 36
-Current Phase Name: Re-survey and Wrap Up
-Total Phases: 3
-Current Plan: Not started
-Total Plans in Phase: 3
-
-Phase: 36 (Re-survey and Wrap Up) — COMPLETE
-Plan: 3 of 3
-**Status:** v1.4 milestone complete
-Last activity: 2026-10-11 - Completed quick task 261010-wkd: distinct HUD slider toggle icon and tighter Tesla valve portrait frame
-
-**Progress:** [██████████] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-10-11 — Milestone v1.5 Puzzle Mode started
 
 v1.4 is archived, and annotated tag `v1.4` marks the archive, authorized by the owner on 2026-10-11. v1.3 also remains archived. Package publication remains separately authorized.
 
@@ -153,5 +145,5 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 ## Session Continuity
 
 Last session: 2026-10-11T03:35:43.013Z
-Stopped at: Completed 36-03-PLAN.md
+Stopped at: Milestone v1.5 Puzzle Mode started (defining requirements)
 Resume file: None

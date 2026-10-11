@@ -14,9 +14,27 @@ Deliver a useful, independent Rust physics library for enjoyable experimentation
 
 The owner prioritizes a fun hobby project over production-quality certification. Apply `PROJECT-SCOPE.md`: mandatory Linux x64 qualification and the dedicated performance-host completion gate are removed. Historical evidence remains truthful and source-bound; strict qualification is opt-in. The owner selected local checks plus one macOS CI job and optional manual expensive suites. The accepted experimental preparation checklist is in RELEASE.md. APIs may evolve with incompatible changes documented before release; durable API/MSRV guarantees are deferred. Preserve Rust 1.97.0 and the declared minimum 1.92, verifying that minimum before publication or deliberately revising manifest and docs together.
 
+## Current Milestone: v1.5 Puzzle Mode
+
+**Goal:** Add a game to the playground: place a few tools while a level is paused, press play, and get enough water into the cup before the timer runs out.
+
+**Target features:**
+
+- Goal zone (the cup) that counts particles inside it and shows a live fill percentage
+- Win rule: reach the target fill before the timer ends; 1–3 stars for fewer tools used or a higher fill
+- Place-then-play tools (such as ramps, pins and valves): drag, rotate and remove while paused; Reset returns to the player's placements
+- 5–8 hand-written teaching levels, each introducing one idea (plain water, viscous liquid, powder, elastic sponge, buoyancy, a valve, a combination finale)
+- New Puzzles section at `#/puzzle/<id>` with level select, reusing the canvas, camera, HUD safe frame and scale legend; the 25 scenes stay unchanged
+- Desktop and phone: mouse and touch input, with a portrait frame per level
+- Per-browser progress (stars and unlocks) in local storage, fully playable when storage is blocked
+- Opt-in sound (SEED-005): splash and impact audio plus a win chime, muted by default
+- GPU water render mode (SEED-003) as a closing phase: refraction, highlights and foam, with the existing canvas modes as fallback
+
+**Key context:** Deterministic stepping means a working solution always reproduces. No accounts, servers or leaderboard. The sandbox editor (SEED-002) stays out of scope. The engine stays renderer-independent, and any engine-side goal counting must keep all 25 scene fingerprints unchanged.
+
 ## Current State
 
-v1.4 Scenario Performance is archived (2026-10-11): 3 phases, 13 plans and 27 tasks, plus 4 follow-up quick tasks. Annotated tag `v1.4` marks the archive; no crate was published. Seven profile-guided engine fixes were kept, each with bit-identical end-state fingerprints on all 25 scenes. A back-to-back before/after survey on one machine found 24 of 25 catalog scenes faster, 1 within noise and none slower (`docs/benchmarks/scene-survey.md`; local observations, not public speed claims). Leftover ideas are recorded in `milestones/v1.4-REQUIREMENTS.md`. No new milestone is active.
+v1.4 Scenario Performance is archived (2026-10-11): 3 phases, 13 plans and 27 tasks, plus 4 follow-up quick tasks. Annotated tag `v1.4` marks the archive; no crate was published. Seven profile-guided engine fixes were kept, each with bit-identical end-state fingerprints on all 25 scenes. A back-to-back before/after survey on one machine found 24 of 25 catalog scenes faster, 1 within noise and none slower (`docs/benchmarks/scene-survey.md`; local observations, not public speed claims). Leftover ideas are recorded in `milestones/v1.4-REQUIREMENTS.md`. Milestone v1.5 Puzzle Mode started 2026-10-11 (phase numbering continues after 36).
 
 Milestone v1.4 Scenario Performance was initialized on 2026-10-03 and simplified on 2026-10-06 to three phases: a timing survey, targeted fixes for the slowest scenes, and a final re-survey. Existing behavior, settings and visuals stay unchanged, and measured memory increases are allowed. Phase 34 is complete (2026-10-07): `just playground-scene-spot` times all 25 catalog scenes natively (median of 3 fresh runs) and ranks them. `docs/benchmarks/scene-survey.md` records the first table from commit `96a3ac6a6`. Liquid Tumbler leads at about 24.4 ms/step, ahead of Tesla Valve, Stacked Drip, Washing Machine and Particles. These are local observations, not public speed claims. Phase 35 is complete (2026-10-10): profile-guided engine fixes, each kept only with a before/after gain beyond noise and bit-identical end-state fingerprints on all 25 scenes, made the five slowest scenes faster on this machine (Washing Machine about −32%, Tesla Valve −15 to −20%, Stacked Drip −6 to −10%, Liquid Tumbler −6 to −8%, Particles −5 to −7%). Reverted attempts and profiles are recorded in the phase's 35-PROFILES.md. Later quick tasks amended the keep rule with a calibrated 4% noise floor and kept two more fixes (chain-edge hoist and a bounded insertion sort). Phase 36 is complete (2026-10-11): a back-to-back before/after survey of all 25 catalog scenes on one machine shows 24 faster and 1 within noise, with none slower and identical fingerprints, published in `docs/benchmarks/scene-survey.md`. Leftover ideas are recorded under REQUIREMENTS.md future work, and v1.4 is ready to archive.
 
@@ -81,7 +99,7 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 ## Next Milestone
 
-No scope has been chosen. Start with `/gsd-new-milestone`, and continue phase numbering after 36. Review the dormant seeds in `.planning/seeds/` when choosing scope: SEED-001 puzzle mode, SEED-002 sandbox editor with shareable links, SEED-003 GPU water render mode, SEED-004 physics-curiosity scenes, SEED-005 sonification and SEED-006 the v1.4 leftovers below. Candidate follow-ups are the v1.4 leftovers: a presortedness test to recover particles' A2r cost, A7 per-fixture validation, the world backup clone, emission reallocations, the grouped creation load time, the wasm32 native-only bins, a release-only warning, the stale `web-smoke` spec, and the filtered scene-spot summary line.
+v1.5 Puzzle Mode is active (see Current Milestone). It folds in SEED-001, SEED-003 and SEED-005. The remaining dormant seeds in `.planning/seeds/` are SEED-002 sandbox editor with shareable links, SEED-004 physics-curiosity scenes and SEED-006 the v1.4 leftovers: a presortedness test to recover particles' A2r cost, A7 per-fixture validation, the world backup clone, emission reallocations, the grouped creation load time, the wasm32 native-only bins, a release-only warning, the stale `web-smoke` spec, and the filtered scene-spot summary line.
 
 Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims and package publication. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized.
 
@@ -89,7 +107,7 @@ Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product
 
 ### Active
 
-None. The next milestone defines fresh requirements.
+v1.5 Puzzle Mode requirements are defined in `.planning/REQUIREMENTS.md`.
 
 ### Validated
 
@@ -328,4 +346,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-10-11 after the v1.4 milestone. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-10-11 at the start of milestone v1.5 Puzzle Mode. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
