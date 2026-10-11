@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Puzzle Mode
-current_phase: null
-current_phase_name: null
+current_phase: 37
+current_phase_name: "Puzzle Core in the Bridge"
 current_plan: null
-status: defining_requirements
-stopped_at: Milestone v1.5 started
-last_updated: "2026-10-11T21:16:22.000Z"
+status: ready_to_plan
+stopped_at: v1.5 roadmap created (Phases 37-43)
+last_updated: "2026-10-11T22:00:00.000Z"
 last_activity: 2026-10-11
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,14 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** v1.5 Puzzle Mode — defining requirements
+**Current focus:** v1.5 Puzzle Mode — Phase 37: Puzzle Core in the Bridge
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 37 of 43 (Puzzle Core in the Bridge) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-11 — Milestone v1.5 Puzzle Mode started
+Status: Ready to plan
+Last activity: 2026-10-11 — v1.5 roadmap created: 7 phases (37–43), 33/33 requirements mapped
+
+Progress: [░░░░░░░░░░] 0%
 
 v1.4 is archived, and annotated tag `v1.4` marks the archive, authorized by the owner on 2026-10-11. v1.3 also remains archived. Package publication remains separately authorized.
 
@@ -39,6 +41,7 @@ v1.4 is archived, and annotated tag `v1.4` marks the archive, authorized by the 
 
 ### Roadmap Evolution
 
+- v1.5 (2026-10-11): Roadmap created with Phases 37–43 — puzzle core in the bridge, puzzle route and player shell, tools and stars, timed valve and teaching levels, level select and progress, opt-in sound, GPU water (closing).
 - v1.4 (2026-10-06): Simplified to Phases 34–36 — timing survey, targeted fixes for the slowest scenes, re-survey. The original Phases 34–60 plan is in commit `011e80e`.
 - Phase 30 added: Periodic hydraulic fountain
 - Phase 31 added: Sinusoidal wave tank
@@ -72,15 +75,18 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 35]: 35-08: A3/A3b stay reverted under D-11; possible host-noise evidence and a retry idea recorded in 35-PROFILES.md Notes for Phase 36
 - [Phase 36]: 36-01 WR-01 fixed (c4252c01b): filtered scene-spot stamps record scene_filter (request order) and full_catalog false with a requested-scenes-only disclaimer; full-catalog stamps keep the original disclaimer and add scene_filter [] and full_catalog true
 - [Phase 36]: 36-02 v1.4 before/after survey published (e5640ea88): spot-before 809582431 vs spot-v14-final (crates/ = edcafebc0), one gated ABBA set over 25 scenes at --runs 5: faster 24, within noise 1 (drawing-particles), slower 0; 25/25 fingerprints in all six legs; current ranking from v14-rank-b1.jsonl
+- [v1.5]: Owner decisions: the valve is timed and set while building (no live tapping); the elastic level is a "jelly pad" deflector whose particles never count; stars keep the best per criterion across runs; soft linear locks with deep links always open; storage blocked means all levels unlocked plus a note.
+- [v1.5]: Levels live in their own registry (`LevelId` / `PUZZLE_IDS`), never `SCENE_IDS`. Outcome, timer and stars are decided per fixed step in Rust. No engine change may alter the 25 scene fingerprints; phases touching the bridge or frame contract require 25/25 identical fingerprints.
 - [Phase 36]: 36-03 v1.4 leftovers recorded in REQUIREMENTS.md Left over from v1.4 (presortedness test, A7, world backup clone, emission reallocation, grouped prepare_create, wasm32 bins, support.rs:98 warning, stale web-smoke spec); PERF-10 Complete after survey commit e5640ea88; no v1.4 tag or archive (D-10)
 
 ### Pending Todos
 
-None.
+- Optional quick task (research recommendation, before or alongside Phase 38): accept `EXT_color_buffer_half_float` as well as `EXT_color_buffer_float` in `web/src/render/webgl-particles.ts`, relying on `checkFramebufferStatus`; verify on an iPhone. Otherwise fold into Phase 43.
 
 ### Blockers/Concerns
 
-None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam Break ratio for any HEAD after `89d34564`.
+- Phase 37 opens with the native-vs-wasm determinism spike; its result sets the angle-snapping and fill-margin policy for every level.
+- A fresh unprofiled pair is still required before claiming the ≤ 3× Dam Break ratio for any HEAD after `89d34564`.
 
 ## Retained Context
 
@@ -144,6 +150,6 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 
 ## Session Continuity
 
-Last session: 2026-10-11T03:35:43.013Z
-Stopped at: Milestone v1.5 Puzzle Mode started (defining requirements)
+Last session: 2026-10-11T22:00:00.000Z
+Stopped at: v1.5 roadmap created; next is `/gsd-plan-phase 37`
 Resume file: None

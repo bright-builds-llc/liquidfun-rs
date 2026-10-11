@@ -2,10 +2,11 @@
 
 ## Overview
 
-No milestone is active. v1.4 Scenario Performance was archived on 2026-10-11. Start the next milestone with `/gsd-new-milestone`, and continue phase numbering after 36.
+v1.5 Puzzle Mode adds a small game to the playground. While a level is paused, the player places a few fixed-size tools, presses Play, and tries to get enough water into the cup before the timer runs out. The puzzle core lives in the private `liquidfun-wasm` bridge and reads existing public engine queries, so the `crates/liquidfun` engine and the 25 scene fingerprints stay unchanged. The order follows the research: puzzle core and determinism first, then the route and player shell, tools and stars, the timed valve and teaching levels, level select and progress, opt-in sound, and GPU water as the closing phase. Phase numbering continues after 36.
 
 ## Milestones
 
+- [ ] **v1.5 Puzzle Mode** — Phases 37–43 (planned 2026-10-11). Place-then-play cup puzzles with stars, 5–8 teaching levels, per-browser progress, opt-in sound and a GPU water render mode. The 25 scenes stay unchanged. No package or tag authorization.
 - [x] **v1.4 Scenario Performance** — Phases 34–36 (archived 2026-10-11). Whole-catalog timing survey, seven profile-guided fixes with bit-identical behavior, and a before/after survey: 24 of 25 scenes faster and none slower, as local observations. Annotated tag `v1.4`; no crate. ([full roadmap](milestones/v1.4-ROADMAP.md))
 - [x] **v1.3 Reference Testbed Scenes** — Phases 26–33 (archived 2026-09-28). Twelve missing JS testbed scenes, then Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. No crate or tag. ([full roadmap](milestones/v1.3-ROADMAP.md))
 - [x] **v1.2 Native Performance Closing** — Phases 22–25 (archived 2026-09-21). Local Dam Break Medium recorded at ≤ 3× C++; no Phase 12 sealed matrix; no crate or tag. ([full roadmap](milestones/v1.2-ROADMAP.md))
@@ -13,6 +14,14 @@ No milestone is active. v1.4 Scenario Performance was archived on 2026-10-11. St
 - [x] **v1.0 Experimental Foundation** — 16 phases / 252 active plans complete; archived 2026-09-17 under hobby scope ([full roadmap](milestones/v1.0-ROADMAP.md)). Strict qualification remains deferred; no package or tag released.
 
 ## Phases
+
+- [ ] **Phase 37: Puzzle Core in the Bridge** — Build levels from (level, placements) and decide fill, win and timeout per fixed step in Rust, identically natively and in wasm.
+- [ ] **Phase 38: Puzzle Route and Player Shell** — Open a level at `#/puzzle/<id>` in the shared player with a glass cup, fill meter, step timer and result card.
+- [ ] **Phase 39: Place-then-Play Tools and Stars** — Place, move, rotate and remove tools while building, then Play, Stop/Reset and earn stars.
+- [ ] **Phase 40: Timed Valve and Teaching Levels** — A timed valve plus 5–8 teaching levels, each proven solvable by automated tests.
+- [ ] **Phase 41: Level Select and Progress** — `#/puzzles` grid, soft unlocks and per-browser progress that survives blocked storage.
+- [ ] **Phase 42: Opt-in Sound** — Muted-by-default splashes, impacts, filling plinks and a win chime.
+- [ ] **Phase 43: GPU Water Render Mode** — Closing phase: refraction, highlights and foam with safe fallbacks.
 
 <details>
 <summary>✅ v1.4 Scenario Performance (Phases 34-36) — SHIPPED 2026-10-11</summary>
@@ -67,9 +76,130 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 
 </details>
 
+## Phase Details
+
+### Shared acceptance rules
+
+- **The 25 scenes stay unchanged.** No engine change may alter a scene fingerprint. Every phase that touches the wasm bridge or the frame contract reruns `just playground-scene-spot` and requires 25/25 identical end-state fingerprints.
+- **Levels live in their own registry** (`LevelId` / `PUZZLE_IDS` in Rust and TS, with their own portrait frames and coverage tests). Levels never enter `SCENE_IDS`, the scene sidebar, the README gallery plans or the scene survey.
+- **The outcome is decided per fixed step in Rust.** Fill, the settle window, the timer, win and timeout latch after each `world.step`. Nothing in the puzzle path uses wall-clock time or rendered frames. `MAX_ADVANCE_STEPS` stays 4.
+- **Placements are construction input.** The world is rebuilt at step 0 from `(level, canonical placements)` on Play and Reset. Positions snap to a grid and angles to 15° (τ/24) steps, and tools are created in canonical order.
+- **Owner decisions:** the valve is timed and set while building, with no live tapping during a run. The elastic level uses a "jelly pad" deflector whose particles never count. Stars keep the best result per criterion across runs. Locks are soft and linear, and deep links always open. When storage is blocked, every level is unlocked and a note says progress won't be saved.
+- Normal local checks gate every commit: `cargo fmt`, clippy, build and tests, plus the web unit and e2e tests a change touches.
+- Research flags: Phase 37 (native-vs-wasm spike), Phase 39 (touch rotation and validator parity), Phase 40 (level tuning, valve, jelly pad counting, buoyant cup region, particle budgets) and Phase 43 (iOS float render targets, context loss).
+
+### Phase 37: Puzzle Core in the Bridge
+
+**Goal**: A level can be built in the bridge from a level id and a placement list, and its cup fill, win and timeout are decided per fixed step in Rust, with the same result natively and in wasm.
+**Depends on**: Phase 36 (v1.4 engine and 25-scene fingerprints)
+**Requirements**: GOAL-02, GOAL-04
+**Success Criteria** (what must be TRUE):
+
+1. A native test builds the first plain-water level from its level id and a placement list (empty allowed), steps it, and reads the cup count, target, full count, outcome, outcome step and step limit from each frame and from `levelInfo()`.
+1. A level wins only after its fill stays at or above the target for the authored settle window (about 30 steps, 0.5 s) before the step limit. A splash that passes through the cup does not win, a run that never holds the target latches a loss at the limit, and a later slosh does not undo a win.
+1. Counting unit tests in Arrange/Act/Assert form show that only counted particles with centres inside the cup interior count. They cover the rim, outside-wall, empty, evicted and non-counted-group cases, and fill is measured against the authored full count and clamped to 100%.
+1. The native-vs-wasm determinism spike is run as the first task and its result is recorded in the phase summary. A reference-solution harness replays a recorded `(level, placements)` fixture to the same outcome and outcome step natively, and the angle-snapping and fill-margin policy for levels is set from the spike result.
+1. `just playground-scene-spot` reports 25/25 scene fingerprints unchanged, `crates/liquidfun` is untouched, and level ids are checked against a separate Rust allowlist outside `SCENE_IDS`.
+
+**Plans**: TBD
+
+### Phase 38: Puzzle Route and Player Shell
+
+**Goal**: Players can open a level at `#/puzzle/<id>` inside the existing player and watch a run with a glass cup, a live fill meter, a step timer and a result card, while the 25 scenes behave exactly as before.
+**Depends on**: Phase 37
+**Requirements**: GOAL-01, GOAL-03, PUZ-02, PUZ-03, PUZ-04, PUZ-05, PUZ-06
+**Success Criteria** (what must be TRUE):
+
+1. Opening `#/puzzle/<first-level>` shows the level with the cup drawn as glass, an etched target line and star ticks, and a fill meter at the cup whose percentage rises as only that level's water settles inside it. Opening `#/puzzle/<unknown>` shows a helpful fallback with a way back.
+1. The timer runs on simulation time and only during a run. When the limit passes without a win, the result card says, for example, "Out of time: 54% of 80%". A win shows the result card with Next, Retry and Edit.
+1. On puzzle routes, pointer poke and drag, tilt, the gravity slider, zoom and pan are inactive, scene-only chrome is hidden, and an e2e check shows the camera scale does not change between building and running.
+1. The fill meter, timer and result card are `data-hud-obstacle` leaves in fixed slots, the scale legend is shown, and the level's portrait frame comes from a separate puzzle bounds registry with its own fill test.
+1. The 25 scenes behave exactly as before: 25/25 fingerprints unchanged, `just web-player-smoke` and the existing hash, portrait-bounds, HUD safe-frame and README plan coverage tests pass without edits, and no level appears in `SCENE_IDS` or the scene sidebar.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 39: Place-then-Play Tools and Stars
+
+**Goal**: Players can solve a level by placing a limited set of fixed-size tools while building, pressing Play and earning up to three stars.
+**Depends on**: Phase 38
+**Requirements**: TOOL-01, TOOL-02, TOOL-03, TOOL-04, TOOL-06, TOOL-07, STAR-01, STAR-02
+**Success Criteria** (what must be TRUE):
+
+1. Player sees a per-level tool tray with fixed-size tools and remaining counts. With mouse or touch, they can tap to place, drag, rotate in 15° steps and remove tools using targets of at least 44 px, and they can do the same from the keyboard (arrows, R, Delete, Space).
+1. Placements that overlap walls, the cup, water or other tools, or that leave the build area, are highlighted as invalid and Play stays disabled. The Rust validator rejects the same placements.
+1. Play runs the level. Stop/Reset returns to building with placements kept and replays to the same outcome, and Clear removes all tools. Placing, removing, re-placing and resetting three times gives the same level fingerprint as a single clean placement.
+1. Player sees the ★ Win, ★ Brim and ★ Thrifty criteria before playing. A winning run awards stars, and the best result per star is kept across runs.
+1. Fast-forward at 2× and 4× gives the same outcome step and fill as 1×, a synthetic-clock e2e places a tool and wins (including a touch project), and 25/25 scene fingerprints are unchanged.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 40: Timed Valve and Teaching Levels
+
+**Goal**: Players can work through 5–8 teaching levels, each introducing one idea, and every level is proven solvable by automated tests.
+**Depends on**: Phase 39
+**Requirements**: TOOL-05, LEVEL-01, LEVEL-02, LEVEL-03, LEVEL-04
+**Success Criteria** (what must be TRUE):
+
+1. Player can place a timed valve and set its opening time while building. It opens at that simulation time with no input during the run, and the same opening time always gives the same outcome.
+1. Player can play 5–8 levels, each with a one-line caption introducing one idea from plain water, viscous liquid, powder, jelly pad, buoyancy, timed valve and a finale combining earlier ideas. In the jelly pad level, the pad deflects water and its particles never count toward the fill.
+1. For every level, tests show that a reference solution earning all three stars wins with margin, a run with no tools loses, and small grid nudges of the solution mostly still win. At least one solution replays to the same result in the browser as natively.
+1. The first level shows a placement hint that the player can dismiss and that does not return after dismissal.
+1. Each level has a portrait frame that fills a phone canvas (about 390 by 844 CSS pixels) and stays within its particle budget, and 25/25 scene fingerprints are unchanged.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 41: Level Select and Progress
+
+**Goal**: Players can browse the levels from a Puzzles section and keep their stars, unlocks and last placements across visits in this browser.
+**Depends on**: Phase 40
+**Requirements**: PUZ-01, PROG-01, PROG-02, PROG-03, PROG-04
+**Success Criteria** (what must be TRUE):
+
+1. A Puzzles link in site navigation opens `#/puzzles`, a level grid showing each level's title, idea, stars and lock state.
+1. Stars and solved levels persist across reloads, and a later worse run never lowers a saved star.
+1. Levels unlock in order as earlier ones are solved, a direct link opens any level even when locked, and Next on the result card goes to the next level.
+1. When storage is unavailable (a throwing getter or `setItem`, corrupt JSON, or a future version), every level is unlocked, the game stays fully playable, and a note says progress won't be saved.
+1. Reopening a level restores the player's last placements, and saved placements are discarded when the level has changed.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 42: Opt-in Sound
+
+**Goal**: Players who turn sound on hear the puzzle: splashes, impacts, plinks that rise as the cup fills, and a win chime.
+**Depends on**: Phase 40 (real levels to tune against)
+**Requirements**: SOUND-01, SOUND-02, SOUND-03
+**Success Criteria** (what must be TRUE):
+
+1. Sound is off by default, and no audio starts until the player turns it on. The toggle is remembered across visits.
+1. With sound on, the player hears splash and impact sounds, plinks that rise in pitch as the cup fills, and a win chime, with a cap on simultaneous sounds.
+1. Sound pauses when the tab is hidden or the player leaves the puzzle, and a hint mentions the phone silent switch.
+1. The impact data the bridge reports for sound does not change the simulation: 25/25 scene fingerprints are unchanged, and puzzle outcomes are the same with sound on and off.
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 43: GPU Water Render Mode
+
+**Goal**: Players can view water with refraction, highlights and foam in scenes and puzzles, with fallbacks that never leave a blank canvas.
+**Depends on**: Phase 38 (puzzle player); runs last so it can slip without blocking the game
+**Requirements**: WATER-01, WATER-02, WATER-03
+**Success Criteria** (what must be TRUE):
+
+1. Player can choose a "Water" render mode that shows refraction, highlights and foam on fast-moving water, in scenes and in puzzles, with the cup, meter and tool overlays drawn on top.
+1. When the device cannot run the mode, the view falls back to shaded blob and then canvas. When the WebGL context is lost, it falls back and then recovers when the context is restored.
+1. Exports keep their existing styles while Water mode is selected.
+1. The particle speed data used for foam is produced only while Water mode is active: 25/25 scene fingerprints are unchanged, and puzzle outcomes are the same in every render mode.
+
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
-The shelved 27-phase v1.4 plan is preserved in git history (commit `011e80e`) and on branch `wip/v1.4-phase34-harness`.
+**Execution order:** 37 → 38 → 39 → 40 → 41 → 42 → 43. The shelved 27-phase v1.4 plan is preserved in git history (commit `011e80e`) and on branch `wip/v1.4-phase34-harness`.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |
@@ -94,5 +224,12 @@ The shelved 27-phase v1.4 plan is preserved in git history (commit `011e80e`) an
 | 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
+| 37. Puzzle Core in the Bridge | v1.5 | 0/TBD | Not started | - |
+| 38. Puzzle Route and Player Shell | v1.5 | 0/TBD | Not started | - |
+| 39. Place-then-Play Tools and Stars | v1.5 | 0/TBD | Not started | - |
+| 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
+| 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
+| 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
+| 43. GPU Water Render Mode | v1.5 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

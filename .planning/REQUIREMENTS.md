@@ -99,13 +99,46 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
+| GOAL-01 | Phase 38 | Pending |
+| GOAL-02 | Phase 37 | Pending |
+| GOAL-03 | Phase 38 | Pending |
+| GOAL-04 | Phase 37 | Pending |
+| TOOL-01 | Phase 39 | Pending |
+| TOOL-02 | Phase 39 | Pending |
+| TOOL-03 | Phase 39 | Pending |
+| TOOL-04 | Phase 39 | Pending |
+| TOOL-05 | Phase 40 | Pending |
+| TOOL-06 | Phase 39 | Pending |
+| TOOL-07 | Phase 39 | Pending |
+| STAR-01 | Phase 39 | Pending |
+| STAR-02 | Phase 39 | Pending |
+| LEVEL-01 | Phase 40 | Pending |
+| LEVEL-02 | Phase 40 | Pending |
+| LEVEL-03 | Phase 40 | Pending |
+| LEVEL-04 | Phase 40 | Pending |
+| PUZ-01 | Phase 41 | Pending |
+| PUZ-02 | Phase 38 | Pending |
+| PUZ-03 | Phase 38 | Pending |
+| PUZ-04 | Phase 38 | Pending |
+| PUZ-05 | Phase 38 | Pending |
+| PUZ-06 | Phase 38 | Pending |
+| PROG-01 | Phase 41 | Pending |
+| PROG-02 | Phase 41 | Pending |
+| PROG-03 | Phase 41 | Pending |
+| PROG-04 | Phase 41 | Pending |
+| SOUND-01 | Phase 42 | Pending |
+| SOUND-02 | Phase 42 | Pending |
+| SOUND-03 | Phase 42 | Pending |
+| WATER-01 | Phase 43 | Pending |
+| WATER-02 | Phase 43 | Pending |
+| WATER-03 | Phase 43 | Pending |
 
 **Coverage:**
 
 - v1.5 requirements: 33 total
-- Mapped to phases: 0
-- Unmapped: 33
+- Mapped to phases: 33
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-10-11*
-*Last updated: 2026-10-11 after initial definition*
+*Last updated: 2026-10-11 after v1.5 roadmap creation (Phases 37–43)*
