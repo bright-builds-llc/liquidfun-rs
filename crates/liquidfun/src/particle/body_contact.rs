@@ -11,6 +11,8 @@ use super::contact_scan::ContactProxy;
 use super::proxy::visit_sorted_tag_indices_in_aabb;
 
 #[cfg(test)]
+mod chain_edge_tests;
+#[cfg(test)]
 mod tests;
 
 /// Fewer visited rows than this are sorted; more are ordered by a bitset walk.
@@ -218,6 +220,14 @@ pub(crate) fn generate(
             let child = ChildIndex::new(child, source.shape.child_count())
                 .expect("enumerated shape child remains valid");
             let maybe_aabb = expanded_fixture_aabb(source, child, diameter);
+            // Built once per child: ChainShape::distance_to_point is exactly
+            // child_edge(child)?.distance_to_point(..), so this keeps the same
+            // float operations. A failed build falls back to the per-row call,
+            // which reports the original error.
+            let maybe_child_edge = match &source.shape {
+                Shape::Chain(chain) => chain.child_edge(child).ok(),
+                _ => None,
+            };
             let indexed = if let (Some(proxies), Some(aabb)) = (maybe_proxies, maybe_aabb) {
                 collect_candidate_rows(proxies, aabb, diameter, &mut candidate_rows, &mut row_marks)
             } else {
@@ -237,10 +247,13 @@ pub(crate) fn generate(
                 {
                     continue;
                 }
-                let distance = source
-                    .shape
-                    .distance_to_point(source.transform, position, child)
-                    .expect("world-owned checked shapes and transforms remain queryable");
+                let distance = match &maybe_child_edge {
+                    Some(edge) => edge.distance_to_point(source.transform, position),
+                    None => source
+                        .shape
+                        .distance_to_point(source.transform, position, child),
+                }
+                .expect("world-owned checked shapes and transforms remain queryable");
                 if distance.distance() >= diameter {
                     continue;
                 }

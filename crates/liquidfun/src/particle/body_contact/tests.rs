@@ -7,7 +7,7 @@ use crate::particle::storage::{ParticleInput, ParticleStorage};
 
 use super::*;
 
-fn storage(positions: &[Vec2], diameter: f32) -> ParticleStorage {
+pub(super) fn storage(positions: &[Vec2], diameter: f32) -> ParticleStorage {
     let world = WorldKey::fresh().expect("test world");
     let system = ParticleSystemId::from_identity(Identity::new(world, 0, 0));
     let capacity = positions.len().max(8);
@@ -332,7 +332,7 @@ fn storage_equality_ignores_retained_proxy_order() {
     assert!(retained == plain);
 }
 
-fn legacy(
+pub(super) fn legacy(
     view: &ParticleSystemView<'_>,
     sources: &[FixtureContactSource],
     previous: &[ParticleBodyContact],

@@ -1,7 +1,6 @@
 //! Reusable allocation ownership, separate from authoritative step backups.
 
-use super::CcdFixtureRecord;
-use crate::collision::{Aabb, ChildIndex};
+use super::{CcdChild, CcdFixtureRecord};
 use crate::particle::body_contact::FixtureContactSource;
 use crate::particle::solver::boundary::{BoundaryBuffers, FilteredCollisionHit};
 
@@ -15,7 +14,7 @@ pub(in crate::world) struct ParticleStepScratch {
 #[derive(Default)]
 pub(super) struct CollisionBuffers {
     pub(super) fixtures: Vec<CcdFixtureRecord>,
-    pub(super) child_pool: Vec<Vec<(ChildIndex, Option<Aabb>)>>,
+    pub(super) child_pool: Vec<Vec<CcdChild>>,
     pub(super) hits: Vec<FilteredCollisionHit>,
 }
 

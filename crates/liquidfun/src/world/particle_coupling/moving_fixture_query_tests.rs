@@ -134,10 +134,14 @@ fn record(
         .map(|child| {
             let child = shape.child_index(child).expect("child");
             let expansion = Vec2::new(DIAMETER, DIAMETER);
-            (
-                child,
-                expanded_shape_aabb(&shape, current, child, expansion),
-            )
+            CcdChild {
+                index: child,
+                maybe_aabb: expanded_shape_aabb(&shape, current, child, expansion),
+                maybe_edge: match &shape {
+                    Shape::Chain(chain) => chain.child_edge(child).ok(),
+                    _ => None,
+                },
+            }
         })
         .collect();
     CcdFixtureRecord {
@@ -241,7 +245,7 @@ fn motion(grid: &Grid) -> f32 {
 }
 
 fn pad_for(grid: &Grid, record: &CcdFixtureRecord, child: usize) -> Option<f32> {
-    let aabb = record.children[child].1.expect("child aabb");
+    let aabb = record.children[child].maybe_aabb.expect("child aabb");
     moving_fixture_query_pad(
         aabb,
         motion(grid),
@@ -271,7 +275,7 @@ fn rotating_polygon_filtered_hits_equal_full_scan() {
     let grid = grid(previous, RISE_SPEED);
     let records = [record(&grid, polygon(), previous, current, Vec2::ZERO)];
     let pad = pad_for(&grid, &records[0], 0).expect("pad engages");
-    let aabb = records[0].children[0].1.expect("child aabb");
+    let aabb = records[0].children[0].maybe_aabb.expect("child aabb");
 
     // Act
     let visited = visited_rows(&grid, aabb, pad);
@@ -448,7 +452,7 @@ fn swept_edge_hits_beyond_motion_pad_are_kept() {
     let grid = grid(previous, 0.6);
     let edge = Shape::from(EdgeShape::new(Vec2::new(1.0, 0.0), Vec2::new(2.2, 0.0)).expect("edge"));
     let records = [record(&grid, edge, previous, current, Vec2::ZERO)];
-    let aabb = records[0].children[0].1.expect("child aabb");
+    let aabb = records[0].children[0].maybe_aabb.expect("child aabb");
     let travel = Vec2::new(motion(&grid), motion(&grid));
     let travel_only =
         Aabb::new(aabb.lower_bound() - travel, aabb.upper_bound() + travel).expect("aabb");
@@ -469,4 +473,45 @@ fn swept_edge_hits_beyond_motion_pad_are_kept() {
     assert!(maybe_pad.is_some());
     assert!(full.iter().any(|hit| outside_travel_only(hit.particle)));
     assert_eq!(hit_bits(&filtered), hit_bits(&full));
+}
+
+#[test]
+fn chain_child_edge_records_cast_like_chain_children() {
+    // Arrange
+    let previous = previous_transform();
+    let current = rotated_and_translated(previous, -0.05, Vec2::new(-0.02, 0.01));
+    let grid = grid(previous, RISE_SPEED);
+    let chain = Shape::from(
+        ChainShape::open(
+            &[
+                Vec2::new(0.8, -0.3),
+                Vec2::new(1.2, -0.25),
+                Vec2::new(1.6, -0.35),
+                Vec2::new(2.0, -0.3),
+                Vec2::new(2.4, -0.28),
+            ],
+            None,
+            None,
+        )
+        .expect("chain"),
+    );
+    let with_edges = [record(&grid, chain.clone(), previous, current, Vec2::ZERO)];
+    let mut without_edges = [record(&grid, chain, previous, current, Vec2::ZERO)];
+    for child in &mut without_edges[0].children {
+        child.maybe_edge = None;
+    }
+
+    // Act
+    let edge_hits = full_scan(&grid, &with_edges, 0);
+    let chain_hits = full_scan(&grid, &without_edges, 0);
+
+    // Assert
+    assert!(
+        with_edges[0]
+            .children
+            .iter()
+            .all(|child| child.maybe_edge.is_some())
+    );
+    assert!(!chain_hits.is_empty());
+    assert_eq!(hit_bits(&edge_hits), hit_bits(&chain_hits));
 }
