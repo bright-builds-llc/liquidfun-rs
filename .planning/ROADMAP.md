@@ -104,7 +104,7 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 **Plans**: 8 plans
 
 Plans:
-- [ ] 37-01-PLAN.md — Baseline fingerprints, then the native-vs-wasm determinism spike and shared FNV frame hash (wave 1)
+- [x] 37-01-PLAN.md — Baseline fingerprints, then the native-vs-wasm determinism spike and shared FNV frame hash (wave 1)
 - [ ] 37-02-PLAN.md — TS frame parsing of optional puzzle scalars into maybePuzzle (wave 1)
 - [ ] 37-03-PLAN.md — Pure goal counter, step-latched GoalTracker, LevelId allowlist and PUZZLE_IDS mirror (wave 2)
 - [ ] 37-04-PLAN.md — SessionSource / EscapeLimits refactor with a 25/25 fingerprint proof (wave 2)
@@ -234,7 +234,7 @@ Plans:
 | 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
-| 37. Puzzle Core in the Bridge | v1.5 | 0/TBD | Not started | - |
+| 37. Puzzle Core in the Bridge | v1.5 | 1/8 | In Progress|  |
 | 38. Puzzle Route and Player Shell | v1.5 | 0/TBD | Not started | - |
 | 39. Place-then-Play Tools and Stars | v1.5 | 0/TBD | Not started | - |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |

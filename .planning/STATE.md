@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Phase 37 context gathered
-last_updated: "2026-10-11T23:01:04.213Z"
-last_activity: 2026-10-11 -- Phase 37 planning complete
+stopped_at: Completed 37-01-PLAN.md
+last_updated: "2026-10-11T23:27:54.957Z"
+last_activity: 2026-10-11
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 13
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** v1.5 Puzzle Mode — Phase 37: Puzzle Core in the Bridge
+**Current focus:** Phase 37 — Puzzle Core in the Bridge
 
 ## Current Position
 
-Phase: 37 of 43 (Puzzle Core in the Bridge) — not started
-Plan: —
+Phase: 37 (Puzzle Core in the Bridge) — EXECUTING
+Plan: 2 of 8
 Status: Ready to execute
-Last activity: 2026-10-11 -- Phase 37 planning complete
+Last activity: 2026-10-11
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -75,6 +75,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [v1.5]: Owner decisions: the valve is timed and set while building (no live tapping); the elastic level is a "jelly pad" deflector whose particles never count; stars keep the best per criterion across runs; soft linear locks with deep links always open; storage blocked means all levels unlocked plus a note.
 - [v1.5]: Levels live in their own registry (`LevelId` / `PUZZLE_IDS`), never `SCENE_IDS`. Outcome, timer and stars are decided per fixed step in Rust. No engine change may alter the 25 scene fingerprints; phases touching the bridge or frame contract require 25/25 identical fingerprints.
 - [Phase 36]: 36-03 v1.4 leftovers recorded in REQUIREMENTS.md Left over from v1.4 (presortedness test, A7, world backup clone, emission reallocation, grouped prepare_create, wasm32 bins, support.rs:98 warning, stale web-smoke spec); PERF-10 Complete after survey commit e5640ea88; no v1.4 tag or archive (D-10)
+- [Phase 37]: 37-01 spike (300 steps, base 958d6fad7): release-native == wasm for dam-break and water-wheel, theo-jansen diverges @70; spike_contract exact (release-native vs wasm)
+- [Phase 37]: 37-01: native debug diverges from release (dam-break @91, water-wheel @39, theo-jansen @2); default debug cargo test replay asserts the fallback form; static tools use tau/24 baked vertices, no crates/liquidfun change
 
 ### Pending Todos
 
@@ -145,9 +147,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 36 P01 | 39min | 2 tasks | 2 files |
 | Phase 36 P02 | 15min | 3 tasks | 4 files |
 | Phase 36 P03 | 1min | 1 tasks | 1 files |
+| Phase 37 P01 | 26min | 2 tasks | 9 files |
 
 ## Session Continuity
 
-Last session: 2026-10-11T21:52:06.227Z
-Stopped at: Phase 37 context gathered
-Resume file: .planning/phases/37-puzzle-core-in-the-bridge/37-CONTEXT.md
+Last session: 2026-10-11T23:27:54.945Z
+Stopped at: Completed 37-01-PLAN.md
+Resume file: None
