@@ -166,7 +166,7 @@ fn dam_break_unknown_control_and_action_fail_closed() {
         "Rust/WASM control is not allowlisted"
     );
     assert_eq!(session.particle_count(), 1920);
-    assert_eq!(session.scene_id, SceneId::DamBreak);
+    assert_eq!(session.source, SessionSource::Scene(SceneId::DamBreak));
     assert!(session.presets.is_empty());
 }
 

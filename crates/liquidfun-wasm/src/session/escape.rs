@@ -15,10 +15,47 @@ const GRAVITY_EPSILON_SQUARED: f32 = 1.0e-8;
 /// Fraction of the tag domain kept. The rest is room for one step of motion.
 const PROXY_KEEP_FRACTION: f32 = 0.5;
 
-/// Returns whether `position` is far enough along gravity, far enough away, or
-/// too close to the particle tag wall to keep simulating.
+/// Fall and escape distances, in meters, that bound one session's playfield.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct EscapeLimits {
+    fall: f32,
+    escape: f32,
+}
+
+impl EscapeLimits {
+    /// Shared playfield limits: 12 m along gravity, 48 m sideways or against it.
+    pub(crate) const SHARED: Self = Self {
+        fall: BELOW_GROUND_METERS,
+        escape: ESCAPE_METERS,
+    };
+
+    /// Per-scene limits; only the 50 m wave tank widens them.
+    pub(crate) const fn for_scene(scene: SceneId) -> Self {
+        match scene {
+            SceneId::WaveTank => Self {
+                fall: WAVE_TANK_ESCAPE_METERS,
+                escape: WAVE_TANK_ESCAPE_METERS,
+            },
+            _ => Self::SHARED,
+        }
+    }
+}
+
+/// Returns whether a particle in `scene` has escaped; see [`particle_escaped_within`].
+#[cfg(test)]
 pub(crate) fn particle_has_escaped(
     scene: SceneId,
+    position: Vec2,
+    gravity: Vec2,
+    diameter: f32,
+) -> bool {
+    particle_escaped_within(EscapeLimits::for_scene(scene), position, gravity, diameter)
+}
+
+/// Returns whether `position` is far enough along gravity, far enough away, or
+/// too close to the particle tag wall to keep simulating.
+pub(crate) fn particle_escaped_within(
+    limits: EscapeLimits,
     position: Vec2,
     gravity: Vec2,
     diameter: f32,
@@ -30,10 +67,7 @@ pub(crate) fn particle_has_escaped(
         return true;
     }
 
-    let (fall_limit, escape_limit) = match scene {
-        SceneId::WaveTank => (WAVE_TANK_ESCAPE_METERS, WAVE_TANK_ESCAPE_METERS),
-        _ => (BELOW_GROUND_METERS, ESCAPE_METERS),
-    };
+    let (fall_limit, escape_limit) = (limits.fall, limits.escape);
     let down = fall_direction(gravity);
     let below = position.x * down.x + position.y * down.y;
     if below > fall_limit {
@@ -51,11 +85,11 @@ pub(crate) fn evict_escaped_particles(
     world: &mut World,
     system: ParticleSystemId,
     particle_radius: f32,
-    scene: SceneId,
+    limits: EscapeLimits,
 ) -> Result<(), String> {
     let gravity = world.gravity();
     let diameter = particle_radius * 2.0;
-    let escaped = escaped_particle_ids(world, system, gravity, diameter, scene)?;
+    let escaped = escaped_particle_ids(world, system, gravity, diameter, limits)?;
     for particle in escaped {
         world
             .destroy_particle(particle)
@@ -69,7 +103,7 @@ fn escaped_particle_ids(
     system: ParticleSystemId,
     gravity: Vec2,
     diameter: f32,
-    scene: SceneId,
+    limits: EscapeLimits,
 ) -> Result<Vec<ParticleId>, String> {
     let view = world
         .particle_system_view(system)
@@ -79,7 +113,9 @@ fn escaped_particle_ids(
         .iter()
         .copied()
         .zip(view.positions().iter().copied())
-        .filter(|(_particle, position)| particle_has_escaped(scene, *position, gravity, diameter))
+        .filter(|(_particle, position)| {
+            particle_escaped_within(limits, *position, gravity, diameter)
+        })
         .map(|(particle, _position)| particle)
         .collect())
 }
@@ -100,4 +136,51 @@ fn fall_direction(gravity: Vec2) -> Vec2 {
 
     let inverse_length = 1.0 / length_squared.sqrt();
     Vec2::new(gravity.x * inverse_length, gravity.y * inverse_length)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shared_limits_are_twelve_down_and_forty_eight_away() {
+        // Arrange
+        let expected = EscapeLimits {
+            fall: 12.0,
+            escape: 48.0,
+        };
+
+        // Act
+        let shared = EscapeLimits::SHARED;
+
+        // Assert
+        assert_eq!(shared, expected);
+    }
+
+    #[test]
+    fn wave_tank_widens_both_limits_to_eighty() {
+        // Arrange
+        let expected = EscapeLimits {
+            fall: 80.0,
+            escape: 80.0,
+        };
+
+        // Act
+        let limits = EscapeLimits::for_scene(SceneId::WaveTank);
+
+        // Assert
+        assert_eq!(limits, expected);
+    }
+
+    #[test]
+    fn other_scenes_use_the_shared_limits() {
+        // Arrange
+        let scenes = [SceneId::DamBreak, SceneId::TeslaValve];
+
+        // Act
+        let limits = scenes.map(EscapeLimits::for_scene);
+
+        // Assert
+        assert_eq!(limits, [EscapeLimits::SHARED, EscapeLimits::SHARED]);
+    }
 }

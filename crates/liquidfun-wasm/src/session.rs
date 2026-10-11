@@ -8,7 +8,7 @@ use liquidfun::DiagnosticStepProfile;
 #[cfg(any(test, not(target_arch = "wasm32")))]
 use liquidfun::ParticleSystemSnapshot;
 
-use self::escape::evict_escaped_particles;
+use self::escape::{EscapeLimits, evict_escaped_particles};
 use crate::frame::{FrameData, FrameDiagnostics};
 use crate::scene::gravity_slider::{GRAVITY_CONTROL_NAME, parse_gravity_magnitude};
 use crate::scene::{
@@ -54,6 +54,12 @@ impl SessionError {
     }
 }
 
+/// What a session was built from (D-15). Plan 06 adds `Puzzle(LevelId, Placements)`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum SessionSource {
+    Scene(SceneId),
+}
+
 pub(crate) struct SessionCore {
     world: World,
     particle_system: ParticleSystemId,
@@ -61,8 +67,8 @@ pub(crate) struct SessionCore {
     particle_radius: f32,
     #[cfg_attr(not(test), allow(dead_code))]
     presets: Vec<(String, String)>,
-    #[cfg_attr(not(test), allow(dead_code))]
-    scene_id: SceneId,
+    source: SessionSource,
+    escape_limits: EscapeLimits,
     particle_count: usize,
     step_configuration: StepConfiguration,
     step_limits: StepLimits,
@@ -93,23 +99,33 @@ fn max_particle_speed(velocities: &[Vec2]) -> Result<f32, SessionError> {
 
 impl SessionCore {
     pub(crate) fn create(id: SceneId) -> Result<Self, SessionError> {
-        Self::from_built(id, Vec::new())
+        Self::from_source(SessionSource::Scene(id), Vec::new())
     }
 
-    fn from_built(id: SceneId, presets: Vec<(String, String)>) -> Result<Self, SessionError> {
+    fn from_source(
+        source: SessionSource,
+        presets: Vec<(String, String)>,
+    ) -> Result<Self, SessionError> {
+        let (built, particle_iterations, escape_limits) = match &source {
+            SessionSource::Scene(id) => (
+                build_scene(*id, &presets)?,
+                crate::scene::particle_iterations(*id),
+                EscapeLimits::for_scene(*id),
+            ),
+        };
         let BuiltScene {
             world,
             particle_system,
             particle_radius,
             hooks,
-        } = build_scene(id, &presets)?;
+        } = built;
         let particle_count = world
             .particle_system_snapshot(particle_system)
             .map_err(|_error| SessionError::SceneConstruction)?
             .particle_count();
         let step_configuration = StepConfiguration::new(1.0 / 60.0, 8, 3)
             .map_err(|_error| SessionError::SceneConstruction)?
-            .with_particle_iterations(crate::scene::particle_iterations(id))
+            .with_particle_iterations(particle_iterations)
             .map_err(|_error| SessionError::SceneConstruction)?;
         let authored_gravity = world.gravity();
 
@@ -119,7 +135,8 @@ impl SessionCore {
             hooks,
             particle_radius,
             presets,
-            scene_id: id,
+            source,
+            escape_limits,
             particle_count,
             step_configuration,
             step_limits: StepLimits::default(),
@@ -164,7 +181,7 @@ impl SessionCore {
                 &mut self.world,
                 self.particle_system,
                 self.particle_radius,
-                self.scene_id,
+                self.escape_limits,
             ) {
                 self.last_failure_detail = detail;
                 return Err(SessionError::StepFailed);
@@ -206,7 +223,7 @@ impl SessionCore {
             &mut self.world,
             self.particle_system,
             self.particle_radius,
-            self.scene_id,
+            self.escape_limits,
         )
         .map_err(|detail| {
             self.last_failure_detail = detail;
@@ -241,7 +258,7 @@ impl SessionCore {
                 return Err(SessionError::UnknownControl);
             }
             store_preset(&mut self.presets, name, value);
-            *self = Self::from_built(self.scene_id, self.presets.clone())?;
+            *self = Self::from_source(self.source.clone(), self.presets.clone())?;
             return Ok(true);
         }
 
@@ -252,7 +269,7 @@ impl SessionCore {
             ControlEffect::Live => Ok(false),
             ControlEffect::Recreated => {
                 store_preset(&mut self.presets, name, value);
-                *self = Self::from_built(self.scene_id, self.presets.clone())?;
+                *self = Self::from_source(self.source.clone(), self.presets.clone())?;
                 Ok(true)
             }
         }
