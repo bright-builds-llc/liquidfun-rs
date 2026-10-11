@@ -157,7 +157,11 @@ function functionBody(text: string, name: string): string {
 }
 
 function pathData(body: string): Set<string> {
-  return new Set([...body.matchAll(/d="([^"]+)"/g)].map((match) => match[1]));
+  return new Set(
+    [...body.matchAll(/d="([^"]+)"/g)].flatMap((match) =>
+      match[1] === undefined ? [] : [match[1]],
+    ),
+  );
 }
 
 describe("HUD sliders toggle icon", () => {

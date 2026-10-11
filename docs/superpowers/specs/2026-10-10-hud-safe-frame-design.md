@@ -55,8 +55,9 @@ Out of scope and unchanged:
   washing-machine spinner.
 - Set `aria-expanded` to the card's visibility and `aria-controls` to the
   card's id. The accessible label is "Hide sliders" when shown and
-  "Show sliders" when hidden. The icon is a slider glyph, struck through
-  when hidden.
+  "Show sliders" when hidden. The icon is a panel with a chevron, distinct
+  from the Controls drawer glyph. The chevron points down while the sliders
+  are shown and up while they are hidden.
 - When hidden, remove the card from the DOM rather than hiding it visually,
   so it stops being an obstacle and cannot receive taps.
 - Persist the choice in `web/src/player/hud-sliders-preference.ts`, following

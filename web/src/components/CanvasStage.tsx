@@ -239,7 +239,7 @@ function HudSlidersToggle(props: {
         props.onChange(props.visibility === "shown" ? "hidden" : "shown")
       }
     >
-      <SlidersIcon struck={props.visibility === "hidden"} />
+      <SliderPanelIcon expanded={props.visibility === "shown"} />
     </button>
   );
 }
@@ -385,14 +385,17 @@ function ControlsIcon() {
   );
 }
 
-function SlidersIcon(props: { readonly struck: boolean }) {
+/**
+ * A bottom panel with a chevron: down collapses the slider card, up expands it.
+ * Kept distinct from the Controls drawer glyph.
+ */
+function SliderPanelIcon(props: { readonly expanded: boolean }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 6h6M13 6h8M11 4v4" />
-      <path d="M3 12h12M19 12h2M17 10v4" />
-      <path d="M3 18h2M9 18h12M7 16v4" />
-      <Show when={props.struck}>
-        <path d="M3 3l18 18" />
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 15h18" />
+      <Show when={props.expanded} fallback={<path d="m9 12 3-3 3 3" />}>
+        <path d="m9 9 3 3 3-3" />
       </Show>
     </svg>
   );
