@@ -81,7 +81,7 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 ## Next Milestone
 
-No scope has been chosen. Start with `/gsd-new-milestone`, and continue phase numbering after 36. Candidate follow-ups are the v1.4 leftovers: a presortedness test to recover particles' A2r cost, A7 per-fixture validation, the world backup clone, emission reallocations, the grouped creation load time, the wasm32 native-only bins, a release-only warning, the stale `web-smoke` spec, and the filtered scene-spot summary line.
+No scope has been chosen. Start with `/gsd-new-milestone`, and continue phase numbering after 36. Review the dormant seeds in `.planning/seeds/` when choosing scope: SEED-001 puzzle mode, SEED-002 sandbox editor with shareable links, SEED-003 GPU water render mode, SEED-004 physics-curiosity scenes, SEED-005 sonification and SEED-006 the v1.4 leftovers below. Candidate follow-ups are the v1.4 leftovers: a presortedness test to recover particles' A2r cost, A7 per-fixture validation, the world backup clone, emission reallocations, the grouped creation load time, the wasm32 native-only bins, a release-only warning, the stale `web-smoke` spec, and the filtered scene-spot summary line.
 
 Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims and package publication. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized.
 
