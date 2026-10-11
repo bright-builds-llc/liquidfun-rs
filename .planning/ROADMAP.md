@@ -121,7 +121,12 @@ Plans:
 1. Performance notes in user-facing docs cite only these measured local results.
 1. v1.4 is archived with any leftover ideas recorded as future work.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 36-01-PLAN.md — Fix WR-01: scene-spot stamps record the scene filter and a filter-aware disclaimer (D-07)
+- [ ] 36-02-PLAN.md — Pre-registered gated ABBA of spot-before vs spot-v14-final over all 25 scenes; publish the before/after table, current ranking and doc pointers (D-01 to D-06, D-08)
+- [ ] 36-03-PLAN.md — Record v1.4 leftovers as future work and complete PERF-10 traceability; no tag or archive (D-09, D-10)
 
 ## Progress
 
