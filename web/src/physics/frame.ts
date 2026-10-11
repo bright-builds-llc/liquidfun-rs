@@ -22,7 +22,27 @@ export interface RawProofFrame {
   rigidSegments(): Float32Array;
   rigidCircles(): Float32Array;
   circleLabels(): readonly string[];
+  /** Puzzle scalars (D-17); generated getters return undefined on scene sessions. */
+  goalCount?(): number | undefined;
+  goalTarget?(): number | undefined;
+  goalFull?(): number | undefined;
+  outcome?(): number | undefined;
+  outcomeStep?(): number | undefined;
+  stepLimit?(): number | undefined;
   free(): void;
+}
+
+/** Puzzle outcome latched per fixed step in Rust. */
+export type PuzzleOutcome = "running" | "won" | "lost";
+
+/** Per-step puzzle readout decided in Rust (D-17). Absent on scene frames. */
+export interface PuzzleFrameStatus {
+  readonly goalCount: number;
+  readonly goalTarget: number;
+  readonly goalFull: number;
+  readonly outcome: PuzzleOutcome;
+  readonly maybeOutcomeStep?: number;
+  readonly stepLimit: number;
 }
 
 /** Bounded JavaScript-owned numeric lanes ready for rendering. */
@@ -39,7 +59,10 @@ export interface RenderFrame {
   readonly rigidSegments: Float32Array;
   readonly rigidCircles: Float32Array;
   readonly circleLabels: readonly string[];
+  readonly maybePuzzle?: PuzzleFrameStatus;
 }
+
+const PUZZLE_OUTCOMES: readonly PuzzleOutcome[] = ["running", "won", "lost"];
 
 function invalidFrame(): never {
   throw new Error(INVALID_FRAME_MESSAGE);
@@ -127,6 +150,106 @@ function requirePositiveCircleRadii(circles: Float32Array): void {
   }
 }
 
+function parsePositiveInteger(value: number): number {
+  const parsed = parseNonNegativeInteger(value);
+  if (parsed < 1) {
+    return invalidFrame();
+  }
+
+  return parsed;
+}
+
+function parseOutcomeStep(
+  outcome: PuzzleOutcome,
+  maybeOutcomeStep: number | undefined,
+  stepIndex: number,
+  stepLimit: number,
+): number | undefined {
+  if (outcome === "running") {
+    return maybeOutcomeStep === undefined ? undefined : invalidFrame();
+  }
+
+  if (maybeOutcomeStep === undefined) {
+    return invalidFrame();
+  }
+
+  const outcomeStep = parseNonNegativeInteger(maybeOutcomeStep);
+  if (outcomeStep > stepIndex || outcomeStep > stepLimit) {
+    return invalidFrame();
+  }
+
+  if (outcome === "lost" && outcomeStep !== stepLimit) {
+    return invalidFrame();
+  }
+
+  return outcomeStep;
+}
+
+/**
+ * Parses the optional D-17 puzzle scalars, failing closed on partial or
+ * inconsistent values. Returns undefined for scene frames.
+ */
+function parsePuzzleStatus(
+  rawFrame: RawProofFrame,
+  stepIndex: number,
+  particleCount: number,
+): PuzzleFrameStatus | undefined {
+  const maybeGoalCount = rawFrame.goalCount?.();
+  const maybeGoalTarget = rawFrame.goalTarget?.();
+  const maybeGoalFull = rawFrame.goalFull?.();
+  const maybeOutcome = rawFrame.outcome?.();
+  const maybeOutcomeStep = rawFrame.outcomeStep?.();
+  const maybeStepLimit = rawFrame.stepLimit?.();
+  if (
+    maybeGoalCount === undefined &&
+    maybeGoalTarget === undefined &&
+    maybeGoalFull === undefined &&
+    maybeOutcome === undefined &&
+    maybeOutcomeStep === undefined &&
+    maybeStepLimit === undefined
+  ) {
+    return undefined;
+  }
+
+  if (
+    maybeGoalCount === undefined ||
+    maybeGoalTarget === undefined ||
+    maybeGoalFull === undefined ||
+    maybeOutcome === undefined ||
+    maybeStepLimit === undefined
+  ) {
+    return invalidFrame();
+  }
+
+  const goalCount = parseNonNegativeInteger(maybeGoalCount);
+  const goalTarget = parsePositiveInteger(maybeGoalTarget);
+  const goalFull = parseNonNegativeInteger(maybeGoalFull);
+  const stepLimit = parsePositiveInteger(maybeStepLimit);
+  if (goalFull < goalTarget || goalCount > particleCount) {
+    return invalidFrame();
+  }
+
+  const outcome = PUZZLE_OUTCOMES[parseNonNegativeInteger(maybeOutcome)];
+  if (outcome === undefined) {
+    return invalidFrame();
+  }
+
+  const outcomeStep = parseOutcomeStep(
+    outcome,
+    maybeOutcomeStep,
+    stepIndex,
+    stepLimit,
+  );
+  return {
+    goalCount,
+    goalTarget,
+    goalFull,
+    outcome,
+    ...(outcomeStep === undefined ? {} : { maybeOutcomeStep: outcomeStep }),
+    stepLimit,
+  };
+}
+
 /**
  * Parses one generated frame into bounded renderer-ready copied lanes.
  *
@@ -204,6 +327,7 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
     return invalidFrame();
   }
 
+  const maybePuzzle = parsePuzzleStatus(rawFrame, stepIndex, particleCount);
   return {
     stepIndex,
     particleCount,
@@ -217,5 +341,6 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
     rigidSegments,
     rigidCircles,
     circleLabels,
+    ...(maybePuzzle === undefined ? {} : { maybePuzzle }),
   };
 }
