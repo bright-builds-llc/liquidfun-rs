@@ -478,14 +478,17 @@ fn frame_hash(frame: &ProofFrame) -> u64 {
 | A3 | `first-pour` with static angle-0 geometry will replay bit-identically in release native vs wasm (inferred from 23/25 particle/static scenes) | Summary, Pitfall 2 | The official spike + replay decide; fallback contract (D-03) covers it |
 | A4 | Debug-profile replay of a ~2k-particle, ~700-step level takes ~10–20 s per fixture | Pitfall 10 | Slower CI/local loop; tune particle count/step limit |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What "natively" means in the D-03 contract, given Pitfall 1**
    - Known: release native == wasm in 23/25 scenes; debug native diverges in 12/25.
    - Unclear: whether the owner intended the debug unit test to be the exact native side.
    - Recommendation: record all three comparisons in the spike SUMMARY; apply D-03 "identical" to release-native vs wasm (asserted via `cargo test --release` + `just puzzle-replay-wasm`), and have the default debug unit test assert the fallback form (same outcome, +5% margin, outcome-step tolerance from the debug-vs-release spread measured on `first-pour`). Alternative (not recommended now): `[profile.dev.package.liquidfun] opt-level = 3`, which would change every existing debug test's trajectories.
+   - RESOLVED: see D-22 (exact contract is release-native vs wasm; debug `cargo test` asserts the fallback form; no `[profile]` change).
 2. **Reject `set_gravity` (tilt) for puzzles in Rust now?** D-15 lists controls, gravity presets and pointer input. Tilt is an in-run input (Pitfall 8 of the milestone research). Recommendation: reject `set_gravity` with `UnknownControl` for puzzle sources and make `restore_authored_gravity` an `Ok` no-op for them (Pitfall 4); Phase 38 removes the TS tilt binding.
+   - RESOLVED: see D-23 (puzzles reject `set_gravity` with `UnknownControl`; `restore_authored_gravity` is an `Ok(())` no-op).
 3. **`levelInfo()` shape:** recommend a `#[wasm_bindgen] pub struct PuzzleLevelInfo` with getters (`levelId`, `title`, `targetCount`, `fullCount`, `settleSteps`, `stepLimit`, `cupInterior(): Float32Array [minX,minY,maxX,maxY]`, `buildArea(): Int32Array` in grid units plus `gridMeters()`, `toolKinds(): Uint8Array`, `toolCounts(): Uint32Array`) — one call, keeps `lib.rs` small.
+   - RESOLVED: see D-24 (`levelInfo()` returns a `#[wasm_bindgen] pub struct PuzzleLevelInfo` re-exported from `lib.rs`).
 
 ## Environment Availability
 

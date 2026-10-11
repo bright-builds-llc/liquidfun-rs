@@ -101,19 +101,17 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 1. The native-vs-wasm determinism spike is run as the first task and its result is recorded in the phase summary. A reference-solution harness replays a recorded `(level, placements)` fixture to the same outcome and outcome step natively, and the angle-snapping and fill-margin policy for levels is set from the spike result.
 1. `just playground-scene-spot` reports 25/25 scene fingerprints unchanged, `crates/liquidfun` is untouched, and level ids are checked against a separate Rust allowlist outside `SCENE_IDS`.
 
-**Plans**: 10 plans
+**Plans**: 8 plans
 
 Plans:
 - [ ] 37-01-PLAN.md — Baseline fingerprints, then the native-vs-wasm determinism spike and shared FNV frame hash (wave 1)
-- [ ] 37-02-PLAN.md — TS frame parsing of optional puzzle scalars into maybePuzzle (wave 2)
+- [ ] 37-02-PLAN.md — TS frame parsing of optional puzzle scalars into maybePuzzle (wave 1)
 - [ ] 37-03-PLAN.md — Pure goal counter, step-latched GoalTracker, LevelId allowlist and PUZZLE_IDS mirror (wave 2)
-- [ ] 37-04-PLAN.md — SessionSource / EscapeLimits refactor with a 25/25 fingerprint proof (wave 3)
-- [ ] 37-05-PLAN.md — Plank tool, τ/24 table and fail-closed integer placements (wave 4)
-- [ ] 37-06-PLAN.md — first-pour LevelSpec, generic builder and PuzzleHooks (wave 5)
-- [ ] 37-07-PLAN.md — Puzzle sessions, input rejections and first-pour tuning (wave 6)
-- [ ] 37-08-PLAN.md — newPuzzle, levelInfo and frame puzzle scalars on the wasm surface (wave 7)
-- [ ] 37-09-PLAN.md — Recorded fixtures and native replay harness (wave 8)
-- [ ] 37-10-PLAN.md — Bun wasm replay, just puzzle-replay-wasm and final phase gates (wave 9)
+- [ ] 37-04-PLAN.md — SessionSource / EscapeLimits refactor with a 25/25 fingerprint proof (wave 2)
+- [ ] 37-05-PLAN.md — Plank tool, τ/24 table and integer placements; first-pour LevelSpec, builder and PuzzleHooks (wave 3)
+- [ ] 37-06-PLAN.md — Puzzle sessions, input rejections and first-pour tuning probes (wave 4)
+- [ ] 37-07-PLAN.md — newPuzzle, levelInfo and frame puzzle scalars on the wasm surface (wave 5)
+- [ ] 37-08-PLAN.md — Recorded fixtures, native and Bun wasm replay, and final phase gates (wave 6)
 
 ### Phase 38: Puzzle Route and Player Shell
 
