@@ -37,7 +37,7 @@ Total Plans in Phase: 8
 Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
 Plan: 8 of 8
 **Status:** Ready to plan
-Last activity: 2026-10-11 - Completed quick task 261010-npx: chain-edge hoist kept under amended D-11
+Last activity: 2026-10-11 - Completed quick task 261010-rif: A2 kept under amended D-11
 
 **Progress:** [██████████] 100%
 
@@ -110,6 +110,7 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | 261010-ibo | Retry chain-edge hoist on final Phase 35 engine; both variants reverted under D-11 | 2026-10-10 | complete (reverted) | [261010-ibo](./quick/261010-ibo-retry-phase-35-chain-edge-hoist-a3-and-a/) |
 | 261010-mrp | Calibrate D-11 keep rule with A/A runs; 1 of 3 no-op rounds falsely rejected; proposed floor F = 4% | 2026-10-10 | complete | [261010-mrp](./quick/261010-mrp-calibrate-d-11-keep-rule-with-a-a-runs-o/) |
 | 261010-npx | Amend D-11 with 4% noise floor; fresh A3r2 chain-edge hoist kept (liquid-tumbler -9 to -11%) | 2026-10-11 | complete (kept, 154ace4bf) | [261010-npx](./quick/261010-npx-amend-d-11-with-a-4-percent-noise-floor-/) |
+| 261010-rif | Re-judge A2 bounded insertion sort under amended D-11; kept (liquid-tumbler -5 to -6%, stacked-drip -6 to -11%; particles +7.4%/+2.6% within floor) | 2026-10-11 | complete (kept, edcafebc0) | [261010-rif](./quick/261010-rif-re-judge-a2-bounded-insertion-sort-under/) |
 | fast-261007 | Fix wasm32 particle join bound overflow that capped Drawing near ~1,600 particles (commit 04216676b) | 2026-10-07 | complete | - |
 
 ## Performance Metrics
