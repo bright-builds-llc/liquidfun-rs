@@ -67,7 +67,8 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   "liquid-bubbler": 0.40,
   "stacked-drip": 0.39,
   "washing-machine": 0.40,
-  "tesla-valve": 0.80,
+  // The tight valve frame no longer pads below the drain for HUD chrome.
+  "tesla-valve": 0.75,
 };
 
 function fittedFrameFraction(

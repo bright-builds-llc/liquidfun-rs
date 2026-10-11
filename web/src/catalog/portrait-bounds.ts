@@ -43,14 +43,13 @@ const WALLED_FALLING_BALL = {
 /**
  * Tesla valve portrait frame.
  *
- * The landscape frame is the valve itself. On a phone the flow sliders and
- * transport sit on the bottom of the canvas, so this rectangle adds empty
- * space below the drain and a little above the inlet. The valve then stays
- * clear of that chrome while the frame still fills the width.
+ * The rectangle fits the valve tightly, with a small margin below the drain
+ * and above the inlet. The chrome-aware camera fit keeps it clear of the
+ * flow sliders and transport, so no space is reserved for them here.
  */
 const TESLA_VALVE_PORTRAIT = {
   minX: -1.35,
-  minY: -1.75,
+  minY: -0.2,
   maxX: 1.35,
   maxY: 4.6,
 } as const;
