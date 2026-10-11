@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: milestone
 current_phase: 36
-current_phase_name: re survey and wrap up
-current_plan: Not started
+current_phase_name: Re-survey and Wrap Up
+current_plan: 2
 status: executing
-stopped_at: Phase 36 context gathered
-last_updated: "2026-10-11T02:39:43.484Z"
-last_activity: 2026-10-11 -- Phase 36 planning complete
+stopped_at: Completed 36-01-PLAN.md
+last_updated: "2026-10-11T03:19:34.543Z"
+last_activity: 2026-10-11
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 13
-  completed_plans: 10
-  percent: 77
+  completed_plans: 11
+  percent: 85
 ---
 
 # Project State
@@ -24,22 +24,22 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-06)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 35 — Speed Up the Slowest Scenes
+**Current focus:** Phase 36 — Re-survey and Wrap Up
 
 ## Current Position
 
 Current Phase: 36
-Current Phase Name: re survey and wrap up
+Current Phase Name: Re-survey and Wrap Up
 Total Phases: 3
-Current Plan: Not started
+Current Plan: 2
 Total Plans in Phase: 3
 
-Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
-Plan: 8 of 8
+Phase: 36 (Re-survey and Wrap Up) — EXECUTING
+Plan: 2 of 3
 **Status:** Ready to execute
-Last activity: 2026-10-11 -- Phase 36 planning complete
+Last activity: 2026-10-11
 
-**Progress:** [██████████] 100%
+**Progress:** [█████████░] 85%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -78,6 +78,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 35]: 35-07 A9 kept (f7041fc75): eviction index uses an in-tree deterministic ParticleIdHasher, in-place resequence and bulk BTreeMap builds; tesla-valve -9.1%/-8.1%, fountain and water-wheel about -27%, 25/25 fingerprints
 - [Phase 35]: 35-08 close-out: final HEAD 202075791 has 25/25 fingerprints equal to the phase before; cumulative spot-before vs spot-final ABBA puts all five targets below the before min in both pairs (liquid-tumbler -5.8%/-8.5%, tesla-valve -19.7%/-14.6%, stacked-drip -9.9%/-6.4%, washing-machine -31.8%/-31.7%, particles -5.1%/-7.4%)
 - [Phase 35]: 35-08: A3/A3b stay reverted under D-11; possible host-noise evidence and a retry idea recorded in 35-PROFILES.md Notes for Phase 36
+- [Phase 36]: 36-01 WR-01 fixed (c4252c01b): filtered scene-spot stamps record scene_filter (request order) and full_catalog false with a requested-scenes-only disclaimer; full-catalog stamps keep the original disclaimer and add scene_filter [] and full_catalog true
 
 ### Pending Todos
 
@@ -141,9 +142,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 35 P06 | 478min | 2 tasks | 4 files |
 | Phase 35 P07 | 411min | 2 tasks | 5 files |
 | Phase 35 P08 | 84min | 2 tasks | 3 files |
+| Phase 36 P01 | 39min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-10-11T02:25:56.517Z
-Stopped at: Phase 36 context gathered
-Resume file: .planning/phases/36-re-survey-and-wrap-up/36-CONTEXT.md
+Last session: 2026-10-11T03:19:34.540Z
+Stopped at: Completed 36-01-PLAN.md
+Resume file: None
