@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 37-02-PLAN.md
-last_updated: "2026-10-11T23:30:31.530Z"
+stopped_at: Completed 37-03-PLAN.md
+last_updated: "2026-10-11T23:45:32.224Z"
 last_activity: 2026-10-11
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 2
-  percent: 25
+  completed_plans: 3
+  percent: 38
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 37 (Puzzle Core in the Bridge) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-10-11
 
@@ -78,6 +78,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 37]: 37-01 spike (300 steps, base 958d6fad7): release-native == wasm for dam-break and water-wheel, theo-jansen diverges @70; spike_contract exact (release-native vs wasm)
 - [Phase 37]: 37-01: native debug diverges from release (dam-break @91, water-wheel @39, theo-jansen @2); default debug cargo test replay asserts the fallback form; static tools use tau/24 baked vertices, no crates/liquidfun change
 - [Phase 37]: 37-02: TS parses D-17 puzzle scalars into optional RenderFrame.maybePuzzle, fail closed (all-or-nothing, outcome 0/1/2, outcomeStep iff latched, loss at stepLimit); worker path stays scene-shaped until Phase 38
+- [Phase 37]: 37-03: pure puzzle::goal core (strict GoalRect containment, generic count_in_goal, clamped fill, div_ceil(20) margin) and step-latched GoalTracker (win checked before loss, latch never flips); LevelId/PUZZLE_IDS registry proven disjoint from 25 SCENE_IDS (1b6887a67)
 
 ### Pending Todos
 
@@ -150,9 +151,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 36 P03 | 1min | 1 tasks | 1 files |
 | Phase 37 P01 | 26min | 2 tasks | 9 files |
 | Phase 37 P02 | 2min | 2 tasks | 2 files |
+| Phase 37 P03 | 14min | 3 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-10-11T23:30:31.523Z
-Stopped at: Completed 37-02-PLAN.md
+Last session: 2026-10-11T23:45:32.221Z
+Stopped at: Completed 37-03-PLAN.md
 Resume file: None
