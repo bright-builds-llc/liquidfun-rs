@@ -1,6 +1,7 @@
 ---
 id: SEED-003
-status: dormant
+status: promoted
+promoted_to: v1.5 Puzzle Mode (2026-10-11)
 planted: 2026-10-11
 planted_during: between milestones (v1.4 archived 2026-10-11)
 trigger_when: The next milestone touches rendering, visual polish, or README and demo presentation
