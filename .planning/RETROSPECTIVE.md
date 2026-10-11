@@ -151,6 +151,46 @@ Twelve missing JavaScript LiquidFun testbed scenes in the existing playground, t
 - Sessions: discuss, plan, execute, and audit across phases 26–33.
 - Notable: 38 plans in eight days, larger than v1.2 and close to v1.1.
 
+## Milestone: v1.4 — Scenario Performance
+
+**Shipped:** 2026-10-11
+**Phases:** 3 | **Plans:** 13, plus 4 follow-up quick tasks
+
+### What Was Built
+
+- A native survey of all 25 catalog scenes, with an end-state fingerprint and a `--scene` filter.
+- Seven profile-guided engine fixes, all bit-identical in behavior.
+- A whole-catalog before/after survey: 24 of 25 scenes faster, none slower.
+
+### What Worked
+
+- After the 27-phase harness plan was shelved, the simpler plan (survey, then targeted fixes, then a re-survey) delivered real speedups.
+- The fingerprints let every fix prove bit-identical behavior cheaply.
+- Interleaved ABBA pairs from saved binaries, a quiet-host gate and pre-registered decisions kept keep/revert calls honest on a shared machine.
+- The A/A calibration turned an argument about the keep rule into data.
+
+### What Was Inefficient
+
+- macOS checked every new binary before its first launch. Each check took up to 6 minutes, and the time grew with file size, so each plan took 7–12 hours and full test runs took up to 8 hours. A Developer Tools grant fixed it, but only once it covered the embedded claude-code `claude.app` and Claude was restarted.
+- An uncalibrated regression clause rejected the chain-edge hoist four times, on scenes that never run the changed code.
+- A tiny-binary probe falsely suggested the launch stall was fixed.
+
+### Patterns Established
+
+- Pre-register the protocol and freeze the judge script before timing anything. Write the decision before running any diagnostic.
+- Copy saved binaries with hard links when the source is unchanged, and never time while cargo or rustc runs.
+- Calibrate a noise rule with A/A runs before trusting its rejections.
+
+### Key Lessons
+
+- Measure noise before setting thresholds. With 25 scenes, "above base max in both pairs" fires on chance alone.
+- Test environment fixes with realistic artifacts, such as a 40 MB binary, not toy ones.
+- When a target's own scene regresses inside the noise floor, show the tradeoff to the owner rather than treating it as settled.
+
+### Cost Observations
+
+- Most of the elapsed time was launch-check waits, not work. After the fix, a workspace test run dropped from about 7.8 hours to about 20 minutes.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Archive date | Package/tag |
@@ -159,5 +199,6 @@ Twelve missing JavaScript LiquidFun testbed scenes in the existing playground, t
 | v1.1 Web Playground | 6 | 39 | 2026-09-20 | No |
 | v1.2 Native Performance Closing | 4 | 23 | 2026-09-21 | No |
 | v1.3 Reference Testbed Scenes | 8 | 38 | 2026-09-28 | Tag `v1.3` only |
+| v1.4 Scenario Performance | 3 | 13 | 2026-10-11 | Tag `v1.4` only |
 
-Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. v1.3 filled the missing testbed catalog and added four original scenes. v1.0 through v1.2 withhold release tags. The owner authorized annotated tag `v1.3` as a milestone marker, not crate publication.
+Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. v1.3 filled the missing testbed catalog and added four original scenes. v1.4 made the catalog faster with bit-identical fixes and local before/after evidence. v1.0 through v1.2 withhold release tags. The owner authorized annotated tags `v1.3` and `v1.4` as milestone markers, not crate publication.
