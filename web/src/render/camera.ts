@@ -1,3 +1,5 @@
+import type { ScreenRect } from "./safe-frame";
+
 /** Axis-aligned world rectangle fitted to the canvas. */
 export type WorldBounds = {
   readonly minX: number;
@@ -100,18 +102,45 @@ function parseViewportSize(width: number, height: number): ViewportSize {
   return { width, height };
 }
 
-/** Creates the world projection for a positive finite CSS viewport. */
+function parseFrame(frame: ScreenRect): ScreenRect {
+  const edges = [frame.left, frame.top, frame.right, frame.bottom];
+  if (!edges.every(Number.isFinite)) {
+    throw new Error(INVALID_VIEWPORT_MESSAGE);
+  }
+
+  const availableWidth = frame.right - frame.left - VIEWPORT_INSET * 2;
+  const availableHeight = frame.bottom - frame.top - VIEWPORT_INSET * 2;
+  if (availableWidth <= 0 || availableHeight <= 0) {
+    throw new Error(INVALID_VIEWPORT_MESSAGE);
+  }
+
+  return frame;
+}
+
+/**
+ * Creates the world projection for a positive finite CSS viewport.
+ *
+ * The optional `frame` is the canvas rectangle the world is fitted into; it
+ * defaults to the full viewport. The inset applies inside the frame and the
+ * world centres within it, while `camera.viewport` stays the full canvas.
+ */
 export function createCamera(
   width: number,
   height: number,
   view: CameraView = IDENTITY_CAMERA_VIEW,
   bounds: WorldBounds = WORLD_BOUNDS,
+  frame?: ScreenRect,
 ): Camera {
   const viewport = parseViewportSize(width, height);
+  const fitFrame = parseFrame(
+    frame ?? { left: 0, top: 0, right: viewport.width, bottom: viewport.height },
+  );
+  const frameWidth = fitFrame.right - fitFrame.left;
+  const frameHeight = fitFrame.bottom - fitFrame.top;
   const worldWidth = bounds.maxX - bounds.minX;
   const worldHeight = bounds.maxY - bounds.minY;
-  const availableWidth = viewport.width - VIEWPORT_INSET * 2;
-  const availableHeight = viewport.height - VIEWPORT_INSET * 2;
+  const availableWidth = frameWidth - VIEWPORT_INSET * 2;
+  const availableHeight = frameHeight - VIEWPORT_INSET * 2;
   const fittedScale = Math.min(
     availableWidth / worldWidth,
     availableHeight / worldHeight,
@@ -122,8 +151,19 @@ export function createCamera(
     viewport,
     bounds,
     scale,
-    offsetX: (viewport.width - worldWidth * scale) / 2 + view.panX,
-    offsetY: (viewport.height - worldHeight * scale) / 2 + view.panY,
+    offsetX: fitFrame.left + (frameWidth - worldWidth * scale) / 2 + view.panX,
+    offsetY: fitFrame.top + (frameHeight - worldHeight * scale) / 2 + view.panY,
+  };
+}
+
+/** Projected world rectangle in canvas CSS pixels. */
+export function projectedWorldRect(camera: Camera): ScreenRect {
+  const { bounds, scale } = camera;
+  return {
+    left: camera.offsetX,
+    top: camera.offsetY,
+    right: camera.offsetX + (bounds.maxX - bounds.minX) * scale,
+    bottom: camera.offsetY + (bounds.maxY - bounds.minY) * scale,
   };
 }
 

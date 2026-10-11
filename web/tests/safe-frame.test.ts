@@ -80,19 +80,17 @@ describe("safeFrame", () => {
   it("returns the same frame for every obstacle order", () => {
     // Arrange
     const viewport = { width: 390, height: 844 };
-    const obstacles = [
-      rect(8, 8, 52, 52),
-      rect(60, 8, 220, 40),
-      rect(338, 8, 382, 104),
-      rect(12, 460, 378, 750),
-      rect(8, 792, 140, 836),
-      rect(190, 760, 382, 836),
-    ];
+    const menu = rect(8, 8, 52, 52);
+    const title = rect(60, 8, 220, 40);
+    const corner = rect(338, 8, 382, 104);
+    const card = rect(12, 460, 378, 750);
+    const transport = rect(8, 792, 140, 836);
+    const trailing = rect(190, 760, 382, 836);
     const orders = [
-      obstacles,
-      [...obstacles].reverse(),
-      [obstacles[3], obstacles[0], obstacles[5], obstacles[1], obstacles[4], obstacles[2]],
-      [obstacles[2], obstacles[4], obstacles[1], obstacles[5], obstacles[0], obstacles[3]],
+      [menu, title, corner, card, transport, trailing],
+      [trailing, transport, card, corner, title, menu],
+      [card, menu, trailing, title, transport, corner],
+      [corner, transport, title, trailing, menu, card],
     ];
 
     // Act

@@ -22,6 +22,7 @@ import { maybeReadySceneId } from "./runtime";
 import { prefersReducedMotion, isUsableViewport } from "./viewport";
 import { maybeObservedFrame, type PlayerView } from "./view";
 import { resizeCanvasBackingStore } from "../render/canvas";
+import type { ScreenRect } from "../render/safe-frame";
 import {
   IDENTITY_CAMERA_VIEW,
   WORLD_BOUNDS,
@@ -43,6 +44,8 @@ export type FrameClock = {
   maybeCamera: Camera | undefined;
   cameraView: CameraView;
   worldBounds: WorldBounds;
+  /** Canvas-space HUD chrome boxes; empty in the classic layout. */
+  hudObstacles: readonly ScreenRect[];
 };
 
 export type FrameLoopDeps = {
@@ -78,6 +81,7 @@ export function createFrameClock(): FrameClock {
     maybeCamera: undefined,
     cameraView: IDENTITY_CAMERA_VIEW,
     worldBounds: WORLD_BOUNDS,
+    hudObstacles: [],
   };
 }
 

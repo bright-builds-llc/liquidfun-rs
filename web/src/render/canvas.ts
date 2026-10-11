@@ -10,6 +10,7 @@ import {
   projectRadius,
 } from "./camera";
 import { paintContour } from "./contour";
+import type { ScreenRect } from "./safe-frame";
 import { paintMetaball } from "./metaball";
 import {
   rigidRenderMode,
@@ -83,8 +84,9 @@ export function resizeCanvasBackingStore(
   devicePixelRatio: number,
   view: CameraView = IDENTITY_CAMERA_VIEW,
   bounds: WorldBounds = WORLD_BOUNDS,
+  frame?: ScreenRect,
 ): Camera {
-  const camera = createCamera(cssWidth, cssHeight, view, bounds);
+  const camera = createCamera(cssWidth, cssHeight, view, bounds, frame);
   const pixelRatio = cappedDevicePixelRatio(devicePixelRatio);
 
   canvas.width = Math.round(cssWidth * pixelRatio);
