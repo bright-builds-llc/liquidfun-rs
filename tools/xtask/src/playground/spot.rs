@@ -1,4 +1,4 @@
-//! Persist the native all-catalog playground scene survey into a new evidence stamp.
+//! Persist the native playground scene survey (full catalog, or the `--scene` filter) into a new evidence stamp.
 
 use std::collections::BTreeSet;
 use std::env;
@@ -22,7 +22,8 @@ const SPOT_FILE_NAME: &str = "scene-spot.json";
 const REQUIRED_KIND: &str = "native_scene_spot";
 /// Compile-time catalog copy; the CLI fixture repository has no `web/` tree.
 const CATALOG_SCENES_TS: &str = include_str!("../../../../web/src/catalog/scenes.ts");
-const DISCLAIMER: &str = "Unreviewed local survey of every playground catalog scene. Not a C++ pair, not Phase 12, and not the Dam Break 3× number.";
+const FULL_DISCLAIMER: &str = "Unreviewed local survey of every playground catalog scene. Not a C++ pair, not Phase 12, and not the Dam Break 3× number.";
+const FILTERED_DISCLAIMER: &str = "Unreviewed local survey of the requested playground catalog scenes only (see scene_filter). Not a C++ pair, not Phase 12, and not the Dam Break 3× number.";
 const INTERACTION_LABELS: [&str; 2] = ["default", "scripted"];
 const SPREAD_FIELDS: [&str; 3] = ["median_ms_per_step", "min_ms_per_step", "max_ms_per_step"];
 const FINGERPRINT_DIGITS: usize = 16;
@@ -40,11 +41,12 @@ pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     let scenes = parse_scene_samples(&output)?;
     validate_scene_samples(&scenes, &expected)?;
     let ranked = rank_scene_samples(&scenes)?;
-    let report = assemble_report(&scenes, &spot_args, &repository_root)?;
+    let disclaimer = disclaimer_for(&spot_args.scenes);
+    let report = assemble_report(&scenes, &spot_args, disclaimer, &repository_root)?;
     let unix_seconds = stamp_unix_seconds()?;
     let stamp_dir = stamp::mint_exclusive_stamp(&repository_root, unix_seconds)?;
     write_spot_json(&stamp_dir, &report)?;
-    let summary = render_summary(&stamp_dir, &report, &ranked);
+    let summary = render_summary(&stamp_dir, &report, disclaimer, &ranked);
     print!("{summary}");
     eprintln!("wrote {}", stamp_dir.join(SPOT_FILE_NAME).display());
     Ok(())
@@ -206,16 +208,28 @@ fn is_fingerprint(value: &str) -> bool {
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
+/// An empty filter means the full catalog.
+fn disclaimer_for(scene_filter: &[String]) -> &'static str {
+    if scene_filter.is_empty() {
+        FULL_DISCLAIMER
+    } else {
+        FILTERED_DISCLAIMER
+    }
+}
+
 fn assemble_report(
     scenes: &[serde_json::Value],
     spot_args: &SpotArgs,
+    disclaimer: &str,
     repository_root: &Path,
 ) -> Result<serde_json::Value, PlaygroundError> {
     let identity = host_identity(repository_root);
     Ok(serde_json::json!({
         "kind": REQUIRED_KIND,
         "not_timing_authority": true,
-        "disclaimer": DISCLAIMER,
+        "disclaimer": disclaimer,
+        "scene_filter": spot_args.scenes,
+        "full_catalog": spot_args.scenes.is_empty(),
         "git_head": identity.git_head,
         "os": identity.os,
         "arch": identity.arch,
@@ -251,7 +265,12 @@ fn write_spot_json(stamp_dir: &Path, report: &serde_json::Value) -> Result<(), P
     })
 }
 
-fn render_summary(stamp_dir: &Path, report: &serde_json::Value, ranked: &[RankedScene]) -> String {
+fn render_summary(
+    stamp_dir: &Path,
+    report: &serde_json::Value,
+    disclaimer: &str,
+    ranked: &[RankedScene],
+) -> String {
     let stamp_name = stamp_dir
         .file_name()
         .and_then(|name| name.to_str())
@@ -278,7 +297,7 @@ fn render_summary(stamp_dir: &Path, report: &serde_json::Value, ranked: &[Ranked
             "- runs: `{runs}`\n",
             "- artifact: `{file}`\n"
         ),
-        disclaimer = DISCLAIMER,
+        disclaimer = disclaimer,
         table = render_ranked_table(ranked),
         stamp = stamp_name,
         count = scene_count,
@@ -368,7 +387,8 @@ mod tests {
     use std::collections::BTreeSet;
 
     use super::{
-        CATALOG_SCENES_TS, catalog_scene_ids, extract_json_object, validate_scene_samples,
+        CATALOG_SCENES_TS, FILTERED_DISCLAIMER, FULL_DISCLAIMER, catalog_scene_ids, disclaimer_for,
+        extract_json_object, validate_scene_samples,
     };
 
     const CATALOG: [&str; 3] = ["a", "b", "c"];
@@ -526,5 +546,31 @@ mod tests {
             // Assert
             assert!(result.is_err(), "{fingerprint} should be rejected");
         }
+    }
+
+    #[test]
+    fn disclaimer_for_full_catalog_keeps_the_original_text() {
+        // Arrange
+        let original = "Unreviewed local survey of every playground catalog scene. Not a C++ pair, not Phase 12, and not the Dam Break 3× number.";
+
+        // Act
+        let disclaimer = disclaimer_for(&[]);
+
+        // Assert
+        assert_eq!(disclaimer, FULL_DISCLAIMER);
+        assert_eq!(FULL_DISCLAIMER, original);
+    }
+
+    #[test]
+    fn disclaimer_for_filtered_run_names_only_requested_scenes() {
+        // Arrange
+        let scene_filter = ["liquid-tumbler".to_owned()];
+
+        // Act
+        let disclaimer = disclaimer_for(&scene_filter);
+
+        // Assert
+        assert_eq!(disclaimer, FILTERED_DISCLAIMER);
+        assert!(!disclaimer.contains("every playground catalog scene"));
     }
 }

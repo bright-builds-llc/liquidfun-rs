@@ -85,6 +85,13 @@ fn scene_spot_persists_native_scene_spot_without_pair() -> TestResult {
         "stdout: {summary}"
     );
     assert!(!fixture.pair_json(FIRST_STAMP).is_file());
+    assert_eq!(report["full_catalog"].as_bool(), Some(true));
+    assert_eq!(report["scene_filter"], serde_json::json!([]));
+    assert_eq!(
+        report["disclaimer"],
+        "Unreviewed local survey of every playground catalog scene. Not a C++ pair, not Phase 12, and not the Dam Break 3× number."
+    );
+    assert!(summary.contains("every playground catalog scene"));
     fixture.cleanup()?;
     Ok(())
 }
@@ -139,7 +146,25 @@ fn scene_spot_filters_requested_scenes() -> TestResult {
             .is_some_and(|hex| hex.len() == 16)),
         "every scene should carry a 16-digit fingerprint"
     );
-    assert!(stdout(&output).contains("| Rank | Scene | Median ms/step |"));
+    let summary = stdout(&output);
+    assert!(summary.contains("| Rank | Scene | Median ms/step |"));
+    assert_eq!(report["full_catalog"].as_bool(), Some(false));
+    assert_eq!(
+        report["scene_filter"],
+        serde_json::json!(["tesla-valve", "liquid-tumbler"])
+    );
+    assert!(
+        report["disclaimer"]
+            .as_str()
+            .is_some_and(|text| text.contains("requested playground catalog scenes only")),
+        "disclaimer: {}",
+        report["disclaimer"]
+    );
+    assert!(summary.contains("requested playground catalog scenes only"));
+    assert!(
+        !summary.contains("every playground catalog scene"),
+        "stdout: {summary}"
+    );
     fixture.cleanup()?;
     Ok(())
 }
