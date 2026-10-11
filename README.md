@@ -261,7 +261,7 @@ Capability is not the same as verified parity. The generated
 implementation, differential, platform, and documented-difference evidence.
 Historical Phase 4 through Phase 8 corpora remain bounded evidence inputs, not
 a generalized claim about the complete project. Performance claims likewise
-apply only to immutable reports for named workloads.
+apply only to immutable reports for named workloads. Local playground scene timings on one machine, including a v1.4 before/after table, are in the [playground scene survey](docs/benchmarks/scene-survey.md); they are local observations, not public speed claims.
 
 The optional strict qualification profile for a parity-bearing release requires a frozen full candidate commit and a complete
 reviewed manifest accepted by fail-closed `cargo xtask release audit`. This

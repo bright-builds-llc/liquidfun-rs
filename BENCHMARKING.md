@@ -28,7 +28,9 @@ unreviewed local sample of the in-place particle-contact scan and fixture
 proxy filter; that sample is not a reviewed performance claim and must not be
 copied into `reference/performance/manifest.toml`. See
 [docs/playground-scene-spot-check.md](docs/playground-scene-spot-check.md)
-for unreviewed native scene spot-checks; that local sample is not the Dam
+for unreviewed native scene spot-checks, and
+[docs/benchmarks/scene-survey.md](docs/benchmarks/scene-survey.md) for the
+whole-catalog local survey and the v1.4 before/after table; those local samples are not the Dam
 Break 3× gate and must not be copied into
 `reference/performance/manifest.toml`. Raw `.json.gz`, `dhat-heap.json`,
 and `.trace` files stay gitignored and must not be committed or copied into
