@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 Phase: 37 of 43 (Puzzle Core in the Bridge) — not started
 Plan: —
 Status: Ready to plan
-Last activity: 2026-10-11 — v1.5 roadmap created: 7 phases (37–43), 33/33 requirements mapped
+Last activity: 2026-10-11 - Completed quick task 261011-n6v: fix flaky static-layer test timeout in Pages CI
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -114,6 +114,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | 261010-rif | Re-judge A2 bounded insertion sort under amended D-11; kept (liquid-tumbler -5 to -6%, stacked-drip -6 to -11%; particles +7.4%/+2.6% within floor) | 2026-10-11 | complete (kept, edcafebc0) | [261010-rif](./quick/261010-rif-re-judge-a2-bounded-insertion-sort-under/) |
 | 261010-vzz | HUD safe frame: slider show/hide toggle and chrome-aware camera fit (no fallback cases; Tesla valve phone frame smaller, follow-up noted) | 2026-10-11 | complete (627fe13e3) | [261010-vzz](./quick/261010-vzz-hud-safe-frame-slider-toggle-and-chrome-/) |
 | 261010-wkd | Distinct HUD slider toggle icon (panel chevron) and Tesla valve portrait frame fitted to its walls (+19.9% px/m at 390x844) | 2026-10-11 | complete (6bc85b040) | [261010-wkd](./quick/261010-wkd-distinct-hud-slider-toggle-icon-and-tigh/) |
+| 261011-n6v | Fix flaky Pages CI timeout: static-layer pixel comparisons use a fast mismatch helper instead of deep equality (about 1 s to under 10 ms per test) | 2026-10-11 | complete (4e23b88cb) | [261011-n6v](./quick/261011-n6v-fix-flaky-static-layer-test-timeout-in-p/) |
 | fast-261007 | Fix wasm32 particle join bound overflow that capped Drawing near ~1,600 particles (commit 04216676b) | 2026-10-07 | complete | - |
 
 ## Performance Metrics
