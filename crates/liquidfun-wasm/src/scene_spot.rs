@@ -10,6 +10,8 @@ use crate::session::SessionCore;
 use self::fingerprint::{end_state_fingerprint, fingerprint_hex};
 
 mod fingerprint;
+#[cfg(test)]
+pub(crate) mod frame_hash;
 
 /// Untimed first-contact steps before the measured sample.
 pub const DEFAULT_WARMUP_STEPS: u32 = 60;

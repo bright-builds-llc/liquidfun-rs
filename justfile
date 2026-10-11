@@ -47,6 +47,10 @@ readme-svg:
     bun scripts/web-build.ts wasm
     cd web && bun install --frozen-lockfile && bun run readme-svg
 
+# Phase 37 determinism spike: per-step frame hashes in wasm, native debug and native release.
+puzzle-spike:
+    bash scripts/puzzle-spike.sh
+
 test:
     cargo test --all-features
 
