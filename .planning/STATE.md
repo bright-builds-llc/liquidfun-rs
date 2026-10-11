@@ -37,7 +37,7 @@ Total Plans in Phase: 8
 Phase: 35 (Speed Up the Slowest Scenes) — EXECUTING
 Plan: 8 of 8
 **Status:** Ready to plan
-Last activity: 2026-10-10 - Completed quick task 261010-mrp: D-11 A/A calibration, F = 4% proposed
+Last activity: 2026-10-11 - Completed quick task 261010-npx: chain-edge hoist kept under amended D-11
 
 **Progress:** [██████████] 100%
 
@@ -109,6 +109,7 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | 261002-irz | Five Tesla performance changes with immutable serial benchmark history | 2026-10-02 | complete | [261002-irz](./quick/261002-irz-optimize-tesla-valve-physics-and-worker-/) |
 | 261010-ibo | Retry chain-edge hoist on final Phase 35 engine; both variants reverted under D-11 | 2026-10-10 | complete (reverted) | [261010-ibo](./quick/261010-ibo-retry-phase-35-chain-edge-hoist-a3-and-a/) |
 | 261010-mrp | Calibrate D-11 keep rule with A/A runs; 1 of 3 no-op rounds falsely rejected; proposed floor F = 4% | 2026-10-10 | complete | [261010-mrp](./quick/261010-mrp-calibrate-d-11-keep-rule-with-a-a-runs-o/) |
+| 261010-npx | Amend D-11 with 4% noise floor; fresh A3r2 chain-edge hoist kept (liquid-tumbler -9 to -11%) | 2026-10-11 | complete (kept, 154ace4bf) | [261010-npx](./quick/261010-npx-amend-d-11-with-a-4-percent-noise-floor-/) |
 | fast-261007 | Fix wasm32 particle join bound overflow that capped Drawing near ~1,600 particles (commit 04216676b) | 2026-10-07 | complete | - |
 
 ## Performance Metrics
