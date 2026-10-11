@@ -5,6 +5,7 @@
 use wasm_bindgen::prelude::*;
 
 mod frame;
+mod puzzle;
 mod scene;
 mod session;
 
