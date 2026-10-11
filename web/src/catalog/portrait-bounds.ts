@@ -43,14 +43,18 @@ const WALLED_FALLING_BALL = {
 /**
  * Tesla valve portrait frame.
  *
- * The rectangle fits the valve tightly, with a small margin below the drain
- * and above the inlet. The chrome-aware camera fit keeps it clear of the
- * flow sliders and transport, so no space is reserved for them here.
+ * The rectangle hugs the valve's walls on all sides, derived from the scene
+ * geometry in `crates/liquidfun-wasm/src/scene/tesla_valve/geometry.rs`. The
+ * outer bypass walls reach x = ±0.45 m (centerline ±0.42 plus the 0.03 m wall
+ * half-thickness) in both flow directions; the sides add a 0.09 m margin. The
+ * inlet and outlet ends sit near y = 4.28 and y = 0.02. The chrome-aware
+ * camera fit places the frame clear of the HUD, so no space is reserved for
+ * the stats column, sliders, or transport here.
  */
 const TESLA_VALVE_PORTRAIT = {
-  minX: -1.35,
+  minX: -0.54,
   minY: -0.2,
-  maxX: 1.35,
+  maxX: 0.54,
   maxY: 4.6,
 } as const;
 

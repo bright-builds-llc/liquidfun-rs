@@ -67,9 +67,19 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   "liquid-bubbler": 0.40,
   "stacked-drip": 0.39,
   "washing-machine": 0.40,
-  // The tight valve frame no longer pads below the drain for HUD chrome.
-  "tesla-valve": 0.75,
+  // The valve frame hugs its walls on every side, so height is the binding
+  // fill on a phone (quick 261010-wkd).
+  "tesla-valve": 0.9,
 };
+
+/** Smallest share of the iPhone width the fitted frame should cover. */
+const MIN_WIDTH_FRACTION: Partial<Record<SceneId, number>> = {
+  // The valve is tall and narrow, so height is the binding fill on a phone.
+  // Its side margins were removed to keep it clear of the HUD stats column
+  // (quick 261010-wkd).
+  "tesla-valve": 0.42,
+};
+const DEFAULT_MIN_WIDTH_FRACTION = 0.85;
 
 function fittedFrameFraction(
   id: SceneId,
@@ -116,7 +126,9 @@ describe("portrait scene frames", () => {
 
     // Assert
     for (const fraction of fractions) {
-      expect(fraction.width, fraction.id).toBeGreaterThan(0.85);
+      expect(fraction.width, fraction.id).toBeGreaterThan(
+        MIN_WIDTH_FRACTION[fraction.id] ?? DEFAULT_MIN_WIDTH_FRACTION,
+      );
       expect(fraction.height, fraction.id).toBeGreaterThan(
         MIN_HEIGHT_FRACTION[fraction.id],
       );
@@ -369,6 +381,14 @@ describe("portrait scene frames", () => {
         { x: -0.46, y: 1.044 },
         { x: 0.19, y: 3.865 },
         { x: 0.19, y: 0.435 },
+        // Outermost bypass-arc centerline points, forward then reverse flow.
+        { x: -0.42, y: 2.741 },
+        { x: 0.42, y: 3.591 },
+        { x: -0.42, y: 1.559 },
+        { x: 0.42, y: 0.709 },
+        // Their wall faces, one wall half-thickness further out.
+        { x: -0.45, y: 2.741 },
+        { x: 0.45, y: 3.591 },
       ],
     } as const;
 
