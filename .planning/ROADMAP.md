@@ -2,11 +2,11 @@
 
 ## Overview
 
-v1.4 Scenario Performance (simplified 2026-10-06) makes the playground scenes that actually feel slow faster. A lightweight native timing survey ranks all 25 catalog scenes; the slowest few get profile-guided fixes with simple before/after numbers; a final survey shows the whole-catalog picture. Existing physics, settings, controls and visuals stay unchanged. The original 27-phase per-scene evidence campaign was shelved after its harness phase grew without producing any speedup: its work is preserved on branch `wip/v1.4-phase34-harness` and its ~3.8 GB of evidence outside the repository.
+No milestone is active. v1.4 Scenario Performance was archived on 2026-10-11. Start the next milestone with `/gsd-new-milestone`, and continue phase numbering after 36.
 
 ## Milestones
 
-- [ ] **v1.4 Scenario Performance** — Phases 34–36 (planned 2026-10-03, simplified 2026-10-06). Timing survey, targeted fixes for the slowest scenes, final re-survey. No package or tag authorization.
+- [x] **v1.4 Scenario Performance** — Phases 34–36 (archived 2026-10-11). Whole-catalog timing survey, seven profile-guided fixes with bit-identical behavior, and a before/after survey: 24 of 25 scenes faster and none slower, as local observations. Annotated tag `v1.4`; no crate. ([full roadmap](milestones/v1.4-ROADMAP.md))
 - [x] **v1.3 Reference Testbed Scenes** — Phases 26–33 (archived 2026-09-28). Twelve missing JS testbed scenes, then Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. No crate or tag. ([full roadmap](milestones/v1.3-ROADMAP.md))
 - [x] **v1.2 Native Performance Closing** — Phases 22–25 (archived 2026-09-21). Local Dam Break Medium recorded at ≤ 3× C++; no Phase 12 sealed matrix; no crate or tag. ([full roadmap](milestones/v1.2-ROADMAP.md))
 - [x] **v1.1 Web Playground** — 6 phases / 39 plans complete; archived 2026-09-20 ([full roadmap](milestones/v1.1-ROADMAP.md)). Planning label only; no package or tag released.
@@ -14,9 +14,16 @@ v1.4 Scenario Performance (simplified 2026-10-06) makes the playground scenes th
 
 ## Phases
 
-- [ ] **Phase 34: Scene Timing Survey** — Extend `just playground-scene-spot` to every catalog scene and commit a ranked timing table.
-- [ ] **Phase 35: Speed Up the Slowest Scenes** — Profile and fix the slowest scenes from the survey, one plan per scene.
-- [ ] **Phase 36: Re-survey and Wrap Up** — Rerun the survey on final source, publish before/after, and close v1.4.
+<details>
+<summary>✅ v1.4 Scenario Performance (Phases 34-36) — SHIPPED 2026-10-11</summary>
+
+v1.4 phase directories remain in `.planning/phases/` for stable historical references. Full archived details: [milestones/v1.4-ROADMAP.md](milestones/v1.4-ROADMAP.md).
+
+- [x] Phase 34: Scene Timing Survey (2/2 plans) — completed 2026-10-07
+- [x] Phase 35: Speed Up the Slowest Scenes (8/8 plans) — completed 2026-10-10
+- [x] Phase 36: Re-survey and Wrap Up (3/3 plans) — completed 2026-10-11
+
+</details>
 
 <details>
 <summary>✅ v1.3 Reference Testbed Scenes (Phases 26-33) — SHIPPED 2026-09-28</summary>
@@ -60,77 +67,9 @@ v1.1 phase directories remain in `.planning/phases/` for stable historical refer
 
 </details>
 
-## Phase Details
-
-### Shared acceptance rules
-
-- Keep authored physics and presentation: timestep, iterations, counts, geometry, materials, emission, controls and rendering stay as they are. No lower-quality fast modes.
-- Measure before changing: a kept change needs a profile naming the hot path and a before/after survey result beyond run-to-run noise (median of at least three runs on the same machine). Revert changes without a gain.
-- Keep measurement out of production scene code; the survey drives scenes through the existing `SessionCore` API.
-- Normal local checks (`cargo fmt`, clippy, build, tests, and the web tests a change touches) gate every commit. Numbers are local observations, not public speed claims.
-
-### Phase 34: Scene Timing Survey
-
-**Goal**: Maintainers can rank every playground scene by native simulation cost with one command.
-**Depends on**: Phase 33 (current 25-scene catalog)
-**Requirements**: PERF-07
-**Success Criteria** (what must be TRUE):
-
-1. `just playground-scene-spot` steps every catalog scene, and a test fails when a catalog scene is missing from its list.
-1. The output reports, per scene, median ms/step over repeated runs and the live particle count.
-1. Scenes that are idle by default (for example Drawing or Sparky) get a small scripted interaction so their timing reflects real use; the table says which.
-1. `docs/benchmarks/scene-survey.md` records the ranked table with commit, machine and command.
-
-**Plans**: 2 plans
-
-Plans:
-- [x] 34-01-PLAN.md — Extend the native stepper and xtask driver to every catalog scene with runs, cues, catalog coverage test and ranked table
-- [x] 34-02-PLAN.md — Run the survey on committed source and commit docs/benchmarks/scene-survey.md
-
-### Phase 35: Speed Up the Slowest Scenes
-
-**Goal**: The slowest scenes from the survey run measurably faster with unchanged behavior.
-**Depends on**: Phase 34
-**Requirements**: PERF-08, PERF-09
-**Success Criteria** (what must be TRUE):
-
-1. The top three to five scenes by survey cost (plus any that visibly drop frames in the browser) each have a profile naming their hot path.
-1. Each kept change shows a before/after survey gain beyond noise; unhelpful attempts are reverted and noted.
-1. Existing Rust and web tests pass, and scene behavior, settings and visuals are unchanged.
-
-**Plans**: 8 plans (sequential waves; timing runs must not overlap builds)
-
-Plans:
-- [x] 35-01-PLAN.md — `--scene` filter and bit-exact end-state fingerprint in the survey bin and xtask
-- [x] 35-02-PLAN.md — fresh before run, saved before binary, samply profiles of the five targets, 35-PROFILES.md method and keep rule
-- [x] 35-03-PLAN.md — reuse sorted particle proxy order across iterations (liquid-tumbler, stacked-drip, particles)
-- [x] 35-04-PLAN.md — build chain child edges once per child in body contacts and CCD (liquid-tumbler)
-- [x] 35-05-PLAN.md — per-row AABB tag query and candidate-row bitset (tesla-valve, stacked-drip, liquid-tumbler)
-- [x] 35-06-PLAN.md — conservative spatial query for moving fixtures at iteration 0 (washing-machine)
-- [x] 35-07-PLAN.md — cheaper ungrouped particle creation and lifetime eviction index (tesla-valve)
-- [x] 35-08-PLAN.md — final 25/25 fingerprint check, cumulative A/B, Rust and web checks, phase summary
-
-### Phase 36: Re-survey and Wrap Up
-
-**Goal**: Maintainers can see the before/after picture for the whole catalog.
-**Depends on**: Phase 35
-**Requirements**: PERF-10
-**Success Criteria** (what must be TRUE):
-
-1. The survey reruns on final source, and `docs/benchmarks/scene-survey.md` shows before/after for all 25 scenes.
-1. Performance notes in user-facing docs cite only these measured local results.
-1. v1.4 is archived with any leftover ideas recorded as future work.
-
-**Plans**: 3 plans
-
-Plans:
-- [x] 36-01-PLAN.md — Fix WR-01: scene-spot stamps record the scene filter and a filter-aware disclaimer (D-07)
-- [x] 36-02-PLAN.md — Pre-registered gated ABBA of spot-before vs spot-v14-final over all 25 scenes; publish the before/after table, current ranking and doc pointers (D-01 to D-06, D-08)
-- [x] 36-03-PLAN.md — Record v1.4 leftovers as future work and complete PERF-10 traceability; no tag or archive (D-09, D-10)
-
 ## Progress
 
-**Execution order:** 34 → 35 → 36. The shelved 27-phase plan is preserved in git history (commit `011e80e`) and branch `wip/v1.4-phase34-harness`.
+The shelved 27-phase v1.4 plan is preserved in git history (commit `011e80e`) and on branch `wip/v1.4-phase34-harness`.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |

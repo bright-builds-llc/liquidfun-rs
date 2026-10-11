@@ -7,7 +7,7 @@ current_phase_name: Re-survey and Wrap Up
 current_plan: Not started
 status: completed
 stopped_at: Completed 36-03-PLAN.md
-last_updated: "2026-10-11T03:42:05.885Z"
+last_updated: "2026-10-11T03:43:30.920Z"
 last_activity: 2026-10-11
 progress:
   total_phases: 3
@@ -21,10 +21,10 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-10-06)
+See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 36 — Re-survey and Wrap Up
+**Current focus:** Planning the next milestone (v1.4 archived 2026-10-11)
 
 ## Current Position
 
@@ -34,14 +34,14 @@ Total Phases: 3
 Current Plan: Not started
 Total Plans in Phase: 3
 
-Phase: 36 (Re-survey and Wrap Up) — EXECUTING
+Phase: 36 (Re-survey and Wrap Up) — COMPLETE
 Plan: 3 of 3
-**Status:** Milestone complete
+**Status:** v1.4 milestone complete
 Last activity: 2026-10-11
 
 **Progress:** [██████████] 100%
 
-v1.3 remains archived. This milestone does not authorize package publication or release tags.
+v1.4 is archived, and annotated tag `v1.4` marks the archive, authorized by the owner on 2026-10-11. v1.3 also remains archived. Package publication remains separately authorized.
 
 ## Accumulated Context
 

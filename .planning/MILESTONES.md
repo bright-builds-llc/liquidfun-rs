@@ -1,5 +1,67 @@
 # Project Milestones: liquidfun-rs
 
+## v1.4 Scenario Performance (Archived: 2026-10-11)
+
+**Delivered:** Faster playground scenes with no change in behavior. A native timing survey of all 25 catalog scenes found the slowest ones. Phase 35 kept only profile-guided engine fixes with a gain beyond noise and bit-identical end-state fingerprints. A back-to-back before/after survey shows 24 scenes faster, 1 within noise and none slower, as local observations on one machine. The crate was not published. Annotated tag `v1.4` marks this archive.
+
+**Completed:** 3 phases, 13 plans, 27 tasks, plus 4 follow-up quick tasks (261010-ibo, -mrp, -npx, -rif).
+
+### Accomplishments
+
+- `just playground-scene-spot` times every catalog scene natively, ranks it, and checks coverage against `SCENE_IDS`. Runs accept a repeatable `--scene` filter, and filtered stamps record `scene_filter` and `full_catalog`. Each scene gets an FNV-1a end-state fingerprint as the behavior guard.
+- Seven engine fixes were kept, all bit-identical on 25 scenes:
+  - A1: retained proxy sort order
+  - A2r: bounded insertion sort
+  - A3r2: chain child edge hoist
+  - A5: bitset candidate-row ordering
+  - A6: conservative moving-fixture CCD query
+  - A8: ungrouped creation fast path
+  - A9: lifetime eviction index
+
+  Reverted attempts and their reasons are recorded in `35-PROFILES.md`.
+- The whole-catalog before/after survey, run back to back with the gate and the same binaries, is published in `docs/benchmarks/scene-survey.md`. Largest changes:
+  - fountain −44%
+  - water-wheel −43%
+  - washing-machine −28 to −30%
+  - theo-jansen −27 to −29%
+  - liquid-tumbler −21%
+  - tesla-valve −15 to −20%
+- The keep rule D-11 was calibrated with A/A runs: as written, it rejected 1 of 3 runs where nothing changed. The user then amended it with a 4% noise floor, which let the chain-edge hoist and A2r be kept on fresh runs.
+
+### Scope and known gaps
+
+- All four v1.4 requirements (PERF-07 through PERF-10) are complete.
+- A2r costs particles +7.4% / +2.6% against the A3r2 engine. The user chose to keep it, and particles is still about 5% faster than before Phase 35.
+- No milestone audit was run. Each phase passed its own verification: 34, 35 (13/13) and 36 (15/15).
+- Leftover ideas and pre-existing deferred items are recorded in the archived requirements under "Left over from v1.4". They include:
+  - a presortedness test
+  - A7
+  - the world backup clone
+  - emission reallocations
+  - the grouped creation load time
+  - the wasm32 native-only bins
+  - a release-only warning
+  - the stale `web-smoke` spec
+  - the printed filter line for `--scene` runs
+- The v1.2 ≤ 3× pair remains bound to git `89d34564`. This milestone did not remeasure it.
+- Strict native qualification and crate publication remain separately authorized.
+
+### Statistics and provenance
+
+- Timeline: 2026-10-03 (milestone start) to 2026-10-11, archived 2026-10-11 UTC.
+- Git range: `011e80e` (initialize v1.4) through `ddb1e44` (Phase 36 complete). 87 commits; 94 paths, +14676/−417. Outside `.planning`: 34 paths, +4160/−388.
+- Timing evidence is local and gitignored, in `target/phase35/`. The committed records are `35-PROFILES.md` and `docs/benchmarks/scene-survey.md`.
+
+### Archives
+
+- [Roadmap](milestones/v1.4-ROADMAP.md)
+- [Requirements and outcomes](milestones/v1.4-REQUIREMENTS.md)
+- [Completion state](milestones/v1.4-STATE.md)
+
+**Next:** No new milestone scope has been chosen. Use `/gsd-new-milestone` when ready, and continue phase numbering after 36. The owner authorized annotated tag `v1.4` on 2026-10-11. The tag marks this planning archive and is not a crate publication.
+
+---
+
 ## v1.3 Reference Testbed Scenes (Archived: 2026-09-28)
 
 **Delivered:** The twelve missing JavaScript LiquidFun testbed scenes in the existing SolidJS playground, plus Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. The six earlier scenes stay. The v1.3 label identifies planning history; the crate was not published. Annotated tag `v1.3` marks this archive.

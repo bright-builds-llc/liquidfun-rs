@@ -16,6 +16,8 @@ The owner prioritizes a fun hobby project over production-quality certification.
 
 ## Current State
 
+v1.4 Scenario Performance is archived (2026-10-11): 3 phases, 13 plans and 27 tasks, plus 4 follow-up quick tasks. Annotated tag `v1.4` marks the archive; no crate was published. Seven profile-guided engine fixes were kept, each with bit-identical end-state fingerprints on all 25 scenes. A back-to-back before/after survey on one machine found 24 of 25 catalog scenes faster, 1 within noise and none slower (`docs/benchmarks/scene-survey.md`; local observations, not public speed claims). Leftover ideas are recorded in `milestones/v1.4-REQUIREMENTS.md`. No new milestone is active.
+
 Milestone v1.4 Scenario Performance was initialized on 2026-10-03 and simplified on 2026-10-06 to three phases: a timing survey, targeted fixes for the slowest scenes, and a final re-survey. Existing behavior, settings and visuals stay unchanged, and measured memory increases are allowed. Phase 34 is complete (2026-10-07): `just playground-scene-spot` times all 25 catalog scenes natively (median of 3 fresh runs) and ranks them. `docs/benchmarks/scene-survey.md` records the first table from commit `96a3ac6a6`. Liquid Tumbler leads at about 24.4 ms/step, ahead of Tesla Valve, Stacked Drip, Washing Machine and Particles. These are local observations, not public speed claims. Phase 35 is complete (2026-10-10): profile-guided engine fixes, each kept only with a before/after gain beyond noise and bit-identical end-state fingerprints on all 25 scenes, made the five slowest scenes faster on this machine (Washing Machine about −32%, Tesla Valve −15 to −20%, Stacked Drip −6 to −10%, Liquid Tumbler −6 to −8%, Particles −5 to −7%). Reverted attempts and profiles are recorded in the phase's 35-PROFILES.md. Later quick tasks amended the keep rule with a calibrated 4% noise floor and kept two more fixes (chain-edge hoist and a bounded insertion sort). Phase 36 is complete (2026-10-11): a back-to-back before/after survey of all 25 catalog scenes on one machine shows 24 faster and 1 within noise, with none slower and identical fingerprints, published in `docs/benchmarks/scene-survey.md`. Leftover ideas are recorded under REQUIREMENTS.md future work, and v1.4 is ready to archive.
 
 v1.3 Reference Testbed Scenes is archived (2026-09-28): 8 phases, 38 plans, and 76 tasks. At archive time the playground listed twenty-three ready scenes. That was the twelve missing JavaScript testbed ports, the six earlier scenes, Liquid Tumbler, and four original scenes: Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. Credits for the ports cite the pinned LiquidFun tests. `MAX_ADVANCE_STEPS` stays 4. The audit passed 15/15 requirements. This is not sealed C++ parity or crate publication. Annotated tag `v1.3` marks the planning archive. See `.planning/MILESTONES.md` and `.planning/milestones/v1.3-REQUIREMENTS.md`.
@@ -77,35 +79,25 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 </details>
 
-## Current Milestone: v1.4 Scenario Performance
+## Next Milestone
 
-**Goal:** Make the playground scenes that actually feel slow faster, allowing increased memory use while preserving behavior and fidelity.
+No scope has been chosen. Start with `/gsd-new-milestone`, and continue phase numbering after 36. Candidate follow-ups are the v1.4 leftovers: a presortedness test to recover particles' A2r cost, A7 per-fixture validation, the world backup clone, emission reallocations, the grouped creation load time, the wasm32 native-only bins, a release-only warning, the stale `web-smoke` spec, and the filtered scene-spot summary line.
 
-**Simplified 2026-10-06.** The first v1.4 plan (2026-10-03) gave each of the 25 scenes its own evidence phase behind a shared measurement-harness phase. That harness phase grew to ~150k lines of tooling, intrusive observers in scene code and ~3.8 GB of evidence over three days without producing a speedup, contrary to the hobby scope in PROJECT-SCOPE.md. It is shelved on branch `wip/v1.4-phase34-harness`; its one real finding (a wasm32 overflow in particle group join bounds that capped Drawing near ~1,600 particles) shipped separately.
-
-**Target features:**
-
-- One command times every catalog scene natively and ranks them (extends `just playground-scene-spot`).
-- Profile-guided fixes for the slowest few scenes, each kept only with a measured before/after gain.
-- A final whole-catalog before/after table.
-
-Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims, package publication and release tags. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized by the memory-for-speed priority.
+Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims and package publication. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized.
 
 ## Requirements
 
 ### Active
 
-- [ ] Apply profile-supported fixes to the slowest scenes, prioritizing speed and accepting measured memory increases.
-- [ ] Preserve existing scenario behavior, physical settings, entity counts and visual fidelity.
-- [ ] Publish a final whole-catalog before/after table.
-
-Detailed requirements and phase traceability are in REQUIREMENTS.md and ROADMAP.md for v1.4. PLAY-01, FX-01 and FX-02 remain validated in Phase 29.
+None. The next milestone defines fresh requirements.
 
 ### Validated
 
 - [x] Phase 34 completed PERF-07: `just playground-scene-spot` ranks all 25 catalog scenes by native median ms/step, and a test fails when a catalog scene is missing. The first table is in `docs/benchmarks/scene-survey.md`. Local observations only. Validated in Phase 34: Scene Timing Survey.
 - [x] Phase 35 completed PERF-08 and PERF-09: profile-guided fixes for the five slowest scenes, each kept only with an ABBA before/after gain beyond noise; all 25 scene fingerprints unchanged; Rust workspace and web unit tests pass. Local observations only. Validated in Phase 35: Speed Up the Slowest Scenes.
 - [x] Phase 36 completed PERF-10: whole-catalog before/after table for the final v1.4 source in `docs/benchmarks/scene-survey.md` (24 faster, 1 within noise, 0 slower; local observations only). Validated in Phase 36: Re-survey and Wrap Up.
+
+- ✓ v1.4 Scenario Performance — 4/4 requirements (PERF-07 to PERF-10), 3 phases, 13 plans. A whole-catalog survey, seven bit-identical speed fixes and a before/after table with 24 of 25 scenes faster. Local observations; not a crate release.
 
 - ✓ v1.3 Reference Testbed Scenes — 15/15 requirements, 8 phases, 38 plans, audit passed 2026-09-28. Twenty-three playground scenes, including the twelve missing testbed ports and four original scenes. Not a crate release.
 
@@ -297,6 +289,10 @@ The snapshots below describe their original phases, not current work or next ste
 | Treat v1.2 as a planning label, not a package or git release tag | Archive completion is not publication | Accepted 2026-09-21; same policy as v1.0 and v1.1 |
 | Port the twelve missing JavaScript testbed scenes in the existing player, then four original scenes | Recognizable behavior with honest credits; Fountain, Wave Machine, Water Wheel, and Liquid Timer stay | ✓ Shipped in v1.3; the catalog has 23 ready scenes |
 | Treat v1.3 as a planning label, not a package release | Archive completion is not crate publication | Accepted 2026-09-28. The owner later authorized annotated tag `v1.3` as a milestone marker, not a crates.io release |
+| Simplify v1.4 to a survey plus targeted fixes | The per-scene evidence harness grew without producing speedups | ✓ Good. Accepted 2026-10-06; three phases delivered measurable gains. |
+| Keep only fixes with bit-identical fingerprints and a gain beyond noise (D-11) | Speed without behavior drift | ✓ Good. Seven fixes kept, and several attempts were honestly reverted. |
+| Amend D-11 with a 4% noise floor | A/A calibration showed the original rule rejected 1 of 3 runs where nothing changed | ⚠️ Revisit. Accepted 2026-10-10 by the owner. It let A2r be kept with a particles cost of +7.4% / +2.6%, which the owner accepted. |
+| Treat v1.4 as a planning label with annotated tag `v1.4` | Archive marker, not crate publication | Accepted 2026-10-11 by the owner. |
 | Prioritize scenario simulation/rendering speed over memory compactness in v1.4 | User explicitly accepts increased memory usage to obtain speed | Selected 2026-10-03; gains must be demonstrated on matched workloads |
 | Preserve existing behavior and fidelity while optimizing v1.4 | User selected this policy in milestone questioning | Selected 2026-10-03; no default lower-quality fast modes |
 | Keep all-scene original baselines plus fresh scene-local before/after records | Shared engine/renderer fixes can change later scenes before their own turn | Superseded 2026-10-06 by the simplified survey-and-targeted-fix plan |
@@ -332,4 +328,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-10-11 after Phase 36 Re-survey and Wrap Up. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
+*Last updated: 2026-10-11 after the v1.4 milestone. Strict native certification remains optional. Package publication and release tags remain separately authorized.*
