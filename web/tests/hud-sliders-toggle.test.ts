@@ -145,3 +145,74 @@ describe("HUD sliders toggle chrome", () => {
     expect(measureIndex).toBeGreaterThan(guardIndex);
   });
 });
+
+/** Source of `function name(` up to the next top-level function, or end of file. */
+function functionBody(text: string, name: string): string {
+  const start = text.indexOf(`function ${name}(`);
+  if (start < 0) {
+    return "";
+  }
+  const next = text.indexOf("\nfunction ", start + 1);
+  return text.slice(start, next < 0 ? undefined : next);
+}
+
+function pathData(body: string): Set<string> {
+  return new Set([...body.matchAll(/d="([^"]+)"/g)].map((match) => match[1]));
+}
+
+describe("HUD sliders toggle icon", () => {
+  it("renders the panel chevron icon bound to visibility, not the drawer glyph", () => {
+    // Arrange
+    const canvasStage = source("components/CanvasStage.tsx");
+
+    // Act
+    const toggle = functionBody(canvasStage, "HudSlidersToggle");
+
+    // Assert
+    expect(toggle).toContain(
+      '<SliderPanelIcon expanded={props.visibility === "shown"} />',
+    );
+    expect(toggle).not.toContain("<ControlsIcon");
+    expect(toggle).not.toContain("<SlidersIcon");
+  });
+
+  it("draws a panel whose paths share nothing with the Controls drawer glyph", () => {
+    // Arrange
+    const canvasStage = source("components/CanvasStage.tsx");
+    const panelIcon = functionBody(canvasStage, "SliderPanelIcon");
+    const controlsIcon = functionBody(canvasStage, "ControlsIcon");
+
+    // Act
+    const panelPaths = pathData(panelIcon);
+    const shared = [...pathData(controlsIcon)].filter((d) => panelPaths.has(d));
+
+    // Assert
+    expect(panelIcon).toContain("<rect");
+    expect(panelPaths.size).toBeGreaterThan(0);
+    expect(shared).toEqual([]);
+  });
+
+  it("points the chevron down while expanded and up while collapsed", () => {
+    // Arrange
+    const canvasStage = source("components/CanvasStage.tsx");
+
+    // Act
+    const panelIcon = functionBody(canvasStage, "SliderPanelIcon");
+
+    // Assert
+    expect(panelIcon).toMatch(
+      /<Show\s+when=\{props\.expanded\}\s+fallback=\{<path d="m9 12 3-3 3 3" \/>\}\s*>\s*<path d="m9 9 3 3 3-3" \/>/,
+    );
+  });
+
+  it("removes the old slider glyph", () => {
+    // Arrange
+    const canvasStage = source("components/CanvasStage.tsx");
+
+    // Act
+    const hasSlidersIcon = canvasStage.includes("function SlidersIcon(");
+
+    // Assert
+    expect(hasSlidersIcon).toBe(false);
+  });
+});
