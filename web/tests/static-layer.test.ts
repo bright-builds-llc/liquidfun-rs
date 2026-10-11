@@ -46,6 +46,34 @@ function factory() {
   return create;
 }
 
+/** Summarizes how two RGBA buffers differ without a slow element-wise deep equal. */
+function pixelMismatch(
+  actual: ArrayLike<number>,
+  expected: ArrayLike<number>,
+) {
+  let differingBytes = 0,
+    firstDifferingIndex = -1;
+  const shared = Math.min(actual.length, expected.length);
+  for (let index = 0; index < shared; index++) {
+    if (actual[index] === expected[index]) continue;
+    differingBytes++;
+    if (firstDifferingIndex < 0) firstDifferingIndex = index;
+  }
+  return {
+    actualLength: actual.length,
+    expectedLength: expected.length,
+    differingBytes,
+    firstDifferingIndex,
+  };
+}
+
+const identicalPixels = {
+  actualLength: 640 * 480 * 4,
+  expectedLength: 640 * 480 * 4,
+  differingBytes: 0,
+  firstDifferingIndex: -1,
+};
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("stable wall foreground", () => {
@@ -92,9 +120,9 @@ describe("stable wall foreground", () => {
     );
 
     // Assert
-    expect(cached.context.getImageData(0, 0, 640, 480).data).toEqual(
-      direct.context.getImageData(0, 0, 640, 480).data,
-    );
+    const expected = direct.context.getImageData(0, 0, 640, 480).data;
+    const actual = cached.context.getImageData(0, 0, 640, 480).data;
+    expect(pixelMismatch(actual, expected)).toEqual(identicalPixels);
   });
 
   it("detects camera values changed on the same camera object", () => {
@@ -145,9 +173,9 @@ describe("stable wall foreground", () => {
     );
 
     // Assert
-    expect(cached.context.getImageData(0, 0, 640, 480).data).toEqual(
-      direct.context.getImageData(0, 0, 640, 480).data,
-    );
+    const expected = direct.context.getImageData(0, 0, 640, 480).data;
+    const actual = cached.context.getImageData(0, 0, 640, 480).data;
+    expect(pixelMismatch(actual, expected)).toEqual(identicalPixels);
   });
 
   it("invalidates stroke/mode changes and reset even when the geometry is identical", () => {
@@ -260,13 +288,7 @@ describe("stable wall foreground", () => {
     expect(text.mock.calls.at(-1)?.[0]).toBe("3");
     const expected = direct.context.getImageData(0, 0, 640, 480).data;
     const actual = cached.context.getImageData(0, 0, 640, 480).data;
-    let maxDifference = 0;
-    for (let index = 0; index < expected.length; index++)
-      maxDifference = Math.max(
-        maxDifference,
-        Math.abs(expected[index]! - actual[index]!),
-      );
-    expect(maxDifference).toBe(0);
+    expect(pixelMismatch(actual, expected)).toEqual(identicalPixels);
   });
 
   it("invalidates a lost/restored context and never shares a foreground across surfaces", () => {
@@ -367,13 +389,7 @@ describe("stable wall foreground", () => {
     expect(create).toHaveBeenCalledTimes(40);
     const expected = direct.context.getImageData(0, 0, 640, 480).data;
     const actual = cached.context.getImageData(0, 0, 640, 480).data;
-    let maxDifference = 0;
-    for (let index = 0; index < expected.length; index++)
-      maxDifference = Math.max(
-        maxDifference,
-        Math.abs(expected[index]! - actual[index]!),
-      );
-    expect(maxDifference).toBe(0);
+    expect(pixelMismatch(actual, expected)).toEqual(identicalPixels);
   });
 
   it("keeps moving rigid geometry on the direct path", () => {
@@ -454,8 +470,8 @@ describe("stable wall foreground", () => {
     );
 
     // Assert
-    expect(cached.context.getImageData(0, 0, 640, 480).data).toEqual(
-      direct.context.getImageData(0, 0, 640, 480).data,
-    );
+    const expected = direct.context.getImageData(0, 0, 640, 480).data;
+    const actual = cached.context.getImageData(0, 0, 640, 480).data;
+    expect(pixelMismatch(actual, expected)).toEqual(identicalPixels);
   });
 });
