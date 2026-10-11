@@ -125,7 +125,7 @@ Plans:
 
 Plans:
 - [x] 36-01-PLAN.md — Fix WR-01: scene-spot stamps record the scene filter and a filter-aware disclaimer (D-07)
-- [ ] 36-02-PLAN.md — Pre-registered gated ABBA of spot-before vs spot-v14-final over all 25 scenes; publish the before/after table, current ranking and doc pointers (D-01 to D-06, D-08)
+- [x] 36-02-PLAN.md — Pre-registered gated ABBA of spot-before vs spot-v14-final over all 25 scenes; publish the before/after table, current ranking and doc pointers (D-01 to D-06, D-08)
 - [ ] 36-03-PLAN.md — Record v1.4 leftovers as future work and complete PERF-10 traceability; no tag or archive (D-09, D-10)
 
 ## Progress
@@ -154,6 +154,6 @@ Plans:
 | 33. Stacked drip fidget | v1.3 | 4/4 | Complete   | 2026-09-28 |
 | 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
-| 36. Re-survey and Wrap Up | v1.4 | 1/3 | In Progress|  |
+| 36. Re-survey and Wrap Up | v1.4 | 2/3 | In Progress|  |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
