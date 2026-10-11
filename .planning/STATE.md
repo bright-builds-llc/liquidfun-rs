@@ -6,9 +6,9 @@ current_phase: 36
 current_phase_name: re survey and wrap up
 current_plan: Not started
 status: planning
-stopped_at: Completed 35-08-PLAN.md
-last_updated: "2026-10-10T09:43:42.440Z"
-last_activity: 2026-10-10
+stopped_at: Phase 36 context gathered
+last_updated: "2026-10-11T02:25:56.520Z"
+last_activity: "2026-10-11 - Completed quick task 261010-rif: A2 kept under amended D-11"
 progress:
   total_phases: 3
   completed_phases: 2
@@ -144,6 +144,6 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 
 ## Session Continuity
 
-Last session: 2026-10-10T01:38:14.360Z
-Stopped at: Completed 35-08-PLAN.md
-Resume file: None
+Last session: 2026-10-11T02:25:56.517Z
+Stopped at: Phase 36 context gathered
+Resume file: .planning/phases/36-re-survey-and-wrap-up/36-CONTEXT.md
