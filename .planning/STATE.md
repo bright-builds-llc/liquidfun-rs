@@ -1,14 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.5
-milestone_name: Puzzle Mode
-current_phase: 37
-current_phase_name: "Puzzle Core in the Bridge"
-current_plan: null
-status: ready_to_plan
-stopped_at: v1.5 roadmap created (Phases 37-43)
-last_updated: "2026-10-11T22:00:00.000Z"
-last_activity: 2026-10-11
+milestone_name: milestone
+status: planning
+stopped_at: Phase 37 context gathered
+last_updated: "2026-10-11T21:52:06.231Z"
+last_activity: "2026-10-11 - Completed quick task 261011-n6v: fix flaky static-layer test timeout in Pages CI"
 progress:
   total_phases: 7
   completed_phases: 0
@@ -151,6 +148,6 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 
 ## Session Continuity
 
-Last session: 2026-10-11T22:00:00.000Z
-Stopped at: v1.5 roadmap created; next is `/gsd-plan-phase 37`
-Resume file: None
+Last session: 2026-10-11T21:52:06.227Z
+Stopped at: Phase 37 context gathered
+Resume file: .planning/phases/37-puzzle-core-in-the-bridge/37-CONTEXT.md
