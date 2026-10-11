@@ -133,7 +133,7 @@ fn rebuild_proxies(
     }
 
     if retag_retained_order(positions, inverse_diameter, proxies) {
-        proxies.sort_unstable_by_key(|proxy| (proxy.tag, proxy.row));
+        sort_nearly_sorted(proxies);
         return Ok(());
     }
 
@@ -175,6 +175,30 @@ fn retag_retained_order(
         proxy.tag = tag;
     }
     true
+}
+
+/// Insertion sort for a nearly sorted retained order, bounded to `8 * len`
+/// element moves. When the budget runs out the partly sorted buffer is finished
+/// by a full sort; the total `(tag, row)` key makes both paths give one result.
+fn sort_nearly_sorted(proxies: &mut [ContactProxy]) {
+    let key = |proxy: &ContactProxy| (proxy.tag, proxy.row);
+    let mut budget = proxies.len().saturating_mul(8);
+    for index in 1..proxies.len() {
+        let current = proxies[index];
+        let current_key = key(&current);
+        let mut hole = index;
+        while hole > 0 && key(&proxies[hole - 1]) > current_key {
+            if budget == 0 {
+                proxies[hole] = current;
+                proxies.sort_unstable_by_key(|proxy| (proxy.tag, proxy.row));
+                return;
+            }
+            budget -= 1;
+            proxies[hole] = proxies[hole - 1];
+            hole -= 1;
+        }
+        proxies[hole] = current;
+    }
 }
 
 fn consider_window<F: FnMut(&ParticleContact) -> bool>(
@@ -297,6 +321,26 @@ mod tests {
         let (result, _contacts) = scan(positions, lanes, DIAMETER, &mut proxies);
         result.expect("in-range positions should scan");
         proxies
+    }
+
+    #[test]
+    fn insertion_budget_exhaustion_matches_full_sort() {
+        // Arrange
+        let mut reversed: Vec<ContactProxy> = (0..1_000_u32)
+            .rev()
+            .map(|tag| ContactProxy {
+                tag: tag / 3,
+                row: usize::try_from(tag).expect("test rows fit in usize"),
+            })
+            .collect();
+        let mut expected = reversed.clone();
+        expected.sort_unstable_by_key(|proxy| (proxy.tag, proxy.row));
+
+        // Act
+        sort_nearly_sorted(&mut reversed);
+
+        // Assert
+        assert_eq!(reversed, expected);
     }
 
     #[test]
