@@ -36,6 +36,7 @@ The original 2026-10-03 definition (PERF-07–17 plus SCN-01–25, one phase per
 - **wasm32 native-only bins.** `cargo build -p liquidfun-wasm --target wasm32-unknown-unknown` without `--lib` fails in `dam-break-bench`, `dam-break-timers` and `playground-scene-spot`; gate those bins (Phase 35 deferred-items.md).
 - **Release-only warning.** `unreachable expression` at `crates/liquidfun/src/particle/solver/boundary/support.rs:98`; put the debug-only check and the final `Ok(())` under one `cfg` (Phase 35 deferred-items.md).
 - **Stale `web-smoke` spec.** `web/e2e/rust-wasm-proof.spec.ts:170` expects `Loading Rust/WASM session…` with an unscoped `role=status` locator (Phase 35 deferred-items.md).
+- **Filtered scene-spot summary.** The printed scene-spot summary for a `--scene` run says "(see scene_filter)" but does not print the filter; add a scene-filter line (36-REVIEW IN-03).
 
 ## Out of Scope
 

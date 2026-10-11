@@ -154,6 +154,6 @@ Plans:
 | 33. Stacked drip fidget | v1.3 | 4/4 | Complete   | 2026-09-28 |
 | 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
-| 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete   | 2026-10-11 |
+| 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
