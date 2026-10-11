@@ -119,9 +119,9 @@ decisions are in
   `a7d837b1f7e2aafba61b4c392e3db3a7b027e0baf68344372f644b78d15eb10f`, built
   from source commit `5c664d20c5ce76e3b3a1396abd6c60b12844cbe4` (last engine
   commit `edcafebc0`)
-- command: `target/phase35/bin/spot-v14-final --runs 3`, the same binary and
-  flags that `just playground-scene-spot` runs (60 warmup steps, 120 measured
-  steps)
+- command: `target/phase35/bin/spot-v14-final --runs 3`, run directly with no
+  xtask stamp. It uses the same flags as `just playground-scene-spot` (60 warmup
+  steps, 120 measured steps).
 - machine and compiler: as in the before/after section
 - counted UTC span: 2026-10-11 03:29:06 to 03:30:18, behind the same quiet-host
   gate. An earlier attempt was void because another repository's cargo was
