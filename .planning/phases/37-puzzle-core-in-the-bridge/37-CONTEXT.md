@@ -100,6 +100,11 @@ Out of scope here: the puzzle route, HUD and player shell (Phase 38); the tool e
   - `git diff --stat <phase-base> -- crates/liquidfun` is empty.
   - cargo fmt, clippy (`-D warnings`), build and tests all pass, plus the web Vitest tests the change touches and `bun scripts/bright-builds-check.ts all` (file-length limits).
 
+### Post-research clarifications (yolo, from 37-RESEARCH.md Open Questions)
+- **D-22:** The research found that native debug and native release diverge in 12 of 25 scenes, while native release matches wasm in 23 of 25. So the D-03 "identical" contract means **release-native vs wasm**. It is asserted by a `cargo test -p liquidfun-wasm --release` replay test and by `just puzzle-replay-wasm`. The default debug `cargo test` replay test asserts the fallback form instead: the same outcome, the fill margin, and an outcome-step tolerance taken from the measured spread between debug and release on `first-pour`. The spike SUMMARY records all three comparisons: release vs wasm, debug vs release, and debug vs wasm. Do not change any `[profile]` opt-level.
+- **D-23:** For puzzle sources, Rust rejects `set_gravity` with `UnknownControl`, and `restore_authored_gravity` is an `Ok(())` no-op. Tilt is an in-run input, and the TS side disposes the session if restore throws.
+- **D-24:** `levelInfo()` returns a `#[wasm_bindgen] pub struct PuzzleLevelInfo` with getters, re-exported from `lib.rs` (see 37-RESEARCH.md Open Question 3).
+
 ### Claude's Discretion
 - The exact `first-pour` geometry, particle count, step limit, target and full counts, chosen within D-06 and D-07 and tuned so that the solution wins with margin.
 - Module split inside `puzzle/` (`spec.rs`, `level_first_pour.rs`, `tools.rs`, `goal.rs`, `hooks.rs`), within the file-length limits.
