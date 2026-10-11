@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 36
 current_phase_name: Re-survey and Wrap Up
 current_plan: 3
-status: executing
-stopped_at: Completed 36-02-PLAN.md
-last_updated: "2026-10-11T03:34:26.446Z"
+status: verifying
+stopped_at: Completed 36-03-PLAN.md
+last_updated: "2026-10-11T03:35:43.015Z"
 last_activity: 2026-10-11
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 13
-  completed_plans: 12
-  percent: 92
+  completed_plans: 13
+  percent: 100
 ---
 
 # Project State
@@ -36,10 +36,10 @@ Total Plans in Phase: 3
 
 Phase: 36 (Re-survey and Wrap Up) — EXECUTING
 Plan: 3 of 3
-**Status:** Ready to execute
+**Status:** Phase complete — ready for verification
 Last activity: 2026-10-11
 
-**Progress:** [█████████░] 92%
+**Progress:** [██████████] 100%
 
 v1.3 remains archived. This milestone does not authorize package publication or release tags.
 
@@ -80,6 +80,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 35]: 35-08: A3/A3b stay reverted under D-11; possible host-noise evidence and a retry idea recorded in 35-PROFILES.md Notes for Phase 36
 - [Phase 36]: 36-01 WR-01 fixed (c4252c01b): filtered scene-spot stamps record scene_filter (request order) and full_catalog false with a requested-scenes-only disclaimer; full-catalog stamps keep the original disclaimer and add scene_filter [] and full_catalog true
 - [Phase 36]: 36-02 v1.4 before/after survey published (e5640ea88): spot-before 809582431 vs spot-v14-final (crates/ = edcafebc0), one gated ABBA set over 25 scenes at --runs 5: faster 24, within noise 1 (drawing-particles), slower 0; 25/25 fingerprints in all six legs; current ranking from v14-rank-b1.jsonl
+- [Phase 36]: 36-03 v1.4 leftovers recorded in REQUIREMENTS.md Left over from v1.4 (presortedness test, A7, world backup clone, emission reallocation, grouped prepare_create, wasm32 bins, support.rs:98 warning, stale web-smoke spec); PERF-10 Complete after survey commit e5640ea88; no v1.4 tag or archive (D-10)
 
 ### Pending Todos
 
@@ -145,9 +146,10 @@ None. A fresh unprofiled pair is still required before claiming the ≤ 3× Dam 
 | Phase 35 P08 | 84min | 2 tasks | 3 files |
 | Phase 36 P01 | 39min | 2 tasks | 2 files |
 | Phase 36 P02 | 15min | 3 tasks | 4 files |
+| Phase 36 P03 | 1min | 1 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-11T03:34:26.443Z
-Stopped at: Completed 36-02-PLAN.md
+Last session: 2026-10-11T03:35:43.013Z
+Stopped at: Completed 36-03-PLAN.md
 Resume file: None
