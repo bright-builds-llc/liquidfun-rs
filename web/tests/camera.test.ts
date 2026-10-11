@@ -9,6 +9,7 @@ import {
   WORLD_BOUNDS,
   createCamera,
   projectPoint,
+  projectedWorldRect,
   projectRadius,
   unprojectPoint,
   zoomCameraView,
@@ -249,5 +250,147 @@ describe("unprojectPoint", () => {
     expect(zoomedPoint.y).toBeCloseTo(fittedPoint.y);
     expect(pannedPoint.x).toBeCloseTo(fittedPoint.x + 40);
     expect(pannedPoint.y).toBeCloseTo(fittedPoint.y - 25);
+  });
+});
+
+describe("createCamera frame", () => {
+  it("matches the unframed camera when the frame is the full viewport", () => {
+    // Arrange
+    const unframed = createCamera(960, 540);
+
+    // Act
+    const framed = createCamera(960, 540, IDENTITY_CAMERA_VIEW, WORLD_BOUNDS, {
+      left: 0,
+      top: 0,
+      right: 960,
+      bottom: 540,
+    });
+
+    // Assert
+    expect(framed).toEqual(unframed);
+  });
+
+  it("keeps the unframed design camera numbers", () => {
+    // Arrange
+    const expectedScale = (540 - VIEWPORT_INSET * 2) / 9;
+
+    // Act
+    const camera = createCamera(960, 540);
+
+    // Assert
+    expect(camera).toEqual({
+      viewport: { width: 960, height: 540 },
+      bounds: WORLD_BOUNDS,
+      scale: expectedScale,
+      offsetX: (960 - 12 * expectedScale) / 2,
+      offsetY: (540 - 9 * expectedScale) / 2,
+    });
+  });
+
+  it("keeps the unframed narrow camera numbers", () => {
+    // Arrange
+    const expectedScale = (320 - VIEWPORT_INSET * 2) / 12;
+
+    // Act
+    const camera = createCamera(320, 540);
+
+    // Assert
+    expect(camera).toEqual({
+      viewport: { width: 320, height: 540 },
+      bounds: WORLD_BOUNDS,
+      scale: expectedScale,
+      offsetX: (320 - 12 * expectedScale) / 2,
+      offsetY: (540 - 9 * expectedScale) / 2,
+    });
+  });
+
+  it("fits the world inside the frame with the inset applied inside it", () => {
+    // Arrange
+    const frame = { left: 376, top: 0, right: 1280, bottom: 800 };
+
+    // Act
+    const camera = createCamera(1280, 800, IDENTITY_CAMERA_VIEW, WORLD_BOUNDS, frame);
+
+    // Assert
+    expect(camera.scale).toBeCloseTo(
+      Math.min((904 - VIEWPORT_INSET * 2) / 12, (800 - VIEWPORT_INSET * 2) / 9),
+    );
+  });
+
+  it("centres the world inside the frame", () => {
+    // Arrange
+    const frame = { left: 376, top: 40, right: 1280, bottom: 700 };
+
+    // Act
+    const camera = createCamera(1280, 800, IDENTITY_CAMERA_VIEW, WORLD_BOUNDS, frame);
+    const center = projectPoint(camera, { x: 0, y: 3.5 });
+
+    // Assert
+    expect(center.x).toBeCloseTo((376 + 1280) / 2);
+    expect(center.y).toBeCloseTo((40 + 700) / 2);
+  });
+
+  it("keeps the full viewport on a framed camera", () => {
+    // Arrange
+    const frame = { left: 0, top: 0, right: 390, bottom: 692 };
+
+    // Act
+    const camera = createCamera(390, 844, IDENTITY_CAMERA_VIEW, WORLD_BOUNDS, frame);
+
+    // Assert
+    expect(camera.viewport).toEqual({ width: 390, height: 844 });
+  });
+
+  it("zooms about the frame centre and pans in CSS pixels inside a frame", () => {
+    // Arrange
+    const frame = { left: 376, top: 0, right: 1280, bottom: 800 };
+    const fitted = createCamera(1280, 800, IDENTITY_CAMERA_VIEW, WORLD_BOUNDS, frame);
+    const zoomed = createCamera(
+      1280,
+      800,
+      { zoom: 2, panX: 30, panY: -20 },
+      WORLD_BOUNDS,
+      frame,
+    );
+    const world = { x: 0, y: 3.5 };
+
+    // Act
+    const fittedPoint = projectPoint(fitted, world);
+    const zoomedPoint = projectPoint(zoomed, world);
+
+    // Assert
+    expect(zoomed.scale).toBeCloseTo(fitted.scale * 2);
+    expect(zoomedPoint.x).toBeCloseTo(fittedPoint.x + 30);
+    expect(zoomedPoint.y).toBeCloseTo(fittedPoint.y - 20);
+  });
+
+  it("rejects a frame with no room for the inset", () => {
+    // Arrange
+    const frame = { left: 100, top: 0, right: 120, bottom: 800 };
+
+    // Act
+    const createNarrowCamera = () =>
+      createCamera(1280, 800, IDENTITY_CAMERA_VIEW, WORLD_BOUNDS, frame);
+
+    // Assert
+    expect(createNarrowCamera).toThrow("Invalid Canvas viewport");
+  });
+});
+
+describe("projectedWorldRect", () => {
+  it("returns the projected world rectangle in canvas pixels", () => {
+    // Arrange
+    const camera = createCamera(960, 540);
+
+    // Act
+    const projected = projectedWorldRect(camera);
+
+    // Assert
+    expect(projected).toEqual({
+      left: camera.offsetX,
+      top: camera.offsetY,
+      right: camera.offsetX + 12 * camera.scale,
+      bottom: camera.offsetY + 9 * camera.scale,
+    });
   });
 });
