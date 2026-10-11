@@ -13,7 +13,7 @@ The original 2026-10-03 definition (PERF-07–17 plus SCN-01–25, one phase per
 - [x] **PERF-07**: Maintainers can time every playground catalog scene natively with one command and see the scenes ranked by median ms/step, with a check that fails when a catalog scene is missing.
 - [x] **PERF-08**: Maintainers can inspect profile-guided fixes for the slowest scenes, each kept only with a before/after survey gain beyond run-to-run noise.
 - [x] **PERF-09**: Visitors see unchanged scene behavior, settings, controls and visuals after the fixes; existing Rust and web tests stay green.
-- [ ] **PERF-10**: Maintainers can read a whole-catalog before/after timing table for the final v1.4 source.
+- [x] **PERF-10**: Maintainers can read a whole-catalog before/after timing table for the final v1.4 source.
 
 ## Acceptance
 
@@ -25,6 +25,17 @@ The original 2026-10-03 definition (PERF-07–17 plus SCN-01–25, one phase per
 
 - Optional controlled-host and cross-platform campaigns, allocator deep dives, and additional control combinations when the local profiles justify them.
 - Independently scoped opt-in experimental acceleration only if later authorized behavior/fidelity policy permits it.
+
+### Left over from v1.4
+
+- **Presortedness test.** A cheap check that chooses between the bounded insertion sort (A2r) and the full sort for the retained contact-proxy order, to recover the particles cost A2r added (+7.4% / +2.6% in its targeted pairs, quick 261010-rif).
+- **A7.** Per-fixture transform validation for moving-fixture particle CCD; never tried because A6 passed (35-PROFILES §Notes for Phase 36).
+- **World backup clone.** The per-step `Vec<Slot<ParticleSystem>>::clone` takes about 2.5% in particles and 1.1% in washing-machine (35-PROFILES).
+- **Emission reallocation.** `_platform_memmove` copies take about 3% in tesla-valve (35-PROFILES).
+- **Grouped creation load time.** The O(n²) `prepare_create` on the grouped `create_particle_group` path affects scene load time, not ms/step (35-PROFILES).
+- **wasm32 native-only bins.** `cargo build -p liquidfun-wasm --target wasm32-unknown-unknown` without `--lib` fails in `dam-break-bench`, `dam-break-timers` and `playground-scene-spot`; gate those bins (Phase 35 deferred-items.md).
+- **Release-only warning.** `unreachable expression` at `crates/liquidfun/src/particle/solver/boundary/support.rs:98`; put the debug-only check and the final `Ok(())` under one `cfg` (Phase 35 deferred-items.md).
+- **Stale `web-smoke` spec.** `web/e2e/rust-wasm-proof.spec.ts:170` expects `Loading Rust/WASM session…` with an unscoped `role=status` locator (Phase 35 deferred-items.md).
 
 ## Out of Scope
 
@@ -44,8 +55,8 @@ The original 2026-10-03 definition (PERF-07–17 plus SCN-01–25, one phase per
 | PERF-07 | Phase 34 | Complete |
 | PERF-08 | Phase 35 | Complete |
 | PERF-09 | Phase 35 | Complete |
-| PERF-10 | Phase 36 | Pending |
+| PERF-10 | Phase 36 | Complete |
 
 **Coverage:** 4/4 milestone requirements mapped exactly once.
 
-*Last updated: 2026-10-06 after simplifying v1.4 to a survey plus targeted fixes.*
+*Last updated: 2026-10-11 after Phase 36 published the whole-catalog before/after survey.*
