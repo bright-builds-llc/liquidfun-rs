@@ -17,6 +17,7 @@ import {
   connectResizeObserver,
   presentOwnedFrame,
 } from "./frame-loop";
+import { cameraFrame, publishWorldFrame } from "./camera-frame";
 import { maybeReadySceneId } from "./runtime";
 import { maybeObservedFrame } from "./view";
 import { isUsableViewport } from "./viewport";
@@ -29,6 +30,7 @@ import {
   type CameraView,
 } from "../render/camera";
 import { maybeParseRenderedParticleLimit } from "../render/particle-limit";
+import type { ScreenRect } from "../render/safe-frame";
 import { svgRenderMode } from "../render/mode";
 import type { SceneRuntime } from "./scene-runtime";
 import { isWorkerSession } from "../physics/live-session";
@@ -75,13 +77,29 @@ function refreshCamera(session: SceneRuntime): void {
     return;
   }
 
-  session.clock.maybeCamera = createCamera(
+  const safe = cameraFrame(session.clock);
+  const camera = createCamera(
     session.clock.viewportWidth,
     session.clock.viewportHeight,
     session.clock.cameraView,
     session.clock.worldBounds,
+    safe.frame,
   );
-  session.setMaybePixelsPerMeter(session.clock.maybeCamera.scale);
+  session.clock.maybeCamera = camera;
+  if (session.maybeCanvas !== undefined) {
+    publishWorldFrame(session.maybeCanvas, camera, safe.usedFallback);
+  }
+  session.setMaybePixelsPerMeter(camera.scale);
+}
+
+/** Refits the camera around new HUD chrome and repaints a held frame. */
+function changeHudObstacles(
+  session: SceneRuntime,
+  obstacles: readonly ScreenRect[],
+): void {
+  session.clock.hudObstacles = obstacles;
+  refreshCamera(session);
+  paintHeldFrame(session);
 }
 
 function changeRenderedParticleDraft(session: SceneRuntime, raw: string): void {
@@ -344,6 +362,9 @@ export function bindSurface(session: SceneRuntime): void {
     drawSceneFrame(session, context, frame, camera);
   };
   session.refreshCamera = () => refreshCamera(session);
+  session.changeHudObstacles = (obstacles) => {
+    changeHudObstacles(session, obstacles);
+  };
   session.changeRenderedParticleDraft = (raw) => {
     changeRenderedParticleDraft(session, raw);
   };

@@ -17,6 +17,7 @@ import {
   presentWorkerOwnedFrame,
   scheduleWorkerFrame,
 } from "./worker-frame-loop";
+import { cameraFrame, publishWorldFrame } from "./camera-frame";
 import { observeFrame } from "./observe";
 import { maybeReadySceneId } from "./runtime";
 import { prefersReducedMotion, isUsableViewport } from "./viewport";
@@ -270,6 +271,7 @@ export function connectResizeObserver(
           clock.viewportHeight,
         );
       }
+      const safe = cameraFrame(clock);
       const resizedCamera = resizeCanvasBackingStore(
         canvas,
         clock.viewportWidth,
@@ -277,8 +279,10 @@ export function connectResizeObserver(
         window.devicePixelRatio,
         clock.cameraView,
         clock.worldBounds,
+        safe.frame,
       );
       clock.maybeCamera = resizedCamera;
+      publishWorldFrame(canvas, resizedCamera, safe.usedFallback);
       if (resizedCamera === undefined) {
         deps.setMaybePixelsPerMeter(undefined);
         return;

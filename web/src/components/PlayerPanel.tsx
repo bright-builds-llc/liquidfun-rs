@@ -1,7 +1,16 @@
-import { Show, createEffect, createSignal, on, type JSX } from "solid-js";
+import {
+  Show,
+  createEffect,
+  createSignal,
+  on,
+  onMount,
+  type JSX,
+} from "solid-js";
 
+import { createHudObstacles } from "../player/hud-obstacles";
 import type { PlayerStatus } from "../player/view";
 import type { RenderFrame } from "../physics/frame";
+import type { ScreenRect } from "../render/safe-frame";
 import {
   RENDER_MODE_GROUPS,
   isWireframeRenderMode,
@@ -66,6 +75,7 @@ export type PlayerPanelProps = {
   readonly onZoomOut: () => void;
   readonly onResetZoom: () => void;
   readonly onPanEnabledChange: (enabled: boolean) => void;
+  readonly onHudObstaclesChange: (obstacles: readonly ScreenRect[]) => void;
   readonly hudControls: HudControlSliderProps;
   readonly children?: JSX.Element;
 };
@@ -131,6 +141,21 @@ function PlayerPanelLayout(layoutProps: {
   readonly panel: PlayerPanelProps;
 }) {
   const props = layoutProps.panel;
+  let maybeViewportFrame: HTMLDivElement | undefined;
+  let maybeSceneCanvas: HTMLCanvasElement | undefined;
+  onMount(() => {
+    if (
+      !layoutProps.canvasStage ||
+      maybeViewportFrame === undefined ||
+      maybeSceneCanvas === undefined
+    ) {
+      return;
+    }
+
+    const obstacles = createHudObstacles(maybeViewportFrame, maybeSceneCanvas);
+    createEffect(on(obstacles, (rects) => props.onHudObstaclesChange(rects)));
+  });
+
   return (
     <section
       class="player-panel"
@@ -160,11 +185,19 @@ function PlayerPanelLayout(layoutProps: {
       </Show>
 
       <figure>
-        <div class="viewport-frame">
+        <div
+          class="viewport-frame"
+          ref={(frame) => {
+            maybeViewportFrame = frame;
+          }}
+        >
           <canvas
             class="scene-canvas"
             data-particle-surface={particleSurface(props.renderMode)}
-            ref={(canvas) => props.assignCanvas(canvas)}
+            ref={(canvas) => {
+              maybeSceneCanvas = canvas;
+              props.assignCanvas(canvas);
+            }}
             width="960"
             height="540"
             role="img"

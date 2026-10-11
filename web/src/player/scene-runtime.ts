@@ -13,6 +13,7 @@ import type { FrameClock, FrameLoopDeps } from "./frame-loop";
 import type { PlayerView } from "./view";
 import type { AppearancePreferences } from "./appearance";
 import type { Camera } from "../render/camera";
+import type { ScreenRect } from "../render/safe-frame";
 import type { SceneRoute } from "../routing/hash";
 
 /** Mutable playground session shared by the shell, lifecycle, and surface. */
@@ -63,6 +64,7 @@ export type SceneRuntime = {
   gravitySliderMagnitude: () => number | undefined;
   frameDeps: () => FrameLoopDeps;
   refreshCamera: () => void;
+  changeHudObstacles: (obstacles: readonly ScreenRect[]) => void;
   paintHeldFrame: () => void;
   drawSceneFrame: (
     context: CanvasRenderingContext2D,

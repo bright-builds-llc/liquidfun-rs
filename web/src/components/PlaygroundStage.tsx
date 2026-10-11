@@ -12,6 +12,7 @@ import type { FpsTick } from "./fps-meter";
 import type { TiltDebug } from "../input/tilt-gravity";
 import type { PointerKind } from "../input/pointer";
 import type { RenderMode } from "../render/mode";
+import type { ScreenRect } from "../render/safe-frame";
 import type { SceneRoute } from "../routing/hash";
 import type { SvgExportRequest } from "../export/messages";
 import { sceneControlsForSurface } from "./scene-controls";
@@ -56,6 +57,7 @@ export type PlaygroundStageProps = {
   readonly onZoomOut: () => void;
   readonly onResetZoom: () => void;
   readonly onPanEnabledChange: (enabled: boolean) => void;
+  readonly onHudObstaclesChange: (obstacles: readonly ScreenRect[]) => void;
   readonly onTiltGravityEnabledChange: (enabled: boolean) => void;
   readonly onApplyControl: (name: string, value: string) => void;
   readonly onApplyAction: (name: string) => void;
@@ -165,6 +167,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
               onZoomOut={props.onZoomOut}
               onResetZoom={props.onResetZoom}
               onPanEnabledChange={props.onPanEnabledChange}
+              onHudObstaclesChange={props.onHudObstaclesChange}
               hudControls={hudControls()}
               tiltGravityEnabled={props.tiltGravityEnabled()}
               tiltDebug={props.tiltDebug()}

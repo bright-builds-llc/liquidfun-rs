@@ -238,6 +238,9 @@ function ActionControl(props: {
   );
 }
 
+/** DOM id of the on-canvas slider card, targeted by the show/hide toggle. */
+export const HUD_SLIDERS_ID = "canvas-hud-sliders";
+
 export type HudControlSliderProps = {
   readonly controls: readonly SceneControl[];
   readonly disabled: boolean;
@@ -251,7 +254,7 @@ export function HudControlSlider(props: HudControlSliderProps): JSX.Element {
   return (
     <Show when={props.controls.length > 0 ? props.identity : undefined} keyed>
       {(_identity) => (
-        <div class="canvas-hud-slider">
+        <div class="canvas-hud-slider" id={HUD_SLIDERS_ID} data-hud-obstacle>
           <SceneControls
             controls={props.controls}
             disabled={props.disabled}

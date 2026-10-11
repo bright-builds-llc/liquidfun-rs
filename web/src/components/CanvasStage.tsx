@@ -1,9 +1,16 @@
 import { Show, createSignal, onCleanup, onMount, type JSX } from "solid-js";
 
 import type { TiltDebug } from "../input/tilt-gravity";
+import {
+  hudSlidersToggleLabel,
+  loadHudSlidersVisibility,
+  persistHudSlidersVisibility,
+  type HudSlidersVisibility,
+} from "../player/hud-sliders-preference";
 import type { PlayerStatus } from "../player/view";
 import { GravityArrow } from "./GravityArrow";
 import { ScaleLegend } from "./ScaleLegend";
+import { HUD_SLIDERS_ID } from "./SceneControls";
 import { GitHubSourceLink } from "./SiteHeader";
 import { ViewportTools } from "./ViewportTools";
 import {
@@ -130,11 +137,23 @@ export function PlaybackButtons(props: PlaybackButtonsProps) {
 
 /** Title, status, transport, scale, zoom, debug, and accelerometer controls over the canvas. */
 export function CanvasHud(props: CanvasHudProps) {
+  const [sliders, setSliders] = createSignal(
+    loadHudSlidersVisibility(() => window.localStorage),
+  );
+  const changeSliders = (next: HudSlidersVisibility) => {
+    setSliders(next);
+    persistHudSlidersVisibility(() => window.localStorage, next);
+  };
+
   return (
     <>
       <div
         class="canvas-hud-stats"
-        classList={{ "canvas-hud-stats--with-slider": props.hasHudSlider }}
+        data-hud-obstacle
+        classList={{
+          "canvas-hud-stats--with-slider":
+            props.hasHudSlider && sliders() === "shown",
+        }}
       >
         <RenderedFps fpsTicks={props.fpsTicks} />
         <DebugToggle
@@ -144,9 +163,12 @@ export function CanvasHud(props: CanvasHudProps) {
         {props.debugReadout}
       </div>
       <div class="canvas-hud-title">
-        <h2 id="player-title">{props.sceneTitle}</h2>
+        <h2 id="player-title" data-hud-obstacle>
+          {props.sceneTitle}
+        </h2>
         <output
           class={`session-status session-status--${props.status}`}
+          data-hud-obstacle
           aria-live="polite"
           aria-atomic="true"
         >
@@ -155,19 +177,24 @@ export function CanvasHud(props: CanvasHudProps) {
         </output>
       </div>
       <div class="canvas-hud-bottom">
-        {props.children}
+        <Show when={sliders() === "shown"}>{props.children}</Show>
         <div class="canvas-hud-toolbar">
-          <div class="canvas-transport">
-            <PlaybackButtons
-              compact
-              status={props.status}
-              onPlay={props.onPlay}
-              onPause={props.onPause}
-              onReset={props.onReset}
-              onRetry={props.onRetry}
-            />
+          <div class="canvas-hud-leading">
+            <Show when={props.hasHudSlider}>
+              <HudSlidersToggle visibility={sliders()} onChange={changeSliders} />
+            </Show>
+            <div class="canvas-transport" data-hud-obstacle>
+              <PlaybackButtons
+                compact
+                status={props.status}
+                onPlay={props.onPlay}
+                onPause={props.onPause}
+                onReset={props.onReset}
+                onRetry={props.onRetry}
+              />
+            </div>
           </div>
-          <div class="canvas-hud-trailing">
+          <div class="canvas-hud-trailing" data-hud-obstacle>
             <ScaleLegend maybePixelsPerMeter={props.maybePixelsPerMeter} />
             <ViewportTools
               showFullscreen={false}
@@ -180,7 +207,7 @@ export function CanvasHud(props: CanvasHudProps) {
           </div>
         </div>
       </div>
-      <div class="canvas-hud-corner">
+      <div class="canvas-hud-corner" data-hud-obstacle>
         <SceneControlsTrigger />
         <AccelerometerToggle
           enabled={props.tiltGravityEnabled}
@@ -192,6 +219,28 @@ export function CanvasHud(props: CanvasHudProps) {
         />
       </div>
     </>
+  );
+}
+
+/** Shows or hides the on-canvas slider card; the choice persists globally. */
+function HudSlidersToggle(props: {
+  readonly visibility: HudSlidersVisibility;
+  readonly onChange: (next: HudSlidersVisibility) => void;
+}) {
+  return (
+    <button
+      class="hud-button canvas-sliders-toggle"
+      type="button"
+      data-hud-obstacle
+      aria-label={hudSlidersToggleLabel(props.visibility)}
+      aria-expanded={props.visibility === "shown"}
+      aria-controls={HUD_SLIDERS_ID}
+      onClick={() =>
+        props.onChange(props.visibility === "shown" ? "hidden" : "shown")
+      }
+    >
+      <SlidersIcon struck={props.visibility === "hidden"} />
+    </button>
   );
 }
 
@@ -332,6 +381,19 @@ function ControlsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 8h16M4 16h16M8 6v4M16 14v4" />
+    </svg>
+  );
+}
+
+function SlidersIcon(props: { readonly struck: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 6h6M13 6h8M11 4v4" />
+      <path d="M3 12h12M19 12h2M17 10v4" />
+      <path d="M3 18h2M9 18h12M7 16v4" />
+      <Show when={props.struck}>
+        <path d="M3 3l18 18" />
+      </Show>
     </svg>
   );
 }

@@ -40,6 +40,7 @@ export function App() {
       onZoomOut={session.zoomOut}
       onResetZoom={session.resetCameraView}
       onPanEnabledChange={session.changePanEnabled}
+      onHudObstaclesChange={session.changeHudObstacles}
       onTiltGravityEnabledChange={session.changeTiltGravityEnabled}
       onApplyControl={session.applySceneControl}
       onApplyAction={session.applySceneAction}

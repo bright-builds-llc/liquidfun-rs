@@ -162,6 +162,8 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
 
 .canvas-hud-title .session-status {
   flex: 0 0 auto;
+  /* Fits "Playing" and "Paused" so pausing does not move a HUD obstacle box. */
+  min-width: 5.5rem;
   font-size: 14px;
 }
 
@@ -179,6 +181,11 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
 
 .canvas-hud-stats .canvas-debug-toggle {
   pointer-events: auto;
+}
+
+.canvas-hud-stats .canvas-fps {
+  /* Fits "120 fps" so the stats obstacle box does not follow the frame rate. */
+  min-width: 4.75rem;
 }
 
 .canvas-fps {
@@ -291,6 +298,26 @@ html[data-canvas-stage="true"] .canvas-hud-stats--with-slider .debug-readout {
 
 .canvas-hud-slider .scene-control-tick-mark {
   height: 3px;
+}
+
+.canvas-hud-leading {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.canvas-sliders-toggle {
+  pointer-events: auto;
+}
+
+/*
+ * The legend bar length follows the camera scale. A fixed box keeps the
+ * trailing obstacle independent of the fit, so a refit cannot feed back
+ * into the layout. 100px is SCALE_LEGEND_MAX_WIDTH_PX.
+ */
+.canvas-hud-trailing .scale-legend {
+  width: 100px;
 }
 
 .canvas-hud-trailing {
