@@ -1,7 +1,8 @@
 ---
 phase: 39
 slug: place-then-play-tools-and-stars
-status: draft
+status: approved
+reviewed_at: 2026-10-12T23:05:05Z
 shadcn_initialized: false
 preset: none
 created: 2026-10-12
@@ -71,7 +72,7 @@ Fixed dimensions added or changed by this phase:
 | Dimension | Value | Note |
 |-----------|-------|------|
 | Touch target | 44px | every tray item, selection-bar button and transport button; tool hit areas reach 44 px through the slop below |
-| Landscape 3-button group | 136×44 = 3 × 44 + 2 × 2px gaps | transport and selection bar in the 136 px rail |
+| Landscape 3-button group | 132×44 = 3 × 44 joined (0 gap, shared 1 px borders), left-aligned in the 136×44 leaf | transport and selection bar in the 136 px rail |
 | Portrait selection bar | 148×44 = 3 × 44 + 2 × 8px gaps | |
 | Portrait transport | 236×44 = Play/Stop 96 + Speed 52 + Clear 72 + 2 × 8px gaps | fits 360 px width beside the 100 px legend |
 | Landscape tray | 136×44 | |
@@ -83,7 +84,7 @@ Fixed dimensions added or changed by this phase:
 | Tool hit slop | 22 CSS px | half of 44; world distance `22 / pixelsPerMeter` (Research Pattern 5) |
 | Drag start threshold | 4 CSS px mouse, 8 CSS px touch | |
 
-Exceptions: 44 px targets; 2 px gaps inside the landscape 3-button groups (the only way three 44 px targets fit the 136 px rail, Research Pitfall 11) **[UI-D9]**; 22 px hit slop; canvas stroke widths 1.5, 2, 4 and 8 CSS px (drawing widths, not layout spacing); Phase 38 exceptions (2 px tick markers, 100 px legend) still apply.
+Exceptions: 44 px targets; landscape 3-button groups are joined button groups with a 0 px gap and shared borders (132 px inside the 136 px leaf; the only grid-safe way three 44 px targets fit the rail, Research Pitfall 11) **[UI-D9, revised per UI checker]**; 22 px hit slop; canvas stroke widths 1.5, 2, 4 and 8 CSS px (drawing widths, not layout spacing); Phase 38 exceptions (2 px tick markers, 100 px legend) still apply.
 
 ---
 
@@ -181,10 +182,10 @@ The Phase 38 rails stay 136 px wide, so the world fit is identical to Phase 38.
 | Fill meter | left `inset`, top `inset + 104px` | 136×64 | unchanged |
 | Timer | left `inset`, top `inset + 176px` | 136×44 | unchanged |
 | **Tool tray** | left `inset`, top `inset + 228px` | 136×44 | new |
-| Transport | left `inset`, bottom `inset` | 136×44: Play/Stop, Speed, Clear as 44×44 icon buttons with 2 px gaps | content changed |
+| Transport | left `inset`, bottom `inset` | 136×44: Play/Stop, Speed, Clear as a joined group of 44×44 icon buttons (0 gap) | content changed |
 | Options trigger | right `inset`, top `inset` | 44×44 | unchanged |
 | Result card | right `inset`, top `inset + 52px` | 136×220 | content changed, box unchanged |
-| **Selection bar** | right `inset`, bottom `inset + 36px` | 136×44: Rotate counterclockwise, Rotate clockwise, Remove, 44×44 each, 2 px gaps | new |
+| **Selection bar** | right `inset`, bottom `inset + 36px` | 136×44: Rotate counterclockwise, Rotate clockwise, Remove, a joined group of 44×44 buttons (0 gap) | new |
 | Scale legend | right `inset`, bottom `inset` | 100×28 | unchanged |
 
 Fit check: at 844×390 the left rail runs 60..280 (tray ends at 280) with the transport at 338..382 (58 px free). The right rail has the result card at 60..280 and the selection bar at 302..346 (22 px gap) above the legend at 354..382. Minimum canvas height with ≥ 8 px gaps: 340 px on the left and 376 px on the right. Landscape is laid out for canvas heights ≥ 376 px. At 667×375 the right-rail gap is 7 px, so leaves still do not overlap. At 1280×800 the tray sits under the timer and the selection bar sits above the legend, with the world column unchanged (976 px, about 76 px/m).
@@ -348,8 +349,8 @@ On `main`, in addition to the Phase 38 attributes: `data-puzzle-placements` (can
 | Armed hint | "Click or tap where the plank should go." |
 | Invalid reasons (short form, D-20) | Overlaps a wall · Overlaps the cup · Inside the cup · Overlaps the water · Overlaps another tool · Outside the build area · In a no-build zone · Over the tool limit · Not allowed in this level · Can't be placed there (angle or position out of range) |
 | Status line, one invalid tool | "{Reason}. Move or remove that tool to play." → "Overlaps the cup. Move or remove that tool to play." |
-| Status line, several, selected one invalid | "{Reason}. {N} tools need moving before you can play." |
-| Status line, several, none selected or selected valid | "{N} tools need moving before you can play. Select one to see why." |
+| Status line, several, selected one invalid | "{Reason}. {N} tools need moving or removing before you can play." |
+| Status line, several, none selected or selected valid | "{N} tools need moving or removing before you can play. Select one to see why." |
 | Play disabled reason | the status line, referenced by `aria-describedby`; Play `title` repeats it |
 | Star rows, building and running | "Win 60%", "Brim 90%", "Thrifty ≤ 1 tool" (plural "≤ 2 tools"), each after a star glyph (D-16) |
 | Star rows, hidden full text | "Win: fill the cup to 60%." / "Brim: fill the cup to 90%." / "Thrifty: win using at most 1 tool." + state phrase |
@@ -366,6 +367,27 @@ On `main`, in addition to the Phase 38 attributes: `data-puzzle-placements` (can
 Angles announce as degrees: index `i` ≤ 12 → `i × 15`°; otherwise `(i − 24) × 15`° (so 23 → −15°). Use the minus sign `−` in user copy. Percentages are whole numbers rounded down by the existing `floorPercent`. Brim and par always come from `levelInfo()`, never TS constants (D-13).
 
 ---
+
+### Validator status → reason phrase (checker recommendation)
+
+The planner assigns the numeric codes; every Rust invalid status maps to exactly one short-form phrase:
+
+| Rust validator status | Phrase |
+|---|---|
+| overlaps a level wall | Overlaps a wall |
+| overlaps a cup wall | Overlaps the cup |
+| inside / overlaps the cup interior | Inside the cup |
+| overlaps an initial liquid block | Overlaps the water |
+| overlaps another placed tool | Overlaps another tool |
+| pose centre outside the build area | Outside the build area |
+| overlaps an authored `no_place` zone | In a no-build zone |
+| per-kind budget exceeded | Over the tool limit |
+| unknown kind code, or kind not in this level's budget | Not allowed in this level |
+| `angle_index >= 24` or a non-finite/out-of-range pose | Can't be placed there |
+
+### Button padding (checker recommendation)
+
+The shared `.product-control` / `button` rule pads `8px 16px`, which overflows 44×44 icon buttons. Puzzle editor styles must set `padding: 0` on the 44×44 icon buttons (landscape transport, selection bar, landscape tray icons) and `padding: 0 8px` on the portrait transport buttons, matching Phase 38's result actions.
 
 ## Interaction and State Contract
 
