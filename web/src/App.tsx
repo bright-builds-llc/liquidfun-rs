@@ -45,6 +45,8 @@ export function App() {
       onApplyControl={session.applySceneControl}
       onApplyAction={session.applySceneAction}
       onCreateSvgExportRequest={session.createSvgExportRequest}
+      puzzleController={session.puzzleController}
+      assignPuzzleCanvas={session.assignPuzzleCanvas}
     />
   );
 }

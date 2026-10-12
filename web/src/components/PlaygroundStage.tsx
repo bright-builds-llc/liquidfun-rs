@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { Match, Show, Switch } from "solid-js";
 
 import { maybeSceneById } from "../catalog/scenes";
 import type { RenderFrame } from "../physics/frame";
@@ -7,7 +7,9 @@ import {
   sceneControlsIdentity,
   sceneTitleForId,
 } from "../player/runtime";
+import { playableRouteIdentity } from "../player/playable-target";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "../player/view";
+import type { PuzzleController } from "../puzzle/controller";
 import type { FpsTick } from "./fps-meter";
 import type { TiltDebug } from "../input/tilt-gravity";
 import type { PointerKind } from "../input/pointer";
@@ -21,6 +23,8 @@ import { FallbackPanel } from "./FallbackPanel";
 import { PlayerPanel } from "./PlayerPanel";
 import { PlayerSceneChrome } from "./PlayerSceneChrome";
 import { PlaygroundShell } from "./PlaygroundShell";
+import { PuzzleFallbackPanel } from "./PuzzleFallbackPanel";
+import { PuzzlePanel } from "./PuzzlePanel";
 import type { HudControlSliderProps } from "./SceneControls";
 
 export type PlaygroundStageProps = {
@@ -62,6 +66,9 @@ export type PlaygroundStageProps = {
   readonly onApplyControl: (name: string, value: string) => void;
   readonly onApplyAction: (name: string) => void;
   readonly onCreateSvgExportRequest: (durationSeconds: number) => SvgExportRequest | undefined;
+  readonly puzzleController: PuzzleController;
+  /** Puzzle canvas ref: no pointer handlers (D-16). */
+  readonly assignPuzzleCanvas: (canvas: HTMLCanvasElement) => void;
 };
 
 /** Routed playground surface for the live scene player. */
@@ -101,15 +108,28 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
       onApplyControl: props.onApplyControl,
     };
   };
-  const routeIdentity = () => {
+  const routeIdentity = () => playableRouteIdentity(props.route());
+  const maybePuzzleId = () => {
     const currentRoute = props.route();
-    if (currentRoute.kind === "scene") {
-      return `scene:${currentRoute.id}`;
+    return currentRoute.kind === "puzzle" ? currentRoute.id : undefined;
+  };
+  // The route object, not its raw text, so an empty raw id still matches.
+  const maybeUnknownPuzzle = () => {
+    const currentRoute = props.route();
+    return currentRoute.kind === "unknown-puzzle" ? currentRoute : undefined;
+  };
+  const maybeEndedPuzzle = () => {
+    if (maybePuzzleId() === undefined) {
+      return undefined;
     }
-    if (currentRoute.kind === "unknown") {
-      return `unknown:${currentRoute.maybeRaw}`;
+    const state = props.puzzleController.state();
+    return state.kind === "ended" ? state : undefined;
+  };
+  const maybePuzzleHeld = () => {
+    if (maybePuzzleId() === undefined) {
+      return undefined;
     }
-    return "empty";
+    return maybeEndedPuzzle()?.held === true ? "true" : "false";
   };
 
   return (
@@ -130,69 +150,99 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
         data-render-mode={props.renderMode()}
         data-wireframe-stroke-width={props.wireframeStrokeWidth()}
         data-density-shading={props.densityShading() ? "on" : "off"}
+        data-puzzle={maybePuzzleId()}
+        data-puzzle-phase={
+          maybePuzzleId() === undefined ? undefined : props.puzzleController.state().kind
+        }
+        data-puzzle-held={maybePuzzleHeld()}
+        data-puzzle-outcome={maybeEndedPuzzle()?.latch.outcome}
       >
-        <Show
-          when={maybeCurrentSceneId()}
-          fallback={<FallbackPanel canvasStage={props.canvasStage} />}
-        >
-          {(sceneId) => (
-            <PlayerPanel
-              canvasStage={props.canvasStage}
-              sceneTitle={sceneTitleForId(sceneId())}
-              status={playerStatus(props.view())}
-              maybeDetails={maybeFailureDetails()}
-              interactionHint={maybeCurrentScene()?.interactionHint ?? ""}
-              assignCanvas={props.assignCanvas}
-              assignParticleSurface={props.assignParticleSurface}
-              onPlay={props.onPlay}
-              onPause={props.onPause}
-              onReset={props.onReset}
-              onRetry={props.onReset}
-              renderMode={props.renderMode()}
-              onRenderModeChange={props.onRenderModeChange}
-              wireframeStrokeWidth={props.wireframeStrokeWidth()}
-              onWireframeStrokeWidthChange={props.onWireframeStrokeWidthChange}
-              densityShading={props.densityShading()}
-              onDensityShadingChange={props.onDensityShadingChange}
-              debugEnabled={props.debugEnabled()}
-              onDebugEnabledChange={props.onDebugEnabledChange}
-              maybeDebugFrame={props.maybeDebugFrame()}
-              stepsThisFrame={props.stepsThisFrame()}
-              fpsTicks={props.fpsTicks()}
-              renderedParticleDraft={props.renderedParticleDraft()}
-              onRenderedParticleDraft={props.onRenderedParticleDraft}
-              panEnabled={props.panEnabled()}
-              maybePixelsPerMeter={props.maybePixelsPerMeter()}
-              onZoomIn={props.onZoomIn}
-              onZoomOut={props.onZoomOut}
-              onResetZoom={props.onResetZoom}
-              onPanEnabledChange={props.onPanEnabledChange}
-              onHudObstaclesChange={props.onHudObstaclesChange}
-              hudControls={hudControls()}
-              tiltGravityEnabled={props.tiltGravityEnabled()}
-              tiltDebug={props.tiltDebug()}
-              onTiltGravityEnabledChange={props.onTiltGravityEnabledChange}
-            >
-              <AnimatedSvgPane
-                disabled={sceneControlsDisabled()}
-                sceneId={sceneId()}
-                onCreateRequest={props.onCreateSvgExportRequest}
+        <Switch fallback={<FallbackPanel canvasStage={props.canvasStage} />}>
+          <Match when={maybeCurrentSceneId()}>
+            {(sceneId) => (
+              <PlayerPanel
+                canvasStage={props.canvasStage}
+                sceneTitle={sceneTitleForId(sceneId())}
+                status={playerStatus(props.view())}
+                maybeDetails={maybeFailureDetails()}
+                interactionHint={maybeCurrentScene()?.interactionHint ?? ""}
+                assignCanvas={props.assignCanvas}
+                assignParticleSurface={props.assignParticleSurface}
+                onPlay={props.onPlay}
+                onPause={props.onPause}
+                onReset={props.onReset}
+                onRetry={props.onReset}
+                renderMode={props.renderMode()}
+                onRenderModeChange={props.onRenderModeChange}
+                wireframeStrokeWidth={props.wireframeStrokeWidth()}
+                onWireframeStrokeWidthChange={props.onWireframeStrokeWidthChange}
+                densityShading={props.densityShading()}
+                onDensityShadingChange={props.onDensityShadingChange}
+                debugEnabled={props.debugEnabled()}
+                onDebugEnabledChange={props.onDebugEnabledChange}
+                maybeDebugFrame={props.maybeDebugFrame()}
+                stepsThisFrame={props.stepsThisFrame()}
+                fpsTicks={props.fpsTicks()}
+                renderedParticleDraft={props.renderedParticleDraft()}
+                onRenderedParticleDraft={props.onRenderedParticleDraft}
+                panEnabled={props.panEnabled()}
+                maybePixelsPerMeter={props.maybePixelsPerMeter()}
+                onZoomIn={props.onZoomIn}
+                onZoomOut={props.onZoomOut}
+                onResetZoom={props.onResetZoom}
+                onPanEnabledChange={props.onPanEnabledChange}
+                onHudObstaclesChange={props.onHudObstaclesChange}
+                hudControls={hudControls()}
+                tiltGravityEnabled={props.tiltGravityEnabled()}
+                tiltDebug={props.tiltDebug()}
+                onTiltGravityEnabledChange={props.onTiltGravityEnabledChange}
+              >
+                <AnimatedSvgPane
+                  disabled={sceneControlsDisabled()}
+                  sceneId={sceneId()}
+                  onCreateRequest={props.onCreateSvgExportRequest}
+                />
+                <Show when={maybeCurrentScene()}>
+                  {(currentScene) => (
+                    <PlayerSceneChrome
+                      scene={currentScene()}
+                      resetGeneration={props.resetGeneration()}
+                      disabled={sceneControlsDisabled()}
+                      maybeValues={props.constructionValues}
+                      onApplyControl={props.onApplyControl}
+                      onApplyAction={props.onApplyAction}
+                    />
+                  )}
+                </Show>
+              </PlayerPanel>
+            )}
+          </Match>
+          <Match when={maybePuzzleId()}>
+            {(levelId) => (
+              <PuzzlePanel
+                canvasStage={props.canvasStage}
+                levelId={levelId()}
+                controller={props.puzzleController}
+                status={playerStatus(props.view())}
+                maybeFailureDetails={maybeFailureDetails()}
+                renderMode={props.renderMode()}
+                onRenderModeChange={props.onRenderModeChange}
+                maybePixelsPerMeter={props.maybePixelsPerMeter()}
+                assignCanvas={props.assignPuzzleCanvas}
+                assignParticleSurface={props.assignParticleSurface}
+                onHudObstaclesChange={props.onHudObstaclesChange}
               />
-              <Show when={maybeCurrentScene()}>
-                {(currentScene) => (
-                  <PlayerSceneChrome
-                    scene={currentScene()}
-                    resetGeneration={props.resetGeneration()}
-                    disabled={sceneControlsDisabled()}
-                    maybeValues={props.constructionValues}
-                    onApplyControl={props.onApplyControl}
-                    onApplyAction={props.onApplyAction}
-                  />
-                )}
-              </Show>
-            </PlayerPanel>
-          )}
-        </Show>
+            )}
+          </Match>
+          <Match when={maybeUnknownPuzzle()}>
+            {(unknown) => (
+              <PuzzleFallbackPanel
+                canvasStage={props.canvasStage}
+                maybeRaw={unknown().maybeRaw}
+              />
+            )}
+          </Match>
+        </Switch>
       </main>
     </PlaygroundShell>
   );
