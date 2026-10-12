@@ -10,10 +10,11 @@ use liquidfun::ParticleSystemSnapshot;
 
 use self::escape::{EscapeLimits, evict_escaped_particles};
 use crate::frame::{FrameData, FrameDiagnostics};
+use crate::puzzle::PuzzleLevelInfo;
 use crate::puzzle::builder::build_level;
 #[cfg(test)]
 use crate::puzzle::goal::PuzzleStatus;
-use crate::puzzle::tools::Placements;
+use crate::puzzle::tools::{PlacementError, Placements};
 use crate::puzzle::{LevelId, level_spec};
 use crate::scene::gravity_slider::{GRAVITY_CONTROL_NAME, parse_gravity_magnitude};
 use crate::scene::{
@@ -40,6 +41,9 @@ pub(crate) enum SessionError {
     StepFailed,
     FrameCaptureFailed,
     InvalidGravity,
+    UnknownLevel,
+    InvalidPlacement(PlacementError),
+    NotAPuzzle,
 }
 
 impl SessionError {
@@ -55,6 +59,9 @@ impl SessionError {
             Self::StepFailed => "Rust/WASM simulation step failed",
             Self::FrameCaptureFailed => "Rust/WASM frame capture failed",
             Self::InvalidGravity => "Rust/WASM gravity coordinates must be finite",
+            Self::UnknownLevel => "Rust/WASM puzzle level id is not allowlisted",
+            Self::InvalidPlacement(error) => error.message(),
+            Self::NotAPuzzle => "Rust/WASM session is not a puzzle",
         }
     }
 }
@@ -64,8 +71,6 @@ impl SessionError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum SessionSource {
     Scene(SceneId),
-    #[cfg_attr(not(test), allow(dead_code))]
-    // Temporary until Plan 37-07 wires newPuzzle; Plan 07 removes this line.
     Puzzle(LevelId, Placements),
 }
 
@@ -112,7 +117,6 @@ impl SessionCore {
     }
 
     /// Builds `level` with `placements` at step 0 (D-10).
-    #[cfg_attr(not(test), allow(dead_code))] // Temporary until Plan 37-07 wires newPuzzle; Plan 07 removes this line.
     pub(crate) fn create_puzzle(
         level: LevelId,
         placements: Placements,
@@ -434,6 +438,17 @@ impl SessionCore {
             diagnostics,
         )
         .map_err(|_error| SessionError::FrameCaptureFailed)?;
+        self.annotate_frame(&mut frame, circle_count)?;
+        Ok(frame)
+    }
+
+    /// Adds the hooks' circle labels and, for puzzles, the validated goal
+    /// status; scene hooks report no status, so scene frames are unchanged.
+    fn annotate_frame(
+        &self,
+        frame: &mut FrameData,
+        circle_count: usize,
+    ) -> Result<(), SessionError> {
         let mut labels = self.hooks.collect_circle_labels(&self.world)?;
         if labels.is_empty() {
             labels.resize(circle_count, String::new());
@@ -441,12 +456,27 @@ impl SessionCore {
         frame
             .set_circle_labels(labels)
             .map_err(|_error| SessionError::FrameCaptureFailed)?;
-        Ok(frame)
+        if let Some(status) = self.hooks.maybe_puzzle_status() {
+            frame
+                .set_puzzle_status(status)
+                .map_err(|_error| SessionError::FrameCaptureFailed)?;
+        }
+        Ok(())
     }
 
     /// Puzzle sessions reject every scene-only input (D-15, D-23).
     const fn is_puzzle(&self) -> bool {
         matches!(self.source, SessionSource::Puzzle(..))
+    }
+
+    /// Static level description for puzzle sessions (D-16, D-24).
+    pub(crate) fn level_info(&self) -> Result<PuzzleLevelInfo, SessionError> {
+        match &self.source {
+            SessionSource::Puzzle(level, _placements) => {
+                Ok(PuzzleLevelInfo::from_spec(level_spec(*level)))
+            }
+            SessionSource::Scene(_) => Err(SessionError::NotAPuzzle),
+        }
     }
 
     /// The puzzle goal status after the last fixed step, for puzzle sessions.

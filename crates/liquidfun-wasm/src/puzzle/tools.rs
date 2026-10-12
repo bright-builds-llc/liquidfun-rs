@@ -46,14 +46,16 @@ impl ToolKind {
         }
     }
 
-    /// Fixture token (D-18).
+    /// Fixture token (D-18), read by the test-only replay fixtures.
+    #[cfg(test)]
     pub(crate) const fn token(self) -> &'static str {
         match self {
             Self::Plank => "plank",
         }
     }
 
-    /// Parses a fixture token.
+    /// Parses a fixture token, for the test-only replay fixtures.
+    #[cfg(test)]
     pub(crate) fn from_token(token: &str) -> Option<Self> {
         match token {
             "plank" => Some(Self::Plank),
@@ -134,16 +136,19 @@ pub(crate) struct Placement {
 
 impl Placement {
     /// Tool kind.
+    #[cfg(test)]
     pub(crate) const fn kind(self) -> ToolKind {
         self.kind
     }
 
     /// Grid position `(x, y)` in 0.05 m cells.
+    #[cfg(test)]
     pub(crate) const fn grid(self) -> (i16, i16) {
         (self.x, self.y)
     }
 
     /// τ/24 angle step.
+    #[cfg(test)]
     pub(crate) const fn angle(self) -> AngleIndex {
         self.angle
     }
@@ -186,7 +191,8 @@ impl Placement {
 pub(crate) struct Placements(Vec<Placement>);
 
 impl Placements {
-    /// No placements.
+    /// No placements; production parses even empty lanes through `parse`.
+    #[cfg(test)]
     pub(crate) const fn empty() -> Self {
         Self(Vec::new())
     }

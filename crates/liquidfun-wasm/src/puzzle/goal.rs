@@ -70,6 +70,8 @@ pub(crate) fn count_in_goal<G: PartialEq>(
 /// Fill as `count / full_count`, clamped to 1.0; 0.0 when `full_count` is 0.
 ///
 /// `full_count` is authored and fixed, so eviction lowers only `count`.
+/// Only tests read it; the player computes fill from the frame scalars.
+#[cfg(test)]
 pub(crate) fn fill_ratio(count: u32, full_count: u32) -> f64 {
     if full_count == 0 {
         return 0.0;
@@ -78,6 +80,8 @@ pub(crate) fn fill_ratio(count: u32, full_count: u32) -> f64 {
 }
 
 /// The +5% fill margin (D-03 fallback) as a particle count, rounded up.
+/// Used by the replay contract checks, which are tests.
+#[cfg(test)]
 pub(crate) const fn fill_margin_count(full_count: u32) -> u32 {
     full_count.div_ceil(20)
 }

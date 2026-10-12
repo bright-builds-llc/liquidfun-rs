@@ -10,6 +10,7 @@ mod scene;
 mod session;
 
 pub use frame::ProofFrame;
+pub use puzzle::PuzzleLevelInfo;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod dam_break_bench;
@@ -24,6 +25,8 @@ pub mod scene_spot;
 #[cfg(not(target_arch = "wasm32"))]
 pub use scene_spot::{SceneSpotError, SceneSpotSample, run_scene_spot};
 
+use puzzle::tools::Placements;
+use puzzle::{level_spec, parse_level_id};
 use scene::parse_scene_id;
 use session::{SessionCore, SessionError};
 
@@ -47,6 +50,34 @@ impl ProofSession {
         build_core(&scene_id)
             .map(|core| Self { core })
             .map_err(js_error)
+    }
+
+    /// Builds an allowlisted puzzle level from copied placement lanes (kinds,
+    /// plus poses with stride 3: x grid, y grid, τ/24 angle index).
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded JavaScript error for an unknown level id, an invalid
+    /// placement, or failed level construction.
+    #[wasm_bindgen(js_name = newPuzzle)]
+    pub fn new_puzzle(
+        level_id: String,
+        kinds: &[u8],
+        poses: &[i32],
+    ) -> Result<ProofSession, JsError> {
+        build_puzzle_core(&level_id, kinds, poses)
+            .map(|core| Self { core })
+            .map_err(js_error)
+    }
+
+    /// Returns the static description of this session's puzzle level.
+    ///
+    /// # Errors
+    ///
+    /// Returns a bounded JavaScript error on scene sessions.
+    #[wasm_bindgen(js_name = levelInfo)]
+    pub fn level_info(&self) -> Result<PuzzleLevelInfo, JsError> {
+        self.core.level_info().map_err(js_error)
     }
 
     /// Applies a named control. `true` means the world was recreated.
@@ -166,6 +197,18 @@ impl ProofSession {
 
 fn build_core(scene_id: &str) -> Result<SessionCore, SessionError> {
     SessionCore::create(parse_scene_id(scene_id)?)
+}
+
+fn build_puzzle_core(
+    level_id: &str,
+    kinds: &[u8],
+    poses: &[i32],
+) -> Result<SessionCore, SessionError> {
+    let level = parse_level_id(level_id).ok_or(SessionError::UnknownLevel)?;
+    let spec = level_spec(level);
+    let placements = Placements::parse(kinds, poses, spec.tool_budget, spec.build_area)
+        .map_err(SessionError::InvalidPlacement)?;
+    SessionCore::create_puzzle(level, placements)
 }
 
 fn js_error(error: SessionError) -> JsError {

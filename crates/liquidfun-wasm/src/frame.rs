@@ -2,6 +2,8 @@
 
 use wasm_bindgen::prelude::*;
 
+use crate::puzzle::goal::PuzzleStatus;
+
 const MAX_PARTICLE_COUNT: usize = 16_384;
 const MAX_RIGID_SEGMENTS: usize = 512;
 const MAX_RIGID_CIRCLES: usize = 48;
@@ -51,6 +53,7 @@ pub(crate) struct FrameData {
     rigid_circles: Vec<f32>,
     circle_labels: Vec<String>,
     diagnostics: FrameDiagnostics,
+    maybe_puzzle: Option<PuzzleStatus>,
 }
 
 impl FrameData {
@@ -100,6 +103,7 @@ impl FrameData {
             rigid_circles,
             circle_labels: vec![String::new(); rigid_circle_count],
             diagnostics,
+            maybe_puzzle: None,
         })
     }
 
@@ -109,6 +113,29 @@ impl FrameData {
             return Err(FrameError::LaneLengthMismatch);
         }
         self.circle_labels = labels;
+        Ok(())
+    }
+
+    /// Attaches the puzzle readout, rejecting a status that contradicts itself
+    /// or this frame. The `observed_step` check makes the hooks' own counter
+    /// fail closed whenever it drifts from the session step index (D-14).
+    pub(crate) fn set_puzzle_status(&mut self, status: PuzzleStatus) -> Result<(), FrameError> {
+        let particle_count =
+            u32::try_from(self.particle_positions.len() / PARTICLE_POSITION_STRIDE)
+                .map_err(|_error| FrameError::ArithmeticOverflow)?;
+        let counts_are_consistent = status.target_count != 0
+            && status.target_count <= status.full_count
+            && status.step_limit != 0
+            && status.goal_count <= particle_count;
+        let steps_are_consistent = status.observed_step == self.step_index
+            && status
+                .outcome
+                .maybe_step()
+                .is_none_or(|step| step <= status.step_limit && step <= status.observed_step);
+        if !counts_are_consistent || !steps_are_consistent {
+            return Err(FrameError::InvalidDiagnostic);
+        }
+        self.maybe_puzzle = Some(status);
         Ok(())
     }
 
@@ -273,6 +300,8 @@ impl ProofFrame {
         self.data.circle_labels.clone()
     }
 }
+
+mod puzzle;
 
 #[cfg(test)]
 mod tests {

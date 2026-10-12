@@ -168,7 +168,6 @@ pub(crate) trait SceneHooks {
     }
 
     /// Puzzle readout after the latest fixed step; scenes have none.
-    #[cfg_attr(not(test), allow(dead_code))] // Temporary until Plan 37-07 wires newPuzzle; Plan 07 removes this line.
     fn maybe_puzzle_status(&self) -> Option<crate::puzzle::goal::PuzzleStatus> {
         None
     }
