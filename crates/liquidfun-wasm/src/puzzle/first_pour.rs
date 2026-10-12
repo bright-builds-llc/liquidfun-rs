@@ -48,10 +48,10 @@ const LIQUID_BLOCKS: [LiquidBlock; 1] = [LiquidBlock {
 
 const TOOL_BUDGET: [ToolAllowance; 1] = [ToolAllowance {
     kind: ToolKind::Plank,
-    count: 1,
+    count: 2,
 }];
 
-/// "First Pour": plain water, one plank.
+/// "First Pour": plain water, up to two planks, par one.
 pub(crate) const FIRST_POUR: LevelSpec = LevelSpec {
     id: LevelId::FirstPour,
     title: "First Pour",
@@ -71,6 +71,10 @@ pub(crate) const FIRST_POUR: LevelSpec = LevelSpec {
     tool_budget: &TOOL_BUDGET,
     // x -1.0..2.0 m, y 2.2..4.2 m.
     build_area: GridRect::new(-20, 44, 40, 84),
+    // 90% of full_count; D-07: ≥ target + 10 pp and the reference peak held clears it by ≥ 5% of full.
+    brim_count: 810,
+    par_tools: 1,
+    no_place: &[],
 };
 
 /// Reference solution pose: centre (0.4, 3.2) m, angle -15° (step 23).

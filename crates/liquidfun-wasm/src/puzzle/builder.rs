@@ -64,11 +64,22 @@ fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene
 /// Rejects an inconsistent spec before any world is created.
 fn validated_tracker(spec: &LevelSpec) -> Result<GoalTracker, SceneError> {
     let radius_is_valid = spec.particle_radius.is_finite() && spec.particle_radius > 0.0;
-    if !spec.cup_interior.is_valid() || spec.target_count > spec.full_count || !radius_is_valid {
+    let counts_are_ordered = spec.target_count < spec.brim_count
+        && spec.brim_count <= spec.full_count
+        && spec.par_tools <= total_budget(spec);
+    if !spec.cup_interior.is_valid() || !counts_are_ordered || !radius_is_valid {
         return Err(SceneError::Geometry);
     }
     GoalTracker::new(spec.target_count, spec.settle_steps, spec.step_limit)
         .ok_or(SceneError::Geometry)
+}
+
+/// Placements the level allows across every kind.
+fn total_budget(spec: &LevelSpec) -> u32 {
+    spec.tool_budget
+        .iter()
+        .map(|allowance| u32::from(allowance.count))
+        .sum()
 }
 
 /// One static body for every wall, then every cup wall, in spec order.

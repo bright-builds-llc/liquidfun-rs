@@ -60,4 +60,11 @@ pub(crate) struct LevelSpec {
     pub(crate) tool_budget: &'static [ToolAllowance],
     /// Inclusive grid rectangle where tools may be placed.
     pub(crate) build_area: GridRect,
+    /// Count whose peak held fill earns ★ Brim.
+    pub(crate) brim_count: u32,
+    /// Most placements at Play that still earn ★ Thrifty.
+    pub(crate) par_tools: u32,
+    /// Extra authored no-build zones in grid cells; the cup interior and the
+    /// liquid blocks are always implicit no-place zones.
+    pub(crate) no_place: &'static [GridRect],
 }

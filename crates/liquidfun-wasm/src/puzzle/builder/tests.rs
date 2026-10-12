@@ -1,7 +1,7 @@
 use liquidfun::math::Vec2;
 
 use super::build_level;
-use crate::puzzle::first_pour::REFERENCE_PLANK_POSE;
+use crate::puzzle::first_pour::{FIRST_POUR, REFERENCE_PLANK_POSE};
 use crate::puzzle::goal::{Outcome, PuzzleStatus};
 use crate::puzzle::spec::LevelSpec;
 use crate::puzzle::tools::{
@@ -142,21 +142,51 @@ fn plank_is_at_least_three_particle_diameters_thick() {
 }
 
 #[test]
-fn first_pour_allows_exactly_one_plank() {
+fn first_pour_allows_two_planks_with_par_one() {
     // Arrange
     let spec = first_pour();
 
     // Act
-    let budget = spec.tool_budget;
+    let star_rules = (spec.tool_budget, spec.par_tools, spec.brim_count);
 
     // Assert
     assert_eq!(
-        budget,
-        [ToolAllowance {
-            kind: ToolKind::Plank,
-            count: 1,
-        }]
+        star_rules,
+        (
+            [ToolAllowance {
+                kind: ToolKind::Plank,
+                count: 2,
+            }]
+            .as_slice(),
+            1,
+            810
+        )
     );
+    assert!(spec.no_place.is_empty());
+}
+
+#[test]
+fn specs_with_unordered_star_counts_are_rejected() {
+    // Arrange
+    const BRIM_AT_TARGET: LevelSpec = LevelSpec {
+        brim_count: 540,
+        ..FIRST_POUR
+    };
+    const BRIM_ABOVE_FULL: LevelSpec = LevelSpec {
+        brim_count: 901,
+        ..FIRST_POUR
+    };
+    const PAR_ABOVE_BUDGET: LevelSpec = LevelSpec {
+        par_tools: 3,
+        ..FIRST_POUR
+    };
+    let specs: [&'static LevelSpec; 3] = [&BRIM_AT_TARGET, &BRIM_ABOVE_FULL, &PAR_ABOVE_BUDGET];
+
+    // Act
+    let results = specs.map(|spec| build_level(spec, &Placements::empty()).err());
+
+    // Assert
+    assert_eq!(results, [Some(SessionError::SceneConstruction); 3]);
 }
 
 #[test]

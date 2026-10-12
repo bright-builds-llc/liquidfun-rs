@@ -10,7 +10,7 @@ mod scene;
 mod session;
 
 pub use frame::ProofFrame;
-pub use puzzle::PuzzleLevelInfo;
+pub use puzzle::{PlacementInspection, PuzzleLevelInfo, inspect_puzzle_placements};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod dam_break_bench;
@@ -25,7 +25,6 @@ pub mod scene_spot;
 #[cfg(not(target_arch = "wasm32"))]
 pub use scene_spot::{SceneSpotError, SceneSpotSample, run_scene_spot};
 
-use puzzle::tools::Placements;
 use puzzle::{level_spec, parse_level_id};
 use scene::parse_scene_id;
 use session::{SessionCore, SessionError};
@@ -206,7 +205,7 @@ fn build_puzzle_core(
 ) -> Result<SessionCore, SessionError> {
     let level = parse_level_id(level_id).ok_or(SessionError::UnknownLevel)?;
     let spec = level_spec(level);
-    let placements = Placements::parse(kinds, poses, spec.tool_budget, spec.build_area)
+    let placements = puzzle::validate::validate_for_build(spec, kinds, poses)
         .map_err(SessionError::InvalidPlacement)?;
     SessionCore::create_puzzle(level, placements)
 }

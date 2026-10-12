@@ -92,7 +92,7 @@ fn first_pour_frames_and_level_info_report_the_goal_contract() {
     assert_eq!(info.grid_meters().to_bits(), GRID_METERS.to_bits());
     assert_eq!(info.grid_meters().to_bits(), 0.05_f32.to_bits());
     assert_eq!(*info.tool_kinds(), [1]);
-    assert_eq!(*info.tool_counts(), [1]);
+    assert_eq!(*info.tool_counts(), [2]);
     for (step, frame) in (0_u32..).zip(&frames) {
         assert_running_goal_contract(frame, &info, step);
     }
@@ -157,8 +157,8 @@ fn invalid_placement_lanes_fail_closed() {
     // Arrange
     let cases: [(&[u8], &[i32], PlacementError); 3] = [
         (
-            &[1, 1],
-            &[8, 64, 23, 10, 64, 23],
+            &[1, 1, 1],
+            &[8, 64, 23, 30, 84, 0, -20, 44, 0],
             PlacementError::ToolBudgetExceeded,
         ),
         (&[1], &[8, 64, 24], PlacementError::AngleOutOfRange),
@@ -195,6 +195,36 @@ fn puzzle_error_messages_are_bounded() {
             placement.message(),
         )
     );
+}
+
+#[test]
+fn overlap_error_messages_are_bounded_and_echo_no_input() {
+    // Arrange
+    let overlaps = [
+        PlacementError::OverlapsWall,
+        PlacementError::OverlapsCupWall,
+        PlacementError::InsideCup,
+        PlacementError::OverlapsWater,
+        PlacementError::OverlapsTool,
+        PlacementError::OverlapsNoPlace,
+    ];
+
+    // Act
+    let messages = overlaps.map(|error| SessionError::InvalidPlacement(error).message());
+
+    // Assert
+    for (message, error) in messages.into_iter().zip(overlaps) {
+        assert_eq!(message, error.message());
+        assert!(
+            message.starts_with("Rust/WASM puzzle placement "),
+            "{message}"
+        );
+        assert!(message.len() <= 64, "{message}");
+        assert!(
+            !message.bytes().any(|byte| byte.is_ascii_digit()),
+            "{message}"
+        );
+    }
 }
 
 #[test]

@@ -6,12 +6,16 @@ pub(crate) mod first_pour;
 pub(crate) mod goal;
 pub(crate) mod hooks;
 mod info;
+mod inspect;
+pub(crate) mod sat;
 pub(crate) mod spec;
 pub(crate) mod tools;
+pub(crate) mod validate;
 
 use self::spec::LevelSpec;
 
 pub use info::PuzzleLevelInfo;
+pub use inspect::{PlacementInspection, inspect_puzzle_placements};
 
 /// Allowlisted puzzle level, separate from `SceneId`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

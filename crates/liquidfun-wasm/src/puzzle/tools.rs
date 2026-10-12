@@ -205,12 +205,7 @@ impl Placements {
         budget: &[ToolAllowance],
         build_area: GridRect,
     ) -> Result<Self, PlacementError> {
-        if kinds.len() > MAX_PLACEMENTS {
-            return Err(PlacementError::TooManyPlacements);
-        }
-        if kinds.len().checked_mul(POSE_STRIDE) != Some(poses.len()) {
-            return Err(PlacementError::LaneLengthMismatch);
-        }
+        check_lanes(kinds, poses)?;
         let mut placements = Vec::with_capacity(kinds.len());
         for (code, pose) in kinds.iter().zip(poses.chunks_exact(POSE_STRIDE)) {
             placements.push(parse_one(*code, pose, budget, build_area)?);
@@ -226,7 +221,34 @@ impl Placements {
     }
 }
 
-fn parse_one(
+/// Rejects oversized or misaligned lanes before anything is allocated.
+pub(super) fn check_lanes(kinds: &[u8], poses: &[i32]) -> Result<(), PlacementError> {
+    if kinds.len() > MAX_PLACEMENTS {
+        return Err(PlacementError::TooManyPlacements);
+    }
+    if kinds.len().checked_mul(POSE_STRIDE) != Some(poses.len()) {
+        return Err(PlacementError::LaneLengthMismatch);
+    }
+    Ok(())
+}
+
+/// The placement a raw pose describes, ignoring budget and build area, so an
+/// out-of-area or disallowed tool still has an outline to draw. `None` when
+/// the kind, angle or grid position cannot describe a tool.
+pub(super) fn pose_placement(code: u8, pose: &[i32]) -> Option<Placement> {
+    let [x, y, angle] = *pose else {
+        return None;
+    };
+    Some(Placement {
+        kind: ToolKind::from_code(code)?,
+        x: i16::try_from(x).ok()?,
+        y: i16::try_from(y).ok()?,
+        angle: u8::try_from(angle).ok().and_then(AngleIndex::new)?,
+    })
+}
+
+/// Parses one stride-3 pose, failing at the first Phase 37 rule it breaks.
+pub(super) fn parse_one(
     code: u8,
     pose: &[i32],
     budget: &[ToolAllowance],
@@ -283,6 +305,18 @@ pub(crate) enum PlacementError {
     PositionOutOfRange,
     /// Grid position outside the level build area.
     OutsideBuildArea,
+    /// Tool outline overlaps a level wall.
+    OverlapsWall,
+    /// Tool outline overlaps a cup wall.
+    OverlapsCupWall,
+    /// Tool outline overlaps the cup interior.
+    InsideCup,
+    /// Tool outline overlaps an initial liquid block.
+    OverlapsWater,
+    /// Tool outline overlaps another placed tool.
+    OverlapsTool,
+    /// Tool outline overlaps an authored no-build zone.
+    OverlapsNoPlace,
 }
 
 impl PlacementError {
@@ -297,6 +331,12 @@ impl PlacementError {
             Self::AngleOutOfRange => "Rust/WASM puzzle placement angle index must be 0 through 23",
             Self::PositionOutOfRange => "Rust/WASM puzzle placement grid position is out of range",
             Self::OutsideBuildArea => "Rust/WASM puzzle placement is outside the build area",
+            Self::OverlapsWall => "Rust/WASM puzzle placement overlaps a wall",
+            Self::OverlapsCupWall => "Rust/WASM puzzle placement overlaps the cup",
+            Self::InsideCup => "Rust/WASM puzzle placement is inside the cup",
+            Self::OverlapsWater => "Rust/WASM puzzle placement overlaps the water",
+            Self::OverlapsTool => "Rust/WASM puzzle placement overlaps another tool",
+            Self::OverlapsNoPlace => "Rust/WASM puzzle placement overlaps a no-build zone",
         }
     }
 }

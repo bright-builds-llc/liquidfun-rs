@@ -270,6 +270,12 @@ fn placement_error_messages_are_bounded_and_distinct() {
         PlacementError::AngleOutOfRange,
         PlacementError::PositionOutOfRange,
         PlacementError::OutsideBuildArea,
+        PlacementError::OverlapsWall,
+        PlacementError::OverlapsCupWall,
+        PlacementError::InsideCup,
+        PlacementError::OverlapsWater,
+        PlacementError::OverlapsTool,
+        PlacementError::OverlapsNoPlace,
     ];
 
     // Act
