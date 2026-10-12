@@ -4,28 +4,13 @@ import { access, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import type { GeneratedPuzzleSession } from "../../src/physics/puzzle-session";
 import type { GeneratedProofSession } from "../../src/physics/session";
 
-/** Generated `PuzzleLevelInfo` surface (D-24). */
-export interface RawPuzzleLevelInfo {
-  levelId(): string;
-  title(): string;
-  targetCount(): number;
-  fullCount(): number;
-  settleSteps(): number;
-  stepLimit(): number;
-  cupInterior(): Float32Array;
-  buildArea(): Int32Array;
-  gridMeters(): number;
-  toolKinds(): Uint8Array;
-  toolCounts(): Uint32Array;
-  free(): void;
-}
-
-/** A generated session built by `ProofSession.newPuzzle`. */
-export interface GeneratedPuzzleSession extends GeneratedProofSession {
-  levelInfo(): RawPuzzleLevelInfo;
-}
+export type {
+  GeneratedPuzzleSession,
+  RawPuzzleLevelInfo,
+} from "../../src/physics/puzzle-session";
 
 /** Generated module surface used by the puzzle replay scripts. */
 export type GeneratedPuzzleWasm = {
