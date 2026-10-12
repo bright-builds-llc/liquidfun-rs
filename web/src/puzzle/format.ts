@@ -1,3 +1,4 @@
+import { puzzleHash } from "../catalog/puzzle-levels";
 import type { PuzzleId } from "../catalog/puzzles";
 import { remainingSimulationSteps, type PuzzleState } from "./reduce-puzzle";
 
@@ -183,7 +184,7 @@ export function resultActionsModel(maybeNextId: PuzzleId | undefined): ResultAct
       label: "Next",
       ariaLabel: "Next level",
       maybeTitle: undefined,
-      maybeHref: `#/puzzle/${maybeNextId}`,
+      maybeHref: puzzleHash(maybeNextId),
     },
     primary: "next",
   };
