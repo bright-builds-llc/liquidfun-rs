@@ -155,7 +155,24 @@ Plans:
 1. Player sees the ★ Win, ★ Brim and ★ Thrifty criteria before playing. A winning run awards stars, and the best result per star is kept across runs.
 1. Fast-forward at 2× and 4× gives the same outcome step and fill as 1×, a synthetic-clock e2e places a tool and wins (including a touch project), and 25/25 scene fingerprints are unchanged.
 
-**Plans**: TBD
+**Plans**: 13 plans
+
+Plans:
+
+- [ ] 39-01-PLAN.md — Fingerprint baseline, then the Rust SAT placement validator, stateless inspector, newPuzzle parity and brim/par/no-place spec data (wave 1)
+- [ ] 39-02-PLAN.md — TS editor core: status codes and copy, building editor, hit-testing and editor view models (wave 1)
+- [ ] 39-03-PLAN.md — TS stars, best-of store, star rows, keyboard map and fast-forward helpers (wave 1)
+- [ ] 39-04-PLAN.md — TS frame parsing of peak held, Brim and decided step with fail-closed rules (wave 1)
+- [ ] 39-05-PLAN.md — Rust peak-held tracker, Brim latch, decided step, frame getters and permuted-order fingerprint (wave 2)
+- [ ] 39-06-PLAN.md — Rebuilt wasm, level-info budget/brim/par parsing, inspector decoding and status-code parity (wave 3)
+- [ ] 39-07-PLAN.md — Phase machine with editor, Stop, speed and the D-10 decision, plus HUD view models (wave 4)
+- [ ] 39-08-PLAN.md — Replay fixtures and harnesses with peak_held and brim_step (wave 4)
+- [ ] 39-09-PLAN.md — Shell wiring: preview/run sessions, editing with inspection, stars, held hash and fast-forward (wave 5)
+- [ ] 39-10-PLAN.md — Tool overlay, building-only pointer editor and debug attributes (wave 6)
+- [ ] 39-11-PLAN.md — Tool tray, selection bar, transport, star list, result card and keyboard-operable panel (wave 6)
+- [ ] 39-12-PLAN.md — Editor, keyboard, touch, edit-history and fast-forward e2e; Phase 38 D-10 literal updates (wave 7)
+- [ ] 39-13-PLAN.md — D-30 phase gates: 25/25 fingerprints, engine untouched, replays, suites and grep gates (wave 8)
+
 **UI hint**: yes
 
 ### Phase 40: Timed Valve and Teaching Levels
