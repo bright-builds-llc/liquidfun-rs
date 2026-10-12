@@ -92,6 +92,50 @@ export async function stablePuzzleCamera(page: Page): Promise<PuzzleCamera> {
   return maybeStable;
 }
 
+const FIRST_BUILDING_CAMERA_KEY = "__liquidfunFirstBuildingCamera";
+
+/**
+ * Records the camera in the page at the exact moment `main` first reports the
+ * building phase, before any later animation frame can refit it. Read the
+ * result with `firstBuildingCamera`.
+ */
+export async function recordFirstBuildingCamera(page: Page): Promise<void> {
+  await page.evaluate((key) => {
+    const store = window as unknown as Record<string, unknown>;
+    const observer = new MutationObserver(() => {
+      const maybeMain = document.querySelector<HTMLElement>("main[data-puzzle]");
+      if (maybeMain?.dataset.puzzlePhase !== "building") {
+        return;
+      }
+      const maybeCanvas = document.querySelector<HTMLCanvasElement>("canvas.scene-canvas");
+      const maybePanel = document.querySelector<HTMLElement>(".puzzle-panel");
+      store[key] = {
+        worldFrame: maybeCanvas?.dataset.worldFrame ?? null,
+        pixelsPerMeter: maybePanel?.dataset.pixelsPerMeter ?? null,
+        usedFallback: maybeCanvas?.dataset.worldFrameFallback === "true",
+      };
+      observer.disconnect();
+    });
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-puzzle-phase"],
+      subtree: true,
+    });
+  }, FIRST_BUILDING_CAMERA_KEY);
+}
+
+/** Camera captured by `recordFirstBuildingCamera`. */
+export async function firstBuildingCamera(page: Page): Promise<PuzzleCamera> {
+  const maybeCamera = await page.evaluate(
+    (key) => (window as unknown as Record<string, unknown>)[key] ?? null,
+    FIRST_BUILDING_CAMERA_KEY,
+  );
+  if (maybeCamera === null) {
+    throw new Error("the building phase was never observed");
+  }
+  return maybeCamera as PuzzleCamera;
+}
+
 /**
  * Injects the recorded first-pour solution through the D-22 test seam. The
  * placements cross into the page only as plain objects in an init script,

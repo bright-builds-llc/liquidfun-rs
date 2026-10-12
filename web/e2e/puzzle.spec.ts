@@ -17,10 +17,12 @@ import {
   PUZZLE_PATH,
   SCREENS_DIR,
   UNKNOWN_PUZZLE_PATH,
+  firstBuildingCamera,
   installSolutionPlacements,
   overlappingObstacles,
   readHudGeometry,
   readPuzzleCamera,
+  recordFirstBuildingCamera,
   stablePuzzleCamera,
   waitForHeld,
   waitForPuzzlePhase,
@@ -219,6 +221,45 @@ for (const viewport of [DESKTOP, PHONE_PORTRAIT]) {
       "data-puzzle-layout",
       viewport === DESKTOP ? "landscape" : "portrait",
     );
+  });
+}
+
+for (const viewport of [DESKTOP, PHONE_PORTRAIT]) {
+  test(`keeps the camera fixed from the first building frame after in-app entry at ${viewportName(viewport)}`, async ({
+    page,
+  }) => {
+    test.setTimeout(RUN_TEST_TIMEOUT_MS);
+    // Arrange: a running scene has already initialized wasm, so the build
+    // resolves in microtasks, ahead of any animation-frame measurement.
+    await installControlledRefreshRate(page, 60);
+    await page.setViewportSize(viewport);
+    await page.goto(SCENE_HASH_PATHS["dam-break"]);
+    await expect(sessionStatus(page)).toHaveText(PLAYING_STATUS, { timeout: 20_000 });
+    await recordFirstBuildingCamera(page);
+    const main = page.locator("main");
+
+    // Act
+    await page.evaluate(() => {
+      window.location.hash = "#/puzzle/first-pour";
+    });
+    await waitForPuzzlePhase(page, "building");
+    const reads: PuzzleCamera[] = [
+      await firstBuildingCamera(page),
+      await stablePuzzleCamera(page),
+    ];
+    await playButton(page).click();
+    await waitForPuzzlePhase(page, "running");
+    await expect.poll(() => numericAttribute(main, "data-step-index")).toBeGreaterThan(30);
+    reads.push(await readPuzzleCamera(page));
+    await waitForPuzzlePhase(page, "ended", ENDED_TIMEOUT_MS);
+    reads.push(await readPuzzleCamera(page));
+
+    // Assert (D-19, WR-02)
+    const [building] = reads;
+    for (const read of reads) {
+      expect(read.usedFallback).toBe(false);
+      expect(read).toEqual(building);
+    }
   });
 }
 

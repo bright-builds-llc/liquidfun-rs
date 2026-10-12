@@ -29,9 +29,11 @@ function measureObstacles(
  *
  * A ResizeObserver watches the canvas and each marked element, and a
  * MutationObserver re-syncs that set when chrome appears or disappears.
- * Measurements coalesce into one animation frame, and the signal ignores
- * sub-pixel churn, so text updates such as the FPS counter do not refit the
- * camera. Must be called inside a Solid owner; observers stop on cleanup.
+ * The first measurement is synchronous, so callers must create this after the
+ * chrome is attached (for example in `onMount`). Later measurements coalesce
+ * into one animation frame, and the signal ignores sub-pixel churn, so text
+ * updates such as the FPS counter do not refit the camera. Must be called
+ * inside a Solid owner; observers stop on cleanup.
  */
 export function createHudObstacles(
   root: HTMLElement,
@@ -67,7 +69,9 @@ export function createHudObstacles(
 
   observeMarked();
   mutationObserver.observe(root, { childList: true, subtree: true });
-  scheduleMeasure();
+  // Measure now, not on the next frame: a route that builds within the
+  // current task must already fit its first frame around the mounted chrome.
+  setObstacles(measureObstacles(root, canvas));
 
   onCleanup(() => {
     mutationObserver.disconnect();
