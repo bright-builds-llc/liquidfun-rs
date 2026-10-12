@@ -138,7 +138,7 @@ Plans:
 - [x] 38-06-PLAN.md — Puzzle UI: panel, fixed-slot HUD, result card, options drawer, unknown-level fallback (wave 2)
 - [x] 38-07-PLAN.md — Shell wiring: PlayableRoute, target dispatch, glass hook, PlaygroundStage switch (wave 3)
 - [x] 38-08-PLAN.md — Puzzle e2e: outcomes, seam win, fixed camera, chrome off, fallback, scene return (wave 4)
-- [ ] 38-09-PLAN.md — D-23 gates: 25/25 fingerprints, protected files, Rust/web checks, puzzle and scene suites (wave 5)
+- [x] 38-09-PLAN.md — D-23 gates: 25/25 fingerprints, protected files, Rust/web checks, puzzle and scene suites (wave 5)
 
 **UI hint**: yes
 
@@ -248,7 +248,7 @@ Plans:
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
-| 38. Puzzle Route and Player Shell | v1.5 | 8/9 | In Progress|  |
+| 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete   | 2026-10-12 |
 | 39. Place-then-Play Tools and Stars | v1.5 | 0/TBD | Not started | - |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
