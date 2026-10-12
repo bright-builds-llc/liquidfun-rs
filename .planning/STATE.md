@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 Phase: 38 (Puzzle Route and Player Shell) — EXECUTING
 Plan: 1 of 9
 Status: Executing Phase 38
-Last activity: 2026-10-12 -- Phase 38 execution started
+Last activity: 2026-10-12 - Completed quick task 261012-eaw: Make readme-svg-webp missing-encoder test deterministic
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -122,6 +122,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | 261010-vzz | HUD safe frame: slider show/hide toggle and chrome-aware camera fit (no fallback cases; Tesla valve phone frame smaller, follow-up noted) | 2026-10-11 | complete (627fe13e3) | [261010-vzz](./quick/261010-vzz-hud-safe-frame-slider-toggle-and-chrome-/) |
 | 261010-wkd | Distinct HUD slider toggle icon (panel chevron) and Tesla valve portrait frame fitted to its walls (+19.9% px/m at 390x844) | 2026-10-11 | complete (6bc85b040) | [261010-wkd](./quick/261010-wkd-distinct-hud-slider-toggle-icon-and-tigh/) |
 | 261011-n6v | Fix flaky Pages CI timeout: static-layer pixel comparisons use a fast mismatch helper instead of deep equality (about 1 s to under 10 ms per test) | 2026-10-11 | complete (4e23b88cb) | [261011-n6v](./quick/261011-n6v-fix-flaky-static-layer-test-timeout-in-p/) |
+| 261012-eaw | Fix flaky README WebP missing-encoder test: encoder start waits for spawn/error, so a missing ffmpeg rejects start instead of racing a frame write | 2026-10-12 | complete (7702cc6b3) | [261012-eaw](./quick/261012-eaw-make-readme-svg-webp-missing-encoder-tes/) |
 | fast-261007 | Fix wasm32 particle join bound overflow that capped Drawing near ~1,600 particles (commit 04216676b) | 2026-10-07 | complete | - |
 
 ## Performance Metrics
