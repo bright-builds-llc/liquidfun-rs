@@ -135,6 +135,16 @@ Out of scope here:
 
   Phase 38 should not need any Rust change. If a bridge change becomes necessary, it requires the fingerprint gate.
 
+### Post-research clarifications (yolo, from 38-RESEARCH.md Open Questions)
+- **D-24:** In canvas-stage mode, the GitHub source link and the build/version footer live only inside the scene controls drawer, which D-16 hides. Puzzle routes therefore get a small "Puzzle options" drawer. It holds only:
+  - the render-mode option
+  - the source link
+  - the build/version footer
+
+  Its toggle is a fixed HUD obstacle leaf, mounted for the whole puzzle route like the other slots. This preserves the repo's source and version visibility rule. It does not reintroduce any scene control.
+- **D-25:** The portrait frame is strict. The `first-pour` portrait rectangle contains every wall: about `{minX:-6.1, minY:-0.6, maxX:6.1, maxY:9.1}`, which fills about 92% of the width and 34% of the height at 390×844. This matches the precedent of the existing tall-basin scenes, which use a 0.3 minimum height fraction. Do not crop the unreachable right wall. Re-authoring the geometry for a tighter phone fill is a Phase 40 (LEVEL-04) concern behind the fingerprint gate.
+- **D-26:** A small TypeScript title table, keyed by `PuzzleId`, supplies the level title before wasm loads. Once the session loads, it is checked against `levelInfo().title`. A mismatch fails closed: the puzzle shows its failure overlay instead of silently showing the wrong title. The table must not be added to `web/src/catalog/puzzles.ts` if that would break its Rust `include_str!` allowlist test. A separate file is fine.
+
 ### Claude's Discretion
 - Exact component and file split: for example `PuzzleHud.tsx`, `PuzzleResultCard.tsx`, `puzzle-lifecycle.ts`, `reduce-puzzle.ts`, `render/glass-cup.ts`.
 - Exact HUD slot placement per layout, within D-18.
