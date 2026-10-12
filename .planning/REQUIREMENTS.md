@@ -11,9 +11,9 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 
 ### Cup goal and outcome
 
-- [ ] **GOAL-01**: Player sees a live fill % for the cup, counting only the level's water particles whose centres are inside the cup, against a fixed capacity authored per level.
+- [x] **GOAL-01**: Player sees a live fill % for the cup, counting only the level's water particles whose centres are inside the cup, against a fixed capacity authored per level.
 - [x] **GOAL-02**: Player wins when the fill stays at or above the target for a short settle time (about 0.5 s of simulation) before the time limit; a splash passing through does not win.
-- [ ] **GOAL-03**: Player sees a timer that runs on simulation time and only during a run; the run fails with a message such as "Out of time: 54% of 80%" when the limit passes without a win.
+- [x] **GOAL-03**: Player sees a timer that runs on simulation time and only during a run; the run fails with a message such as "Out of time: 54% of 80%" when the limit passes without a win.
 - [ ] **GOAL-04**: The same level and placements always produce the same outcome regardless of device speed; a recorded solution replays to the same result natively and in the browser.
 
 ### Tools and play
@@ -41,11 +41,11 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 ### Puzzle section
 
 - [ ] **PUZ-01**: Player can open a Puzzles section (`#/puzzles`) from site navigation and see a level grid with title, idea, stars and lock state.
-- [ ] **PUZ-02**: Player can open any level directly at `#/puzzle/<id>`; an unknown id shows a helpful fallback.
-- [ ] **PUZ-03**: In puzzles, scene interactions (pointer poke and drag, tilt, gravity slider, zoom and pan) are disabled, and the camera does not jump when switching between building and running.
-- [ ] **PUZ-04**: Player sees a puzzle HUD that follows existing chrome rules (`data-hud-obstacle` leaves, scale legend): a fill meter at the cup with target line and star ticks, the timer, and a result card with Next, Retry and Edit.
-- [ ] **PUZ-05**: Player sees the cup drawn as glass with an etched target line and star ticks.
-- [ ] **PUZ-06**: The 25 existing scenes behave exactly as before: 25/25 end-state fingerprints unchanged and existing tests passing.
+- [x] **PUZ-02**: Player can open any level directly at `#/puzzle/<id>`; an unknown id shows a helpful fallback.
+- [x] **PUZ-03**: In puzzles, scene interactions (pointer poke and drag, tilt, gravity slider, zoom and pan) are disabled, and the camera does not jump when switching between building and running.
+- [x] **PUZ-04**: Player sees a puzzle HUD that follows existing chrome rules (`data-hud-obstacle` leaves, scale legend): a fill meter at the cup with target line and star ticks, the timer, and a result card with Next, Retry and Edit.
+- [x] **PUZ-05**: Player sees the cup drawn as glass with an etched target line and star ticks.
+- [x] **PUZ-06**: The 25 existing scenes behave exactly as before: 25/25 end-state fingerprints unchanged and existing tests passing.
 
 ### Progress
 
@@ -99,9 +99,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| GOAL-01 | Phase 38 | Pending |
+| GOAL-01 | Phase 38 | Complete |
 | GOAL-02 | Phase 37 | Complete |
-| GOAL-03 | Phase 38 | Pending |
+| GOAL-03 | Phase 38 | Complete |
 | GOAL-04 | Phase 37 | Pending |
 | TOOL-01 | Phase 39 | Pending |
 | TOOL-02 | Phase 39 | Pending |
@@ -117,11 +117,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LEVEL-03 | Phase 40 | Pending |
 | LEVEL-04 | Phase 40 | Pending |
 | PUZ-01 | Phase 41 | Pending |
-| PUZ-02 | Phase 38 | Pending |
-| PUZ-03 | Phase 38 | Pending |
-| PUZ-04 | Phase 38 | Pending |
-| PUZ-05 | Phase 38 | Pending |
-| PUZ-06 | Phase 38 | Pending |
+| PUZ-02 | Phase 38 | Complete |
+| PUZ-03 | Phase 38 | Complete |
+| PUZ-04 | Phase 38 | Complete |
+| PUZ-05 | Phase 38 | Complete |
+| PUZ-06 | Phase 38 | Complete |
 | PROG-01 | Phase 41 | Pending |
 | PROG-02 | Phase 41 | Pending |
 | PROG-03 | Phase 41 | Pending |
