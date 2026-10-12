@@ -1,0 +1,420 @@
+/*
+ * Puzzle player chrome (Phase 38 UI-SPEC). Every HUD leaf has a fixed box per
+ * layout so content swaps between puzzle phases never change the obstacle set
+ * and the safe frame never refits (D-14, D-18). Layout geometry keys only on
+ * data-puzzle-layout and is scoped to the canvas stage; the form-factor shell
+ * lays the same chips out in normal flow. No motion on puzzle chrome.
+ */
+
+.puzzle-panel {
+  --puzzle-inset-top: max(8px, env(safe-area-inset-top, 0px));
+  --puzzle-inset-right: max(8px, env(safe-area-inset-right, 0px));
+  --puzzle-inset-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  --puzzle-inset-left: max(8px, env(safe-area-inset-left, 0px));
+}
+
+/* No pointer interactions on puzzle canvases, so no crosshair (D-16). */
+.puzzle-panel canvas.scene-canvas {
+  cursor: default;
+}
+
+/* Shared chip surface and numbers. */
+
+.puzzle-chip {
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 8px;
+  color: #F4F7FA;
+  font-variant-numeric: tabular-nums;
+  background: rgb(21 29 40 / 86%);
+  border: 1px solid #2A3441;
+  border-radius: 8px;
+}
+
+.puzzle-meter {
+  display: grid;
+  grid-template-rows: 24px 16px;
+  align-content: center;
+  gap: 4px;
+}
+
+.puzzle-meter-readout {
+  overflow: hidden;
+  line-height: 24px;
+  white-space: nowrap;
+}
+
+.puzzle-meter-percent {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.puzzle-meter-target {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: pre;
+}
+
+.puzzle-meter-track {
+  position: relative;
+  box-sizing: border-box;
+  align-self: center;
+  height: 8px;
+  background: #0B0F14;
+  border: 1px solid #2A3441;
+  border-radius: 4px;
+}
+
+.puzzle-meter-fill {
+  height: 100%;
+  max-width: 100%;
+  background: #4DA3FF;
+  border-radius: 3px;
+}
+
+.puzzle-meter-tick {
+  position: absolute;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  background: #A9B4C0;
+  transform: translate(-50%, -50%);
+}
+
+.puzzle-meter-tick[data-star="true"] {
+  background: #E6C35C;
+}
+
+.puzzle-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.puzzle-play.product-control {
+  box-sizing: border-box;
+  gap: 8px;
+  width: 136px;
+  height: 44px;
+  min-block-size: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+}
+
+.puzzle-play svg {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+  stroke: none;
+}
+
+.puzzle-play.product-control[aria-disabled="true"],
+.puzzle-play.product-control[aria-disabled="true"]:hover {
+  color: #A9B4C0;
+  background: #151D28;
+  border-color: #2A3441;
+  cursor: default;
+}
+
+.puzzle-result {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  border-radius: 12px;
+}
+
+.puzzle-result-message {
+  margin: 0;
+  overflow: hidden;
+  color: #A9B4C0;
+  font-weight: 400;
+}
+
+/* 22px outcome lines keep message plus actions inside both fixed card heights. */
+.puzzle-result[data-outcome] .puzzle-result-message {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.puzzle-result-outcome,
+.puzzle-result-score {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.puzzle-result-score {
+  color: #F4F7FA;
+}
+
+.puzzle-result[data-outcome="won"] {
+  box-shadow: inset 3px 0 0 #3DDC97;
+}
+
+.puzzle-result[data-outcome="won"] .puzzle-result-outcome {
+  color: #3DDC97;
+}
+
+.puzzle-result[data-outcome="lost"] {
+  box-shadow: inset 3px 0 0 #F07178;
+}
+
+.puzzle-result[data-outcome="lost"] .puzzle-result-outcome {
+  color: #F07178;
+}
+
+.puzzle-result-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.puzzle-result-actions .product-control {
+  box-sizing: border-box;
+  justify-self: stretch;
+  width: 100%;
+  height: 44px;
+  min-width: 0;
+  min-block-size: 44px;
+  padding: 0 8px;
+}
+
+.puzzle-legend-slot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  width: 100px;
+  height: 28px;
+  pointer-events: none;
+}
+
+/* Loading and failure overlays. */
+
+.puzzle-failure .puzzle-failure-heading {
+  color: #F87171;
+}
+
+.puzzle-failure button,
+.puzzle-failure details {
+  justify-self: center;
+  pointer-events: auto;
+}
+
+/* Canvas stage: absolutely positioned leaves over the full-screen frame. */
+
+.puzzle-hud {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+
+.puzzle-hud > * {
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.puzzle-hud .puzzle-play,
+.puzzle-hud .puzzle-result a,
+.puzzle-hud .puzzle-result button,
+.puzzle-hud .puzzle-options-slot button {
+  pointer-events: auto;
+}
+
+.puzzle-hud .puzzle-title {
+  overflow: hidden;
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 44px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 80%);
+}
+
+.puzzle-hud .puzzle-transport,
+.puzzle-hud .puzzle-options-slot {
+  display: flex;
+}
+
+/* Landscape: two 136px side rails (UI-D4). */
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-title {
+  top: calc(var(--puzzle-inset-top) + 52px);
+  left: var(--puzzle-inset-left);
+  width: 136px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-meter {
+  top: calc(var(--puzzle-inset-top) + 104px);
+  left: var(--puzzle-inset-left);
+  width: 136px;
+  height: 64px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-timer {
+  top: calc(var(--puzzle-inset-top) + 176px);
+  left: var(--puzzle-inset-left);
+  width: 136px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport {
+  bottom: var(--puzzle-inset-bottom);
+  left: var(--puzzle-inset-left);
+  width: 136px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-options-slot {
+  top: var(--puzzle-inset-top);
+  right: var(--puzzle-inset-right);
+  width: 44px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result {
+  top: calc(var(--puzzle-inset-top) + 52px);
+  right: var(--puzzle-inset-right);
+  width: 136px;
+  height: 220px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result:not([data-outcome]) .puzzle-result-message {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-outcome,
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-score {
+  display: block;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-actions .product-control {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-legend-slot {
+  right: var(--puzzle-inset-right);
+  bottom: var(--puzzle-inset-bottom);
+}
+
+/* Portrait: a top band and a bottom band around the world. */
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-title {
+  top: var(--puzzle-inset-top);
+  left: calc(var(--puzzle-inset-left) + 52px);
+  width: calc(100% - 120px);
+  height: 44px;
+  text-align: center;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-options-slot {
+  top: var(--puzzle-inset-top);
+  right: var(--puzzle-inset-right);
+  width: 44px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-meter {
+  top: calc(var(--puzzle-inset-top) + 52px);
+  left: var(--puzzle-inset-left);
+  width: 232px;
+  height: 64px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-timer {
+  top: calc(var(--puzzle-inset-top) + 52px);
+  right: var(--puzzle-inset-right);
+  width: 104px;
+  height: 64px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-result {
+  right: var(--puzzle-inset-right);
+  bottom: calc(var(--puzzle-inset-bottom) + 52px);
+  left: var(--puzzle-inset-left);
+  height: 92px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-result:not([data-outcome]) .puzzle-result-message {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-result-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-transport {
+  bottom: var(--puzzle-inset-bottom);
+  left: var(--puzzle-inset-left);
+  width: 136px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-legend-slot {
+  right: var(--puzzle-inset-right);
+  bottom: var(--puzzle-inset-bottom);
+}
+
+/* Form-factor shell: normal flow with the portrait chip boxes; no obstacles. */
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-meter,
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-timer,
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result,
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-play {
+  position: static;
+  flex: 0 0 auto;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-meter {
+  width: 232px;
+  height: 64px;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-timer {
+  width: 104px;
+  height: 64px;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result {
+  width: min(100%, 480px);
+  height: 92px;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result:not([data-outcome]) .puzzle-result-message {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-play.product-control {
+  justify-self: start;
+  width: 136px;
+  height: 44px;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .viewport-frame > .puzzle-legend-slot {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+}
