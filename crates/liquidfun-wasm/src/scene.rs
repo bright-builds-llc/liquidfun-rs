@@ -167,6 +167,12 @@ pub(crate) trait SceneHooks {
         Ok(())
     }
 
+    /// Puzzle readout after the latest fixed step; scenes have none.
+    #[cfg_attr(not(test), allow(dead_code))] // Temporary until Plan 37-07 wires newPuzzle; Plan 07 removes this line.
+    fn maybe_puzzle_status(&self) -> Option<crate::puzzle::goal::PuzzleStatus> {
+        None
+    }
+
     /// Angle of a motorized body, when the scene has one.
     #[cfg(test)]
     fn maybe_motor_angle(&self, _world: &World) -> Option<f32> {

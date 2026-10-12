@@ -1,7 +1,15 @@
 //! Puzzle levels built from a level id and construction-time placements, kept apart from the scene allowlist (Phase 37).
 #![cfg_attr(not(test), allow(dead_code))] // Temporary until Plan 37-07 wires newPuzzle; Plan 07 removes this line.
 
+pub(crate) mod angles;
+pub(crate) mod builder;
+pub(crate) mod first_pour;
 pub(crate) mod goal;
+pub(crate) mod hooks;
+pub(crate) mod spec;
+pub(crate) mod tools;
+
+use self::spec::LevelSpec;
 
 /// Allowlisted puzzle level, separate from `SceneId`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -28,6 +36,13 @@ pub(crate) fn parse_level_id(raw: &str) -> Option<LevelId> {
     match raw {
         "first-pour" => Some(LevelId::FirstPour),
         _ => None,
+    }
+}
+
+/// The const spec for an allowlisted level.
+pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
+    match id {
+        LevelId::FirstPour => &first_pour::FIRST_POUR,
     }
 }
 
