@@ -1,6 +1,7 @@
 import { appendFpsTick, type FpsTick } from "../components/fps-meter";
 import type { SceneId } from "../catalog/scenes";
-import { worldBoundsForViewport } from "../catalog/portrait-bounds";
+import type { PuzzleId } from "../catalog/puzzles";
+import { worldBoundsForTarget } from "../catalog/puzzle-bounds";
 import {
   FRAME_STEP_BUDGET_MS,
   accumulateStepTime,
@@ -19,11 +20,12 @@ import {
 } from "./worker-frame-loop";
 import { cameraFrame, publishWorldFrame } from "./camera-frame";
 import { observeFrame } from "./observe";
-import { maybeReadySceneId } from "./runtime";
+import { maybePlayableTarget } from "./playable-target";
 import { prefersReducedMotion, isUsableViewport } from "./viewport";
 import { maybeObservedFrame, type PlayerView } from "./view";
 import { resizeCanvasBackingStore } from "../render/canvas";
 import type { ScreenRect } from "../render/safe-frame";
+import type { PlayableRoute } from "../routing/playable-route";
 import {
   IDENTITY_CAMERA_VIEW,
   WORLD_BOUNDS,
@@ -54,8 +56,10 @@ export type FrameLoopDeps = {
   fail: (error: unknown) => void;
   maybeSession: () => PlayerSession | undefined;
   maybeOnWorkerTiming?: (timing: WorkerTiming) => void;
-  route: () => Parameters<typeof maybeReadySceneId>[0];
+  route: () => PlayableRoute;
   startScene: (id: SceneId) => void;
+  /** Starts a puzzle level when resize finds no session; absent outside the playground. */
+  maybeStartPuzzle?: (id: PuzzleId) => void;
   drawSceneFrame: (
     context: CanvasRenderingContext2D,
     frame: RenderFrame,
@@ -263,10 +267,10 @@ export function connectResizeObserver(
     try {
       clock.viewportWidth = resizedBounds.width;
       clock.viewportHeight = resizedBounds.height;
-      const maybeReadyId = maybeReadySceneId(deps.route());
-      if (maybeReadyId !== undefined) {
-        clock.worldBounds = worldBoundsForViewport(
-          maybeReadyId,
+      const maybeTarget = maybePlayableTarget(deps.route());
+      if (maybeTarget !== undefined) {
+        clock.worldBounds = worldBoundsForTarget(
+          maybeTarget,
           clock.viewportWidth,
           clock.viewportHeight,
         );
@@ -288,9 +292,15 @@ export function connectResizeObserver(
         return;
       }
       deps.setMaybePixelsPerMeter(resizedCamera.scale);
-      if (deps.maybeSession() === undefined && maybeReadyId !== undefined) {
-        deps.startScene(maybeReadyId);
-        return;
+      if (deps.maybeSession() === undefined && maybeTarget !== undefined) {
+        if (maybeTarget.kind === "scene") {
+          deps.startScene(maybeTarget.id);
+          return;
+        }
+        if (deps.maybeStartPuzzle !== undefined) {
+          deps.maybeStartPuzzle(maybeTarget.id);
+          return;
+        }
       }
 
       const maybeFrame = clock.maybePreviousFrame;

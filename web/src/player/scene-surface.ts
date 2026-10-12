@@ -22,6 +22,7 @@ import { maybeReadySceneId } from "./runtime";
 import { maybeObservedFrame } from "./view";
 import { isUsableViewport } from "./viewport";
 import { presentSceneFrame } from "../render/present-frame";
+import { drawGlassCup } from "../render/glass-cup";
 import {
   IDENTITY_CAMERA_VIEW,
   createCamera,
@@ -68,6 +69,11 @@ function drawSceneFrame(
     window.devicePixelRatio,
     session.appearance.densityShading(),
   );
+  // Route check first: scene routes never read puzzle state (D-12, Pitfall 6).
+  if (session.route().kind === "puzzle") {
+    const maybeGlass = session.puzzle.maybeGlass;
+    if (maybeGlass !== undefined) drawGlassCup(context, camera, maybeGlass);
+  }
 }
 
 function refreshCamera(session: SceneRuntime): void {
@@ -166,6 +172,31 @@ function assignCanvas(session: SceneRuntime, canvas: HTMLCanvasElement): void {
     panEnabled: () => session.panEnabled(),
     onPanBy: (deltaX, deltaY) => panBy(session, deltaX, deltaY),
   });
+
+  const maybeNextContext = canvas.getContext("2d");
+  if (maybeNextContext === null) {
+    session.failScene(new Error("Canvas 2D is unavailable"));
+    return;
+  }
+
+  session.maybeContext = maybeNextContext;
+  connectResizeObserver(
+    session.clock,
+    canvas,
+    maybeNextContext,
+    session.frameDeps(),
+  );
+}
+
+/** Puzzle canvases share the resize observer but take no pointer input (D-16). */
+function assignPuzzleCanvas(
+  session: SceneRuntime,
+  canvas: HTMLCanvasElement,
+): void {
+  session.maybeCanvasPointer?.detach();
+  session.maybeCanvasPointer = undefined;
+  session.maybeCanvas = canvas;
+  canvas.classList.remove("canvas-interactive", "canvas-panning");
 
   const maybeNextContext = canvas.getContext("2d");
   if (maybeNextContext === null) {
@@ -379,6 +410,7 @@ export function bindSurface(session: SceneRuntime): void {
   };
   session.changePanEnabled = (enabled) => changePanEnabled(session, enabled);
   session.assignCanvas = (canvas) => assignCanvas(session, canvas);
+  session.assignPuzzleCanvas = (canvas) => assignPuzzleCanvas(session, canvas);
   session.assignParticleSurface = (canvas) => {
     session.maybeParticleCanvas = canvas;
   };

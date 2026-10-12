@@ -21,7 +21,14 @@ import {
 import { reapplyStoredTiltGravity } from "../input/tilt-binding";
 import { DEFAULT_RENDERED_PARTICLE_LIMIT } from "../render/particle-limit";
 import { IDENTITY_CAMERA_VIEW } from "../render/camera";
-import { normalizeSceneRoute } from "../routing/hash";
+import { normalizePlayableRoute } from "../routing/playable-route";
+import { maybePlayableTarget, samePlayableTarget } from "./playable-target";
+import {
+  beginPuzzleRoute,
+  createPuzzleController,
+  leavePuzzle,
+  startPuzzleUnlessLoading,
+} from "./puzzle-lifecycle";
 import type { SceneRuntime } from "./scene-runtime";
 import { publishHeldWorkerFrame } from "./worker-frame-loop";
 
@@ -87,6 +94,8 @@ function frameDeps(session: SceneRuntime): FrameLoopDeps {
     startScene: (id) => {
       void beginScene(session, id);
     },
+    // Never restart a level mid-build: resize fires whenever no session exists.
+    maybeStartPuzzle: (id) => startPuzzleUnlessLoading(session, id),
     drawSceneFrame: (context, frame, camera) => {
       session.drawSceneFrame(context, frame, camera);
     },
@@ -244,7 +253,7 @@ function recreateScene(session: SceneRuntime): void {
 /** Applies a playground hash change to the live session. */
 export function handleHashChange(session: SceneRuntime): void {
   const previousRoute = session.route();
-  const normalized = normalizeSceneRoute(window.location.hash);
+  const normalized = normalizePlayableRoute(window.location.hash);
   if (normalized.maybeReplacementHash !== undefined) {
     window.history.replaceState(
       window.history.state,
@@ -254,6 +263,19 @@ export function handleHashChange(session: SceneRuntime): void {
   }
   const nextRoute = normalized.route;
   session.setRoute(nextRoute);
+
+  const maybePreviousTarget = maybePlayableTarget(previousRoute);
+  const maybeNextTarget = maybePlayableTarget(nextRoute);
+  if (maybeNextTarget?.kind === "puzzle") {
+    if (samePlayableTarget(maybePreviousTarget, maybeNextTarget)) return;
+    if (session.maybeCanvas !== undefined && session.maybeContext !== undefined) {
+      void session.beginPuzzleRoute(maybeNextTarget.id);
+      return;
+    }
+    session.setView({ kind: "loading" });
+    return;
+  }
+  if (maybePreviousTarget?.kind === "puzzle") session.leavePuzzle();
 
   const maybeNextId = maybeReadySceneId(nextRoute);
   if (maybeNextId === undefined) {
@@ -283,6 +305,9 @@ export function bindLifecycle(session: SceneRuntime): void {
   session.recreateScene = () => recreateScene(session);
   session.abandonScene = () => abandonScene(session);
   session.failScene = (error) => failScene(session, error);
+  session.beginPuzzleRoute = (id) => beginPuzzleRoute(session, id);
+  session.leavePuzzle = () => leavePuzzle(session);
+  session.puzzleController = createPuzzleController(session);
 }
 
 /** Drops the frame clock when the tab is hidden and resumes cleanly. */
