@@ -20,10 +20,15 @@ export type CaptureSceneFramesArgs = {
 const SYNTHETIC_CLOCK_KEY = "__liquidfunSyntheticAnimationClock";
 const DEMO_MEDIA_CAPTURE_ATTRIBUTE = "data-demo-media-capture";
 const anchoredClockStates = new WeakMap<Page, SyntheticClockState>();
+// Two native frames let a layout change reach ResizeObserver, which runs after
+// a frame's animation callbacks, before the harness reads the synthetic queue.
+const SETTLE_BROWSER_FRAMES = 2;
+const MAX_SETTLE_ROUNDS = 8;
 
 type SyntheticAnimationController = {
   readonly advance: (timestampMilliseconds: number) => number;
   readonly pendingCount: () => number;
+  readonly waitForBrowserFrames: (count: number) => Promise<void>;
 };
 
 type SceneSnapshot = {
@@ -54,8 +59,10 @@ export async function installSyntheticAnimationClock(page: Page): Promise<void> 
     type SyntheticAnimationController = {
       readonly advance: (timestampMilliseconds: number) => number;
       readonly pendingCount: () => number;
+      readonly waitForBrowserFrames: (count: number) => Promise<void>;
     };
 
+    const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
     const callbackQueue = new Map<number, FrameRequestCallback>();
     let nextCallbackId = 1;
 
@@ -72,6 +79,13 @@ export async function installSyntheticAnimationClock(page: Page): Promise<void> 
       },
       pendingCount() {
         return callbackQueue.size;
+      },
+      async waitForBrowserFrames(count) {
+        for (let frame = 0; frame < count; frame += 1) {
+          await new Promise<void>((resolve) => {
+            nativeRequestAnimationFrame(() => resolve());
+          });
+        }
       },
     };
 
@@ -100,7 +114,7 @@ export async function waitForReadyScene(
   );
   await expect(main).toBeVisible();
   await expect.poll(() => numericAttribute(main, "data-step-index")).toBeGreaterThan(0);
-  await expect.poll(() => pendingAnimationCallbackCount(page)).toBe(1);
+  await settleSyntheticClock(page, 0);
 
   const initialStep = await numericAttribute(main, "data-step-index");
   const advancedCallbacks = await advanceSyntheticClock(page, 0);
@@ -131,6 +145,10 @@ export async function advanceEngineSteps(
     throw new Error("Synthetic clock anchor is missing");
   }
 
+  await settleSyntheticClock(
+    page,
+    maybeClockState.callbackCount * FIXED_TIMESTAMP_DELTA_MILLISECONDS,
+  );
   const main = page.locator("main");
   let currentStepIndex = await numericAttribute(main, "data-step-index");
   let currentClockState = maybeClockState;
@@ -288,6 +306,60 @@ async function setDemoMediaCaptureAttribute(
       attributeName: DEMO_MEDIA_CAPTURE_ATTRIBUTE,
       enabledCaptureMode: enabled,
     },
+  );
+}
+
+/**
+ * Runs layout-driven one-shot callbacks until only the frame loop is pending.
+ *
+ * The HUD obstacle measurement shares the synthetic queue with the frame loop
+ * and joins it whenever page chrome changes layout, such as on load or after
+ * the sliders toggle. Replaying the last delivered timestamp runs those
+ * callbacks at a fixed point while the frame loop sees zero elapsed time, so it
+ * takes no step and every later advance runs exactly the frame loop.
+ */
+async function settleSyntheticClock(
+  page: Page,
+  heldTimestampMilliseconds: number,
+): Promise<void> {
+  const main = page.locator("main");
+  const stepIndex = await numericAttribute(main, "data-step-index");
+
+  for (let round = 0; round < MAX_SETTLE_ROUNDS; round += 1) {
+    await waitForBrowserFrames(page, SETTLE_BROWSER_FRAMES);
+    const pendingCount = await pendingAnimationCallbackCount(page);
+    if (pendingCount === 0) {
+      throw new Error("Synthetic clock has no pending frame-loop callback");
+    }
+    if (pendingCount === 1) {
+      const settledStepIndex = await numericAttribute(main, "data-step-index");
+      if (settledStepIndex !== stepIndex) {
+        throw new Error(
+          `Settling the synthetic clock moved the engine from step ${stepIndex} to ${settledStepIndex}`,
+        );
+      }
+      return;
+    }
+    await advanceSyntheticClock(page, heldTimestampMilliseconds);
+  }
+
+  throw new Error(
+    `Synthetic clock still had extra callbacks after ${MAX_SETTLE_ROUNDS} settle rounds`,
+  );
+}
+
+async function waitForBrowserFrames(page: Page, count: number): Promise<void> {
+  await page.evaluate(
+    ({ clockKey, frameCount }) => {
+      const globalWindow = window as typeof window &
+        Record<string, SyntheticAnimationController | undefined>;
+      const maybeController = globalWindow[clockKey];
+      if (maybeController === undefined) {
+        throw new Error("Synthetic animation clock is unavailable");
+      }
+      return maybeController.waitForBrowserFrames(frameCount);
+    },
+    { clockKey: SYNTHETIC_CLOCK_KEY, frameCount: count },
   );
 }
 

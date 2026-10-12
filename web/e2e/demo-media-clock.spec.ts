@@ -44,6 +44,30 @@ test("advances an exact number of steps under synthetic time", async ({
   );
 });
 
+test("advances an exact number of steps after the HUD chrome changes", async ({
+  page,
+}) => {
+  // Arrange
+  const plan = SCENE_CAPTURE_PLANS[0];
+  if (plan === undefined) {
+    throw new Error("Dam Break capture plan is missing");
+  }
+  await installSyntheticAnimationClock(page);
+  await page.goto(plan.route);
+  const initialStep = await waitForReadyScene(page, plan);
+  await page.locator(".canvas-sliders-toggle").click();
+  await expect(page.locator("#canvas-hud-sliders")).toHaveCount(0);
+
+  // Act
+  await advanceEngineSteps(page, 12);
+
+  // Assert
+  await expect(page.locator("main")).toHaveAttribute(
+    "data-step-index",
+    String(initialStep + 12),
+  );
+});
+
 test("captures a stable real-page font fingerprint", async ({ page }) => {
   // Arrange
   const plan = SCENE_CAPTURE_PLANS[0];
