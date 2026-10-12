@@ -549,16 +549,19 @@ Not a rename or refactor phase. Omitted.
 | A3 | The timer should count down to the decision step and the meter should freeze at peak-held % for won runs | Pitfall 3 | UX choice only. UI-SPEC decides; e2e literals follow |
 | A4 | FNV hashing of the held frame (about 16 KB of f32 data with BigInt) once per run is cheap enough in the browser | D-27 e2e | Could cost a few ms. Hash only on `held`, never per frame |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Brim value: 810 or 765?**
    - Known: both satisfy D-07, and 810 decides at 262 and 765 at 248.
    - Unclear: how a weaker (two-plank) solution fares. Level tuning is Phase 40.
    - Recommendation: 810. Record it with the measured peak in the SUMMARY (D-07).
+   - RESOLVED: Brim is 810, set in Plan 01 (`first_pour.rs`); the measured peak held is recorded in the Plan 05 SUMMARY.
 2. **`full_count` 900 is far below the real cup capacity (count reaches 1363)**
    - Fill clamps at 100% early, so Brim is reached by almost any win that keeps pouring. This is a Phase 40 tuning item (D-07 locks `full_count` here). Note it in the SUMMARY.
+   - RESOLVED: deferred to Phase 40 level tuning; `full_count` stays 900 in this phase and Plan 14's SUMMARY records the note.
 3. **Whether a `data-puzzle-held-hash` debug attribute or the window seam carries the D-27 e2e fingerprint**
    - Recommendation: a `main[data-puzzle-held-hash]` attribute set once when held, plus `data-puzzle-decided-step`, `data-puzzle-peak-held` and `data-puzzle-placements`. These are deterministic, non-secret and not URL-reachable.
+   - RESOLVED: the `data-puzzle-held-hash` attribute on `main`, rendered in Plan 11 (debug attributes) from the hash published by Plan 09.
 
 ## Environment Availability
 
