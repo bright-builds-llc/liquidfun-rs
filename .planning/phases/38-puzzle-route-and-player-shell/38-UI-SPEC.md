@@ -1,7 +1,8 @@
 ---
 phase: 38
 slug: puzzle-route-and-player-shell
-status: draft
+status: approved
+reviewed_at: 2026-10-12T02:00:00Z
 shadcn_initialized: false
 preset: none
 created: 2026-10-12
@@ -147,6 +148,8 @@ Phase 38 tick list: `[{fraction: targetCount/fullCount, label: "★ Win"}, {frac
 ---
 
 ## HUD Layout
+
+**Visual priority:** the cup with its etched target line is the primary visual anchor. The fill meter is the secondary readout and the timer the tertiary one. Play (in `building`) and the primary result action (in `ended`) are the only accent-colored controls.
 
 Two layouts apply on canvas stage (the default shell at every size). The panel root sets `data-puzzle-layout="portrait"` when the canvas height is greater than its width, else `"landscape"`. This is the same rule `worldBoundsForTarget` uses, and CSS keys only on this attribute, not on media queries **[UI-D3]**. All leaves mount with the puzzle route, carry `data-hud-obstacle` on the leaf, and have the fixed boxes below in every puzzle phase (`loading`, `building`, `running`, `ended`) and for any text content. Leaf containers use `pointer-events: none`; interactive leaves use `pointer-events: auto`. HUD z-index is 3 (same as `.canvas-hud-corner`).
 
@@ -348,11 +351,11 @@ No new npm dependency is added in this phase.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: FLAG (visual priority line added after review)
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved by gsd-ui-checker (AI reviewer), 2026-10-12
