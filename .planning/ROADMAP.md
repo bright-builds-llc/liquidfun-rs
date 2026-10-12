@@ -234,7 +234,7 @@ Plans:
 | 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
-| 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete   | 2026-10-12 |
+| 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
 | 38. Puzzle Route and Player Shell | v1.5 | 0/TBD | Not started | - |
 | 39. Place-then-Play Tools and Stars | v1.5 | 0/TBD | Not started | - |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
