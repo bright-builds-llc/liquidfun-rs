@@ -82,6 +82,41 @@ pub(crate) const fn fill_margin_count(full_count: u32) -> u32 {
     full_count.div_ceil(20)
 }
 
+/// Steps before the step limit by which the raised-target win must complete.
+#[cfg(test)]
+pub(crate) const MARGIN_WIN_SLACK_STEPS: u32 = 120;
+
+/// Step at which a run would still win with its target raised by the fill
+/// margin (the D-03 fallback margin rule).
+///
+/// `counts[i]` is the goal count after step `i + 1`. The counts are replayed
+/// through a second `GoalTracker` with target
+/// `target_count + fill_margin_count(full_count)`, the same `settle_steps`,
+/// and a step limit `MARGIN_WIN_SLACK_STEPS` before `step_limit`. A rule over
+/// the latched settle window alone would need a one-step inflow larger than
+/// the margin, which a pour never produces. Returns `None` when that tracker
+/// does not win within `counts` or the configuration is invalid.
+#[cfg(test)]
+pub(crate) fn maybe_margin_win_step(
+    counts: &[u32],
+    target_count: u32,
+    full_count: u32,
+    settle_steps: u32,
+    step_limit: u32,
+) -> Option<u32> {
+    let raised_target = target_count.checked_add(fill_margin_count(full_count))?;
+    let deadline = step_limit.checked_sub(MARGIN_WIN_SLACK_STEPS)?;
+    let mut tracker = GoalTracker::new(raised_target, settle_steps, deadline)?;
+    for (step, &count) in (1_u32..).zip(counts) {
+        match tracker.observe(count, step) {
+            Outcome::Running => {}
+            Outcome::Won { step } => return Some(step),
+            Outcome::Lost { .. } => return None,
+        }
+    }
+    None
+}
+
 /// Puzzle outcome decided per fixed step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Outcome {

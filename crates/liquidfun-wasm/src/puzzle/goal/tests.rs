@@ -1,7 +1,8 @@
 use liquidfun::math::Vec2;
 
 use super::{
-    GoalRect, GoalTracker, Outcome, PuzzleStatus, count_in_goal, fill_margin_count, fill_ratio,
+    GoalRect, GoalTracker, MARGIN_WIN_SLACK_STEPS, Outcome, PuzzleStatus, count_in_goal,
+    fill_margin_count, fill_ratio, maybe_margin_win_step,
 };
 
 const TARGET: u32 = 10;
@@ -397,4 +398,54 @@ fn puzzle_status_carries_the_latched_outcome() {
 
     // Assert
     assert_eq!(status.outcome.maybe_step(), Some(status.step_limit));
+}
+
+/// Full count whose 5% margin is 5, so the raised target is `TARGET + 5`.
+const MARGIN_FULL: u32 = 100;
+const RAISED_TARGET: u32 = TARGET + 5;
+
+/// `quiet` zero counts followed by `held` counts at `count`.
+fn counts_after_quiet_steps(quiet: u32, held: u32, count: u32) -> Vec<u32> {
+    let mut counts = vec![0; quiet as usize];
+    counts.resize((quiet + held) as usize, count);
+    counts
+}
+
+#[test]
+fn margin_win_completes_when_the_raised_target_holds_for_the_settle_window() {
+    // Arrange
+    let counts = counts_after_quiet_steps(5, SETTLE, RAISED_TARGET);
+
+    // Act
+    let maybe_step = maybe_margin_win_step(&counts, TARGET, MARGIN_FULL, SETTLE, LIMIT);
+
+    // Assert
+    assert_eq!(maybe_step, Some(5 + SETTLE));
+}
+
+#[test]
+fn margin_win_needs_counts_at_or_above_the_raised_target() {
+    // Arrange
+    let counts = counts_after_quiet_steps(5, 200, RAISED_TARGET - 1);
+
+    // Act
+    let maybe_step = maybe_margin_win_step(&counts, TARGET, MARGIN_FULL, SETTLE, LIMIT);
+
+    // Assert
+    assert_eq!(maybe_step, None);
+}
+
+#[test]
+fn margin_win_must_complete_by_the_slack_deadline() {
+    // Arrange
+    let deadline = LIMIT - MARGIN_WIN_SLACK_STEPS;
+    let on_time = counts_after_quiet_steps(deadline - SETTLE, SETTLE, RAISED_TARGET);
+    let late = counts_after_quiet_steps(deadline - SETTLE + 1, SETTLE, RAISED_TARGET);
+
+    // Act
+    let maybe_on_time = maybe_margin_win_step(&on_time, TARGET, MARGIN_FULL, SETTLE, LIMIT);
+    let maybe_late = maybe_margin_win_step(&late, TARGET, MARGIN_FULL, SETTLE, LIMIT);
+
+    // Assert
+    assert_eq!((maybe_on_time, maybe_late), (Some(deadline), None));
 }
