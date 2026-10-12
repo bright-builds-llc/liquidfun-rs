@@ -495,6 +495,30 @@ describe("startPuzzleUnlessLoading", () => {
     expect(host.puzzle.state().kind).toBe("running");
   });
 
+  it("keeps the failure view when a resize follows a mid-run failure", async () => {
+    // Arrange
+    loader.mockResolvedValue(fakeGenerated());
+    const { host } = createHost();
+    await beginPuzzleRoute(host, "first-pour");
+    playPuzzle(host);
+    const failure: PlayerView = {
+      kind: "failure",
+      maybeFrame: undefined,
+      maybeDetails: "step failed",
+    };
+    host.maybeSession = undefined;
+    host.setView(failure);
+
+    // Act
+    startPuzzleUnlessLoading(host, "first-pour");
+    await flushMicrotasks();
+
+    // Assert
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(host.view()).toBe(failure);
+    expect(host.puzzle.state().kind).toBe("running");
+  });
+
   it("begins the route when no level is loading", async () => {
     // Arrange
     loader.mockResolvedValue(fakeGenerated());

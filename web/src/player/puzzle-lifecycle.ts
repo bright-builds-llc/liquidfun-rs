@@ -207,12 +207,13 @@ export async function beginPuzzleRoute(host: PuzzleHost, id: PuzzleId): Promise<
 }
 
 /**
- * Resize-observer entry point: begins the route unless this level is already
- * loading. The session is absent during every build, so restarting there would
- * reset the state and drop Retry's pending run; Try again recovers failures.
+ * Resize-observer entry point: begins the route only when this level has not
+ * been entered yet. The session is absent during every build and after a
+ * failure, so restarting there would drop Retry's pending run or hide the
+ * failure view. Route changes and Try again own every later rebuild.
  */
 export function startPuzzleUnlessLoading(host: PuzzleHost, id: PuzzleId): void {
-  if (host.puzzle.maybeLevelId() === id && host.puzzle.current.kind === "loading") {
+  if (host.puzzle.maybeLevelId() === id) {
     return;
   }
 
