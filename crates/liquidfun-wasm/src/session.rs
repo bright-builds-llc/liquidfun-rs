@@ -10,6 +10,11 @@ use liquidfun::ParticleSystemSnapshot;
 
 use self::escape::{EscapeLimits, evict_escaped_particles};
 use crate::frame::{FrameData, FrameDiagnostics};
+use crate::puzzle::builder::build_level;
+#[cfg(test)]
+use crate::puzzle::goal::PuzzleStatus;
+use crate::puzzle::tools::Placements;
+use crate::puzzle::{LevelId, level_spec};
 use crate::scene::gravity_slider::{GRAVITY_CONTROL_NAME, parse_gravity_magnitude};
 use crate::scene::{
     BuiltScene, ControlEffect, SceneHooks, SceneId, build_scene, parse_pointer_kind,
@@ -54,10 +59,14 @@ impl SessionError {
     }
 }
 
-/// What a session was built from (D-15). Plan 06 adds `Puzzle(LevelId, Placements)`.
+/// What a session was built from (D-15). Puzzles always rebuild from the
+/// level and canonical placements at step 0 (D-10).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum SessionSource {
     Scene(SceneId),
+    #[cfg_attr(not(test), allow(dead_code))]
+    // Temporary until Plan 37-07 wires newPuzzle; Plan 07 removes this line.
+    Puzzle(LevelId, Placements),
 }
 
 pub(crate) struct SessionCore {
@@ -102,6 +111,15 @@ impl SessionCore {
         Self::from_source(SessionSource::Scene(id), Vec::new())
     }
 
+    /// Builds `level` with `placements` at step 0 (D-10).
+    #[cfg_attr(not(test), allow(dead_code))] // Temporary until Plan 37-07 wires newPuzzle; Plan 07 removes this line.
+    pub(crate) fn create_puzzle(
+        level: LevelId,
+        placements: Placements,
+    ) -> Result<Self, SessionError> {
+        Self::from_source(SessionSource::Puzzle(level, placements), Vec::new())
+    }
+
     fn from_source(
         source: SessionSource,
         presets: Vec<(String, String)>,
@@ -112,6 +130,14 @@ impl SessionCore {
                 crate::scene::particle_iterations(*id),
                 EscapeLimits::for_scene(*id),
             ),
+            SessionSource::Puzzle(level, placements) => {
+                let spec = level_spec(*level);
+                (
+                    build_level(spec, placements)?,
+                    spec.particle_iterations,
+                    EscapeLimits::SHARED,
+                )
+            }
         };
         let BuiltScene {
             world,
@@ -152,6 +178,9 @@ impl SessionCore {
     /// bodies, such as the Theo Jansen ground balls, would otherwise ignore the
     /// accelerometer until some other contact woke them.
     pub(crate) fn set_gravity(&mut self, x: f32, y: f32) -> Result<(), SessionError> {
+        if self.is_puzzle() {
+            return Err(SessionError::UnknownControl);
+        }
         self.world
             .set_gravity(Vec2::new(x, y))
             .map_err(|_error| SessionError::InvalidGravity)?;
@@ -161,6 +190,11 @@ impl SessionCore {
     }
 
     pub(crate) fn restore_authored_gravity(&mut self) -> Result<(), SessionError> {
+        // Puzzle gravity never changes, and the TS session disposes itself if
+        // restore throws, so restoring is a successful no-op (D-23).
+        if self.is_puzzle() {
+            return Ok(());
+        }
         let gravity = self.authored_gravity;
         self.set_gravity(gravity.x, gravity.y)
     }
@@ -253,6 +287,10 @@ impl SessionCore {
     }
 
     pub(crate) fn apply_control(&mut self, name: &str, value: &str) -> Result<bool, SessionError> {
+        // Checked before the gravity preset, which would otherwise rebuild the source.
+        if self.is_puzzle() {
+            return Err(SessionError::UnknownControl);
+        }
         if name == GRAVITY_CONTROL_NAME {
             if parse_gravity_magnitude(value).is_none() {
                 return Err(SessionError::UnknownControl);
@@ -404,6 +442,17 @@ impl SessionCore {
             .set_circle_labels(labels)
             .map_err(|_error| SessionError::FrameCaptureFailed)?;
         Ok(frame)
+    }
+
+    /// Puzzle sessions reject every scene-only input (D-15, D-23).
+    const fn is_puzzle(&self) -> bool {
+        matches!(self.source, SessionSource::Puzzle(..))
+    }
+
+    /// The puzzle goal status after the last fixed step, for puzzle sessions.
+    #[cfg(test)]
+    pub(crate) fn maybe_puzzle_status(&self) -> Option<PuzzleStatus> {
+        self.hooks.maybe_puzzle_status()
     }
 
     pub(crate) const fn step_index(&self) -> u32 {
