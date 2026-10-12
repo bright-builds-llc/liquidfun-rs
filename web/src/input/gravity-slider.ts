@@ -4,7 +4,7 @@ import {
   type SceneRecord,
 } from "../catalog/scenes";
 import { initialRangeValue } from "../components/range-control";
-import type { SceneRoute } from "../routing/hash";
+import type { PlayableRoute } from "../routing/playable-route";
 
 /**
  * Current gravity-slider magnitude in m/s², when the scene has that control.
@@ -35,7 +35,7 @@ export function maybeGravitySliderMagnitude(
 
 /** Gravity-slider magnitude for the current route, in m/s². */
 export function maybeRouteGravitySliderMagnitude(
-  route: SceneRoute,
+  route: PlayableRoute,
   values: Readonly<Record<string, string>>,
 ): number | undefined {
   if (route.kind !== "scene" || !isReadySceneId(route.id)) {

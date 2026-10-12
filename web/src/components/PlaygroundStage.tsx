@@ -13,7 +13,7 @@ import type { TiltDebug } from "../input/tilt-gravity";
 import type { PointerKind } from "../input/pointer";
 import type { RenderMode } from "../render/mode";
 import type { ScreenRect } from "../render/safe-frame";
-import type { SceneRoute } from "../routing/hash";
+import type { PlayableRoute } from "../routing/playable-route";
 import type { SvgExportRequest } from "../export/messages";
 import { sceneControlsForSurface } from "./scene-controls";
 import { AnimatedSvgPane } from "./AnimatedSvgPane";
@@ -25,7 +25,7 @@ import type { HudControlSliderProps } from "./SceneControls";
 
 export type PlaygroundStageProps = {
   readonly canvasStage: boolean;
-  readonly route: () => SceneRoute;
+  readonly route: () => PlayableRoute;
   readonly view: () => PlayerView;
   readonly lastPointerKind: () => PointerKind | undefined;
   readonly pointerAccepted: () => number;

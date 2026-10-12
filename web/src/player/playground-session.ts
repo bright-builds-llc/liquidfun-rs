@@ -6,7 +6,6 @@ import { createTiltBinding } from "../input/tilt-binding";
 import type { PointerKind } from "../input/pointer";
 import type { RenderFrame } from "../physics/frame";
 import { createFrameClock } from "./frame-loop";
-import { isReadySceneRoute, titleForRoute } from "./runtime";
 import { playerStatus, type PlayerView } from "./view";
 import { createAppearancePreferences } from "./appearance";
 import type { FpsTick } from "../components/fps-meter";
@@ -15,7 +14,12 @@ import {
 } from "../render/particle-limit";
 import { readCanvasStage } from "./fullscreen-capability";
 import { bindVisualViewport } from "./visual-viewport";
-import { normalizeSceneRoute } from "../routing/hash";
+import {
+  normalizePlayableRoute,
+  type PlayableRoute,
+} from "../routing/playable-route";
+import { maybePlayableTarget, titleForPlayableRoute } from "./playable-target";
+import { createPuzzleRuntime } from "./puzzle-runtime";
 import type { SceneRuntime } from "./scene-runtime";
 import {
   bindLifecycle,
@@ -25,7 +29,7 @@ import {
 import { bindSurface } from "./scene-surface";
 
 function createShell(): SceneRuntime {
-  const initialRoute = normalizeSceneRoute(window.location.hash);
+  const initialRoute = normalizePlayableRoute(window.location.hash);
   if (initialRoute.maybeReplacementHash !== undefined) {
     window.history.replaceState(
       window.history.state,
@@ -34,9 +38,9 @@ function createShell(): SceneRuntime {
     );
   }
 
-  const [route, setRoute] = createSignal(initialRoute.route);
+  const [route, setRoute] = createSignal<PlayableRoute>(initialRoute.route);
   const [view, setView] = createSignal<PlayerView>(
-    isReadySceneRoute(initialRoute.route)
+    maybePlayableTarget(initialRoute.route) !== undefined
       ? { kind: "loading" }
       : { kind: "fallback" },
   );
@@ -117,6 +121,7 @@ function createShell(): SceneRuntime {
     setTiltGravityEnabled,
     tiltDebug,
     setTiltDebug,
+    puzzle: createPuzzleRuntime(),
   } as SceneRuntime;
   session.gravitySliderMagnitude = () =>
     maybeRouteGravitySliderMagnitude(session.route(), session.constructionValues);
@@ -132,15 +137,17 @@ function bindNavigation(session: SceneRuntime): void {
   createEffect(() => {
     syncCanvasInteractive(
       session.maybeCanvas,
-      playerStatus(session.view()) === "playing" ||
-        playerStatus(session.view()) === "paused",
+      session.route().kind === "scene" &&
+        (playerStatus(session.view()) === "playing" ||
+          playerStatus(session.view()) === "paused"),
     );
   });
 
   createEffect(() => {
     const currentRoute = session.route();
-    document.title = titleForRoute(currentRoute);
-    if (isReadySceneRoute(currentRoute)) {
+    document.title = titleForPlayableRoute(currentRoute);
+    // Target-based: a puzzle canvas assigned during setRoute must survive (Pitfall 1).
+    if (maybePlayableTarget(currentRoute) !== undefined) {
       if (session.view().kind === "fallback") {
         session.setView({ kind: "loading" });
       }

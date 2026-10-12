@@ -14,7 +14,10 @@ import type { PlayerView } from "./view";
 import type { AppearancePreferences } from "./appearance";
 import type { Camera } from "../render/camera";
 import type { ScreenRect } from "../render/safe-frame";
-import type { SceneRoute } from "../routing/hash";
+import type { PlayableRoute } from "../routing/playable-route";
+import type { PuzzleId } from "../catalog/puzzles";
+import type { PuzzleController } from "../puzzle/controller";
+import type { PuzzleRuntime } from "./puzzle-runtime";
 
 /** Mutable playground session shared by the shell, lifecycle, and surface. */
 export type SceneRuntime = {
@@ -30,8 +33,8 @@ export type SceneRuntime = {
   tiltBinding: TiltBinding;
   canvasStage: boolean;
   releaseVisualViewport: (() => void) | undefined;
-  route: Accessor<SceneRoute>;
-  setRoute: Setter<SceneRoute>;
+  route: Accessor<PlayableRoute>;
+  setRoute: Setter<PlayableRoute>;
   view: Accessor<PlayerView>;
   setView: Setter<PlayerView>;
   appearance: AppearancePreferences;
@@ -90,4 +93,14 @@ export type SceneRuntime = {
     durationSeconds: number,
   ) => SvgExportRequest | undefined;
   changeTiltGravityEnabled: (enabled: boolean) => void;
+  /** Puzzle state bag; untouched on scene routes. */
+  puzzle: PuzzleRuntime;
+  /** Puzzle canvas assignment: no pointer handlers, same resize observer (D-16). */
+  assignPuzzleCanvas: (canvas: HTMLCanvasElement) => void;
+  /** Enters a puzzle route and builds its step-0 session (D-04). */
+  beginPuzzleRoute: (id: PuzzleId) => Promise<void>;
+  /** Clears puzzle state before a scene route runs (Pitfall 6). */
+  leavePuzzle: () => void;
+  /** Lazy controller the puzzle panel reads and commands. */
+  puzzleController: PuzzleController;
 };

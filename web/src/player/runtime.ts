@@ -5,7 +5,7 @@ import {
   type SceneRecord,
 } from "../catalog/scenes";
 import { maybeAcceptedControlValue } from "../components/scene-controls";
-import type { SceneRoute } from "../routing/hash";
+import type { PlayableRoute } from "../routing/playable-route";
 
 export const PAGE_SUMMARY =
   "Play experimental Rust physics scenes in the browser. All twenty-five demos run this repository's engine through WebAssembly.";
@@ -13,12 +13,12 @@ export const DEFAULT_TITLE = "liquidfun-rs playground";
 const MAX_FAILURE_DETAIL_LENGTH = 8_000;
 
 /** True when the hash names an allowlisted ready scene. */
-export function isReadySceneRoute(route: SceneRoute): boolean {
+export function isReadySceneRoute(route: PlayableRoute): boolean {
   return route.kind === "scene" && isReadySceneId(route.id);
 }
 
 /** Ready scene id from a route, or undefined for empty/unknown hashes. */
-export function maybeReadySceneId(route: SceneRoute): SceneId | undefined {
+export function maybeReadySceneId(route: PlayableRoute): SceneId | undefined {
   if (route.kind !== "scene" || !isReadySceneId(route.id)) {
     return undefined;
   }
@@ -27,7 +27,7 @@ export function maybeReadySceneId(route: SceneRoute): SceneId | undefined {
 }
 
 /** Document title for the current hash route. */
-export function titleForRoute(route: SceneRoute): string {
+export function titleForRoute(route: PlayableRoute): string {
   if (route.kind !== "scene") {
     return DEFAULT_TITLE;
   }
