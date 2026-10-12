@@ -126,7 +126,20 @@ Plans:
 1. The fill meter, timer and result card are `data-hud-obstacle` leaves in fixed slots, the scale legend is shown, and the level's portrait frame comes from a separate puzzle bounds registry with its own fill test.
 1. The 25 scenes behave exactly as before: 25/25 fingerprints unchanged, `just web-player-smoke` and the existing hash, portrait-bounds, HUD safe-frame and README plan coverage tests pass without edits, and no level appears in `SCENE_IDS` or the scene sidebar.
 
-**Plans**: TBD
+**Plans**: 9 plans
+
+Plans:
+
+- [ ] 38-01-PLAN.md — Playable route parser, PlayableTarget, level title table, and the 25-scene fingerprint baseline (wave 1)
+- [ ] 38-02-PLAN.md — Pure puzzle core: phase reducer, timer/fill/result view models, placement encoder and test seam, controller contract (wave 1)
+- [ ] 38-03-PLAN.md — Puzzle bounds registry with phone fill test, and the glass-cup overlay (wave 1)
+- [ ] 38-04-PLAN.md — Direct puzzle session adapter with step-0 capture and parsed level info (wave 1)
+- [ ] 38-05-PLAN.md — Puzzle runtime, frame loop with settle tail and hold, and lifecycle/controller (wave 2)
+- [ ] 38-06-PLAN.md — Puzzle UI: panel, fixed-slot HUD, result card, options drawer, unknown-level fallback (wave 2)
+- [ ] 38-07-PLAN.md — Shell wiring: PlayableRoute, target dispatch, glass hook, PlaygroundStage switch (wave 3)
+- [ ] 38-08-PLAN.md — Puzzle e2e: outcomes, seam win, fixed camera, chrome off, fallback, scene return (wave 4)
+- [ ] 38-09-PLAN.md — D-23 gates: 25/25 fingerprints, protected files, Rust/web checks, puzzle and scene suites (wave 5)
+
 **UI hint**: yes
 
 ### Phase 39: Place-then-Play Tools and Stars
