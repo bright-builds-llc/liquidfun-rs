@@ -67,6 +67,14 @@ export async function startAnimatedWebpEncoder(
     });
   });
   void spawnFailure.catch(() => undefined);
+  try {
+    // A small frame fits the pipe buffer, so a write can succeed before Node
+    // reports a missing executable. Waiting here makes that failure certain.
+    await waitForSpawn(child);
+  } catch (error) {
+    await rm(directory, { recursive: true, force: true });
+    throw error;
+  }
 
   let written = 0;
   let settled = false;
@@ -261,6 +269,21 @@ function waitForExit(child: ChildProcess): Promise<number> {
       settled = true;
       resolve(code ?? 1);
     });
+  });
+}
+
+function waitForSpawn(child: ChildProcess): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const onSpawn = () => {
+      child.off("error", onError);
+      resolve();
+    };
+    const onError = (error: Error) => {
+      child.off("spawn", onSpawn);
+      reject(ffmpegSpawnError(error));
+    };
+    child.once("spawn", onSpawn);
+    child.once("error", onError);
   });
 }
 

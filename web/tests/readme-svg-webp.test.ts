@@ -94,9 +94,9 @@ function ffmpegIsAvailable(): boolean {
 }
 
 describe("startAnimatedWebpEncoder", () => {
-  it("reports a missing encoder before the frame write hangs", async () => {
+  it("reports a missing encoder before any frame write can hang", async () => {
     // Arrange
-    const encoder = await startAnimatedWebpEncoder({
+    const options = {
       width: 16,
       height: 8,
       frameCount: 1,
@@ -104,15 +104,13 @@ describe("startAnimatedWebpEncoder", () => {
       quality: 60,
       preset: "drawing",
       command: "ffmpeg-missing-for-test",
-    });
-    const pixels = Buffer.alloc(16 * 8 * 4, 255);
+    };
 
     // Act
-    const write = encoder.writeFrame(pixels);
+    const start = startAnimatedWebpEncoder(options);
 
     // Assert
-    await expect(write).rejects.toThrow("ffmpeg is required");
-    await encoder.abort();
+    await expect(start).rejects.toThrow("ffmpeg is required");
   });
 
   it.skipIf(!ffmpegAvailable)("records RGBA frames as one looping 60 fps WebP", async () => {
