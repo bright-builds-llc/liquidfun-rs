@@ -51,6 +51,11 @@ readme-svg:
 puzzle-spike:
     bash scripts/puzzle-spike.sh
 
+# Replay the recorded puzzle fixtures through the generated wasm package (Phase 37 D-19).
+puzzle-replay-wasm:
+    bun scripts/web-build.ts wasm
+    cd web && bun scripts/puzzle-replay.ts replay
+
 test:
     cargo test --all-features
 
