@@ -1,0 +1,5 @@
+level first-pour
+placement plank 8 64 23
+outcome won
+outcome_step 201
+final_count 689

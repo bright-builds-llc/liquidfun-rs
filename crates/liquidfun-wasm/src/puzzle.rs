@@ -48,6 +48,8 @@ pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
 #[cfg(test)]
 mod api_tests;
 #[cfg(test)]
+mod replay;
+#[cfg(test)]
 mod session_tests;
 #[cfg(test)]
 mod tests;

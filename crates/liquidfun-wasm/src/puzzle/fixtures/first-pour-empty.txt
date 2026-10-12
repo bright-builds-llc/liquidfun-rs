@@ -1,0 +1,4 @@
+level first-pour
+outcome lost
+outcome_step 720
+final_count 0
