@@ -19,3 +19,11 @@ Resolved debug sessions. Used by `gsd-debugger` to surface known-pattern hypothe
 - **Fix:** Zero the force buffer when consuming the pending marker in `ParticleStorage::clear_pending_system_force`, matching upstream `PrepareForceBuffer`.
 - **Files changed:** crates/liquidfun/src/particle/storage/runtime.rs, crates/liquidfun/src/particle/solver/preparation.rs, crates/liquidfun-wasm/src/scene/dam_break/tests.rs
 ---
+
+## demo-media-clock-extra-raf — Synthetic media clock sees 2 pending animation callbacks
+- **Date:** 2026-10-11
+- **Error patterns:** demo-media-clock, synthetic clock, pendingAnimationCallbackCount, Synthetic anchor expected 1 callback got 2, Expected exactly 1 animation callback, requestAnimationFrame, hud-obstacles
+- **Root cause:** createHudObstacles (0d4291d82) coalesces its layout measurement into a one-shot rAF, which the demo-media synthetic clock queues beside the frame loop, so the anchor and step accounting counted 2 callbacks.
+- **Fix:** Harness settle step in capture.ts: wait two native frames, then replay the last delivered timestamp (zero elapsed, no step) until only the frame loop is pending; run before the anchor and at the start of each advanceEngineSteps call.
+- **Files changed:** web/scripts/demo-media/capture.ts, web/e2e/demo-media-clock.spec.ts
+---
