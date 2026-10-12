@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 37-04-PLAN.md
-last_updated: "2026-10-11T23:57:03.373Z"
-last_activity: 2026-10-11
+stopped_at: Completed 37-05-PLAN.md
+last_updated: "2026-10-12T00:09:21.243Z"
+last_activity: 2026-10-12
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 4
-  percent: 50
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 37 (Puzzle Core in the Bridge) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
-Last activity: 2026-10-11
+Last activity: 2026-10-12
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -80,6 +80,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 37]: 37-02: TS parses D-17 puzzle scalars into optional RenderFrame.maybePuzzle, fail closed (all-or-nothing, outcome 0/1/2, outcomeStep iff latched, loss at stepLimit); worker path stays scene-shaped until Phase 38
 - [Phase 37]: 37-03: pure puzzle::goal core (strict GoalRect containment, generic count_in_goal, clamped fill, div_ceil(20) margin) and step-latched GoalTracker (win checked before loss, latch never flips); LevelId/PUZZLE_IDS registry proven disjoint from 25 SCENE_IDS (1b6887a67)
 - [Phase 37]: 37-04: SessionCore builds from SessionSource::Scene and stores precomputed EscapeLimits (wave-tank 80/80, others 12/48); scene-spot stamp 2026-10-11T23-48-25Z gives 25/25 fingerprints identical to base (feb4804ff)
+- [Phase 37]: 37-05: plank vertices from TAU_24 literals and integer 0.05 m grid poses (no trig); Placements::parse fails closed with 8 typed PlacementErrors and sorts canonically; FIRST_POUR const spec builds 1989 particles, 32 outline segments (36 with one plank) through generic build_level; PuzzleHooks counts per fixed step with its own counter (7ef3f738b)
 
 ### Pending Todos
 
@@ -154,9 +155,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 37 P02 | 2min | 2 tasks | 2 files |
 | Phase 37 P03 | 14min | 3 tasks | 6 files |
 | Phase 37 P04 | 11min | 2 tasks | 3 files |
+| Phase 37 P05 | 12min | 3 tasks | 10 files |
 
 ## Session Continuity
 
-Last session: 2026-10-11T23:57:03.371Z
-Stopped at: Completed 37-04-PLAN.md
+Last session: 2026-10-12T00:09:21.240Z
+Stopped at: Completed 37-05-PLAN.md
 Resume file: None
