@@ -130,10 +130,10 @@ Plans:
 
 Plans:
 
-- [ ] 38-01-PLAN.md — Playable route parser, PlayableTarget, level title table, and the 25-scene fingerprint baseline (wave 1)
-- [ ] 38-02-PLAN.md — Pure puzzle core: phase reducer, timer/fill/result view models, placement encoder and test seam, controller contract (wave 1)
-- [ ] 38-03-PLAN.md — Puzzle bounds registry with phone fill test, and the glass-cup overlay (wave 1)
-- [ ] 38-04-PLAN.md — Direct puzzle session adapter with step-0 capture and parsed level info (wave 1)
+- [x] 38-01-PLAN.md — Playable route parser, PlayableTarget, level title table, and the 25-scene fingerprint baseline (wave 1)
+- [x] 38-02-PLAN.md — Pure puzzle core: phase reducer, timer/fill/result view models, placement encoder and test seam, controller contract (wave 1)
+- [x] 38-03-PLAN.md — Puzzle bounds registry with phone fill test, and the glass-cup overlay (wave 1)
+- [x] 38-04-PLAN.md — Direct puzzle session adapter with step-0 capture and parsed level info (wave 1)
 - [ ] 38-05-PLAN.md — Puzzle runtime, frame loop with settle tail and hold, and lifecycle/controller (wave 2)
 - [ ] 38-06-PLAN.md — Puzzle UI: panel, fixed-slot HUD, result card, options drawer, unknown-level fallback (wave 2)
 - [ ] 38-07-PLAN.md — Shell wiring: PlayableRoute, target dispatch, glass hook, PlaygroundStage switch (wave 3)
@@ -248,7 +248,7 @@ Plans:
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
-| 38. Puzzle Route and Player Shell | v1.5 | 0/TBD | Not started | - |
+| 38. Puzzle Route and Player Shell | v1.5 | 4/9 | In Progress|  |
 | 39. Place-then-Play Tools and Stars | v1.5 | 0/TBD | Not started | - |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
