@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 37-06-PLAN.md
-last_updated: "2026-10-12T00:31:48.994Z"
+stopped_at: Completed 37-07-PLAN.md
+last_updated: "2026-10-12T00:42:59.507Z"
 last_activity: 2026-10-12
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 37 (Puzzle Core in the Bridge) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-10-12
 
@@ -83,6 +83,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 37]: 37-05: plank vertices from TAU_24 literals and integer 0.05 m grid poses (no trig); Placements::parse fails closed with 8 typed PlacementErrors and sorts canonically; FIRST_POUR const spec builds 1989 particles, 32 outline segments (36 with one plank) through generic build_level; PuzzleHooks counts per fixed step with its own counter (7ef3f738b)
 - [Phase 37]: 37-06: puzzle sessions build from SessionSource::Puzzle(LevelId, Placements) at step 0; apply_control/set_gravity reject puzzles with UnknownControl, restore is an Ok no-op; first-pour unchanged: empty loses (max 0), plank [8,64,23] wins at 201, raised-target tracker at 210, identical debug/release; 25/25 fingerprints (b85ed6ec0, 52feaaaee)
 - [Phase 37]: 37-06 Option A: won margin = second GoalTracker at target + full.div_ceil(20), same settle_steps, wins by step_limit - 120 (goal::maybe_margin_win_step); window-minimum rule needs a one-step inflow > margin that no pour gives; 37-08-PLAN.md updated
+- [Phase 37]: 37-07: newPuzzle/levelInfo/PuzzleLevelInfo and six optional ProofFrame goal getters on the wasm surface; set_puzzle_status fails closed when hooks observed_step != frame step index (D-14); LEVEL_IDS drives parse_level_id; test-only puzzle helpers #[cfg(test)]; no temporary dead_code allows remain (bb34c4c04)
 
 ### Pending Todos
 
@@ -159,9 +160,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 37 P04 | 11min | 2 tasks | 3 files |
 | Phase 37 P05 | 12min | 3 tasks | 10 files |
 | Phase 37 P06 | 22min | 3 tasks | 5 files |
+| Phase 37 P07 | 11min | 3 tasks | 10 files |
 
 ## Session Continuity
 
-Last session: 2026-10-12T00:31:48.991Z
-Stopped at: Completed 37-06-PLAN.md
+Last session: 2026-10-12T00:42:59.504Z
+Stopped at: Completed 37-07-PLAN.md
 Resume file: None

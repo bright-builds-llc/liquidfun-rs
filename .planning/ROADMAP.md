@@ -110,7 +110,7 @@ Plans:
 - [x] 37-04-PLAN.md — SessionSource / EscapeLimits refactor with a 25/25 fingerprint proof (wave 2)
 - [x] 37-05-PLAN.md — Plank tool, τ/24 table and integer placements; first-pour LevelSpec, builder and PuzzleHooks (wave 3)
 - [x] 37-06-PLAN.md — Puzzle sessions, input rejections and first-pour tuning probes (wave 4)
-- [ ] 37-07-PLAN.md — newPuzzle, levelInfo and frame puzzle scalars on the wasm surface (wave 5)
+- [x] 37-07-PLAN.md — newPuzzle, levelInfo and frame puzzle scalars on the wasm surface (wave 5)
 - [ ] 37-08-PLAN.md — Recorded fixtures, native and Bun wasm replay, and final phase gates (wave 6)
 
 ### Phase 38: Puzzle Route and Player Shell
@@ -234,7 +234,7 @@ Plans:
 | 34. Scene Timing Survey | v1.4 | 2/2 | Complete    | 2026-10-07 |
 | 35. Speed Up the Slowest Scenes | v1.4 | 8/8 | Complete    | 2026-10-10 |
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
-| 37. Puzzle Core in the Bridge | v1.5 | 6/8 | In Progress|  |
+| 37. Puzzle Core in the Bridge | v1.5 | 7/8 | In Progress|  |
 | 38. Puzzle Route and Player Shell | v1.5 | 0/TBD | Not started | - |
 | 39. Place-then-Play Tools and Stars | v1.5 | 0/TBD | Not started | - |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
