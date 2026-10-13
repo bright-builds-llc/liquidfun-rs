@@ -11,14 +11,21 @@ import {
   type JSX,
 } from "solid-js";
 
-import { maybeNextPuzzleId, puzzleTitleForId } from "../catalog/puzzle-levels";
+import {
+  FIRST_PUZZLE_ID,
+  maybeNextPuzzleId,
+  puzzleTitleForId,
+} from "../catalog/puzzle-levels";
 import type { PuzzleId } from "../catalog/puzzles";
+import { firstHintMemory } from "../player/first-hint-preference";
 import { createHudObstacles } from "../player/hud-obstacles";
 import type { PlayerStatus } from "../player/view";
+import { captionModel } from "../puzzle/caption";
 import type { PuzzleController } from "../puzzle/controller";
 import { isRepeatedPlayToggle, keyTargetOf, puzzleKeyCommand } from "../puzzle/keyboard";
 import { needsWebglSurface, particleSurface, type RenderMode } from "../render/mode";
 import type { ScreenRect } from "../render/safe-frame";
+import { PuzzleCaption } from "./PuzzleCaption";
 import { PuzzleFillMeter, PuzzleHud, PuzzleTimer, PuzzleTitle } from "./PuzzleHud";
 import {
   PuzzleOptionsSheet,
@@ -116,6 +123,36 @@ function PuzzlePanelLayout(layoutProps: {
   let maybePlayButton: HTMLButtonElement | undefined;
   let maybePrimaryAction: HTMLElement | undefined;
   let focusInPanel = false;
+
+  // D-20: Dismiss or placing the first tool on the first level hides the hint
+  // for good. The leaf keeps its box, so only focus needs care: a focused
+  // Dismiss button is removed, so focus moves to the canvas.
+  const [hintDismissed, setHintDismissed] = createSignal(firstHintMemory.dismissed());
+  const dismissHint = () => {
+    const maybeActive = document.activeElement;
+    const dismissFocused =
+      maybeActive instanceof HTMLElement && maybeActive.classList.contains("puzzle-caption-dismiss");
+    firstHintMemory.dismiss();
+    setHintDismissed(true);
+    if (dismissFocused) {
+      maybeSceneCanvas?.focus();
+    }
+  };
+  createEffect(() => {
+    if (hintDismissed() || props.levelId !== FIRST_PUZZLE_ID) {
+      return;
+    }
+    const state = props.controller.state();
+    if (state.kind === "building" && state.editor.tools.length > 0) {
+      dismissHint();
+    }
+  });
+  const caption = (): JSX.Element => (
+    <PuzzleCaption
+      model={captionModel(props.levelId, hintDismissed())}
+      onDismiss={dismissHint}
+    />
+  );
 
   onMount(() => {
     const viewportFrame = maybeViewportFrame;
@@ -259,6 +296,7 @@ function PuzzlePanelLayout(layoutProps: {
           <PuzzleTitle title={title()} />
           <PuzzleFillMeter state={props.controller.state()} />
           <PuzzleTimer state={props.controller.state()} />
+          {caption()}
         </div>
       </Show>
 
@@ -317,6 +355,7 @@ function PuzzlePanelLayout(layoutProps: {
               title={title()}
               state={props.controller.state()}
               maybePixelsPerMeter={props.maybePixelsPerMeter}
+              caption={caption()}
               toolTray={toolTray()}
               selectionBar={selectionBar()}
               transport={transport()}

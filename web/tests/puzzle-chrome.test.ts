@@ -19,6 +19,7 @@ const PUZZLE_COMPONENTS = [
   "components/PuzzleTransport.tsx",
   "components/PuzzleStarList.tsx",
   "components/PuzzleIcons.tsx",
+  "components/PuzzleCaption.tsx",
 ] as const;
 
 const PUZZLE_STYLESHEETS = ["styles/puzzle.css", "styles/puzzle-editor.css"] as const;
@@ -86,6 +87,54 @@ describe("puzzle HUD chrome", () => {
 
     // Assert
     expect(unmarked).toEqual([]);
+  });
+
+  it("marks the caption leaf with data-hud-obstacle", () => {
+    // Arrange
+    const caption = source("components/PuzzleCaption.tsx");
+
+    // Act
+    const tag = openingTagWithClass(caption, "puzzle-caption");
+
+    // Assert
+    expect(tag).toContain("data-hud-obstacle");
+  });
+
+  it("mounts the caption in the canvas-stage HUD and the form-factor status row", () => {
+    // Arrange
+    const panel = source("components/PuzzlePanel.tsx");
+    const statusRow = panel.slice(panel.indexOf('class="status-row"'), panel.indexOf("<figure>"));
+
+    // Act
+    const inHud = panel.includes("caption={caption()}");
+    const inStatusRow = statusRow.includes("{caption()}");
+
+    // Assert
+    expect([inHud, inStatusRow]).toEqual([true, true]);
+  });
+
+  it("gives the caption a fixed height in both canvas layouts", () => {
+    // Arrange
+    const css = source("styles/puzzle.css");
+    const cases = [
+      { layout: "landscape", height: 48 },
+      { layout: "portrait", height: 52 },
+    ];
+
+    // Act
+    const unsized = cases
+      .filter(({ layout, height }) => {
+        const block = cssBlock(
+          css,
+          `.puzzle-panel--canvas-stage[data-puzzle-layout="${layout}"] .puzzle-caption`,
+        );
+        const spansWidth = /\bleft:/.test(block) && /\bright:/.test(block);
+        return !spansWidth || !block.includes(`height: ${height}px;`);
+      })
+      .map(({ layout }) => layout);
+
+    // Assert
+    expect(unsized).toEqual([]);
   });
 
   it("mounts the tray, selection bar and transport in the canvas-stage HUD", () => {
@@ -243,6 +292,7 @@ describe("puzzle stylesheet", () => {
     const leaves = [
       ".puzzle-meter",
       ".puzzle-timer",
+      ".puzzle-caption",
       ".puzzle-result",
       ".puzzle-transport",
       ".puzzle-legend-slot",

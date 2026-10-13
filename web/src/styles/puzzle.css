@@ -159,6 +159,38 @@
   padding: 0 8px;
 }
 
+/* Caption leaf: one box per layout, sized for the hint plus its 44px Dismiss (D-19). */
+
+.puzzle-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  overflow: hidden;
+}
+
+.puzzle-caption-text {
+  display: -webkit-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 18px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.puzzle-caption .puzzle-caption-dismiss {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 64px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
 .puzzle-legend-slot {
   display: flex;
   align-items: flex-end;
@@ -196,6 +228,7 @@
   margin: 0;
 }
 
+.puzzle-hud .puzzle-caption button,
 .puzzle-hud .puzzle-result a,
 .puzzle-hud .puzzle-result button,
 .puzzle-hud .puzzle-options-slot button {
@@ -239,6 +272,19 @@
   left: var(--puzzle-inset-left);
   width: 136px;
   height: 44px;
+}
+
+/* 48px leaves 1px around the 44px Dismiss inside the chip border. */
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-caption {
+  top: var(--puzzle-inset-top);
+  right: calc(var(--puzzle-inset-right) + 52px);
+  left: calc(var(--puzzle-inset-left) + 52px);
+  height: 48px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-caption-text {
+  font-size: 13px;
+  line-height: 16px;
 }
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport {
@@ -322,6 +368,13 @@
   height: 64px;
 }
 
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-caption {
+  top: calc(var(--puzzle-inset-top) + 124px);
+  right: var(--puzzle-inset-right);
+  left: var(--puzzle-inset-left);
+  height: 52px;
+}
+
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-result {
   right: var(--puzzle-inset-right);
   bottom: calc(var(--puzzle-inset-bottom) + 156px);
@@ -354,6 +407,7 @@
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-meter,
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-timer,
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-caption,
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result {
   position: static;
   flex: 0 0 auto;
@@ -367,6 +421,11 @@
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-timer {
   width: 104px;
   height: 64px;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-caption {
+  width: min(100%, 480px);
+  height: 52px;
 }
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result {

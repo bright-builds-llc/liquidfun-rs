@@ -69,6 +69,7 @@ export type PuzzleHudProps = {
   readonly title: string;
   readonly state: PuzzleState;
   readonly maybePixelsPerMeter: number | undefined;
+  readonly caption: JSX.Element;
   readonly toolTray: JSX.Element;
   readonly selectionBar: JSX.Element;
   readonly transport: JSX.Element;
@@ -79,8 +80,8 @@ export type PuzzleHudProps = {
 /**
  * Canvas-stage puzzle HUD. Every leaf is mounted for the whole route with a
  * fixed CSS box, so phase changes never change the obstacle set (D-14, D-18,
- * D-26). DOM order is the focus order: tray, selection bar, run controls,
- * result actions, options.
+ * D-26). DOM order is the focus order: caption Dismiss, tray, selection bar,
+ * run controls, result actions, options.
  */
 export function PuzzleHud(props: PuzzleHudProps) {
   return (
@@ -88,6 +89,7 @@ export function PuzzleHud(props: PuzzleHudProps) {
       <PuzzleTitle title={props.title} />
       <PuzzleFillMeter state={props.state} />
       <PuzzleTimer state={props.state} />
+      {props.caption}
       {props.toolTray}
       {props.selectionBar}
       {props.transport}
