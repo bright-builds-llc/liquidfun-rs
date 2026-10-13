@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 40-09-PLAN.md
-last_updated: "2026-10-13T08:41:05.588Z"
+stopped_at: Completed 40-10-PLAN.md
+last_updated: "2026-10-13T09:25:21.450Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 40
-  percent: 95
+  completed_plans: 41
+  percent: 98
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -140,6 +140,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-08 sand-chute dropped under D-25: six same-geometry powder-vs-water spike configs; only the r 0.08 slit drain passed 25% (-31% at 0.28 m), in a 0.28-0.32 m band that reverses at 0.20 m (+68% powder) and fades to -1% at 0.56 m; no placement wins only for powder
 - [Phase 40]: 40-09 float-up ships (no D-09 drop): a density-0.4 circle (r 0.35) floats up its well and plugs the drain so a U-tube pipe fills to the cup window; float_up_needs_buoyancy (every lane) shows a density-2.0 ball stays down and the reference loses
 - [Phase 40]: 40-09: early dense-control wins came from leaks (funnel jet through the window, roof/side-wall seam), fixed by a trap baffle and a 0.64 m thick roof edge; compressed LiquidFun water floats density 2.0 near 3 m depth, so the well column is kept low
+- [Phase 40]: 40-10 grand-finale combines jelly pad + timed valve + syrup (Timed Gate tent fed by a pad nozzle); build area is a column above the valve slot so it holds no liquid; ref plank 10 172 1 + valve 4 61 6 14, par 2, limit 900, 1,037 particles
+- [Phase 40]: 40-10 grand-finale window: ticks 1-9 and 28-30 lose, 10-27 win; nudges 16/16; exact wasm replay of all 14 fixtures; registry is 6 levels ending with grand-finale
 
 ### Pending Todos
 
@@ -242,9 +244,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P07 | 66min | 3 tasks | 16 files |
 | Phase 40 P08 | 12min | 2 tasks | 2 files |
 | Phase 40 P09 | 49min | 2 tasks | 10 files |
+| Phase 40 P10 | 43min | 3 tasks | 13 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T08:41:05.585Z
-Stopped at: Completed 40-09-PLAN.md
+Last session: 2026-10-13T09:25:21.447Z
+Stopped at: Completed 40-10-PLAN.md
 Resume file: None
