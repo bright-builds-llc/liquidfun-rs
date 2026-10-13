@@ -109,15 +109,28 @@ fn rigid_impacts(report: &StepReport) -> (u32, f32) {
     (count, strongest)
 }
 
-/// Largest summed normal impulse among the step's solves of `contact`.
+/// Largest finite summed normal impulse among the step's solves of `contact`.
 fn begin_impulse(report: &StepReport, contact: &ManagedContactSnapshot) -> f32 {
-    report
-        .contact_solves()
-        .iter()
-        .chain(report.continuous_contact_solves())
-        .map(liquidfun::ContactSolve::contact)
-        .filter(|solved| is_same_contact(solved, contact))
-        .map(summed_normal_impulse)
+    strongest_finite_impulse(
+        report
+            .contact_solves()
+            .iter()
+            .chain(report.continuous_contact_solves())
+            .map(liquidfun::ContactSolve::contact)
+            .filter(|solved| is_same_contact(solved, contact))
+            .map(summed_normal_impulse),
+    )
+}
+
+/// Largest finite impulse; 0.0 when there is none.
+///
+/// A non-finite impulse is sound-only data, so it is dropped rather than
+/// rejected by `FrameData::set_puzzle_sound`, which would fail the whole run
+/// (D-08). The impact itself still counts.
+fn strongest_finite_impulse(impulses: impl IntoIterator<Item = f32>) -> f32 {
+    impulses
+        .into_iter()
+        .filter(|impulse| impulse.is_finite())
         .fold(0.0_f32, f32::max)
 }
 

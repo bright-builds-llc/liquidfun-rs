@@ -3,7 +3,7 @@
 //! Determinism tests compare two runs within the same build profile, never
 //! recorded literals, because native debug diverges from release (Phase 37).
 
-use super::SoundSignals;
+use super::{SoundSignals, strongest_finite_impulse};
 use crate::frame::{FrameData, FrameError, ProofFrame};
 use crate::puzzle::LevelId;
 use crate::puzzle::replay::fixture::{lanes, parse_fixture};
@@ -360,6 +360,30 @@ fn set_puzzle_sound_rejects_impulse_without_an_impact() {
 
     // Assert
     assert_eq!(result, Err(FrameError::InvalidDiagnostic));
+}
+
+#[test]
+fn strongest_finite_impulse_drops_non_finite_impulses() {
+    // Arrange
+    let impulses = [0.25, f32::INFINITY, f32::NAN, 0.5, f32::NEG_INFINITY];
+
+    // Act
+    let strongest = strongest_finite_impulse(impulses);
+
+    // Assert
+    assert_eq!(strongest.to_bits(), 0.5_f32.to_bits());
+}
+
+#[test]
+fn strongest_finite_impulse_is_zero_when_every_impulse_is_non_finite() {
+    // Arrange
+    let impulses = [f32::INFINITY, f32::NAN];
+
+    // Act
+    let strongest = strongest_finite_impulse(impulses);
+
+    // Assert
+    assert_eq!(strongest.to_bits(), 0.0_f32.to_bits());
 }
 
 /// Nearest-rank 90th percentile of `values`; 0 for none.
