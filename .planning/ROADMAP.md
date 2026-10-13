@@ -249,7 +249,7 @@ Plans:
 Plans:
 - [x] 42-01-PLAN.md — Fingerprint baseline, read-only Rust sound aggregates on puzzle frames with determinism tests and tuning probe, fail-closed TS parse (wave 1)
 - [x] 42-02-PLAN.md — Pure sound core: preference, per-frame fold, pentatonic plinks and voice params, 6-voice cap with rate limits, trigger rules (wave 2)
-- [ ] 42-03-PLAN.md — Web Audio engine shell, puzzle sound glue (gesture unlock, visibility, failure) and loop/lifecycle wiring (wave 3)
+- [x] 42-03-PLAN.md — Web Audio engine shell, puzzle sound glue (gesture unlock, visibility, failure) and loop/lifecycle wiring (wave 3)
 - [ ] 42-04-PLAN.md — HUD sound toggle, drawer and form-factor Sound section with silent-switch hint, slot widening (wave 4)
 - [ ] 42-05-PLAN.md — Fake-AudioContext Playwright spec and the full phase gate with 25/25 fingerprints (wave 5)
 
@@ -302,7 +302,7 @@ Plans:
 | 39. Place-then-Play Tools and Stars | v1.5 | 14/14 | Complete    | 2026-10-13 |
 | 40. Timed Valve and Teaching Levels | v1.5 | 11/11 | Complete    | 2026-10-13 |
 | 41. Level Select and Progress | v1.5 | 8/8 | Complete    | 2026-10-13 |
-| 42. Opt-in Sound | v1.5 | 2/5 | In Progress|  |
+| 42. Opt-in Sound | v1.5 | 3/5 | In Progress|  |
 | 43. GPU Water Render Mode | v1.5 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

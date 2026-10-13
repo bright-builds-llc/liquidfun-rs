@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 42-02-PLAN.md
-last_updated: "2026-10-13T19:30:11.801Z"
+stopped_at: Completed 42-03-PLAN.md
+last_updated: "2026-10-13T19:40:44.625Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 55
-  completed_plans: 52
-  percent: 95
+  completed_plans: 53
+  percent: 96
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 42 (Opt-in Sound) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -163,6 +163,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 42]: 42-01: baseline target/phase42/base.txt from scene-spot 2026-10-13T19-08-15Z at bd685b08f, identical to Phase 41 after-final; after-01 25/25 identical; wasm replay 6 LEVELHASH + 14 REPLAY pass
 - [Phase 42]: 42-02: splash thresholds from the probe: rest p95 3 -> SPLASH_MIN_CONTACTS_PER_STEP 4, p90 of steps >= 4 is 29 -> SPLASH_FULL 29, IMPACT_FULL_IMPULSE 0.062008 (float-up solution impulse p90); first-pour solution audible 302/321 steps
 - [Phase 42]: 42-02: pure core: chime takes 3 pool entries and evicts oldest (startedAt, id); dropped requests keep lastStartedAt; burst onset and rigid impact merge into one impact at the larger strength; a non-increasing stepIndex resets memory then records the frame
+- [Phase 42]: 42-03: pointerup unlocks only for non-mouse pointers (HTML activation list); mouse unlocks on pointerdown
+- [Phase 42]: 42-03: engine suspend() clears the resume in-flight guard so a pending resume never blocks the next
+- [Phase 42]: 42-03: construction failure logs once via glue logError and makes sound unavailable; runtime failure sets failed and suspends once
+- [Phase 42]: 42-03: each chime note takes its own pool entry, oscillator and gain
 
 ### Pending Todos
 
@@ -277,9 +281,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 41 P08 | 9min | 2 tasks | 0 files |
 | Phase 42 P01 | 15min | 3 tasks | 12 files |
 | Phase 42 P02 | 6min | 3 tasks | 10 files |
+| Phase 42 P03 | 8min | 3 tasks | 15 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T19:30:11.797Z
-Stopped at: Completed 42-02-PLAN.md
+Last session: 2026-10-13T19:40:44.622Z
+Stopped at: Completed 42-03-PLAN.md
 Resume file: None
