@@ -579,11 +579,9 @@ fn step_zero_particles_fit_the_budget() {
     }
 }
 
+/// Debug runs are too slow for the sweep; run it with `--release`.
 #[test]
-#[cfg_attr(
-    debug_assertions,
-    ignore = "release-only nudge sweep (D-16); run with --release"
-)]
+#[cfg_attr(debug_assertions, ignore = "release-only nudge sweep (D-16)")]
 fn first_pour_nudges_mostly_win() {
     assert_nudges_mostly_win("first-pour-solution.txt");
 }
