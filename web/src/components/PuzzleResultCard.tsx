@@ -25,7 +25,8 @@ export function PuzzleResultCard(props: PuzzleResultCardProps) {
   };
   const message = () => {
     const current = card();
-    return current.kind === "outcome" ? current.text : current.message;
+    const hasText = current.kind === "outcome" || current.kind === "deciding";
+    return hasText ? current.text : current.message;
   };
   const assignPrimary = (primary: "next" | "retry") => (element: HTMLElement) => {
     if (actions().primary === primary) {

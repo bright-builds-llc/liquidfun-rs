@@ -35,7 +35,9 @@ type Viewport = { readonly width: number; readonly height: number };
 
 const RUN_TEST_TIMEOUT_MS = 90_000;
 const ENDED_TIMEOUT_MS = 60_000;
-const GOAL_TEXT = "Fill the cup to 60% before time runs out.";
+// Zero placements show the goal plus the tray hint (Phase 39 UI-SPEC empty state).
+const EMPTY_BUILDING_TEXT =
+  "Fill the cup to 60% before time runs out. Pick a tool from the tray to start.";
 const NO_NEXT_LEVEL = "Next: No next level yet";
 const EMPTY_HELD_STEP = "840";
 const SOLUTION_HELD_STEP = "321";
@@ -117,7 +119,7 @@ test("opens First Pour in building", async ({ page }) => {
   await expect(timer(page)).toHaveText("0:12.0");
   await expect(playButton(page)).toBeVisible();
   await expect(playButton(page)).not.toHaveAttribute("aria-disabled");
-  await expect(resultMessage(page)).toHaveText(GOAL_TEXT);
+  await expect(resultMessage(page)).toHaveText(EMPTY_BUILDING_TEXT);
   await expect(page.locator("canvas.scene-canvas")).toHaveAttribute(
     "data-simulation-backend",
     "direct",

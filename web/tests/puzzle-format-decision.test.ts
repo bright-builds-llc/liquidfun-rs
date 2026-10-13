@@ -70,10 +70,6 @@ const LOST_STATUS = status({
   maybeDecidedStep: 720,
 });
 
-function apply(state: PuzzleState, events: readonly PuzzleEvent[]): PuzzleState {
-  return events.reduce(reducePuzzle, state);
-}
-
 function inspected(
   state: PuzzleState,
   statuses: readonly PlacementStatusCode[],
