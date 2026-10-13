@@ -525,11 +525,14 @@ await expect(page.locator("canvas.scene-canvas")).toHaveAttribute("data-drawn-su
 | A6 | Starting foam thresholds ~3.0 / 7.5 m/s and the shader constants in the sketch. | Pitfall 9, Code Examples | Low: tuned by eye. |
 | A7 | The browser SVG export for Water and Shaded blob produces byte-identical files for the same scene/view when compared within one page session. | Validation | Low: if output embeds variable metadata, compare after stripping it or compare the request object from `createSvgExportRequest`. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **D-07 wording vs the static-layer reality.** What we know: no raster exists; the 2D cache skips small scenes. Recommendation: implement Pattern 3, cite this finding in the plan, and keep `static-layer.ts` as the owner of the equality helpers.
+   RESOLVED: Plan 03 Task 1. The water-owned walls backdrop (`water-backdrop.ts`) is the D-07 refinement, locked by the orchestrator.
 2. **Density shading checkbox in Water.** `PlayerPanel.tsx:436-448` shows it for all surface modes, so it will appear for Water. Recommendation: pass `densityShading` into `drawWater` and apply the same `DENSITY_SHADE_*` darkening to `color` so the existing control stays meaningful.
+   RESOLVED: Plan 03 (the water shade shader and `water-uniforms.ts` apply the `DENSITY_SHADE_*` curve) and UI-D43.
 3. **Disable-on-runtime-failure.** If the probe says yes but `drawWater` later fails (compile/FBO), should the option flip to "Water (unavailable)"? Recommendation: no; D-12 fallback already covers it, and the drawn-surface attribute makes it observable.
+   RESOLVED: no runtime flip. UI-D50 and Plan 04: the option stays "Water", and the fallback shows only through the drawn look and `data-drawn-surface`.
 
 ## Environment Availability
 
