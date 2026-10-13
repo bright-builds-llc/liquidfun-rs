@@ -85,6 +85,9 @@ function puzzleRawFrame(stepIndex: number): RawProofFrame {
     brimCount: () => 4,
     brimStep: () => undefined,
     decidedStep: () => undefined,
+    splashContacts: () => 0,
+    impactCount: () => 0,
+    impactImpulse: () => 0,
     free: vi.fn(),
   };
 }

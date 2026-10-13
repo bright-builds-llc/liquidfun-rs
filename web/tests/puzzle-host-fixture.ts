@@ -120,6 +120,9 @@ export function rawFrame(
     brimCount: () => 810,
     brimStep: () => scalars.brimStep,
     decidedStep: () => scalars.decidedStep,
+    splashContacts: () => 0,
+    impactCount: () => 0,
+    impactImpulse: () => 0,
     free: () => undefined,
   };
 }

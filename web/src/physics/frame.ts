@@ -1,4 +1,5 @@
 import { parsePuzzleStatus } from "./frame-puzzle";
+import { parsePuzzleSound } from "./frame-sound";
 import { invalidFrame, parseNonNegativeInteger } from "./frame-scalars";
 
 const MAX_PARTICLE_COUNT = 16384;
@@ -39,6 +40,10 @@ export interface RawProofFrame {
   brimStep?(): number | undefined;
   /** Step the run was decided; undefined until decided (D-10). */
   decidedStep?(): number | undefined;
+  /** Read-only sound aggregates for the last fixed step (Phase 42 D-07); undefined on scene sessions. */
+  splashContacts?(): number | undefined;
+  impactCount?(): number | undefined;
+  impactImpulse?(): number | undefined;
   free(): void;
 }
 
@@ -66,6 +71,16 @@ export interface PuzzleFrameStatus {
   readonly maybeDecidedStep?: number;
 }
 
+/** Read-only per-step sound aggregates on puzzle frames (Phase 42 D-07). */
+export interface PuzzleFrameSound {
+  /** Particle-fixture contacts present this step that were absent the previous step. */
+  readonly splashContacts: number;
+  /** Non-sensor rigid contacts that began touching this step. */
+  readonly impactCount: number;
+  /** Largest summed normal impulse among those contacts (N·s); 0 when none. */
+  readonly impactImpulse: number;
+}
+
 /** Bounded JavaScript-owned numeric lanes ready for rendering. */
 export interface RenderFrame {
   readonly stepIndex: number;
@@ -81,6 +96,8 @@ export interface RenderFrame {
   readonly rigidCircles: Float32Array;
   readonly circleLabels: readonly string[];
   readonly maybePuzzle?: PuzzleFrameStatus;
+  /** Present on every puzzle frame, absent on scene frames (Phase 42 D-07). */
+  readonly maybeSound?: PuzzleFrameSound;
 }
 
 function parseNonNegativeFinite(value: number): number {
@@ -235,6 +252,7 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
   }
 
   const maybePuzzle = parsePuzzleStatus(rawFrame, stepIndex, particleCount);
+  const maybeSound = parsePuzzleSound(rawFrame, maybePuzzle);
   return {
     stepIndex,
     particleCount,
@@ -249,5 +267,6 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
     rigidCircles,
     circleLabels,
     ...(maybePuzzle === undefined ? {} : { maybePuzzle }),
+    ...(maybeSound === undefined ? {} : { maybeSound }),
   };
 }

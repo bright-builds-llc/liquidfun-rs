@@ -68,6 +68,9 @@ function puzzleRawFrame(overrides: Partial<PuzzleValues> = {}): RawProofFrame {
     brimCount: () => values.brimCount,
     brimStep: () => values.brimStep,
     decidedStep: () => values.decidedStep,
+    splashContacts: () => 0,
+    impactCount: () => 0,
+    impactImpulse: () => 0,
   };
 }
 
@@ -85,16 +88,21 @@ describe("parseRenderFrame puzzle scalars", () => {
 
   it("puzzle methods all returning undefined is a scene frame", () => {
     // Arrange
-    const rawFrame = puzzleRawFrame({
-      goalCount: undefined,
-      goalTarget: undefined,
-      goalFull: undefined,
-      outcome: undefined,
-      outcomeStep: undefined,
-      stepLimit: undefined,
-      peakHeldCount: undefined,
-      brimCount: undefined,
-    });
+    const rawFrame: RawProofFrame = {
+      ...puzzleRawFrame({
+        goalCount: undefined,
+        goalTarget: undefined,
+        goalFull: undefined,
+        outcome: undefined,
+        outcomeStep: undefined,
+        stepLimit: undefined,
+        peakHeldCount: undefined,
+        brimCount: undefined,
+      }),
+      splashContacts: () => undefined,
+      impactCount: () => undefined,
+      impactImpulse: () => undefined,
+    };
 
     // Act
     const frame = parseRenderFrame(rawFrame);
