@@ -1,10 +1,10 @@
-//! Fixture parser, contract and recorded-fixture replay tests (D-18 to D-22).
+//! Contract and recorded-fixture replay tests (D-18 to D-22, Phase 39 D-12).
+//!
+//! Grammar tests live in `replay/fixture/tests.rs`.
 
+use super::fixture::parse_fixture;
 use super::*;
-use crate::puzzle::level_spec;
-
-const FULL_WON: &str =
-    "level first-pour\nplacement plank 8 64 23\noutcome won\noutcome_step 412\nfinal_count 640\n";
+use crate::puzzle::{LevelId, level_spec};
 
 const SOLUTION_FILE: &str = "first-pour-solution.txt";
 const EMPTY_FILE: &str = "first-pour-empty.txt";
@@ -15,15 +15,22 @@ fn first_pour_info() -> PuzzleLevelInfo {
     PuzzleLevelInfo::from_spec(level_spec(LevelId::FirstPour))
 }
 
-fn fixture_expecting(outcome: FixtureOutcome, outcome_step: u32, final_count: u32) -> Fixture {
+fn fixture_expecting(expectation: FixtureExpectation) -> Fixture {
     Fixture {
         level: LevelId::FirstPour,
         placements: Vec::new(),
-        maybe_expectation: Some(FixtureExpectation {
-            outcome,
-            outcome_step,
-            final_count,
-        }),
+        maybe_expectation: Some(expectation),
+    }
+}
+
+/// The expectation a trace would record, so tests can perturb one field.
+fn expectation_of(trace: &ReplayTrace) -> FixtureExpectation {
+    FixtureExpectation {
+        outcome: trace.outcome,
+        outcome_step: trace.outcome_step,
+        final_count: trace.final_count,
+        peak_held: trace.peak_held,
+        maybe_brim_step: trace.maybe_brim_step,
     }
 }
 
@@ -35,13 +42,27 @@ fn held_counts(from_step: u32, held: u32, info: &PuzzleLevelInfo) -> Vec<u32> {
         .collect()
 }
 
+/// A won run without Brim, decided at the step limit.
 fn won_trace(outcome_step: u32, held: u32, info: &PuzzleLevelInfo) -> ReplayTrace {
     let from_step = outcome_step + 1 - info.settle_steps();
     ReplayTrace {
         outcome: FixtureOutcome::Won,
         outcome_step,
         final_count: held,
+        peak_held: held,
+        maybe_brim_step: None,
+        decided_step: info.step_limit(),
         counts: held_counts(from_step, held, info),
+    }
+}
+
+/// A won run holding `held` from the start of its settle window, which
+/// reaches Brim and is decided at `brim_step`.
+fn brim_trace(outcome_step: u32, held: u32, brim_step: u32, info: &PuzzleLevelInfo) -> ReplayTrace {
+    ReplayTrace {
+        maybe_brim_step: Some(brim_step),
+        decided_step: brim_step,
+        ..won_trace(outcome_step, held, info)
     }
 }
 
@@ -50,171 +71,73 @@ fn lost_trace(counts: Vec<u32>, info: &PuzzleLevelInfo) -> ReplayTrace {
         outcome: FixtureOutcome::Lost,
         outcome_step: info.step_limit(),
         final_count: counts.last().copied().unwrap_or(0),
+        peak_held: 0,
+        maybe_brim_step: None,
+        decided_step: info.step_limit(),
         counts,
     }
+}
+
+fn raised_brim(info: &PuzzleLevelInfo) -> u32 {
+    info.brim_count() + fill_margin_count(info.full_count())
 }
 
 fn is_record_mode() -> bool {
     std::env::var_os("LIQUIDFUN_PUZZLE_RECORD").is_some_and(|value| value == "1")
 }
 
+/// The decision frame is the Brim step on a Brim win and the outcome step on
+/// a loss, and counts run through the later of it and the margin window.
+fn assert_trace_shape(trace: &ReplayTrace, info: &PuzzleLevelInfo) {
+    let expected_decision = match (trace.outcome, trace.maybe_brim_step) {
+        (FixtureOutcome::Won, Some(brim_step)) => brim_step,
+        (FixtureOutcome::Won, None) => info.step_limit(),
+        (FixtureOutcome::Lost, _) => trace.outcome_step,
+    };
+    assert_eq!(trace.decided_step, expected_decision, "decision step");
+    let window_end = info.step_limit() - MARGIN_WIN_SLACK_STEPS;
+    let expected_len = trace.decided_step.max(window_end);
+    assert_eq!(
+        u32::try_from(trace.counts.len()).ok(),
+        Some(expected_len),
+        "counts run through the decision and the margin window"
+    );
+}
+
+/// The level and placement lines of a fixture. Record mode regenerates the
+/// expectation, so it must not depend on the recorded lines' grammar.
+fn input_lines(text: &str) -> String {
+    let mut inputs = text
+        .lines()
+        .take_while(|line| !line.starts_with("outcome "))
+        .collect::<Vec<_>>()
+        .join("\n");
+    inputs.push('\n');
+    inputs
+}
+
+fn record_fixture_file(file: &str, text: &str) {
+    let fixture = parse_fixture(&input_lines(text)).expect("fixture inputs parse");
+    println!("{}", record_line(file, &replay(&fixture)));
+}
+
 fn replay_fixture_file(file: &str, text: &str) {
+    if is_record_mode() {
+        record_fixture_file(file, text);
+        return;
+    }
+
     // Arrange
     let fixture = parse_fixture(text).expect("checked-in fixture parses");
     let info = PuzzleLevelInfo::from_spec(level_spec(fixture.level));
 
     // Act
     let trace = replay(&fixture);
-    if is_record_mode() {
-        println!("{}", record_line(file, &trace));
-        return;
-    }
 
     // Assert
+    assert_trace_shape(&trace, &info);
     let result = check_contract(&fixture, &trace, &info, !cfg!(debug_assertions));
     assert_eq!(result, Ok(()), "{file} replay: {trace:?}");
-}
-
-#[test]
-fn parses_a_full_won_fixture() {
-    // Arrange
-    let text = FULL_WON;
-
-    // Act
-    let fixture = parse_fixture(text);
-
-    // Assert
-    assert_eq!(
-        fixture,
-        Ok(Fixture {
-            level: LevelId::FirstPour,
-            placements: vec![FixturePlacement {
-                kind: ToolKind::Plank,
-                x: 8,
-                y: 64,
-                angle: 23,
-            }],
-            maybe_expectation: Some(FixtureExpectation {
-                outcome: FixtureOutcome::Won,
-                outcome_step: 412,
-                final_count: 640,
-            }),
-        })
-    );
-}
-
-#[test]
-fn parses_an_input_only_fixture() {
-    // Arrange
-    let text = "level first-pour\n";
-
-    // Act
-    let fixture = parse_fixture(text);
-
-    // Assert
-    assert_eq!(
-        fixture,
-        Ok(Fixture {
-            level: LevelId::FirstPour,
-            placements: Vec::new(),
-            maybe_expectation: None,
-        })
-    );
-}
-
-#[test]
-fn rejects_an_unknown_key() {
-    // Arrange
-    let text = "level first-pour\ncolor red\n";
-
-    // Act
-    let result = parse_fixture(text);
-
-    // Assert
-    let error = result.expect_err("unknown key is rejected");
-    assert!(error.contains("line 2"), "{error}");
-}
-
-#[test]
-fn rejects_expectation_lines_out_of_order() {
-    // Arrange
-    let text = "level first-pour\noutcome_step 412\noutcome won\nfinal_count 640\n";
-
-    // Act
-    let result = parse_fixture(text);
-
-    // Assert
-    assert!(result.is_err(), "{result:?}");
-}
-
-#[test]
-fn rejects_an_unknown_level_or_tool() {
-    // Arrange
-    let texts = [
-        "level dam-break\n",
-        "level first-pour\nplacement valve 1 2 3\n",
-    ];
-
-    // Act
-    let results = texts.map(parse_fixture);
-
-    // Assert
-    for result in results {
-        assert!(result.is_err(), "{result:?}");
-    }
-}
-
-#[test]
-fn rejects_malformed_integers() {
-    // Arrange
-    let texts = [
-        "level first-pour\nplacement plank +8 64 23\n",
-        "level first-pour\nplacement plank 8.0 64 23\n",
-        "level first-pour\nplacement plank x 64 23\n",
-        "level first-pour\nplacement plank  64 23\n",
-        "level first-pour\noutcome won\noutcome_step -1\nfinal_count 640\n",
-    ];
-
-    // Act
-    let results = texts.map(parse_fixture);
-
-    // Assert
-    for result in results {
-        assert!(result.is_err(), "{result:?}");
-    }
-}
-
-#[test]
-fn rejects_blank_lines_and_carriage_returns() {
-    // Arrange
-    let texts = [
-        "level first-pour\n\n",
-        "level first-pour\n\nplacement plank 8 64 23\n",
-        "level first-pour\r\n",
-        "",
-    ];
-
-    // Act
-    let results = texts.map(parse_fixture);
-
-    // Assert
-    for result in results {
-        assert!(result.is_err(), "{result:?}");
-    }
-}
-
-#[test]
-fn lanes_flatten_placements_in_fixture_order() {
-    // Arrange
-    let fixture =
-        parse_fixture("level first-pour\nplacement plank 8 64 23\nplacement plank -3 50 0\n")
-            .expect("two-placement fixture parses");
-
-    // Act
-    let (kinds, poses) = lanes(&fixture);
-
-    // Assert
-    assert_eq!((kinds, poses), (vec![1, 1], vec![8, 64, 23, -3, 50, 0]));
 }
 
 #[test]
@@ -222,8 +145,11 @@ fn exact_contract_requires_equal_step_and_count() {
     // Arrange
     let info = first_pour_info();
     let raised = info.target_count() + fill_margin_count(info.full_count());
-    let fixture = fixture_expecting(FixtureOutcome::Won, 200, raised);
     let trace = won_trace(201, raised, &info);
+    let fixture = fixture_expecting(FixtureExpectation {
+        outcome_step: 200,
+        ..expectation_of(&trace)
+    });
 
     // Act
     let results = (
@@ -237,19 +163,140 @@ fn exact_contract_requires_equal_step_and_count() {
 }
 
 #[test]
+fn exact_contract_requires_the_recorded_peak_held() {
+    // Arrange
+    let info = first_pour_info();
+    let trace = brim_trace(201, raised_brim(&info), 262, &info);
+    let fixture = fixture_expecting(FixtureExpectation {
+        peak_held: trace.peak_held + 1,
+        ..expectation_of(&trace)
+    });
+
+    // Act
+    let results = (
+        check_contract(&fixture, &trace, &info, true),
+        check_contract(&fixture, &trace, &info, false),
+    );
+
+    // Assert
+    assert_eq!(
+        results.0,
+        Err(format!(
+            "peak held {} differs from recorded {}",
+            trace.peak_held,
+            trace.peak_held + 1
+        ))
+    );
+    assert_eq!(results.1, Ok(()));
+}
+
+#[test]
+fn exact_contract_requires_the_recorded_brim_step() {
+    // Arrange
+    let info = first_pour_info();
+    let trace = brim_trace(201, raised_brim(&info), 262, &info);
+    let fixture = fixture_expecting(FixtureExpectation {
+        maybe_brim_step: Some(263),
+        ..expectation_of(&trace)
+    });
+
+    // Act
+    let result = check_contract(&fixture, &trace, &info, true);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err("Brim step 262 differs from recorded 263".to_owned())
+    );
+}
+
+#[test]
+fn debug_contract_accepts_a_brim_step_within_the_tolerance() {
+    // Arrange
+    let info = first_pour_info();
+    let trace = brim_trace(201, raised_brim(&info), 262, &info);
+    let within = fixture_expecting(FixtureExpectation {
+        maybe_brim_step: Some(262 + DEBUG_OUTCOME_STEP_TOLERANCE),
+        ..expectation_of(&trace)
+    });
+    let beyond = fixture_expecting(FixtureExpectation {
+        maybe_brim_step: Some(262 + DEBUG_OUTCOME_STEP_TOLERANCE + 1),
+        ..expectation_of(&trace)
+    });
+
+    // Act
+    let results = (
+        check_contract(&within, &trace, &info, false),
+        check_contract(&beyond, &trace, &info, false),
+    );
+
+    // Assert
+    assert_eq!(results.0, Ok(()));
+    assert!(results.1.is_err(), "{:?}", results.1);
+}
+
+#[test]
+fn debug_contract_requires_brim_exactly_when_recorded() {
+    // Arrange
+    let info = first_pour_info();
+    let with_brim = brim_trace(201, raised_brim(&info), 262, &info);
+    let without_brim = ReplayTrace {
+        maybe_brim_step: None,
+        ..with_brim.clone()
+    };
+    let recorded_brim = fixture_expecting(expectation_of(&with_brim));
+    let recorded_none = fixture_expecting(expectation_of(&without_brim));
+
+    // Act
+    let results = (
+        check_contract(&recorded_brim, &without_brim, &info, false),
+        check_contract(&recorded_none, &with_brim, &info, false),
+    );
+
+    // Assert
+    assert_eq!(
+        results.0,
+        Err("Brim step none differs from recorded 262".to_owned())
+    );
+    assert_eq!(
+        results.1,
+        Err("Brim step 262 differs from recorded none".to_owned())
+    );
+}
+
+#[test]
+fn brim_contract_requires_a_hold_at_the_raised_brim_count() {
+    // Arrange
+    let info = first_pour_info();
+    let short_trace = brim_trace(201, raised_brim(&info) - 1, 262, &info);
+    let enough_trace = brim_trace(201, raised_brim(&info), 262, &info);
+    let short = fixture_expecting(expectation_of(&short_trace));
+    let enough = fixture_expecting(expectation_of(&enough_trace));
+
+    // Act
+    let results = (
+        check_contract(&short, &short_trace, &info, false),
+        check_contract(&enough, &enough_trace, &info, false),
+    );
+
+    // Assert
+    assert!(results.0.is_err(), "{:?}", results.0);
+    assert_eq!(results.1, Ok(()));
+}
+
+#[test]
 fn won_contract_requires_a_win_at_the_raised_target() {
     // Arrange
     let info = first_pour_info();
     let raised = info.target_count() + fill_margin_count(info.full_count());
-    let short = (
-        raised - 1,
-        fixture_expecting(FixtureOutcome::Won, 200, raised - 1),
-    );
-    let enough = (raised, fixture_expecting(FixtureOutcome::Won, 200, raised));
+    let short_trace = won_trace(200, raised - 1, &info);
+    let enough_trace = won_trace(200, raised, &info);
+    let short = fixture_expecting(expectation_of(&short_trace));
+    let enough = fixture_expecting(expectation_of(&enough_trace));
 
     // Act
-    let short_result = check_contract(&short.1, &won_trace(200, short.0, &info), &info, true);
-    let enough_result = check_contract(&enough.1, &won_trace(200, enough.0, &info), &info, true);
+    let short_result = check_contract(&short, &short_trace, &info, true);
+    let enough_result = check_contract(&enough, &enough_trace, &info, true);
 
     // Assert
     assert!(short_result.is_err(), "{short_result:?}");
@@ -262,11 +309,11 @@ fn lost_contract_requires_counts_at_or_below_target_minus_margin() {
     let info = first_pour_info();
     let ceiling = info.target_count() - fill_margin_count(info.full_count());
     let steps = usize::try_from(info.step_limit()).expect("step limit fits usize");
-    let fixture = fixture_expecting(FixtureOutcome::Lost, info.step_limit(), ceiling);
     let at_ceiling = lost_trace(vec![ceiling; steps], &info);
     let mut over = vec![ceiling; steps];
     over[steps / 2] = ceiling + 1;
     let over_ceiling = lost_trace(over, &info);
+    let fixture = fixture_expecting(expectation_of(&at_ceiling));
 
     // Act
     let results = (
@@ -283,8 +330,11 @@ fn lost_contract_requires_counts_at_or_below_target_minus_margin() {
 fn outcome_mismatch_always_fails() {
     // Arrange
     let info = first_pour_info();
-    let fixture = fixture_expecting(FixtureOutcome::Won, info.step_limit(), 0);
     let trace = lost_trace(vec![0; 10], &info);
+    let fixture = fixture_expecting(FixtureExpectation {
+        outcome: FixtureOutcome::Won,
+        ..expectation_of(&trace)
+    });
 
     // Act
     let results = (
@@ -295,6 +345,25 @@ fn outcome_mismatch_always_fails() {
     // Assert
     assert!(results.0.is_err(), "{:?}", results.0);
     assert!(results.1.is_err(), "{:?}", results.1);
+}
+
+#[test]
+fn record_line_appends_peak_held_and_brim_step() {
+    // Arrange
+    let info = first_pour_info();
+    let trace = brim_trace(201, raised_brim(&info), 262, &info);
+
+    // Act
+    let line = record_line("solution.txt", &trace);
+
+    // Assert
+    assert!(
+        line.contains(&format!(
+            "final_count {} peak_held {} brim_step 262 profile ",
+            trace.final_count, trace.peak_held
+        )),
+        "{line}"
+    );
 }
 
 #[test]

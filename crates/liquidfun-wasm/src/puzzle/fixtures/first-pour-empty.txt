@@ -2,3 +2,5 @@ level first-pour
 outcome lost
 outcome_step 720
 final_count 0
+peak_held 0
+brim_step none
