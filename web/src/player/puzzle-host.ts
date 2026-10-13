@@ -42,6 +42,8 @@ export type PuzzleHost = Pick<
 /** Supersedes every in-flight build and loop; returns the new generation. */
 export function incrementGeneration(host: PuzzleHost): number {
   host.generation = nextGeneration(host.generation);
+  // Every Play, Stop, Edit/Retry build, route entry and level change lands here (D-10).
+  host.puzzle.sound.stopVoices();
   return host.generation;
 }
 

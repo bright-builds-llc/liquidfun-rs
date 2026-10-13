@@ -23,6 +23,14 @@ export interface PuzzleController {
   readonly announcement: Accessor<string>;
   /** True when progress cannot be saved in this browser (D-15). */
   readonly progressDegraded: Accessor<boolean>;
+  /** Shared on/off state of the HUD toggle and the drawer checkbox (Phase 42 D-01/D-02). */
+  readonly soundEnabled: Accessor<boolean>;
+  /** False when Web Audio is missing or construction failed (D-05). */
+  readonly soundAvailable: Accessor<boolean>;
+  /** True after a runtime audio failure this session (D-16). */
+  readonly soundFailed: Accessor<boolean>;
+  /** Call from the click/change handler; turning on unlocks audio there (D-04). */
+  setSoundEnabled(on: boolean): void;
   /** building → running on a fresh run session built from the placements (D-21). */
   play(): void;
   /** running → building on a fresh preview with the placements kept (D-21). */

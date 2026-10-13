@@ -124,10 +124,12 @@ function startLoop(host: PuzzleHost, context: CanvasRenderingContext2D): void {
     maybeSession: () => host.puzzle.maybeOwned,
     current: () => host.puzzle.current,
     dispatch: (event) => dispatchRecording(host, event),
-    publish: (frame, observation, state) => {
+    publish: (frame, observation, state, signals) => {
       publishState(host, state);
       publishHeldHash(host, frame, state);
       host.setView({ kind: viewKindFor(state), frame: observation });
+      // After dispatch and draw; present never throws (D-08).
+      host.puzzle.sound.present(frame, signals, state);
     },
     drawSceneFrame: host.drawSceneFrame,
     fail: host.failScene,

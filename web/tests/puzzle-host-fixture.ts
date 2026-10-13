@@ -15,6 +15,7 @@ import {
   type ProgressStorageProvider,
 } from "../src/player/puzzle-progress";
 import { createPuzzleRuntime } from "../src/player/puzzle-runtime";
+import type { PuzzleSound } from "../src/player/puzzle-sound";
 import type { PlayerView } from "../src/player/view";
 import { createCamera } from "../src/render/camera";
 
@@ -162,7 +163,12 @@ function setter<T>(): Setter<T> {
   return vi.fn() as unknown as Setter<T>;
 }
 
-export function createHost(options: { readonly maybeStorage?: ProgressStorageProvider } = {}) {
+export function createHost(
+  options: {
+    readonly maybeStorage?: ProgressStorageProvider;
+    readonly maybeSound?: PuzzleSound;
+  } = {},
+) {
   return createRoot((dispose) => {
     const [view, setView] = createSignal<PlayerView>({ kind: "fallback" });
     const clock = createFrameClock();
@@ -199,6 +205,7 @@ export function createHost(options: { readonly maybeStorage?: ProgressStoragePro
       setTiltDebug: setter(),
       puzzle: createPuzzleRuntime(
         createPuzzleProgress(options.maybeStorage ?? UNAVAILABLE_PROGRESS_STORAGE),
+        options.maybeSound,
       ),
     };
     return { host, canvas, dispose };

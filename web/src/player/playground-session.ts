@@ -21,6 +21,7 @@ import {
 import { maybePlayableTarget, titleForPlayableRoute } from "./playable-target";
 import { createPuzzleProgress } from "./puzzle-progress";
 import { createPuzzleRuntime } from "./puzzle-runtime";
+import { createBrowserPuzzleSound } from "./puzzle-sound";
 import type { SceneRuntime } from "./scene-runtime";
 import {
   bindLifecycle,
@@ -122,7 +123,10 @@ function createShell(): SceneRuntime {
     setTiltGravityEnabled,
     tiltDebug,
     setTiltDebug,
-    puzzle: createPuzzleRuntime(createPuzzleProgress(() => window.localStorage)),
+    puzzle: createPuzzleRuntime(
+      createPuzzleProgress(() => window.localStorage),
+      createBrowserPuzzleSound(),
+    ),
   } as SceneRuntime;
   session.gravitySliderMagnitude = () =>
     maybeRouteGravitySliderMagnitude(session.route(), session.constructionValues);

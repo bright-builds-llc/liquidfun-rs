@@ -80,6 +80,7 @@ export async function beginPuzzleRoute(host: PuzzleHost, id: PuzzleId): Promise<
     );
     host.refreshCamera();
     host.puzzle.setMaybeLevelId(id);
+    host.puzzle.sound.attach();
     host.puzzle.maybeGlass = undefined;
     clearLevelSignals(host);
     host.puzzle.setMaybeBestStars(host.puzzle.starStore.get(id));
@@ -138,6 +139,7 @@ export function tryAgainPuzzle(host: PuzzleHost): void {
  * Try again or a route change builds the next session.
  */
 export function releaseFailedPuzzle(host: PuzzleHost): void {
+  host.puzzle.sound.pause();
   cancelPendingInspection(host);
   host.puzzle.maybeOwned = undefined;
 }
@@ -148,6 +150,7 @@ export function releaseFailedPuzzle(host: PuzzleHost): void {
  * store survives for the page session (D-14).
  */
 export function leavePuzzle(host: PuzzleHost): void {
+  host.puzzle.sound.leave();
   cancelPendingFrame(host.clock);
   host.puzzle.maybeEditorInput?.detach();
   host.puzzle.maybeEditorInput = undefined;
@@ -200,6 +203,10 @@ export function createPuzzleController(host: PuzzleHost): PuzzleController {
     maybeHeldHash: () => host.puzzle.maybeHeldHash(),
     announcement: () => host.puzzle.announcement(),
     progressDegraded: () => host.puzzle.progress.degraded(),
+    soundEnabled: () => host.puzzle.sound.enabled(),
+    soundAvailable: () => host.puzzle.sound.available(),
+    soundFailed: () => host.puzzle.sound.failed(),
+    setSoundEnabled: (on) => host.puzzle.sound.setEnabled(on),
     play: () => playPuzzle(host),
     stop: () => stopPuzzle(host),
     retry: () => retryPuzzle(host),

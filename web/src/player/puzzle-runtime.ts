@@ -8,6 +8,7 @@ import { createStarStore, type StarStore } from "../puzzle/star-store";
 import type { LevelStars } from "../puzzle/stars";
 import type { GlassCup } from "../render/glass-cup";
 import type { PuzzleEditorInput } from "./puzzle-editor-input";
+import { createDisabledPuzzleSound, type PuzzleSound } from "./puzzle-sound";
 import {
   UNAVAILABLE_PROGRESS_STORAGE,
   createPuzzleProgress,
@@ -36,6 +37,8 @@ export type PuzzleRuntime = {
   readonly starStore: StarStore;
   /** Per-browser progress; hydrates the star store (D-09). */
   readonly progress: PuzzleProgress;
+  /** Opt-in puzzle sound (Phase 42); the disabled no-op unless the browser session passes one. */
+  readonly sound: PuzzleSound;
   /** Non-reactive mirror the loop folds per-step events into; Solid state is published once per frame. */
   current: PuzzleState;
   maybeGlass: GlassCup | undefined;
@@ -67,6 +70,7 @@ function hydratedStarStore(progress: PuzzleProgress): StarStore {
  */
 export function createPuzzleRuntime(
   progress: PuzzleProgress = createPuzzleProgress(UNAVAILABLE_PROGRESS_STORAGE),
+  sound: PuzzleSound = createDisabledPuzzleSound(),
 ): PuzzleRuntime {
   const [state, setState] = createSignal<PuzzleState>(INITIAL_PUZZLE_STATE);
   const [maybeLevelId, setMaybeLevelId] = createSignal<PuzzleId | undefined>(undefined);
@@ -91,6 +95,7 @@ export function createPuzzleRuntime(
     setAnnouncement,
     starStore: hydratedStarStore(progress),
     progress,
+    sound,
     current: INITIAL_PUZZLE_STATE,
     maybeGlass: undefined,
     maybeOwned: undefined,
