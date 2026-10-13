@@ -1,8 +1,15 @@
-//! Optional puzzle scalars on `ProofFrame` (D-17); undefined in JS for scene frames.
+//! Optional puzzle scalars on `ProofFrame` (D-17, Phase 39 D-11); undefined
+//! in JS for scene frames.
+//!
+//! `status_is_consistent` is the one Rust rule set that a puzzle status must
+//! satisfy before it rides on a frame. `web/src/physics/frame-puzzle.ts`
+//! mirrors the same rules when it parses these scalars.
 
 use wasm_bindgen::prelude::*;
 
 use super::ProofFrame;
+use crate::puzzle::goal::{Outcome, PuzzleStatus};
+use crate::puzzle::peak;
 
 #[wasm_bindgen]
 impl ProofFrame {
@@ -49,161 +56,104 @@ impl ProofFrame {
     pub fn step_limit(&self) -> Option<u32> {
         self.data.maybe_puzzle.map(|status| status.step_limit)
     }
+
+    /// Returns the largest cup count held for the settle window, or undefined for scenes.
+    #[must_use]
+    #[wasm_bindgen(js_name = peakHeldCount)]
+    pub fn peak_held_count(&self) -> Option<u32> {
+        self.data.maybe_puzzle.map(|status| status.peak_held_count)
+    }
+
+    /// Returns the Brim star count, or undefined for scenes.
+    #[must_use]
+    #[wasm_bindgen(js_name = brimCount)]
+    pub fn brim_count(&self) -> Option<u32> {
+        self.data.maybe_puzzle.map(|status| status.brim_count)
+    }
+
+    /// Returns the step at which Brim latched, or undefined before that and for scenes.
+    #[must_use]
+    #[wasm_bindgen(js_name = brimStep)]
+    pub fn brim_step(&self) -> Option<u32> {
+        self.data
+            .maybe_puzzle
+            .and_then(|status| status.maybe_brim_step)
+    }
+
+    /// Returns the step at which the run was decided, or undefined before that and for scenes.
+    #[must_use]
+    #[wasm_bindgen(js_name = decidedStep)]
+    pub fn decided_step(&self) -> Option<u32> {
+        self.data
+            .maybe_puzzle
+            .and_then(|status| status.maybe_decided_step)
+    }
+}
+
+/// Every rule a puzzle status must satisfy to attach to a frame at
+/// `step_index` holding `particle_count` particles.
+///
+/// The peak held count is never compared with `particle_count`, because
+/// eviction can remove particles after the peak was held (Pitfall 4).
+pub(super) fn status_is_consistent(
+    status: &PuzzleStatus,
+    particle_count: u32,
+    step_index: u32,
+) -> bool {
+    counts_are_consistent(status, particle_count)
+        && steps_are_consistent(status, step_index)
+        && stars_are_consistent(status)
+}
+
+/// `0 < target < brim <= full`, a non-zero limit and a live cup count.
+const fn counts_are_consistent(status: &PuzzleStatus, particle_count: u32) -> bool {
+    status.target_count != 0
+        && status.target_count < status.brim_count
+        && status.brim_count <= status.full_count
+        && status.step_limit != 0
+        && status.goal_count <= particle_count
+}
+
+/// The hooks' counter matches the frame (D-14); a latch is never in the
+/// future or past the limit, and a loss latches exactly at the limit.
+fn steps_are_consistent(status: &PuzzleStatus, step_index: u32) -> bool {
+    let latch_is_in_range = status
+        .outcome
+        .maybe_step()
+        .is_none_or(|step| step <= status.step_limit && step <= status.observed_step);
+    let loss_is_at_limit = match status.outcome {
+        Outcome::Lost { step } => step == status.step_limit,
+        Outcome::Running | Outcome::Won { .. } => true,
+    };
+    status.observed_step == step_index && latch_is_in_range && loss_is_at_limit
+}
+
+/// Win iff peak reaches target; Brim iff peak reaches brim, only on a won
+/// run between the win and the current step; decision per D-10.
+fn stars_are_consistent(status: &PuzzleStatus) -> bool {
+    let is_won = matches!(status.outcome, Outcome::Won { .. });
+    let win_matches_peak = is_won == (status.peak_held_count >= status.target_count);
+    let brim_matches_peak =
+        status.maybe_brim_step.is_some() == (status.peak_held_count >= status.brim_count);
+    let latest_brim_step = status.observed_step.min(status.step_limit);
+    let brim_step_is_in_range = match (status.maybe_brim_step, status.outcome) {
+        (None, _) => true,
+        (Some(brim_step), Outcome::Won { step }) => {
+            step <= brim_step && brim_step <= latest_brim_step
+        }
+        (Some(_), Outcome::Running | Outcome::Lost { .. }) => false,
+    };
+    let expected_decided_step = peak::decided_step(
+        status.outcome,
+        status.maybe_brim_step,
+        status.observed_step,
+        status.step_limit,
+    );
+    win_matches_peak
+        && brim_matches_peak
+        && brim_step_is_in_range
+        && status.maybe_decided_step == expected_decided_step
 }
 
 #[cfg(test)]
-mod tests {
-    use super::super::{FrameData, FrameDiagnostics, FrameError};
-    use super::*;
-    use crate::puzzle::goal::{Outcome, PuzzleStatus};
-
-    const PARTICLES: usize = 4;
-
-    fn frame_data_at(step_index: u32) -> FrameData {
-        FrameData::new(
-            step_index,
-            vec![1.0; PARTICLES * 2],
-            vec![255; PARTICLES * 4],
-            vec![0.2; PARTICLES],
-            Vec::new(),
-            Vec::new(),
-            FrameDiagnostics::at_rest(),
-        )
-        .expect("four-particle frame should pass validation")
-    }
-
-    const fn status(outcome: Outcome, observed_step: u32) -> PuzzleStatus {
-        PuzzleStatus {
-            goal_count: 2,
-            target_count: 3,
-            full_count: 4,
-            outcome,
-            observed_step,
-            step_limit: 600,
-            peak_held_count: 0,
-            brim_count: 4,
-            maybe_brim_step: None,
-            maybe_decided_step: None,
-        }
-    }
-
-    fn puzzle_frame(status: PuzzleStatus) -> ProofFrame {
-        let mut data = frame_data_at(status.observed_step);
-        data.set_puzzle_status(status)
-            .expect("consistent status should attach");
-        ProofFrame::from(data)
-    }
-
-    #[test]
-    fn scene_frames_report_no_puzzle_scalars() {
-        // Arrange
-        let frame = ProofFrame::from(frame_data_at(5));
-
-        // Act
-        let scalars = (
-            frame.goal_count(),
-            frame.goal_target(),
-            frame.goal_full(),
-            frame.outcome(),
-            frame.outcome_step(),
-            frame.step_limit(),
-        );
-
-        // Assert
-        assert_eq!(scalars, (None, None, None, None, None, None));
-    }
-
-    #[test]
-    fn running_puzzle_frames_report_counts_and_no_outcome_step() {
-        // Arrange
-        let frame = puzzle_frame(status(Outcome::Running, 5));
-
-        // Act
-        let scalars = (
-            frame.goal_count(),
-            frame.goal_target(),
-            frame.goal_full(),
-            frame.outcome(),
-            frame.outcome_step(),
-            frame.step_limit(),
-        );
-
-        // Assert
-        assert_eq!(
-            scalars,
-            (Some(2), Some(3), Some(4), Some(0), None, Some(600))
-        );
-    }
-
-    #[test]
-    fn won_frames_report_outcome_one_and_its_step() {
-        // Arrange
-        let frame = puzzle_frame(status(Outcome::Won { step: 5 }, 5));
-
-        // Act
-        let outcome = (frame.outcome(), frame.outcome_step());
-
-        // Assert
-        assert_eq!(outcome, (Some(1), Some(5)));
-    }
-
-    #[test]
-    fn lost_frames_report_outcome_two_at_the_step_limit() {
-        // Arrange
-        let frame = puzzle_frame(status(Outcome::Lost { step: 600 }, 600));
-
-        // Act
-        let outcome = (frame.outcome(), frame.outcome_step());
-
-        // Assert
-        assert_eq!(outcome, (Some(2), Some(600)));
-    }
-
-    #[test]
-    fn set_puzzle_status_rejects_inconsistent_status() {
-        // Arrange
-        let base = status(Outcome::Running, 5);
-        let invalid = [
-            PuzzleStatus {
-                target_count: 5,
-                ..base
-            },
-            PuzzleStatus {
-                target_count: 0,
-                ..base
-            },
-            PuzzleStatus {
-                goal_count: 5,
-                full_count: 6,
-                ..base
-            },
-            PuzzleStatus {
-                outcome: Outcome::Won { step: 601 },
-                observed_step: 5,
-                ..base
-            },
-            PuzzleStatus {
-                outcome: Outcome::Won { step: 6 },
-                ..base
-            },
-        ];
-
-        // Act
-        let results = invalid.map(|candidate| frame_data_at(5).set_puzzle_status(candidate));
-
-        // Assert
-        assert_eq!(results, [Err(FrameError::InvalidDiagnostic); 5]);
-    }
-
-    #[test]
-    fn set_puzzle_status_rejects_a_step_counter_out_of_sync_with_the_frame() {
-        // Arrange
-        let mut data = frame_data_at(5);
-
-        // Act
-        let result = data.set_puzzle_status(status(Outcome::Running, 4));
-
-        // Assert
-        assert_eq!(result, Err(FrameError::InvalidDiagnostic));
-    }
-}
+mod tests;

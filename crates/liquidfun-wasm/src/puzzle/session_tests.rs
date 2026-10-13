@@ -1,15 +1,18 @@
 //! Session-level puzzle tests: puzzle sources build through `SessionCore`,
 //! reject scene-only input, and count steps with the session (D-10, D-14,
-//! D-15, D-23).
+//! D-15, D-23). Phase 39 adds permuted-placement fingerprints (D-27) and the
+//! peak held, Brim and decision steps of real runs (D-07 to D-10).
 
 use liquidfun::math::Vec2;
 
+use crate::frame::ProofFrame;
 use crate::puzzle::first_pour::REFERENCE_PLANK_POSE;
 use crate::puzzle::goal::{
-    MARGIN_WIN_SLACK_STEPS, Outcome, fill_margin_count, maybe_margin_win_step,
+    MARGIN_WIN_SLACK_STEPS, Outcome, PuzzleStatus, fill_margin_count, maybe_margin_win_step,
 };
 use crate::puzzle::tools::{Placements, ToolKind};
 use crate::puzzle::{LevelId, level_spec};
+use crate::scene_spot::frame_hash::frame_hash;
 use crate::session::{SessionCore, SessionError};
 
 fn first_pour(placements: Placements) -> SessionCore {
@@ -215,4 +218,150 @@ fn first_pour_reference_plank_wins_with_margin_and_stays_won() {
         .maybe_puzzle_status()
         .expect("puzzle sessions report status");
     assert_eq!(status.outcome, Outcome::Won { step });
+}
+
+/// Builds first-pour through the wasm helper from raw placement lanes.
+fn first_pour_from_lanes(kinds: &[u8], poses: &[i32]) -> SessionCore {
+    crate::build_puzzle_core("first-pour", kinds, poses).expect("first-pour lanes build")
+}
+
+fn reference_core() -> SessionCore {
+    first_pour_from_lanes(&[ToolKind::Plank.code()], &REFERENCE_PLANK_POSE)
+}
+
+/// Steps one fixed step at a time through `last_step`; `statuses[i]` is the
+/// status after step `i + 1`.
+fn statuses_through(core: &mut SessionCore, last_step: u32) -> Vec<PuzzleStatus> {
+    (1..=last_step)
+        .map(|_| {
+            core.advance(1).expect("puzzle step advances");
+            core.maybe_puzzle_status()
+                .expect("puzzle sessions report status")
+        })
+        .collect()
+}
+
+/// Peak held count after `step` (1-based) of `statuses`.
+fn peak_after(statuses: &[PuzzleStatus], step: u32) -> Option<u32> {
+    let index = usize::try_from(step.checked_sub(1)?).ok()?;
+    statuses.get(index).map(|status| status.peak_held_count)
+}
+
+fn is_record_mode() -> bool {
+    std::env::var_os("LIQUIDFUN_PUZZLE_RECORD").is_some_and(|value| value == "1")
+}
+
+fn fingerprint_after(kinds: &[u8], poses: &[i32], steps: u32) -> u64 {
+    let mut core = first_pour_from_lanes(kinds, poses);
+    for _ in 0..steps {
+        core.advance(1).expect("puzzle step advances");
+    }
+    let frame = ProofFrame::from(core.capture_frame().expect("puzzle frame captures"));
+    frame_hash(&frame)
+}
+
+#[test]
+fn permuted_placements_give_identical_fingerprints() {
+    // Arrange
+    let kinds = [ToolKind::Plank.code(); 2];
+    let in_order = [8, 64, 23, 30, 84, 0];
+    let permuted = [30, 84, 0, 8, 64, 23];
+
+    // Act
+    let first = fingerprint_after(&kinds, &in_order, 120);
+    let second = fingerprint_after(&kinds, &permuted, 120);
+
+    // Assert
+    assert_eq!(first, second);
+}
+
+#[test]
+fn reference_peak_clears_brim_with_margin() {
+    // Arrange
+    let spec = level_spec(LevelId::FirstPour);
+    let mut core = reference_core();
+    let deadline = spec.step_limit - MARGIN_WIN_SLACK_STEPS;
+
+    // Act
+    let statuses = statuses_through(&mut core, spec.step_limit);
+
+    // Assert
+    let counts: Vec<u32> = statuses.iter().map(|status| status.goal_count).collect();
+    let maybe_last = statuses.last().copied();
+    let maybe_brim_step = maybe_last.and_then(|status| status.maybe_brim_step);
+    let maybe_peak_at_deadline = peak_after(&statuses, deadline);
+    if is_record_mode() {
+        eprintln!(
+            "first-pour reference peak held: @201 {:?} @262 {:?} @{deadline} {maybe_peak_at_deadline:?} @{} {:?}; brim {} latched at {maybe_brim_step:?}; decided {:?}",
+            peak_after(&statuses, 201),
+            peak_after(&statuses, 262),
+            spec.step_limit,
+            peak_after(&statuses, spec.step_limit),
+            spec.brim_count,
+            maybe_last.and_then(|status| status.maybe_decided_step),
+        );
+    }
+    let maybe_margin_step = maybe_margin_win_step(
+        &counts,
+        spec.brim_count,
+        spec.full_count,
+        spec.settle_steps,
+        spec.step_limit,
+    );
+    assert!(
+        maybe_margin_step.is_some(),
+        "peak held {maybe_peak_at_deadline:?} at step {deadline} (Brim at {maybe_brim_step:?}) does not clear brim {} by {}",
+        spec.brim_count,
+        fill_margin_count(spec.full_count)
+    );
+}
+
+#[test]
+fn reference_run_decides_at_the_brim_step() {
+    // Arrange
+    let spec = level_spec(LevelId::FirstPour);
+    let mut core = reference_core();
+
+    // Act
+    let maybe_decided = (1..=spec.step_limit).find_map(|_| {
+        core.advance(1).expect("puzzle step advances");
+        core.maybe_puzzle_status()
+            .filter(|status| status.maybe_decided_step.is_some())
+    });
+
+    // Assert
+    let status = maybe_decided.expect("the reference run is decided by the step limit");
+    assert!(matches!(status.outcome, Outcome::Won { .. }));
+    assert!(status.maybe_brim_step.is_some(), "no Brim: {status:?}");
+    assert_eq!(status.maybe_decided_step, status.maybe_brim_step);
+    assert_eq!(status.maybe_decided_step, Some(core.step_index()));
+}
+
+#[test]
+fn empty_run_has_no_peak_and_decides_at_the_limit() {
+    // Arrange
+    let spec = level_spec(LevelId::FirstPour);
+    let mut core = first_pour(Placements::empty());
+
+    // Act
+    let statuses = statuses_through(&mut core, spec.step_limit);
+
+    // Assert
+    let last = statuses.last().copied().expect("the run stepped");
+    assert_eq!(
+        (
+            last.peak_held_count,
+            last.maybe_brim_step,
+            last.maybe_decided_step,
+            last.outcome
+        ),
+        (
+            0,
+            None,
+            Some(spec.step_limit),
+            Outcome::Lost {
+                step: spec.step_limit
+            }
+        )
+    );
 }

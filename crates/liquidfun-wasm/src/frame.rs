@@ -117,22 +117,14 @@ impl FrameData {
     }
 
     /// Attaches the puzzle readout, rejecting a status that contradicts itself
-    /// or this frame. The `observed_step` check makes the hooks' own counter
-    /// fail closed whenever it drifts from the session step index (D-14).
+    /// or this frame (`puzzle::status_is_consistent`). The `observed_step`
+    /// check makes the hooks' own counter fail closed whenever it drifts from
+    /// the session step index (D-14).
     pub(crate) fn set_puzzle_status(&mut self, status: PuzzleStatus) -> Result<(), FrameError> {
         let particle_count =
             u32::try_from(self.particle_positions.len() / PARTICLE_POSITION_STRIDE)
                 .map_err(|_error| FrameError::ArithmeticOverflow)?;
-        let counts_are_consistent = status.target_count != 0
-            && status.target_count <= status.full_count
-            && status.step_limit != 0
-            && status.goal_count <= particle_count;
-        let steps_are_consistent = status.observed_step == self.step_index
-            && status
-                .outcome
-                .maybe_step()
-                .is_none_or(|step| step <= status.step_limit && step <= status.observed_step);
-        if !counts_are_consistent || !steps_are_consistent {
+        if !puzzle::status_is_consistent(&status, particle_count, self.step_index) {
             return Err(FrameError::InvalidDiagnostic);
         }
         self.maybe_puzzle = Some(status);
