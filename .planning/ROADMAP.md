@@ -244,7 +244,15 @@ Plans:
 1. Sound pauses when the tab is hidden or the player leaves the puzzle, and a hint mentions the phone silent switch.
 1. The impact data the bridge reports for sound does not change the simulation: 25/25 scene fingerprints are unchanged, and puzzle outcomes are the same with sound on and off.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 42-01-PLAN.md — Fingerprint baseline, read-only Rust sound aggregates on puzzle frames with determinism tests and tuning probe, fail-closed TS parse (wave 1)
+- [ ] 42-02-PLAN.md — Pure sound core: preference, per-frame fold, pentatonic plinks and voice params, 6-voice cap with rate limits, trigger rules (wave 2)
+- [ ] 42-03-PLAN.md — Web Audio engine shell, puzzle sound glue (gesture unlock, visibility, failure) and loop/lifecycle wiring (wave 3)
+- [ ] 42-04-PLAN.md — HUD sound toggle, drawer and form-factor Sound section with silent-switch hint, slot widening (wave 4)
+- [ ] 42-05-PLAN.md — Fake-AudioContext Playwright spec and the full phase gate with 25/25 fingerprints (wave 5)
+
 **UI hint**: yes
 
 ### Phase 43: GPU Water Render Mode
