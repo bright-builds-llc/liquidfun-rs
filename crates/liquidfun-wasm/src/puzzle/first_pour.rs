@@ -9,7 +9,7 @@ use liquidfun::particle::ParticleColor;
 
 use super::LevelId;
 use super::goal::GoalRect;
-use super::spec::{LevelSpec, LiquidBlock};
+use super::spec::{LevelSpec, LiquidBlock, LiquidMaterial, SystemTuning};
 use super::tools::{GridRect, ToolAllowance, ToolKind};
 
 /// Counter-clockwise corners of the axis-aligned rectangle `min..max`.
@@ -44,6 +44,7 @@ const LIQUID_BLOCKS: [LiquidBlock; 1] = [LiquidBlock {
     spacing: 0.06,
     color: ParticleColor::new(77, 163, 255, 255),
     counted: true,
+    material: LiquidMaterial::Water,
 }];
 
 const TOOL_BUDGET: [ToolAllowance; 1] = [ToolAllowance {
@@ -59,10 +60,12 @@ pub(crate) const FIRST_POUR: LevelSpec = LevelSpec {
     particle_radius: 0.04,
     maximum_particle_count: 4096,
     particle_iterations: 2,
+    system_tuning: SystemTuning::NONE,
     walls: &WALLS,
     cup_walls: &CUP_WALLS,
     cup_interior: GoalRect::new(Vec2::new(1.6, 0.0), Vec2::new(3.4, 1.8)),
     liquid_blocks: &LIQUID_BLOCKS,
+    floats: &[],
     target_count: 540,
     // The interior holds about 3.24 m² / 0.0036 m² = 900 particles at the fill spacing.
     full_count: 900,

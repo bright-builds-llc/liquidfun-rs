@@ -1,12 +1,77 @@
 //! Declarative, const-constructible puzzle level data (D-06).
 
 use liquidfun::math::Vec2;
-use liquidfun::particle::ParticleColor;
+use liquidfun::particle::{ParticleColor, ParticleFlags, ParticleGroupFlags};
 
 use super::LevelId;
 use super::goal::GoalRect;
 use super::tools::{GridRect, ToolAllowance};
 use super::valve::STEPS_PER_OPEN_TICK;
+
+/// Particle material of one liquid block (D-10). Flags are per particle, so
+/// materials can share a level.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(test), allow(dead_code))] // The teaching levels (Phase 40) author the other materials.
+pub(crate) enum LiquidMaterial {
+    /// Plain water: `ParticleFlags::WATER`, no group flags.
+    Water,
+    /// Slow, clinging liquid: `ParticleFlags::VISCOUS`.
+    Viscous,
+    /// Granular particles: `ParticleFlags::POWDER`.
+    Powder,
+    /// Soft jelly: `ParticleFlags::ELASTIC` in a `SOLID` group.
+    Elastic,
+}
+
+impl LiquidMaterial {
+    /// Particle and group flags; Elastic must be a `SOLID` group or water
+    /// soaks into it (research Pitfall 4).
+    pub(crate) const fn flags(self) -> (ParticleFlags, ParticleGroupFlags) {
+        match self {
+            Self::Water => (ParticleFlags::WATER, ParticleGroupFlags::empty()),
+            Self::Viscous => (ParticleFlags::VISCOUS, ParticleGroupFlags::empty()),
+            Self::Powder => (ParticleFlags::POWDER, ParticleGroupFlags::empty()),
+            Self::Elastic => (ParticleFlags::ELASTIC, ParticleGroupFlags::SOLID),
+        }
+    }
+}
+
+/// Optional particle-system strengths; `None` leaves the engine default
+/// untouched and adds no builder call (D-29).
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(
+    clippy::struct_field_names,
+    reason = "maybe_ prefixes make the three optional strengths explicit"
+)]
+pub(crate) struct SystemTuning {
+    /// Viscous strength; levels stay in 1.0..=1.5 (values near 2.5 fail the step).
+    pub(crate) maybe_viscous_strength: Option<f32>,
+    /// Elastic strength for jelly groups.
+    pub(crate) maybe_elastic_strength: Option<f32>,
+    /// Powder strength for granular groups.
+    pub(crate) maybe_powder_strength: Option<f32>,
+}
+
+impl SystemTuning {
+    /// No overrides.
+    pub(crate) const NONE: Self = Self {
+        maybe_viscous_strength: None,
+        maybe_elastic_strength: None,
+        maybe_powder_strength: None,
+    };
+}
+
+/// Level-authored dynamic circle for buoyancy (D-12, D-28). A circle keeps
+/// runtime trig out of contact geometry.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct FloatBody {
+    /// Start centre in meters.
+    pub(crate) center: Vec2,
+    /// Radius in meters.
+    pub(crate) radius: f32,
+    /// Fixture density; below the particle density of 1.0 it floats.
+    pub(crate) density: f32,
+}
 
 /// One rectangular block of liquid created as its own particle group.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -19,8 +84,10 @@ pub(crate) struct LiquidBlock {
     pub(crate) spacing: f32,
     /// Particle color.
     pub(crate) color: ParticleColor,
-    /// Whether this group counts toward the cup (false for a future jelly pad).
+    /// Whether this group counts toward the cup (false for a jelly pad, D-11).
     pub(crate) counted: bool,
+    /// Particle material (D-10).
+    pub(crate) material: LiquidMaterial,
 }
 
 /// Declarative, const-constructible puzzle level (D-06).
@@ -41,6 +108,8 @@ pub(crate) struct LevelSpec {
     pub(crate) maximum_particle_count: usize,
     /// Particle substeps; 2 is the shared scene default (D-15).
     pub(crate) particle_iterations: u32,
+    /// Optional particle-system strengths (D-29).
+    pub(crate) system_tuning: SystemTuning,
     /// Static level walls.
     pub(crate) walls: &'static [[Vec2; 4]],
     /// Static cup walls.
@@ -49,6 +118,9 @@ pub(crate) struct LevelSpec {
     pub(crate) cup_interior: GoalRect,
     /// Liquid created after the tools, in order.
     pub(crate) liquid_blocks: &'static [LiquidBlock],
+    /// Dynamic circles created after the level geometry and before the
+    /// tools; their start area should be an authored `no_place` zone.
+    pub(crate) floats: &'static [FloatBody],
     /// Count that must hold for `settle_steps` consecutive steps to win.
     pub(crate) target_count: u32,
     /// Authored count for 100% fill.

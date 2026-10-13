@@ -3,7 +3,7 @@
 //! and the timed valves (Phase 40 D-01, D-03).
 
 use liquidfun::math::Vec2;
-use liquidfun::{ContactTransition, ParticleGroupId, ParticleSystemId, World};
+use liquidfun::{BodyId, ContactTransition, ParticleGroupId, ParticleSystemId, World};
 
 use super::goal::{GoalTracker, PuzzleStatus, count_in_goal};
 use super::peak::{PeakHeldTracker, decided_step};
@@ -11,6 +11,16 @@ use super::spec::LevelSpec;
 use super::valve::ValveGate;
 use crate::scene::{ControlEffect, PointerKind, RigidSegment, SceneHooks};
 use crate::session::SessionError;
+
+/// The level's rigid parts the hooks draw or open after the build.
+pub(crate) struct LevelBodies {
+    /// Walls, cup walls and non-valve tools; closed valves add their own.
+    pub(crate) segments: Vec<RigidSegment>,
+    /// Gates in canonical placement order.
+    pub(crate) valves: Vec<ValveGate>,
+    /// Level float bodies with their radii, in spec order (D-12).
+    pub(crate) floats: Vec<(BodyId, f32)>,
+}
 
 /// Hooks that count the cup once per fixed step and reject scene input.
 pub(crate) struct PuzzleHooks {
@@ -24,6 +34,8 @@ pub(crate) struct PuzzleHooks {
     segments: Vec<RigidSegment>,
     /// Gates in canonical placement order.
     valves: Vec<ValveGate>,
+    /// Level float bodies with their radii, in spec order.
+    floats: Vec<(BodyId, f32)>,
 }
 
 impl PuzzleHooks {
@@ -34,9 +46,13 @@ impl PuzzleHooks {
         tracker: GoalTracker,
         peak: PeakHeldTracker,
         initial_count: u32,
-        segments: Vec<RigidSegment>,
-        valves: Vec<ValveGate>,
+        bodies: LevelBodies,
     ) -> Self {
+        let LevelBodies {
+            segments,
+            valves,
+            floats,
+        } = bodies;
         Self {
             spec,
             counted_groups,
@@ -46,6 +62,7 @@ impl PuzzleHooks {
             observed_step: 0,
             segments,
             valves,
+            floats,
         }
     }
 }
@@ -171,7 +188,17 @@ impl SceneHooks for PuzzleHooks {
         Ok(self.segments.iter().chain(closed_valves).copied().collect())
     }
 
-    fn collect_circles(&self, _world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
-        Ok(Vec::new())
+    /// Each level float's live centre and radius, in spec order.
+    fn collect_circles(&self, world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
+        self.floats
+            .iter()
+            .map(|&(body, radius)| {
+                let position = world
+                    .body_snapshot(body)
+                    .map_err(|_error| SessionError::FrameCaptureFailed)?
+                    .position();
+                Ok((position, radius))
+            })
+            .collect()
     }
 }

@@ -1,21 +1,23 @@
 //! One generic builder that turns a `LevelSpec` plus placements into the
 //! existing `BuiltScene` (D-06, D-09).
 //!
-//! Creation order is fixed: static geometry, then tools in canonical order,
-//! then the liquid; valves are destroyed later by the hooks (Phase 40 D-03).
+//! Creation order is fixed: static geometry, then level floats, then tools in
+//! canonical order, then the liquid; valves are destroyed later by the hooks
+//! (Phase 40 D-03, D-12).
 //! Every engine error maps to a typed `SceneError`.
 
-use liquidfun::collision::{PolygonShape, Shape};
+use liquidfun::collision::{CircleShape, FilterData, PolygonShape, Shape};
 use liquidfun::math::Vec2;
-use liquidfun::particle::{
-    ParticleFlags, ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource,
+use liquidfun::particle::{ParticleGroupDestination, ParticleGroupRecipe, ParticleGroupSource};
+use liquidfun::{
+    BodyDef, BodyId, BodyType, FixtureDef, ParticleGroupId, ParticleSystemDef, ParticleSystemId,
+    World,
 };
-use liquidfun::{BodyDef, ParticleGroupId, ParticleSystemDef, ParticleSystemId, World};
 
 use super::goal::{GoalTracker, count_in_goal};
-use super::hooks::PuzzleHooks;
+use super::hooks::{LevelBodies, PuzzleHooks};
 use super::peak::PeakHeldTracker;
-use super::spec::{LevelSpec, LiquidBlock};
+use super::spec::{FloatBody, LevelSpec, LiquidBlock, LiquidMaterial};
 use super::tools::{Placement, Placements, ToolKind};
 use super::valve::ValveGate;
 use crate::scene::{BuiltScene, RigidSegment, SceneError, attach_basin_fixture};
@@ -36,6 +38,7 @@ fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene
         .set_gravity(spec.gravity)
         .map_err(|_error| SceneError::Gravity)?;
     create_geometry(&mut world, spec)?;
+    let floats = create_floats(&mut world, spec)?;
     let valves = create_tools(&mut world, placements)?;
     let (particle_system, counted_groups) = create_liquid(&mut world, spec)?;
     let segments = static_segments(spec, placements);
@@ -60,8 +63,11 @@ fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene
             tracker,
             peak,
             initial_count,
-            segments,
-            valves,
+            LevelBodies {
+                segments,
+                valves,
+                floats,
+            },
         )),
     })
 }
@@ -72,7 +78,9 @@ fn validated_trackers(spec: &LevelSpec) -> Result<(GoalTracker, PeakHeldTracker)
     let counts_are_ordered = spec.target_count < spec.brim_count
         && spec.brim_count <= spec.full_count
         && spec.par_tools <= total_budget(spec);
-    if !spec.cup_interior.is_valid() || !counts_are_ordered || !radius_is_valid {
+    let floats_are_valid = spec.floats.iter().all(is_valid_float);
+    if !spec.cup_interior.is_valid() || !counts_are_ordered || !radius_is_valid || !floats_are_valid
+    {
         return Err(SceneError::Geometry);
     }
     let tracker = GoalTracker::new(spec.target_count, spec.settle_steps, spec.step_limit)
@@ -80,6 +88,15 @@ fn validated_trackers(spec: &LevelSpec) -> Result<(GoalTracker, PeakHeldTracker)
     let peak = PeakHeldTracker::new(spec.settle_steps, spec.step_limit, spec.brim_count)
         .ok_or(SceneError::Geometry)?;
     Ok((tracker, peak))
+}
+
+/// A float needs a finite centre and a finite, positive radius and density.
+fn is_valid_float(float: &FloatBody) -> bool {
+    let is_positive = |value: f32| value.is_finite() && value > 0.0;
+    float.center.x.is_finite()
+        && float.center.y.is_finite()
+        && is_positive(float.radius)
+        && is_positive(float.density)
 }
 
 /// Placements the level allows across every kind.
@@ -99,6 +116,35 @@ fn create_geometry(world: &mut World, spec: &LevelSpec) -> Result<(), SceneError
         attach_basin_fixture(world, body, quad)?;
     }
     Ok(())
+}
+
+/// One dynamic circle body per level float, in spec order, returned with its
+/// radius for the frame circles.
+fn create_floats(world: &mut World, spec: &LevelSpec) -> Result<Vec<(BodyId, f32)>, SceneError> {
+    let mut floats = Vec::with_capacity(spec.floats.len());
+    for float in spec.floats {
+        let body_definition = BodyDef::new(BodyType::Dynamic, float.center, 0.0, true)
+            .map_err(|_error| SceneError::Body)?;
+        let body = world
+            .create_body(&body_definition)
+            .map_err(|_error| SceneError::Body)?;
+        let circle =
+            CircleShape::new(Vec2::ZERO, float.radius).map_err(|_error| SceneError::Geometry)?;
+        let fixture_definition = FixtureDef::new(
+            Shape::from(circle),
+            float.density,
+            0.2,
+            0.0,
+            false,
+            FilterData::default(),
+        )
+        .map_err(|_error| SceneError::Fixture)?;
+        world
+            .create_fixture(body, &fixture_definition)
+            .map_err(|_error| SceneError::Fixture)?;
+        floats.push((body, float.radius));
+    }
+    Ok(floats)
 }
 
 /// One static body per tool at angle 0, in canonical order; the vertices are
@@ -124,11 +170,7 @@ fn create_liquid(
     world: &mut World,
     spec: &LevelSpec,
 ) -> Result<(ParticleSystemId, Vec<ParticleGroupId>), SceneError> {
-    let definition = ParticleSystemDef::default()
-        .with_radius(spec.particle_radius)
-        .map_err(|_error| SceneError::ParticleSystem)?
-        .with_maximum_count(spec.maximum_particle_count)
-        .map_err(|_error| SceneError::ParticleSystem)?;
+    let definition = system_definition(spec)?;
     let system = world
         .create_particle_system_with_def(&definition)
         .map_err(|_error| SceneError::ParticleSystem)?;
@@ -142,6 +184,35 @@ fn create_liquid(
     Ok((system, counted_groups))
 }
 
+/// The radius and cap every level sets, then each authored strength; a `None`
+/// strength adds no builder call, so untuned levels keep the default (D-29).
+fn system_definition(spec: &LevelSpec) -> Result<ParticleSystemDef, SceneError> {
+    let tuning = spec.system_tuning;
+    let mut definition = ParticleSystemDef::default()
+        .with_radius(spec.particle_radius)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_maximum_count(spec.maximum_particle_count)
+        .map_err(|_error| SceneError::ParticleSystem)?;
+    if let Some(strength) = tuning.maybe_viscous_strength {
+        definition = definition
+            .with_viscous_strength(strength)
+            .map_err(|_error| SceneError::ParticleSystem)?;
+    }
+    if let Some(strength) = tuning.maybe_elastic_strength {
+        definition = definition
+            .with_elastic_strength(strength)
+            .map_err(|_error| SceneError::ParticleSystem)?;
+    }
+    if let Some(strength) = tuning.maybe_powder_strength {
+        definition = definition
+            .with_powder_strength(strength)
+            .map_err(|_error| SceneError::ParticleSystem)?;
+    }
+    Ok(definition)
+}
+
+/// One particle group for `block`; water keeps the Phase 37 recipe chain
+/// exactly, other materials set their particle flags and any group flags.
 fn create_block(
     world: &mut World,
     system: ParticleSystemId,
@@ -152,8 +223,13 @@ fn create_block(
         .map_err(|_error| SceneError::Geometry)?;
     let source = ParticleGroupSource::filled_shapes(vec![Shape::from(polygon)])
         .map_err(|_error| SceneError::Particle)?;
-    let recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
-        .with_particle_flags(ParticleFlags::WATER)
+    let (particle_flags, group_flags) = block.material.flags();
+    let mut recipe = ParticleGroupRecipe::new(source, ParticleGroupDestination::New)
+        .with_particle_flags(particle_flags);
+    if block.material != LiquidMaterial::Water && !group_flags.is_empty() {
+        recipe = recipe.with_group_flags(group_flags);
+    }
+    let recipe = recipe
         .with_color(block.color)
         .with_stride(block.spacing)
         .map_err(|_error| SceneError::Particle)?;

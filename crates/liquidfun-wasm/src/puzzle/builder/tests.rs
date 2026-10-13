@@ -1,9 +1,10 @@
 use liquidfun::math::Vec2;
+use liquidfun::particle::{ParticleFlags, ParticleGroupFlags};
 
 use super::build_level;
 use crate::puzzle::first_pour::{FIRST_POUR, REFERENCE_PLANK_POSE};
 use crate::puzzle::goal::{Outcome, PuzzleStatus};
-use crate::puzzle::spec::LevelSpec;
+use crate::puzzle::spec::{LevelSpec, LiquidMaterial};
 use crate::puzzle::tools::{
     GRID_CELLS_PER_METER, PLANK_HALF_THICKNESS, Placements, ToolAllowance, ToolKind,
 };
@@ -49,6 +50,31 @@ fn level_spec_reports_its_own_id_and_title() {
     // Assert
     assert_eq!(spec.id, id);
     assert_eq!(spec.title, "First Pour");
+}
+
+#[test]
+fn liquid_materials_map_to_particle_and_group_flags() {
+    // Arrange
+    let materials = [
+        LiquidMaterial::Water,
+        LiquidMaterial::Viscous,
+        LiquidMaterial::Powder,
+        LiquidMaterial::Elastic,
+    ];
+
+    // Act
+    let flags = materials.map(LiquidMaterial::flags);
+
+    // Assert
+    assert_eq!(
+        flags,
+        [
+            (ParticleFlags::WATER, ParticleGroupFlags::empty()),
+            (ParticleFlags::VISCOUS, ParticleGroupFlags::empty()),
+            (ParticleFlags::POWDER, ParticleGroupFlags::empty()),
+            (ParticleFlags::ELASTIC, ParticleGroupFlags::SOLID),
+        ]
+    );
 }
 
 #[test]
