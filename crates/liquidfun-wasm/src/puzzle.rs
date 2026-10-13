@@ -40,10 +40,11 @@ pub(crate) enum LevelId {
 
 /// Every allowlisted level, in catalog (Phase 40 D-09) order. Mirrored by
 /// `PUZZLE_IDS` in `web/src/catalog/puzzles.ts`.
-pub(crate) const LEVEL_IDS: [LevelId; 4] = [
+pub(crate) const LEVEL_IDS: [LevelId; 5] = [
     LevelId::FirstPour,
     LevelId::ThickSyrup,
     LevelId::JellyPad,
+    LevelId::FloatUp,
     LevelId::TimedGate,
 ];
 

@@ -30,6 +30,14 @@ pub(super) const FIXTURES: &[(&str, &str)] = &[
         include_str!("../fixtures/jelly-pad-empty.txt"),
     ),
     (
+        "float-up-solution.txt",
+        include_str!("../fixtures/float-up-solution.txt"),
+    ),
+    (
+        "float-up-empty.txt",
+        include_str!("../fixtures/float-up-empty.txt"),
+    ),
+    (
         "timed-gate-solution.txt",
         include_str!("../fixtures/timed-gate-solution.txt"),
     ),

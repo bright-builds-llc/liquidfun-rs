@@ -33,6 +33,8 @@ type LevelGeometry = {
   readonly buildArea: WorldBounds;
   readonly walls: WorldBounds;
   readonly spawn: WorldBounds;
+  /** A level float's full travel, from its rest position to its highest seat. */
+  readonly maybeFloatTravel?: WorldBounds;
 };
 
 /**
@@ -74,6 +76,20 @@ const LEVEL_GEOMETRY: Record<PuzzleId, LevelGeometry> = {
     // Water block and jelly pad; captureFrame().particlePositions() extents
     // (x -3.72..1.14, y 3.48..10.56, 1365 particles) widened by 0.04 m.
     spawn: { minX: -3.76, minY: 3.44, maxX: 1.18, maxY: 10.6 },
+  },
+  "float-up": {
+    // float_up.rs cup_interior; levelInfo().cupInterior() = [2.4, 0, 3.8, 1] m (f32).
+    cupInterior: { minX: 2.4, minY: 0, maxX: 3.8, maxY: 1 },
+    // float_up.rs build_area; levelInfo().buildArea() = grid [-60, 72, 24, 124] x 0.05 m.
+    buildArea: { minX: -3, minY: 3.6, maxX: 1.2, maxY: 6.2 },
+    // float_up.rs WALLS and CUP_WALLS; captureFrame().rigidSegments() extents: x -4..4, y -0.5..11.
+    walls: { minX: -4, minY: -0.5, maxX: 4, maxY: 11 },
+    // Water block; captureFrame().particlePositions() extents (x -3.72..-1.26,
+    // y 7.26..10.62, 2394 particles) widened by 0.04 m.
+    spawn: { minX: -3.76, minY: 7.22, maxX: -1.22, maxY: 10.66 },
+    // float_up.rs FLOAT; captureFrame().rigidCircles() = [0.9, 2.36, 0.35] at
+    // step 0, rising to its seat in the drain hole at centre (0.9, 2.8).
+    maybeFloatTravel: { minX: 0.55, minY: 2.01, maxX: 1.25, maxY: 3.15 },
   },
   "timed-gate": {
     // timed_gate.rs cup_interior; levelInfo().cupInterior() = [-1.2, 0, 0.6, 1.6] m (f32).

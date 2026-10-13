@@ -5,6 +5,7 @@ export const PUZZLE_TITLES: Readonly<Record<PuzzleId, string>> = {
   "first-pour": "First Pour",
   "thick-syrup": "Thick Syrup",
   "jelly-pad": "Jelly Pad",
+  "float-up": "Float Up",
   "timed-gate": "Timed Gate",
 };
 
@@ -16,6 +17,7 @@ export const PUZZLE_CAPTIONS: Readonly<Record<PuzzleId, string>> = {
   "first-pour": "Water runs downhill. Tilt a plank to pour it into the cup.",
   "thick-syrup": "Syrup is thick and slow. Give it a steep slide.",
   "jelly-pad": "Jelly never counts, but water slides across it. Drop the water onto the pad.",
+  "float-up": "The ball floats. Fill its well and it rises to plug the drain.",
   "timed-gate": "The valve opens on a timer. Catch the water first, then let the syrup out.",
 };
 

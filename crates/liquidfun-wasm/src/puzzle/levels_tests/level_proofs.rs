@@ -1,16 +1,20 @@
 //! Per-level proofs: first-pour's nudge sweep, and for each Phase 40 teaching
 //! level its fixture replays, release-only nudge sweep and idea-necessity
 //! control (D-15, D-16, D-18). timed-gate adds its open-tick window sweep and
-//! a reproducibility check (D-08, D-13).
+//! a reproducibility check (D-08, D-13). float-up's buoyancy control runs in
+//! every lane (D-12).
 
 use super::super::LevelId;
+use super::super::float_up::{FLOAT, FLOAT_UP, FLOAT_UP_DENSE};
 use super::super::goal::Outcome;
 use super::super::jelly_pad::{JELLY_PAD_WITHOUT_PAD, pad_centroid};
 use super::super::replay::fixture::{FixtureOutcome, FixturePlacement, placement_lanes};
 use super::super::replay::replay_fixture_file;
+use super::super::spec::LevelSpec;
 use super::super::thick_syrup::SHALLOW_ANGLE;
 use super::super::timed_gate::{PERMANENT_PLANK_POSE, TIMED_GATE_WITH_PLANK};
 use super::super::tools::ToolKind;
+use super::super::validate::validate_for_build;
 use super::{
     assert_nudges_mostly_win, fixture_text, open_tick_sweep, parsed_fixture, run_outcome,
     run_spec_outcome, timing_window_ok,
@@ -25,6 +29,13 @@ const REPRODUCIBLE_STEPS: u32 = 360;
 /// The jelly pad stays in the stream's path: its centroid moves less than
 /// this many meters before the decision step (D-11).
 const PAD_DRIFT_LIMIT_METERS: f32 = 0.3;
+
+/// The float-up ball seats in the drain hole 0.44 m above its start; by the
+/// win it has risen at least this far (D-12).
+const FLOAT_SEATED_RISE_METERS: f32 = 0.4;
+
+/// A dense ball stays on the well floor: it never rises this far.
+const DENSE_FLOAT_MAX_RISE_METERS: f32 = 0.1;
 
 /// Debug runs are too slow for the sweep; run it with `--release`.
 #[test]
@@ -127,6 +138,90 @@ fn jelly_pad_needs_the_pad() {
     assert!(
         max_drift < PAD_DRIFT_LIMIT_METERS,
         "pad centroid moved {max_drift} m by step {decision_step}"
+    );
+}
+
+#[test]
+fn float_up_solution_fixture_replays() {
+    replay_fixture_file(
+        "float-up-solution.txt",
+        fixture_text("float-up-solution.txt"),
+    );
+}
+
+#[test]
+fn float_up_empty_fixture_replays() {
+    replay_fixture_file("float-up-empty.txt", fixture_text("float-up-empty.txt"));
+}
+
+/// Debug runs are too slow for the sweep; run it with `--release`.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "release-only nudge sweep (D-16)")]
+fn float_up_nudges_mostly_win() {
+    assert_nudges_mostly_win("float-up-solution.txt");
+}
+
+/// Height of float-up's one float, from the frame circles.
+fn float_y(core: &SessionCore) -> f32 {
+    let frame = ProofFrame::from(core.capture_frame().expect("puzzle frame captures"));
+    let circles = frame.rigid_circles();
+    assert_eq!(circles.len(), 3, "float-up has one float circle");
+    circles[1]
+}
+
+/// Steps `spec` with `placements` to `last_step` and returns the float's
+/// highest rise above its start, with the outcome at that step.
+fn float_run(
+    spec: &'static LevelSpec,
+    placements: &[FixturePlacement],
+    last_step: u32,
+) -> (f32, Outcome) {
+    let (kinds, poses) = placement_lanes(placements);
+    let validated =
+        validate_for_build(spec, &kinds, &poses).expect("the reference placements are valid");
+    let mut core = SessionCore::create_puzzle_from_spec(spec, validated).expect("float-up builds");
+    let mut max_rise: f32 = 0.0;
+    while core.step_index() < last_step {
+        core.advance(1).expect("level steps");
+        max_rise = max_rise.max(float_y(&core) - FLOAT.center.y);
+    }
+    let outcome = core
+        .maybe_puzzle_status()
+        .expect("puzzle sessions report status")
+        .outcome;
+    (max_rise, outcome)
+}
+
+/// D-12 control: the recorded reference with a density-2.0 ball loses,
+/// because the ball stays on the well floor and the drain stays open. With
+/// the level's density-0.4 ball, the ball has risen into the drain hole by
+/// the recorded win.
+#[test]
+fn float_up_needs_buoyancy() {
+    // Arrange
+    let fixture = parsed_fixture("float-up-solution.txt");
+    let win_step = fixture
+        .maybe_expectation
+        .map(|expected| expected.outcome_step)
+        .expect("the float-up solution records its outcome");
+
+    // Act
+    let (light_rise, _) = float_run(&FLOAT_UP, &fixture.placements, win_step);
+    let (dense_rise, dense_outcome) =
+        float_run(&FLOAT_UP_DENSE, &fixture.placements, FLOAT_UP.step_limit);
+
+    // Assert
+    assert!(
+        matches!(dense_outcome, Outcome::Lost { .. }),
+        "dense float: {dense_outcome:?}"
+    );
+    assert!(
+        light_rise >= FLOAT_SEATED_RISE_METERS,
+        "the ball rose only {light_rise} m by step {win_step}"
+    );
+    assert!(
+        dense_rise < DENSE_FLOAT_MAX_RISE_METERS,
+        "the dense ball rose {dense_rise} m"
     );
 }
 

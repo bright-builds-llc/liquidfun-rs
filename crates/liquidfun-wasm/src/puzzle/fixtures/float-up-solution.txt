@@ -1,0 +1,7 @@
+level float-up
+placement plank -4 104 23
+outcome won
+outcome_step 550
+final_count 317
+peak_held 272
+brim_step 563
