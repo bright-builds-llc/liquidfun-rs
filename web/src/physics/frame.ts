@@ -1,5 +1,6 @@
 import { parsePuzzleStatus } from "./frame-puzzle";
 import { parsePuzzleSound } from "./frame-sound";
+import { parseParticleSpeeds } from "./frame-speeds";
 import { invalidFrame, parseNonNegativeInteger } from "./frame-scalars";
 
 const MAX_PARTICLE_COUNT = 16384;
@@ -44,6 +45,8 @@ export interface RawProofFrame {
   splashContacts?(): number | undefined;
   impactCount?(): number | undefined;
   impactImpulse?(): number | undefined;
+  /** Per-particle speeds in m/s when the capture asked for them (Phase 43 D-10); undefined otherwise. */
+  particleSpeeds?(): Float32Array | undefined;
   free(): void;
 }
 
@@ -98,6 +101,8 @@ export interface RenderFrame {
   readonly maybePuzzle?: PuzzleFrameStatus;
   /** Present on every puzzle frame, absent on scene frames (Phase 42 D-07). */
   readonly maybeSound?: PuzzleFrameSound;
+  /** Per-particle speeds in m/s, index-aligned with particlePositions; present only while Water is requested (Phase 43 D-11). Never feeds physics. */
+  readonly maybeParticleSpeeds?: Float32Array;
 }
 
 function parseNonNegativeFinite(value: number): number {
@@ -253,6 +258,7 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
 
   const maybePuzzle = parsePuzzleStatus(rawFrame, stepIndex, particleCount);
   const maybeSound = parsePuzzleSound(rawFrame, maybePuzzle);
+  const maybeParticleSpeeds = parseParticleSpeeds(rawFrame, particleCount);
   return {
     stepIndex,
     particleCount,
@@ -268,5 +274,6 @@ export function parseRenderFrame(rawFrame: RawProofFrame): RenderFrame {
     circleLabels,
     ...(maybePuzzle === undefined ? {} : { maybePuzzle }),
     ...(maybeSound === undefined ? {} : { maybeSound }),
+    ...(maybeParticleSpeeds === undefined ? {} : { maybeParticleSpeeds }),
   };
 }
