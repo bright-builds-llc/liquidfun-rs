@@ -275,20 +275,20 @@ describe("resultCardModel", () => {
 });
 
 describe("resultActionsModel", () => {
-  it("disables Next and promotes Retry when there is no next level", () => {
+  it("turns Next into an All levels link to the grid on the last level", () => {
     // Act
     const model = resultActionsModel(undefined);
 
     // Assert
     expect(model).toEqual({
       next: {
-        enabled: false,
-        label: "Next",
-        ariaLabel: "Next: No next level yet",
-        maybeTitle: "No next level yet",
-        maybeHref: undefined,
+        enabled: true,
+        label: "All levels",
+        ariaLabel: "All levels",
+        maybeTitle: undefined,
+        maybeHref: "#/puzzles",
       },
-      primary: "retry",
+      primary: "next",
     });
   });
 
