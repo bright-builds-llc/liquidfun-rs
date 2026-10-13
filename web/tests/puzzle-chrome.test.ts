@@ -14,6 +14,20 @@ const PUZZLE_COMPONENTS = [
   "components/PuzzleOptionsDrawer.tsx",
   "components/PuzzlePanel.tsx",
   "components/PuzzleFallbackPanel.tsx",
+  "components/PuzzleToolTray.tsx",
+  "components/PuzzleSelectionBar.tsx",
+  "components/PuzzleTransport.tsx",
+  "components/PuzzleStarList.tsx",
+  "components/PuzzleIcons.tsx",
+] as const;
+
+const PUZZLE_STYLESHEETS = ["styles/puzzle.css", "styles/puzzle-editor.css"] as const;
+
+/** Phase 39 editor leaves and the component that renders each one (D-26). */
+const EDITOR_LEAVES = [
+  { leaf: "puzzle-tray", path: "components/PuzzleToolTray.tsx" },
+  { leaf: "puzzle-selection-bar", path: "components/PuzzleSelectionBar.tsx" },
+  { leaf: "puzzle-transport", path: "components/PuzzleTransport.tsx" },
 ] as const;
 
 const SCENE_ONLY_CHROME =
@@ -48,7 +62,6 @@ describe("puzzle HUD chrome", () => {
       "puzzle-title",
       "puzzle-meter",
       "puzzle-timer",
-      "puzzle-transport",
       "puzzle-options-slot",
       "puzzle-legend-slot",
     ];
@@ -60,6 +73,63 @@ describe("puzzle HUD chrome", () => {
 
     // Assert
     expect(unmarked).toEqual([]);
+  });
+
+  it("marks the tray, selection bar and transport leaves with data-hud-obstacle", () => {
+    // Arrange
+    const leaves = EDITOR_LEAVES.map(({ leaf, path }) => ({ leaf, text: source(path) }));
+
+    // Act
+    const unmarked = leaves
+      .filter(({ leaf, text }) => !openingTagWithClass(text, leaf).includes("data-hud-obstacle"))
+      .map(({ leaf }) => leaf);
+
+    // Assert
+    expect(unmarked).toEqual([]);
+  });
+
+  it("mounts the tray, selection bar and transport in the canvas-stage HUD", () => {
+    // Arrange
+    const panel = source("components/PuzzlePanel.tsx");
+
+    // Act
+    const props = [
+      "toolTray={toolTray()}",
+      "selectionBar={selectionBar()}",
+      "transport={transport()}",
+    ];
+    const mounted = props.map((prop) => panel.includes(prop));
+
+    // Assert
+    expect(mounted).toEqual([true, true, true]);
+  });
+
+  it("makes the puzzle canvas a focusable application described by the keyboard help", () => {
+    // Arrange
+    const panel = source("components/PuzzlePanel.tsx");
+
+    // Act: the ref callback contains "=>", so slice up to the fallback text.
+    const start = panel.indexOf('class="scene-canvas"');
+    const canvasTag = panel.slice(start, panel.indexOf("Canvas is required", start));
+
+    // Assert
+    expect(canvasTag).toContain('role="application"');
+    expect(canvasTag).toContain('tabindex="0"');
+    expect(canvasTag).toContain("aria-describedby={KEYBOARD_HELP_ID}");
+    expect(canvasTag).not.toContain('role="img"');
+  });
+
+  it("uses aria-disabled and never native disabled on the editor controls", () => {
+    // Arrange
+    const sources = EDITOR_LEAVES.map(({ path }) => ({ path, text: source(path) }));
+
+    // Act
+    const offenders = sources
+      .filter(({ text }) => /\sdisabled[\s=>]/.test(text))
+      .map(({ path }) => path);
+
+    // Assert
+    expect(offenders).toEqual([]);
   });
 
   it("marks the result card slot with data-hud-obstacle", () => {
@@ -128,15 +198,39 @@ describe("puzzle HUD chrome", () => {
 });
 
 describe("puzzle stylesheet", () => {
-  it("has no transitions or animations", () => {
+  it("has no transitions or animations in either puzzle stylesheet", () => {
     // Arrange
-    const css = source("styles/puzzle.css");
+    const sheets = PUZZLE_STYLESHEETS.map((path) => ({ path, css: source(path) }));
 
     // Act
-    const hasMotion = /transition|animation/.test(css);
+    const withMotion = sheets
+      .filter(({ css }) => /transition|animation/.test(css))
+      .map(({ path }) => path);
 
     // Assert
-    expect(hasMotion).toBe(false);
+    expect(withMotion).toEqual([]);
+  });
+
+  it("gives the tray and selection bar a fixed width and height in both canvas layouts", () => {
+    // Arrange
+    const css = source("styles/puzzle-editor.css");
+    const cases = ["landscape", "portrait"].flatMap((layout) =>
+      [".puzzle-tray", ".puzzle-selection-bar"].map((leaf) => ({ layout, leaf })),
+    );
+
+    // Act
+    const unsized = cases
+      .filter(({ layout, leaf }) => {
+        const block = cssBlock(
+          css,
+          `.puzzle-panel--canvas-stage[data-puzzle-layout="${layout}"] ${leaf}`,
+        );
+        return !/\bwidth:/.test(block) || !/\bheight: 44px;/.test(block);
+      })
+      .map(({ layout, leaf }) => `${layout} ${leaf}`);
+
+    // Assert
+    expect(unsized).toEqual([]);
   });
 
   it("gives the meter, timer, result, transport and legend slots a fixed width and height", () => {
@@ -166,9 +260,9 @@ describe("puzzle stylesheet", () => {
     expect(unsized).toEqual([]);
   });
 
-  it("scopes every data-puzzle-layout selector to the canvas stage", () => {
+  it.each(PUZZLE_STYLESHEETS)("scopes data-puzzle-layout selectors to the canvas stage in %s", (path) => {
     // Arrange
-    const css = source("styles/puzzle.css");
+    const css = source(path);
     const prefix = ".puzzle-panel--canvas-stage";
 
     // Act

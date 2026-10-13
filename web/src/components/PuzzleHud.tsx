@@ -4,8 +4,6 @@ import { fillMeterModel, timerText } from "../puzzle/format";
 import type { PuzzleState } from "../puzzle/reduce-puzzle";
 import { ScaleLegend } from "./ScaleLegend";
 
-const PLAY_LABEL = "Play";
-
 /** Level title leaf; the full title stays available when the fixed box ellipsizes it. */
 export function PuzzleTitle(props: { readonly title: string }) {
   return (
@@ -39,7 +37,8 @@ export function PuzzleFillMeter(props: { readonly state: PuzzleState }) {
           {(tick) => (
             <span
               class="puzzle-meter-tick"
-              data-star={tick.label.startsWith("★") ? "true" : "false"}
+              data-star={tick.star ? "true" : "false"}
+              data-reached={tick.reached ? "true" : "false"}
               style={{ left: `${tick.fraction * 100}%` }}
             />
           )}
@@ -66,49 +65,22 @@ export function PuzzleTimer(props: { readonly state: PuzzleState }) {
   );
 }
 
-/**
- * Puzzle transport. Outside building it stays focusable with `aria-disabled`
- * and ignores presses, so focus is never dropped by a phase change.
- */
-export function PuzzlePlayButton(props: {
-  readonly state: PuzzleState;
-  readonly onPlay: () => void;
-  readonly ref?: (element: HTMLButtonElement) => void;
-}) {
-  const building = () => props.state.kind === "building";
-  return (
-    <button
-      ref={(element) => props.ref?.(element)}
-      type="button"
-      class="product-control puzzle-play"
-      classList={{ "product-control--accent": building() }}
-      aria-disabled={building() ? undefined : "true"}
-      onClick={() => {
-        if (building()) {
-          props.onPlay();
-        }
-      }}
-    >
-      <PlayIcon />
-      {PLAY_LABEL}
-    </button>
-  );
-}
-
 export type PuzzleHudProps = {
   readonly title: string;
   readonly state: PuzzleState;
   readonly maybePixelsPerMeter: number | undefined;
-  readonly onPlay: () => void;
-  readonly playRef: (element: HTMLButtonElement) => void;
+  readonly toolTray: JSX.Element;
+  readonly selectionBar: JSX.Element;
+  readonly transport: JSX.Element;
   readonly resultCard: JSX.Element;
   readonly optionsTrigger: JSX.Element;
 };
 
 /**
  * Canvas-stage puzzle HUD. Every leaf is mounted for the whole route with a
- * fixed CSS box, so phase changes never change the obstacle set (D-14, D-18).
- * DOM order is the focus order: Play, result actions, options.
+ * fixed CSS box, so phase changes never change the obstacle set (D-14, D-18,
+ * D-26). DOM order is the focus order: tray, selection bar, run controls,
+ * result actions, options.
  */
 export function PuzzleHud(props: PuzzleHudProps) {
   return (
@@ -116,9 +88,9 @@ export function PuzzleHud(props: PuzzleHudProps) {
       <PuzzleTitle title={props.title} />
       <PuzzleFillMeter state={props.state} />
       <PuzzleTimer state={props.state} />
-      <div class="puzzle-transport" data-hud-obstacle>
-        <PuzzlePlayButton state={props.state} onPlay={props.onPlay} ref={props.playRef} />
-      </div>
+      {props.toolTray}
+      {props.selectionBar}
+      {props.transport}
       {props.resultCard}
       <div class="puzzle-options-slot" data-hud-obstacle>
         {props.optionsTrigger}
@@ -127,13 +99,5 @@ export function PuzzleHud(props: PuzzleHudProps) {
         <ScaleLegend maybePixelsPerMeter={props.maybePixelsPerMeter} />
       </div>
     </div>
-  );
-}
-
-function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8 6v12l10-6z" />
-    </svg>
   );
 }

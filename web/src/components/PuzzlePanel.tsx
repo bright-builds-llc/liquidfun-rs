@@ -16,21 +16,19 @@ import type { PuzzleId } from "../catalog/puzzles";
 import { createHudObstacles } from "../player/hud-obstacles";
 import type { PlayerStatus } from "../player/view";
 import type { PuzzleController } from "../puzzle/controller";
+import { keyTargetOf, puzzleKeyCommand } from "../puzzle/keyboard";
 import { needsWebglSurface, particleSurface, type RenderMode } from "../render/mode";
 import type { ScreenRect } from "../render/safe-frame";
-import {
-  PuzzleFillMeter,
-  PuzzleHud,
-  PuzzlePlayButton,
-  PuzzleTimer,
-  PuzzleTitle,
-} from "./PuzzleHud";
+import { PuzzleFillMeter, PuzzleHud, PuzzleTimer, PuzzleTitle } from "./PuzzleHud";
 import {
   PuzzleOptionsSheet,
   PuzzleOptionsTrigger,
   PuzzleRenderModeSelect,
 } from "./PuzzleOptionsDrawer";
 import { PuzzleResultCard } from "./PuzzleResultCard";
+import { PuzzleSelectionBar } from "./PuzzleSelectionBar";
+import { PuzzleToolTray } from "./PuzzleToolTray";
+import { PuzzleTransport } from "./PuzzleTransport";
 import { ScaleLegend } from "./ScaleLegend";
 import { Drawer } from "./ui/drawer";
 
@@ -54,6 +52,17 @@ const LOADING_BODY = "Starting the physics engine.";
 const FAILURE_HEADING = "This level could not start";
 const FAILURE_BODY =
   "Something went wrong while building the level. Try again, or open a scene from the list.";
+const KEYBOARD_HELP_ID = "puzzle-keyboard-help";
+const KEYBOARD_HELP =
+  "Build area. Pick a tool from the tray, or press Enter on a tray tool to place it in the middle. Tab selects placed tools. Arrow keys move the selected tool, Shift+Arrow moves it further. R rotates counterclockwise, Shift+R clockwise. Delete removes it. Space plays or stops. Escape deselects.";
+
+/** True when focus sits on nothing usable: gone, detached or `aria-disabled`. */
+function focusNeedsRescue(maybeActive: Element | null): boolean {
+  if (!(maybeActive instanceof HTMLElement) || maybeActive === document.body) {
+    return true;
+  }
+  return !maybeActive.isConnected || maybeActive.getAttribute("aria-disabled") === "true";
+}
 
 /** Same orientation rule the camera frame uses: portrait iff taller than wide. */
 function layoutFor(width: number, height: number): PuzzleLayout {
@@ -79,15 +88,21 @@ export function PuzzlePanel(props: PuzzlePanelProps) {
   );
 
   return (
-    <Show when={props.canvasStage} fallback={<PuzzlePanelLayout panel={props} />}>
+    <Show
+      when={props.canvasStage}
+      fallback={<PuzzlePanelLayout panel={props} optionsOpen={() => false} />}
+    >
       <Drawer side="bottom" open={optionsOpen()} onOpenChange={setOptionsOpen}>
-        <PuzzlePanelLayout panel={props} />
+        <PuzzlePanelLayout panel={props} optionsOpen={optionsOpen} />
       </Drawer>
     </Show>
   );
 }
 
-function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
+function PuzzlePanelLayout(layoutProps: {
+  readonly panel: PuzzlePanelProps;
+  readonly optionsOpen: () => boolean;
+}) {
   const props = layoutProps.panel;
   const title = () => puzzleTitleForId(props.levelId);
   const maybeNextId = () => maybeNextPuzzleId(props.levelId);
@@ -123,8 +138,10 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
     createEffect(on(obstacles, (rects) => props.onHudObstaclesChange(rects)));
   });
 
-  // UI-D8: a phase change disables or removes the focused control, so move
-  // focus to the control that replaces it, but only while focus is in the panel.
+  // UI-D8, extended: only while focus is in the panel. Entering ended focuses
+  // the primary result action. Entering building or running moves focus to
+  // Play/Stop only when the focused control became disabled or was removed,
+  // so focus is never taken from the canvas or a live control.
   createEffect(
     on(
       phase,
@@ -132,20 +149,47 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
         if (!focusInPanel) {
           return;
         }
-        if (kind === "building" || kind === "running") {
-          maybePlayButton?.focus();
-        } else if (kind === "ended") {
+        if (kind === "ended") {
           queueMicrotask(() => maybePrimaryAction?.focus());
+          return;
+        }
+        const editing = kind === "building" || kind === "running";
+        if (editing && focusNeedsRescue(document.activeElement)) {
+          maybePlayButton?.focus();
         }
       },
       { defer: true },
     ),
   );
 
+  // D-23: one panel-level key map; preventDefault only for handled keys.
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (layoutProps.optionsOpen()) {
+      return;
+    }
+    const maybeCommand = puzzleKeyCommand({
+      key: event.key,
+      shiftKey: event.shiftKey,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      altKey: event.altKey,
+      target: keyTargetOf(event.target),
+    });
+    if (maybeCommand !== undefined && props.controller.command(maybeCommand)) {
+      event.preventDefault();
+    }
+  };
+  const armed = () => {
+    const state = props.controller.state();
+    return state.kind === "building" && state.editor.maybeArmedKind !== undefined;
+  };
+
   const resultCard = (): JSX.Element => (
     <PuzzleResultCard
       state={props.controller.state()}
       maybeNextId={maybeNextId()}
+      maybeParTools={props.controller.maybeLevelInfo()?.parTools}
+      maybeBestStars={props.controller.maybeBestStars()}
       onRetry={() => props.controller.retry()}
       onEdit={() => props.controller.edit()}
       primaryRef={(element) => {
@@ -153,9 +197,32 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
       }}
     />
   );
-  const assignPlayButton = (element: HTMLButtonElement) => {
-    maybePlayButton = element;
-  };
+  const toolTray = (): JSX.Element => (
+    <PuzzleToolTray
+      state={props.controller.state()}
+      onToggleArm={(kind) => props.controller.toggleArm(kind)}
+      onPlaceAtCenter={(kind) => props.controller.placeAtCenter(kind)}
+    />
+  );
+  const selectionBar = (): JSX.Element => (
+    <PuzzleSelectionBar
+      state={props.controller.state()}
+      onRotate={(direction) => props.controller.rotateSelected(direction)}
+      onRemove={() => props.controller.removeSelected()}
+    />
+  );
+  const transport = (): JSX.Element => (
+    <PuzzleTransport
+      state={props.controller.state()}
+      onPlay={() => props.controller.play()}
+      onStop={() => props.controller.stop()}
+      onCycleSpeed={() => props.controller.cycleSpeed()}
+      onClear={() => props.controller.clear()}
+      playRef={(element) => {
+        maybePlayButton = element;
+      }}
+    />
+  );
 
   return (
     <section
@@ -176,6 +243,7 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
           focusInPanel = false;
         }
       }}
+      onKeyDown={handleKeyDown}
     >
       <Show when={!props.canvasStage}>
         <div class="status-row">
@@ -199,10 +267,13 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
               maybeSceneCanvas = canvas;
               props.assignCanvas(canvas);
             }}
+            classList={{ "puzzle-canvas--armed": armed() }}
             width="960"
             height="540"
-            role="img"
+            tabindex="0"
+            role="application"
             aria-label={`${title()} puzzle: Rust particles pour toward a glass cup.`}
+            aria-describedby={KEYBOARD_HELP_ID}
           >
             {`Canvas is required to display the ${title()} puzzle.`}
           </canvas>
@@ -237,8 +308,9 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
               title={title()}
               state={props.controller.state()}
               maybePixelsPerMeter={props.maybePixelsPerMeter}
-              onPlay={() => props.controller.play()}
-              playRef={assignPlayButton}
+              toolTray={toolTray()}
+              selectionBar={selectionBar()}
+              transport={transport()}
               resultCard={resultCard()}
               optionsTrigger={<PuzzleOptionsTrigger />}
             />
@@ -251,11 +323,9 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
         fallback={
           <>
             <div class="control-row">
-              <PuzzlePlayButton
-                state={props.controller.state()}
-                onPlay={() => props.controller.play()}
-                ref={assignPlayButton}
-              />
+              {transport()}
+              {toolTray()}
+              {selectionBar()}
               {resultCard()}
             </div>
             <div class="control-row">
@@ -274,6 +344,13 @@ function PuzzlePanelLayout(layoutProps: { readonly panel: PuzzlePanelProps }) {
           />
         </PuzzleOptionsSheet>
       </Show>
+
+      <p id={KEYBOARD_HELP_ID} class="visually-hidden">
+        {KEYBOARD_HELP}
+      </p>
+      <div id="puzzle-editor-status" class="visually-hidden" aria-live="polite" aria-atomic="true">
+        {props.controller.announcement()}
+      </div>
     </section>
   );
 }
