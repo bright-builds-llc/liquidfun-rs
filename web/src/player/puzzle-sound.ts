@@ -32,8 +32,12 @@ import {
   type SoundPreferenceMemory,
 } from "./sound-preference";
 
-/** Clicks on these never unlock audio; the toggle's own handler does (UI-D35). */
-export const SOUND_CONTROL_SELECTOR = ".puzzle-sound-toggle, .puzzle-sound-section input";
+/**
+ * Clicks on these never unlock audio; the toggle's own handler does (UI-D35).
+ * The checkbox's wrapping label counts too: pressing its text toggles the box.
+ */
+export const SOUND_CONTROL_SELECTOR =
+  ".puzzle-sound-toggle, .puzzle-sound-section label, .puzzle-sound-section input";
 
 /** The document slice the glue listens to; tests pass a fake. */
 export type SoundEventTarget = {

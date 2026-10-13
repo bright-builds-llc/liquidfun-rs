@@ -488,3 +488,28 @@ test("shows the checkbox and hint in the form-factor row without a HUD toggle", 
   await expect(soundButton(page)).toHaveCount(0);
   await screenshot(page, "form-factor");
 });
+
+test("builds no context when the label text turns a stored on off", async ({ page }) => {
+  // Arrange
+  await installFakeAudio(page);
+  await storeSoundPreference(page, "on");
+  await page.setViewportSize(DESKTOP);
+  await page.goto(withFormFactorShell(PUZZLE_PATH));
+  await waitForPuzzlePhase(page, "building");
+  const checkbox = page.getByRole("checkbox", { name: SOUND_EFFECTS_LABEL });
+  await expect(checkbox).toBeChecked();
+
+  const label = page.locator(".control-row .puzzle-sound-section label");
+  const labelBox = await label.boundingBox();
+  if (labelBox === null) {
+    throw new Error("the sound label has no box");
+  }
+
+  // Act: press the label's far end, away from the box itself.
+  await label.click({ position: { x: labelBox.width - 2, y: labelBox.height / 2 } });
+
+  // Assert (D-04, UI-D35, IN-04)
+  await expect(checkbox).not.toBeChecked();
+  expect((await readAudioLog(page)).constructed).toBe(0);
+  expect(await readStoredSound(page)).toBe("off");
+});
