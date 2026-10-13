@@ -131,7 +131,6 @@ describe("levelCardModels", () => {
       title: "First Pour",
       caption: PUZZLE_CAPTIONS["first-pour"],
       stars: { win: false, brim: false, thrifty: false },
-      maybeBestFillPct: undefined,
       locked: false,
       solved: false,
       isNextUp: true,
@@ -172,7 +171,6 @@ describe("levelCardModels", () => {
       solved: true,
       isNextUp: false,
       footer: "Best fill 90%",
-      maybeBestFillPct: 90,
       stars: { win: true, brim: true, thrifty: false },
     });
   });

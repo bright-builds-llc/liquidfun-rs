@@ -41,7 +41,6 @@ export type LevelCardModel = {
   readonly title: string;
   readonly caption: string;
   readonly stars: RunStars;
-  readonly maybeBestFillPct: number | undefined;
   readonly locked: boolean;
   readonly solved: boolean;
   readonly isNextUp: boolean;
@@ -87,7 +86,6 @@ function cardModel(
     title,
     caption: PUZZLE_CAPTIONS[id],
     stars: { win: stars.win, brim: stars.brim, thrifty: stars.thrifty },
-    maybeBestFillPct: maybeStars === undefined ? undefined : Math.floor(maybeStars.bestPeakHeldPct),
     locked,
     solved: maybeStars !== undefined,
     footer: cardFooter(locked, PUZZLE_IDS[index - 1], maybeStars),
