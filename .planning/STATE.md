@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 41-06-PLAN.md
-last_updated: "2026-10-13T17:23:15.405Z"
+stopped_at: Completed 41-07-PLAN.md
+last_updated: "2026-10-13T17:29:58.095Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 50
-  completed_plans: 48
-  percent: 96
+  completed_plans: 49
+  percent: 98
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 41 (Level Select and Progress) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -156,6 +156,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 41]: 41-05: sidebar Puzzles link above Demos (aria-current page on grid, true on levels) adds one drawer focusable, so shell.spec focus-trap cycle is 27; puzzle-chrome splits HUD_STYLESHEETS from PUZZLE_STYLESHEETS
 - [Phase 41]: 41-06: PuzzleOptionsSheet requires progressDegraded and renders PuzzleLevelLinks (All levels + degraded note) first, so the fallback sheet gets it too; form-factor row starts with it; HUD unchanged
 - [Phase 41]: 41-06: last level's Next slot is an accented primary All levels link to #/puzzles after win or loss; the disabled No next level yet button is deleted; fallback primary link is All levels
+- [Phase 41]: 41-07: progress e2e (24 tests, both viewports) reads the live first-pour hash via parseLevelHashes; a correct-hash seed must restore plank:8,64,23 so the wrong-hash discard is not vacuous; seam runs stay on their own page and seam-free checks use context().newPage()
 
 ### Pending Todos
 
@@ -266,9 +267,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 41 P04 | 5min | 2 tasks | 8 files |
 | Phase 41 P05 | 7min | 3 tasks | 15 files |
 | Phase 41 P06 | 3min | 2 tasks | 13 files |
+| Phase 41 P07 | 4min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T17:23:15.402Z
-Stopped at: Completed 41-06-PLAN.md
+Last session: 2026-10-13T17:29:58.092Z
+Stopped at: Completed 41-07-PLAN.md
 Resume file: None
