@@ -53,4 +53,12 @@ pub(super) const FIXTURES: &[(&str, &str)] = &[
         "timed-gate-late.txt",
         include_str!("../fixtures/timed-gate-late.txt"),
     ),
+    (
+        "grand-finale-solution.txt",
+        include_str!("../fixtures/grand-finale-solution.txt"),
+    ),
+    (
+        "grand-finale-empty.txt",
+        include_str!("../fixtures/grand-finale-empty.txt"),
+    ),
 ];

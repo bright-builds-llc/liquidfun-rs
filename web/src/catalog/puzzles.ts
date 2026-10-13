@@ -8,6 +8,7 @@ export const PUZZLE_IDS = [
   "jelly-pad",
   "float-up",
   "timed-gate",
+  "grand-finale",
 ] as const;
 
 /** One allowlisted puzzle level id. */

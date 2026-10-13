@@ -28,14 +28,15 @@ export const PUZZLE_VIEW_BOUNDS: Readonly<Record<PuzzleId, WorldBounds>> = {
   "jelly-pad": { minX: -4.2, minY: -0.7, maxX: 4.2, maxY: 11.2 },
   "float-up": { minX: -4.2, minY: -0.7, maxX: 4.2, maxY: 11.2 },
   "timed-gate": { minX: -4.7, minY: -0.7, maxX: 4.7, maxY: 10.7 },
+  "grand-finale": { minX: -4.7, minY: -0.7, maxX: 4.7, maxY: 11.4 },
 };
 
 /**
  * Portrait phone frames with strict wall containment and a 0.1 m stroke
  * margin (D-25, D-22). At 390x844, first-pour fills the full width and about
  * 34% of the height; thick-syrup about 60%, jelly-pad and float-up about
- * 66% and timed-gate about 51%. No HUD padding; the safe frame handles
- * chrome.
+ * 66%, timed-gate about 51% and grand-finale about 60%. No HUD padding; the
+ * safe frame handles chrome.
  */
 export const PUZZLE_PORTRAIT_BOUNDS: Readonly<Record<PuzzleId, WorldBounds>> = {
   "first-pour": { minX: -6.1, minY: -0.6, maxX: 6.1, maxY: 9.1 },
@@ -43,6 +44,7 @@ export const PUZZLE_PORTRAIT_BOUNDS: Readonly<Record<PuzzleId, WorldBounds>> = {
   "jelly-pad": { minX: -4.1, minY: -0.6, maxX: 4.1, maxY: 11.1 },
   "float-up": { minX: -4.1, minY: -0.6, maxX: 4.1, maxY: 11.1 },
   "timed-gate": { minX: -4.6, minY: -0.6, maxX: 4.6, maxY: 10.6 },
+  "grand-finale": { minX: -4.6, minY: -0.6, maxX: 4.6, maxY: 11.3 },
 };
 
 /**

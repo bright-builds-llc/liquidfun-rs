@@ -1,0 +1,6 @@
+level grand-finale
+outcome lost
+outcome_step 900
+final_count 421
+peak_held 419
+brim_step none

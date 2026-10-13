@@ -102,6 +102,17 @@ const LEVEL_GEOMETRY: Record<PuzzleId, LevelGeometry> = {
     // (x -4.26..1.74, y 4.5..6.18, 802 particles) widened by 0.04 m.
     spawn: { minX: -4.3, minY: 4.46, maxX: 1.78, maxY: 6.22 },
   },
+  "grand-finale": {
+    // grand_finale.rs cup_interior; levelInfo().cupInterior() = [-1.2, 0, 0.6, 1.6] m (f32).
+    cupInterior: { minX: -1.2, minY: 0, maxX: 0.6, maxY: 1.6 },
+    // grand_finale.rs build_area; levelInfo().buildArea() = grid [2, 59, 12, 190] x 0.05 m.
+    buildArea: { minX: 0.1, minY: 2.95, maxX: 0.6, maxY: 9.5 },
+    // grand_finale.rs WALLS; captureFrame().rigidSegments() extents: x -4.5..4.5, y -0.5..11.2.
+    walls: { minX: -4.5, minY: -0.5, maxX: 4.5, maxY: 11.2 },
+    // Water, jelly pad and syrup blocks; captureFrame().particlePositions()
+    // extents (x -4.26..4.26, y 4.5..10.62, 1,037 particles) widened by 0.04 m.
+    spawn: { minX: -4.3, minY: 4.46, maxX: 4.3, maxY: 10.66 },
+  },
 };
 
 /** Same fit rule as `fittedFrameFraction` in portrait-bounds.test.ts. */

@@ -1,0 +1,8 @@
+level grand-finale
+placement plank 10 172 1
+placement valve 4 61 6 14
+outcome won
+outcome_step 574
+final_count 527
+peak_held 582
+brim_step 670

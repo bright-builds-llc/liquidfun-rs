@@ -541,6 +541,28 @@ fn empty_fixtures_have_no_placements_and_lose() {
     }
 }
 
+/// D-09/D-25: the teaching set holds 5 to 8 levels, keeps the levels no
+/// drop may remove, and ends with the finale.
+#[test]
+fn level_count_is_within_the_teaching_range() {
+    // Arrange
+    let required = [
+        LevelId::FirstPour,
+        LevelId::ThickSyrup,
+        LevelId::JellyPad,
+        LevelId::TimedGate,
+        LevelId::GrandFinale,
+    ];
+
+    // Act
+    let maybe_last = LEVEL_IDS.last().copied();
+
+    // Assert
+    assert!((5..=8).contains(&LEVEL_IDS.len()), "{LEVEL_IDS:?}");
+    assert!(required.iter().all(|level| LEVEL_IDS.contains(level)));
+    assert_eq!(maybe_last, Some(LevelId::GrandFinale));
+}
+
 #[test]
 fn step_zero_particles_fit_the_budget() {
     for level in LEVEL_IDS {

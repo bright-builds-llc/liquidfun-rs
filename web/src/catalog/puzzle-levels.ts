@@ -7,6 +7,7 @@ export const PUZZLE_TITLES: Readonly<Record<PuzzleId, string>> = {
   "jelly-pad": "Jelly Pad",
   "float-up": "Float Up",
   "timed-gate": "Timed Gate",
+  "grand-finale": "Grand Finale",
 };
 
 /**
@@ -19,6 +20,7 @@ export const PUZZLE_CAPTIONS: Readonly<Record<PuzzleId, string>> = {
   "jelly-pad": "Jelly never counts, but water slides across it. Drop the water onto the pad.",
   "float-up": "The ball floats. Fill its well and it rises to plug the drain.",
   "timed-gate": "The valve opens on a timer. Catch the water first, then let the syrup out.",
+  "grand-finale": "Finale: drop water on the jelly, catch it with the valve, then free the syrup.",
 };
 
 /** First-level placement hint (LEVEL-03), shown on the caption leaf until dismissed. */

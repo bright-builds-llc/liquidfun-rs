@@ -2,11 +2,13 @@
 //! level its fixture replays, release-only nudge sweep and idea-necessity
 //! control (D-15, D-16, D-18). timed-gate adds its open-tick window sweep and
 //! a reproducibility check (D-08, D-13). float-up's buoyancy control runs in
-//! every lane (D-12).
+//! every lane (D-12). grand-finale proves its valve is needed and that its
+//! open time matters (D-09).
 
 use super::super::LevelId;
 use super::super::float_up::{FLOAT, FLOAT_UP, FLOAT_UP_DENSE};
 use super::super::goal::Outcome;
+use super::super::grand_finale::GRAND_FINALE_WITHOUT_PAD;
 use super::super::jelly_pad::{JELLY_PAD_WITHOUT_PAD, pad_centroid};
 use super::super::replay::fixture::{FixtureOutcome, FixturePlacement, placement_lanes};
 use super::super::replay::replay_fixture_file;
@@ -357,4 +359,93 @@ fn timed_gate_is_reproducible() {
     assert_eq!(fingerprints.0, fingerprints.1);
     assert_eq!(outcomes.0, outcomes.1);
     assert!(matches!(outcomes.0, Outcome::Won { .. }), "{outcomes:?}");
+}
+
+#[test]
+fn grand_finale_solution_fixture_replays() {
+    replay_fixture_file(
+        "grand-finale-solution.txt",
+        fixture_text("grand-finale-solution.txt"),
+    );
+}
+
+#[test]
+fn grand_finale_empty_fixture_replays() {
+    replay_fixture_file(
+        "grand-finale-empty.txt",
+        fixture_text("grand-finale-empty.txt"),
+    );
+}
+
+/// Debug runs are too slow for the sweep; run it with `--release`.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "release-only nudge sweep (D-16)")]
+fn grand_finale_nudges_mostly_win() {
+    assert_nudges_mostly_win("grand-finale-solution.txt");
+}
+
+/// Index of the valve in a fixture's placements.
+fn valve_index(placements: &[FixturePlacement]) -> usize {
+    placements
+        .iter()
+        .position(|placement| placement.kind == ToolKind::Valve)
+        .expect("the solution places a valve")
+}
+
+/// D-18 control: the reference plank without the valve loses. The jet flies
+/// past the cup and the syrup alone falls short.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "release-only idea control")]
+fn grand_finale_needs_the_valve() {
+    // Arrange
+    let fixture = parsed_fixture("grand-finale-solution.txt");
+    let mut without_valve = fixture.placements.clone();
+    without_valve.remove(valve_index(&fixture.placements));
+
+    // Act
+    let maybe_outcome = run_outcome(LevelId::GrandFinale, &without_valve);
+
+    // Assert
+    assert_eq!(maybe_outcome, Some(FixtureOutcome::Lost));
+}
+
+/// D-18 control: with the reference valve opening at every tick
+/// `1..=30`, at least one tick does not win, so the open time matters.
+/// `SWEEP` lines record the table.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "release-only open-tick sweep (D-09)")]
+fn grand_finale_valve_time_matters() {
+    // Arrange
+    let fixture = parsed_fixture("grand-finale-solution.txt");
+    let index = valve_index(&fixture.placements);
+
+    // Act
+    let outcomes = open_tick_sweep(LevelId::GrandFinale, &fixture.placements, index);
+
+    // Assert
+    for (tick, maybe_outcome) in (1..).zip(&outcomes) {
+        let token = maybe_outcome.map_or("invalid", FixtureOutcome::token);
+        println!("SWEEP grand-finale open_tick {tick} {token}");
+    }
+    assert!(
+        outcomes
+            .iter()
+            .any(|maybe_outcome| *maybe_outcome != Some(FixtureOutcome::Won)),
+        "every open tick wins: {outcomes:?}"
+    );
+}
+
+/// D-18 control: the grand-finale reference without the jelly pad does not
+/// win, because the stream drains through the cradle slots.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "release-only idea control")]
+fn grand_finale_needs_the_pad() {
+    // Arrange
+    let fixture = parsed_fixture("grand-finale-solution.txt");
+
+    // Act
+    let maybe_outcome = run_spec_outcome(&GRAND_FINALE_WITHOUT_PAD, &fixture.placements);
+
+    // Assert
+    assert_eq!(maybe_outcome, Some(FixtureOutcome::Lost));
 }
