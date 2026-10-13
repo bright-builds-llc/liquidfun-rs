@@ -78,6 +78,10 @@ function puzzleRawFrame(stepIndex: number): RawProofFrame {
     outcome: () => 0,
     outcomeStep: () => undefined,
     stepLimit: () => 720,
+    peakHeldCount: () => 0,
+    brimCount: () => 4,
+    brimStep: () => undefined,
+    decidedStep: () => undefined,
     free: vi.fn(),
   };
 }

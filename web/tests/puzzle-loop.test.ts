@@ -37,10 +37,16 @@ function frameAt(stepIndex: number, maybePuzzle: PuzzleFrameStatus | undefined):
 }
 
 function statusAt(stepIndex: number, latchStep: number): PuzzleFrameStatus {
-  const base = { goalCount: stepIndex, goalTarget: 540, goalFull: 900, stepLimit: 720 };
+  const base = {
+    goalCount: stepIndex,
+    goalTarget: 540,
+    goalFull: 900,
+    stepLimit: 720,
+    brimCount: 810,
+  };
   return stepIndex < latchStep
-    ? { ...base, outcome: "running" }
-    : { ...base, outcome: "won", maybeOutcomeStep: latchStep };
+    ? { ...base, outcome: "running", peakHeldCount: 0 }
+    : { ...base, outcome: "won", maybeOutcomeStep: latchStep, peakHeldCount: 540 };
 }
 
 function fakeSession(options: { latchStep: number; omitStatus?: boolean }) {

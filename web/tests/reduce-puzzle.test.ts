@@ -17,12 +17,24 @@ function status(overrides: Partial<PuzzleFrameStatus> = {}): PuzzleFrameStatus {
     goalFull: 900,
     outcome: "running",
     stepLimit: 720,
+    peakHeldCount: 0,
+    brimCount: 810,
     ...overrides,
   };
 }
 
-const WON_STATUS = status({ outcome: "won", maybeOutcomeStep: 201, goalCount: 689 });
-const LOST_STATUS = status({ outcome: "lost", maybeOutcomeStep: 720, goalCount: 0 });
+const WON_STATUS = status({
+  outcome: "won",
+  maybeOutcomeStep: 201,
+  goalCount: 689,
+  peakHeldCount: 541,
+});
+const LOST_STATUS = status({
+  outcome: "lost",
+  maybeOutcomeStep: 720,
+  goalCount: 0,
+  maybeDecidedStep: 720,
+});
 
 function building(): PuzzleState {
   return reducePuzzle(INITIAL_PUZZLE_STATE, { kind: "loaded", stepIndex: 0, status: status() });
@@ -201,7 +213,11 @@ describe("reducePuzzle stepping", () => {
   it("rejects an outcome that changes after the latch", () => {
     // Arrange
     const state = endedWon();
-    const flipped = status({ outcome: "lost", maybeOutcomeStep: 720 });
+    const flipped = status({
+      outcome: "lost",
+      maybeOutcomeStep: 720,
+      maybeDecidedStep: 720,
+    });
 
     // Act
     const act = () => reducePuzzle(state, { kind: "stepped", stepIndex: 230, status: flipped });

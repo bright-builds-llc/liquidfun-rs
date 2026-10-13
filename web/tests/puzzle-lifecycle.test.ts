@@ -81,6 +81,10 @@ function rawFrame(stepIndex: number): RawProofFrame {
     outcome: () => 0,
     outcomeStep: () => undefined,
     stepLimit: () => 720,
+    peakHeldCount: () => 0,
+    brimCount: () => 810,
+    brimStep: () => undefined,
+    decidedStep: () => undefined,
     free: () => undefined,
   };
 }

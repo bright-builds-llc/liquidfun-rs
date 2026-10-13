@@ -25,6 +25,8 @@ function status(overrides: Partial<PuzzleFrameStatus> = {}): PuzzleFrameStatus {
     goalFull: 900,
     outcome: "running",
     stepLimit: 720,
+    peakHeldCount: 0,
+    brimCount: 810,
     ...overrides,
   };
 }
