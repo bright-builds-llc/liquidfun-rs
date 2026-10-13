@@ -373,4 +373,17 @@ describe("stopAll and suspend", () => {
     expect(context.closeCalls).toBe(0);
     expect(engine.hasContext()).toBe(true);
   });
+
+  it("lets the next ensureRunning resume after suspending a pending resume", () => {
+    // Arrange
+    const { audio, engine } = harness({ resume: "pending" });
+    engine.ensureRunning();
+    engine.suspend();
+
+    // Act
+    engine.ensureRunning();
+
+    // Assert
+    expect(audio.context().resumeCalls).toBe(2);
+  });
 });

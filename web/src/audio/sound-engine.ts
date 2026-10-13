@@ -364,6 +364,8 @@ export function createSoundEngine(options: SoundEngineOptions): SoundEngine {
       // A suspended clock freezes scheduled notes, so stop first (Research Pitfall 8).
       stopAll();
     } finally {
+      // A resume still pending when suspended must not block the next one.
+      resumeInFlight = false;
       maybeLive?.context.suspend().catch(options.onFailure);
     }
   }

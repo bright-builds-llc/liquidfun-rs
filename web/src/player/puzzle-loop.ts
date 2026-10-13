@@ -1,3 +1,8 @@
+import {
+  NO_SOUND_SIGNALS,
+  foldSoundSignals,
+  type PresentedSoundSignals,
+} from "../audio/sound-signals";
 import { FRAME_STEP_BUDGET_MS, accumulateStepTime } from "../physics/clock";
 import type { PuzzleFrameStatus, RenderFrame } from "../physics/frame";
 import type { PuzzleSession } from "../physics/puzzle-session";
@@ -16,8 +21,16 @@ export type PuzzleLoopDeps = {
   readonly current: () => PuzzleState;
   /** Folds one event into the non-reactive mirror and returns the new state. */
   readonly dispatch: (event: PuzzleEvent) => PuzzleState;
-  /** Publishes one presented frame: Solid puzzle state plus the player view. */
-  readonly publish: (frame: RenderFrame, observation: FrameObservation, state: PuzzleState) => void;
+  /**
+   * Publishes one presented frame: Solid puzzle state plus the player view.
+   * `signals` fold every fixed step of this presented frame (Phase 42 D-07).
+   */
+  readonly publish: (
+    frame: RenderFrame,
+    observation: FrameObservation,
+    state: PuzzleState,
+    signals: PresentedSoundSignals,
+  ) => void;
   readonly drawSceneFrame: (
     context: CanvasRenderingContext2D,
     frame: RenderFrame,
@@ -68,11 +81,13 @@ export function schedulePuzzleFrame(
 
     const started = performance.now();
     let ran = 0;
+    let signals = NO_SOUND_SIGNALS;
     // One step per capture, so the frame at the outcome step is never skipped (Pitfall 3).
     const stepOnce = (): RenderFrame => {
       const stepped = session.nextFrame(1);
       const status = requirePuzzleStatus(stepped);
       state = deps.dispatch({ kind: "stepped", stepIndex: stepped.stepIndex, status });
+      signals = foldSoundSignals(signals, stepped.maybeSound);
       ran += 1;
       return stepped;
     };
@@ -91,7 +106,7 @@ export function schedulePuzzleFrame(
     const observation = observeFrame(frame, clock.maybePreviousFrame, movedFrameCount);
     movedFrameCount = observation.movedFrameCount;
     clock.maybePreviousFrame = frame;
-    deps.publish(frame, observation, state);
+    deps.publish(frame, observation, state, signals);
     if (!isHeld(state)) {
       requestNext();
     }
