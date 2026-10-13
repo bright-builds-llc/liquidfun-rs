@@ -15,9 +15,9 @@ v1.5 Puzzle Mode adds a small game to the playground. While a level is paused, t
 
 ## Phases
 
-- [ ] **Phase 37: Puzzle Core in the Bridge** — Build levels from (level, placements) and decide fill, win and timeout per fixed step in Rust, identically natively and in wasm.
-- [ ] **Phase 38: Puzzle Route and Player Shell** — Open a level at `#/puzzle/<id>` in the shared player with a glass cup, fill meter, step timer and result card.
-- [ ] **Phase 39: Place-then-Play Tools and Stars** — Place, move, rotate and remove tools while building, then Play, Stop/Reset and earn stars.
+- [x] **Phase 37: Puzzle Core in the Bridge** — Build levels from (level, placements) and decide fill, win and timeout per fixed step in Rust, identically natively and in wasm.
+- [x] **Phase 38: Puzzle Route and Player Shell** — Open a level at `#/puzzle/<id>` in the shared player with a glass cup, fill meter, step timer and result card.
+- [x] **Phase 39: Place-then-Play Tools and Stars** — Place, move, rotate and remove tools while building, then Play, Stop/Reset and earn stars.
 - [x] **Phase 40: Timed Valve and Teaching Levels** — A timed valve plus 5–8 teaching levels, each proven solvable by automated tests.
 - [x] **Phase 41: Level Select and Progress** — `#/puzzles` grid, soft unlocks and per-browser progress that survives blocked storage.
 - [ ] **Phase 42: Opt-in Sound** — Muted-by-default splashes, impacts, filling plinks and a win chime.
