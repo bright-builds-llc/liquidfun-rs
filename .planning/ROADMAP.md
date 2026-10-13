@@ -221,7 +221,7 @@ Plans:
 **Plans**: 8 plans
 
 Plans:
-- [ ] 41-01-PLAN.md — Fingerprint baseline, then the pinned Rust `levelHash` getter, TS parse and the wasm replay pin check (wave 1)
+- [x] 41-01-PLAN.md — Fingerprint baseline, then the pinned Rust `levelHash` getter, TS parse and the wasm replay pin check (wave 1)
 - [ ] 41-02-PLAN.md — Pure progress core: v1 document parse/serialize/merge, unlock rule, grid view model and restore decision (wave 2)
 - [ ] 41-03-PLAN.md — Progress shell with probe and degraded mode; star hydration and write-through; controller degraded flag (wave 3)
 - [ ] 41-04-PLAN.md — Restore saved placements on level entry and save after committed edits and at Play (wave 4)
@@ -293,7 +293,7 @@ Plans:
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
 | 39. Place-then-Play Tools and Stars | v1.5 | 14/14 | Complete    | 2026-10-13 |
 | 40. Timed Valve and Teaching Levels | v1.5 | 11/11 | Complete    | 2026-10-13 |
-| 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
+| 41. Level Select and Progress | v1.5 | 1/8 | In Progress|  |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
 | 43. GPU Water Render Mode | v1.5 | 0/TBD | Not started | - |
 
