@@ -1,0 +1,245 @@
+/* Level-select grid at #/puzzles (Phase 41 UI-SPEC "Page Layout"). Static: no motion. */
+
+.puzzle-select {
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+/* The canvas shell clips html, body and main, so the page scrolls itself (Pitfall 1). */
+.puzzle-select--canvas-stage {
+  position: fixed;
+  top: var(--visual-viewport-offset-top, 0px);
+  left: 0;
+  box-sizing: border-box;
+  align-content: start;
+  width: 100%;
+  height: var(--visual-viewport-height, 100dvh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #0B0F14;
+  padding:
+    calc(max(8px, env(safe-area-inset-top, 0px)) + 60px)
+    max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+}
+
+.puzzle-select-content {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  max-width: 960px;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.puzzle-select-header {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.puzzle-select-header h2 {
+  color: #F4F7FA;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-select-intro {
+  color: #A9B4C0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-select-progress {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-progress-note {
+  margin: 0;
+  padding: 8px 16px;
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  background: #151D28;
+  border: 1px solid #2A3441;
+  border-radius: 8px;
+  box-shadow: inset 3px 0 0 #A9B4C0;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.puzzle-level-grid > li {
+  min-width: 0;
+}
+
+/* Card rows: header, title, caption (grows), stars, footer. */
+.puzzle-level-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 44px;
+  min-width: 0;
+  padding: 16px;
+  color: #F4F7FA;
+  text-decoration: none;
+  background: #151D28;
+  border: 1px solid #2A3441;
+  border-radius: 12px;
+}
+
+a.puzzle-level-card:hover {
+  background: #1C2734;
+}
+
+.puzzle-level-card[data-next-up="true"] {
+  border-color: #4DA3FF;
+  box-shadow: inset 3px 0 0 #4DA3FF;
+}
+
+.puzzle-level-card--locked {
+  background: #0B0F14;
+  border: 1px dashed #2A3441;
+  cursor: default;
+}
+
+.puzzle-level-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  line-height: 20px;
+}
+
+.puzzle-level-eyebrow,
+.puzzle-level-tag {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-level-eyebrow {
+  color: #A9B4C0;
+  font-variant-numeric: tabular-nums;
+}
+
+.puzzle-level-tag--next {
+  color: #4DA3FF;
+}
+
+.puzzle-level-tag--locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #A9B4C0;
+}
+
+.puzzle-level-title {
+  margin: 0;
+  color: #F4F7FA;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-level-card--locked .puzzle-level-title {
+  color: #A9B4C0;
+}
+
+.puzzle-level-caption {
+  color: #A9B4C0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-level-stars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  min-width: 0;
+}
+
+.puzzle-level-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.puzzle-level-card .puzzle-star-glyph,
+.puzzle-level-card .puzzle-lock-glyph {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: inherit;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.puzzle-level-card .puzzle-lock-glyph {
+  fill: none;
+}
+
+.puzzle-level-star[data-earned="true"] .puzzle-star-glyph {
+  color: #E6C35C;
+}
+
+.puzzle-level-star[data-earned="true"] .puzzle-level-star-label {
+  color: #F4F7FA;
+}
+
+.puzzle-level-footer {
+  color: #A9B4C0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Inline source-link footer on the canvas stage, without its panel surface. */
+.puzzle-select--canvas-stage .site-footer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 960px;
+  margin: 48px auto 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}

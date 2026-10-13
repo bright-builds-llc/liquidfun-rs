@@ -46,6 +46,7 @@ export function App() {
       onApplyAction={session.applySceneAction}
       onCreateSvgExportRequest={session.createSvgExportRequest}
       puzzleController={session.puzzleController}
+      puzzleProgress={session.puzzle.progress}
       assignPuzzleCanvas={session.assignPuzzleCanvas}
     />
   );

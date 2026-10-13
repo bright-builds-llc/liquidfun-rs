@@ -20,9 +20,13 @@ const PUZZLE_COMPONENTS = [
   "components/PuzzleStarList.tsx",
   "components/PuzzleIcons.tsx",
   "components/PuzzleCaption.tsx",
+  "components/PuzzleSelectPanel.tsx",
 ] as const;
 
-const PUZZLE_STYLESHEETS = ["styles/puzzle.css", "styles/puzzle-editor.css"] as const;
+/** Stylesheets of the canvas puzzle HUD, which branch on `data-puzzle-layout`. */
+const HUD_STYLESHEETS = ["styles/puzzle.css", "styles/puzzle-editor.css"] as const;
+
+const PUZZLE_STYLESHEETS = [...HUD_STYLESHEETS, "styles/puzzle-select.css"] as const;
 
 /** Phase 39 editor leaves and the component that renders each one (D-26). */
 const EDITOR_LEAVES = [
@@ -244,10 +248,21 @@ describe("puzzle HUD chrome", () => {
     // Assert
     expect(offenders).toEqual([]);
   });
+
+  it("keeps data-hud-obstacle off the level grid", () => {
+    // Arrange
+    const panel = source("components/PuzzleSelectPanel.tsx");
+
+    // Act
+    const marksObstacle = panel.includes("data-hud-obstacle");
+
+    // Assert
+    expect(marksObstacle).toBe(false);
+  });
 });
 
 describe("puzzle stylesheet", () => {
-  it("has no transitions or animations in either puzzle stylesheet", () => {
+  it("has no transitions or animations in any puzzle stylesheet", () => {
     // Arrange
     const sheets = PUZZLE_STYLESHEETS.map((path) => ({ path, css: source(path) }));
 
@@ -314,7 +329,7 @@ describe("puzzle stylesheet", () => {
     expect(unsized).toEqual([]);
   });
 
-  it.each(PUZZLE_STYLESHEETS)("scopes data-puzzle-layout selectors to the canvas stage in %s", (path) => {
+  it.each(HUD_STYLESHEETS)("scopes data-puzzle-layout selectors to the canvas stage in %s", (path) => {
     // Arrange
     const css = source(path);
     const prefix = ".puzzle-panel--canvas-stage";

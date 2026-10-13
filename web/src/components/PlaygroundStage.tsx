@@ -9,6 +9,7 @@ import {
 } from "../player/runtime";
 import { playableRouteIdentity } from "../player/playable-target";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "../player/view";
+import type { PuzzleProgress } from "../player/puzzle-progress";
 import type { PuzzleController } from "../puzzle/controller";
 import { puzzleDebugAttributes } from "../puzzle/debug-attributes";
 import type { FpsTick } from "./fps-meter";
@@ -26,6 +27,7 @@ import { PlayerSceneChrome } from "./PlayerSceneChrome";
 import { PlaygroundShell } from "./PlaygroundShell";
 import { PuzzleFallbackPanel } from "./PuzzleFallbackPanel";
 import { PuzzlePanel } from "./PuzzlePanel";
+import { PuzzleSelectPanel } from "./PuzzleSelectPanel";
 import type { HudControlSliderProps } from "./SceneControls";
 
 export type PlaygroundStageProps = {
@@ -68,6 +70,8 @@ export type PlaygroundStageProps = {
   readonly onApplyAction: (name: string) => void;
   readonly onCreateSvgExportRequest: (durationSeconds: number) => SvgExportRequest | undefined;
   readonly puzzleController: PuzzleController;
+  /** Persisted progress for the `#/puzzles` grid (Phase 41 D-05). */
+  readonly puzzleProgress: PuzzleProgress;
   /** Puzzle canvas ref: no pointer handlers (D-16). */
   readonly assignPuzzleCanvas: (canvas: HTMLCanvasElement) => void;
 };
@@ -240,6 +244,13 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
                 onHudObstaclesChange={props.onHudObstaclesChange}
               />
             )}
+          </Match>
+          <Match when={props.route().kind === "puzzles"}>
+            <PuzzleSelectPanel
+              canvasStage={props.canvasStage}
+              progress={props.puzzleProgress.current()}
+              degraded={props.puzzleProgress.degraded()}
+            />
           </Match>
           <Match when={maybeUnknownPuzzle()}>
             {(unknown) => (

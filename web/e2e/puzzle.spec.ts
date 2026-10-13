@@ -417,8 +417,9 @@ test("keeps levels out of the scene catalog routes", async ({ page }) => {
   // Act
   await page.goto("/liquidfun-rs/#/puzzles");
 
-  // Assert
-  await expect(page.getByRole("heading", { name: "Scene not found" })).toBeVisible();
+  // Assert: the plural hash is the level grid, not a scene.
+  await expect(page.getByRole("heading", { name: "Puzzles", level: 2 })).toBeVisible();
+  await expect(page.locator("[data-level-id]")).toHaveCount(6);
 
   // Act: the page layout renders the catalog sidebar in the DOM.
   await page.goto(withFormFactorShell(SCENE_HASH_PATHS["dam-break"]));
