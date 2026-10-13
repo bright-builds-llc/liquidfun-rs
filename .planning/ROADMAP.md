@@ -161,7 +161,7 @@ Plans:
 
 - [x] 39-01-PLAN.md — Fingerprint baseline, then the Rust SAT placement validator, stateless inspector, newPuzzle parity and brim/par/no-place spec data (wave 1)
 - [x] 39-02-PLAN.md — TS editor core: status codes and copy, building editor with live and committed inspections, hit-testing and editor view models (wave 1)
-- [ ] 39-03-PLAN.md — TS stars, best-of store, star rows, keyboard map and fast-forward helpers (wave 1)
+- [x] 39-03-PLAN.md — TS stars, best-of store, star rows, keyboard map and fast-forward helpers (wave 1)
 - [ ] 39-04-PLAN.md — TS frame parsing of peak held, Brim and decided step with fail-closed rules (wave 1)
 - [ ] 39-05-PLAN.md — Rust peak-held tracker, Brim latch, decided step, frame getters and permuted-order fingerprint (wave 2)
 - [ ] 39-06-PLAN.md — Rebuilt wasm, level-info budget/brim/par parsing, inspector decoding and status-code parity (wave 3)
@@ -267,7 +267,7 @@ Plans:
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
-| 39. Place-then-Play Tools and Stars | v1.5 | 2/14 | In Progress|  |
+| 39. Place-then-Play Tools and Stars | v1.5 | 3/14 | In Progress|  |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
