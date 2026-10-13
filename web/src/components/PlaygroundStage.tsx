@@ -10,6 +10,7 @@ import {
 import { playableRouteIdentity } from "../player/playable-target";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "../player/view";
 import type { PuzzleController } from "../puzzle/controller";
+import { puzzleDebugAttributes } from "../puzzle/debug-attributes";
 import type { FpsTick } from "./fps-meter";
 import type { TiltDebug } from "../input/tilt-gravity";
 import type { PointerKind } from "../input/pointer";
@@ -156,6 +157,12 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
         }
         data-puzzle-held={maybePuzzleHeld()}
         data-puzzle-outcome={maybeEndedPuzzle()?.latch.outcome}
+        {...(maybePuzzleId() === undefined
+          ? {}
+          : puzzleDebugAttributes(
+              props.puzzleController.state(),
+              props.puzzleController.maybeHeldHash(),
+            ))}
       >
         <Switch fallback={<FallbackPanel canvasStage={props.canvasStage} />}>
           <Match when={maybeCurrentSceneId()}>
