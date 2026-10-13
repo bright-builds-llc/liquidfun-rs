@@ -385,6 +385,24 @@ describe("visibility", () => {
     expect(audio.context().resumeCalls).toBe(resumesBefore + 1);
   });
 
+  it("resumes on a later gesture while a resume from visibility is still pending", () => {
+    // Arrange
+    const { sound, audio, events } = harness({ resume: "pending" });
+    sound.attach();
+    sound.setEnabled(true);
+    events.hidden = true;
+    events.dispatch({ type: "visibilitychange", isTrusted: true });
+    events.hidden = false;
+    events.dispatch({ type: "visibilitychange", isTrusted: true });
+    const resumesBefore = audio.context().resumeCalls;
+
+    // Act
+    events.dispatch(trustedTouchUp);
+
+    // Assert
+    expect(audio.context().resumeCalls).toBe(resumesBefore + 1);
+  });
+
   it("does not resume when visible with sound off", () => {
     // Arrange
     const { sound, audio, events } = harness();

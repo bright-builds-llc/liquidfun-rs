@@ -110,7 +110,7 @@ describe("ensureRunning", () => {
     expect(audio.log.filter((entry) => entry === "construct")).toHaveLength(1);
   });
 
-  it("does not stack resume calls while one is in flight", () => {
+  it("resumes again inside a gesture while an earlier resume is pending", () => {
     // Arrange
     const { audio, engine } = harness({ resume: "pending" });
     engine.ensureRunning();
@@ -119,7 +119,30 @@ describe("ensureRunning", () => {
     engine.ensureRunning();
 
     // Assert
+    expect(audio.context().resumeCalls).toBe(2);
+  });
+
+  it("does not stack resumes made without a gesture while one is pending", () => {
+    // Arrange
+    const { audio, engine } = harness({ resume: "pending" });
+    engine.ensureRunning();
+
+    // Act
+    engine.resumeWithoutGesture();
+
+    // Assert
     expect(audio.context().resumeCalls).toBe(1);
+  });
+
+  it("never constructs a context when resuming without a gesture", () => {
+    // Arrange
+    const { audio, engine } = harness();
+
+    // Act
+    engine.resumeWithoutGesture();
+
+    // Assert
+    expect(audio.contexts).toHaveLength(0);
   });
 
   it("returns false and logs when construction throws", () => {

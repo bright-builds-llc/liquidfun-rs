@@ -46,8 +46,20 @@ export function browserContextFactory(): SoundContextFactory | undefined {
 export type SoundEngine = {
   readonly hasContext: () => boolean;
   readonly isRunning: () => boolean;
-  /** Creates the context on first use and resumes it; call only inside a trusted user activation. False when construction threw (logged). */
+  /**
+   * Creates the context on first use and resumes it; call only inside a
+   * trusted user activation. Always reaches `context.resume()` unless already
+   * running, because a resume queued without activation may never settle and
+   * only a resume called inside a real activation can start the clock.
+   * False when construction threw (logged).
+   */
   readonly ensureRunning: () => boolean;
+  /**
+   * Resumes an existing context outside a user activation (for example when
+   * the tab becomes visible). Never constructs, and skips the call while an
+   * earlier resume is still pending so background resumes do not stack.
+   */
+  readonly resumeWithoutGesture: () => void;
   readonly maybeNowSeconds: () => number | undefined;
   /** Starts admitted voices; a no-op unless running. Synchronous node errors propagate to the caller. */
   readonly play: (requests: readonly VoiceRequest[]) => void;
@@ -260,8 +272,8 @@ export function createSoundEngine(options: SoundEngineOptions): SoundEngine {
 
   const isRunning = () => maybeLive?.context.state === "running";
 
-  function resume(context: SoundContext): void {
-    if (context.state === "running" || resumeInFlight) {
+  function resume(context: SoundContext, fromGesture: boolean): void {
+    if (context.state === "running" || (resumeInFlight && !fromGesture)) {
       return;
     }
 
@@ -293,8 +305,14 @@ export function createSoundEngine(options: SoundEngineOptions): SoundEngine {
       }
     }
 
-    resume(maybeLive.context);
+    resume(maybeLive.context, true);
     return true;
+  }
+
+  function resumeWithoutGesture(): void {
+    if (maybeLive !== undefined) {
+      resume(maybeLive.context, false);
+    }
   }
 
   function register(id: number, voice: StartedVoice): void {
@@ -374,6 +392,7 @@ export function createSoundEngine(options: SoundEngineOptions): SoundEngine {
     hasContext: () => maybeLive !== undefined,
     isRunning,
     ensureRunning,
+    resumeWithoutGesture,
     maybeNowSeconds: () => maybeLive?.context.currentTime,
     play,
     stopAll,

@@ -218,11 +218,8 @@ export function createPuzzleSound(deps: PuzzleSoundDeps): PuzzleSound {
     if (!enabled()) {
       return;
     }
-    guarded((engine) => {
-      if (engine.hasContext()) {
-        engine.ensureRunning();
-      }
-    });
+    // Becoming visible is not a user activation (WR-01).
+    guarded((engine) => engine.resumeWithoutGesture());
   };
 
   function present(frame: RenderFrame, signals: PresentedSoundSignals, state: PuzzleState): void {
