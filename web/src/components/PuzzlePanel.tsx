@@ -210,6 +210,7 @@ function PuzzlePanelLayout(layoutProps: {
       ctrlKey: event.ctrlKey,
       metaKey: event.metaKey,
       altKey: event.altKey,
+      altGraph: event.getModifierState("AltGraph"),
       target: keyTargetOf(event.target),
     });
     if (maybeCommand === undefined) {

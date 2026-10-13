@@ -25,6 +25,7 @@ function key(name: string, overrides: Partial<PuzzleKeyInput> = {}): PuzzleKeyIn
     ctrlKey: false,
     metaKey: false,
     altKey: false,
+    altGraph: false,
     target: "canvas",
     ...overrides,
   };
@@ -39,12 +40,35 @@ describe("puzzleKeyCommand valve time", () => {
     expect(puzzleKeyCommand(key("]"))).toEqual({ kind: "valveTime", direction: 1 });
   });
 
-  it.each([{ ctrlKey: true }, { metaKey: true }, { altKey: true }])(
-    "ignores a bracket with a modifier %o",
+  it.each([{ ctrlKey: true }, { metaKey: true }, { altKey: true, metaKey: true }])(
+    "ignores a bracket with a shortcut modifier %o",
     (modifier) => {
       expect(puzzleKeyCommand(key("]", modifier))).toBeUndefined();
     },
   );
+
+  it("steps the valve for a bracket typed with Option on a macOS German layout", () => {
+    // Act
+    const command = puzzleKeyCommand(key("[", { altKey: true }));
+
+    // Assert
+    expect(command).toEqual({ kind: "valveTime", direction: -1 });
+  });
+
+  it("steps the valve for a bracket typed with AltGr on a Windows German layout", () => {
+    // Arrange
+    const altGr = { ctrlKey: true, altKey: true, altGraph: true };
+
+    // Act
+    const command = puzzleKeyCommand(key("]", altGr));
+
+    // Assert
+    expect(command).toEqual({ kind: "valveTime", direction: 1 });
+  });
+
+  it("ignores a bracket with Ctrl+Alt when AltGraph is not active", () => {
+    expect(puzzleKeyCommand(key("]", { ctrlKey: true, altKey: true }))).toBeUndefined();
+  });
 
   it("ignores a bracket in a form control", () => {
     expect(puzzleKeyCommand(key("[", { target: "formControl" }))).toBeUndefined();

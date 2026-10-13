@@ -8,6 +8,8 @@ export type PuzzleKeyInput = {
   readonly ctrlKey: boolean;
   readonly metaKey: boolean;
   readonly altKey: boolean;
+  /** `getModifierState("AltGraph")`; Windows reports AltGr as Ctrl+Alt plus this state. */
+  readonly altGraph: boolean;
   readonly target: KeyTarget;
 };
 
@@ -39,9 +41,22 @@ function isNativeActivation(input: PuzzleKeyInput): boolean {
   return input.target === "button" && (input.key === " " || input.key === "Enter");
 }
 
+/**
+ * True when a modifier makes the key a shortcut for something else. Some
+ * layouts type `[` and `]` with Option (macOS German) or AltGr (Windows German
+ * and French), and `key` already names the produced bracket, so only Meta or a
+ * Ctrl that is not part of AltGr blocks a bracket.
+ */
+function isModifiedShortcut(input: PuzzleKeyInput): boolean {
+  if (input.key === "[" || input.key === "]") {
+    return input.metaKey || (input.ctrlKey && !input.altGraph);
+  }
+  return input.ctrlKey || input.metaKey || input.altKey;
+}
+
 /** Pure D-23 map; phase gating happens in the controller (editing keys are no-ops outside building). */
 export function puzzleKeyCommand(input: PuzzleKeyInput): PuzzleKeyCommand | undefined {
-  if (input.ctrlKey || input.metaKey || input.altKey) {
+  if (isModifiedShortcut(input)) {
     return undefined;
   }
   if (input.target === "formControl" || isNativeActivation(input)) {
