@@ -1,9 +1,11 @@
 //! "Grand Finale": three earlier ideas in one level, a jelly pad, a timed
 //! valve and syrup (Phase 40 D-09).
 //!
-//! A reservoir in the upper right of a 9 m by 11.2 m box drains into a waste
-//! shaft. The player's plank catches the stream and drops it onto a long
-//! roof that runs down to a chimney in the upper left. At the chimney's foot
+//! A reservoir across the top right of a 9 m by 11.2 m box drains onto a
+//! ridged roof. Untouched, the stream lands right of the ridge and runs into
+//! a waste shaft. The player's plank catches it and carries it over the
+//! ridge onto the long left roof, which runs down to a chimney in the upper
+//! left. At the chimney's foot
 //! an uncounted jelly pad (`LiquidMaterial::Elastic`) fills a slotted cradle
 //! and turns the water sideways under a baffle, so it falls onto a 45° ramp.
 //! The ramp and its launch lip turn the stream into a jet that flies right,
@@ -20,8 +22,9 @@
 //! the stream drains through the cradle slots.
 //!
 //! A ceiling over the cup, a wall beside the ramp and the roof over the
-//! syrup tank keep every other route out of the cup, and authored no-place
-//! zones leave tools only the plank area and the valve slot.
+//! syrup tank keep every other route out of the cup. The build area is a
+//! narrow column from the valve slot up to the plank area, so it holds no
+//! liquid, and authored no-place zones leave tools only those two places.
 //!
 //! Walls are literal quads; the roof, the syrup tank floor, the ramp and the
 //! lip are tilted quads with literal vertex coordinates.
@@ -47,14 +50,16 @@ const fn quad(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> [Vec2; 4] {
 /// Floor and side walls; the syrup tank (45° floor, sill dam, left and right
 /// walls); the ramp and launch lip; the ceiling over the cup and the wall
 /// beside the ramp; the slotted cradle with its right wall and the chimney
-/// baffle; the roof; the waste shaft wall; and the reservoir.
+/// baffle; the ridged roof; the waste shaft wall; and the reservoir with its
+/// tilted floor.
 ///
 /// The syrup tank's side opening is the gap at x = 0.41 between the dam top
 /// (y = 3.12) and the left wall (y = 3.5). The cradle base has two 0.16 m
 /// drain slots, at x = -4.15..-3.99 and x = -3.85..-3.69. The baffle leaves
-/// a 0.28 m gap above the pad. The reservoir outlet is the 0.6 m gap between
-/// x = 2.5 and x = 3.1.
-const WALLS: [[Vec2; 4]; 20] = [
+/// a 0.28 m gap above the pad. The roof's ridge is at x = 0.6: left of it
+/// the roof falls to the chimney, right of it to the shaft. The reservoir
+/// outlet is the 0.6 m gap between x = 1.05 and x = 1.65.
+const WALLS: [[Vec2; 4]; 21] = [
     quad(-4.5, -0.5, 4.5, 0.0),
     quad(-4.5, 0.0, -4.3, 11.2),
     quad(4.3, 0.0, 4.5, 11.2),
@@ -65,8 +70,8 @@ const WALLS: [[Vec2; 4]; 20] = [
         Vec2::new(0.41, 3.0),
     ],
     quad(0.41, 3.0, 0.5, 3.12),
-    quad(0.41, 3.5, 0.61, 7.9),
-    quad(1.81, 4.2, 2.01, 8.3),
+    quad(0.41, 3.5, 0.61, 7.95),
+    quad(1.81, 4.2, 2.01, 7.6),
     [
         Vec2::new(-3.0, 4.75),
         Vec2::new(-1.3, 3.05),
@@ -88,22 +93,33 @@ const WALLS: [[Vec2; 4]; 20] = [
     quad(-3.7, 5.9, -3.5, 6.7),
     [
         Vec2::new(-3.7, 6.6),
-        Vec2::new(2.21, 8.3),
-        Vec2::new(2.21, 8.5),
+        Vec2::new(0.6, 7.89),
+        Vec2::new(0.6, 8.09),
         Vec2::new(-3.7, 6.8),
     ],
-    quad(2.21, 0.6, 2.41, 8.3),
-    quad(2.3, 9.6, 2.5, 11.2),
-    quad(3.1, 9.6, 4.3, 9.8),
+    [
+        Vec2::new(0.6, 7.89),
+        Vec2::new(2.41, 7.29),
+        Vec2::new(2.41, 7.49),
+        Vec2::new(0.6, 8.09),
+    ],
+    quad(2.21, 0.6, 2.41, 7.55),
+    quad(0.85, 9.6, 1.05, 11.2),
+    [
+        Vec2::new(1.65, 9.6),
+        Vec2::new(4.3, 9.9),
+        Vec2::new(4.3, 10.1),
+        Vec2::new(1.65, 9.8),
+    ],
 ];
 
 /// Cup side walls; the floor closes the bottom.
 const CUP_WALLS: [[Vec2; 4]; 2] = [quad(-1.4, 0.0, -1.2, 1.6), quad(0.6, 0.0, 0.8, 1.6)];
 
-/// Reservoir water: about 470 particles at 0.75 × diameter spacing.
+/// Reservoir water: about 480 particles at 0.75 × diameter spacing.
 const WATER: LiquidBlock = LiquidBlock {
-    min: Vec2::new(2.54, 9.84),
-    max: Vec2::new(4.26, 10.82),
+    min: Vec2::new(1.09, 10.14),
+    max: Vec2::new(4.26, 10.68),
     spacing: 0.06,
     color: ParticleColor::new(77, 163, 255, 255),
     counted: true,
@@ -151,11 +167,11 @@ const TOOL_BUDGET: [ToolAllowance; 2] = [
 /// - the cup chamber left of the valve slot, x -1.3..-0.15 m, y 1.6..3.9 m;
 /// - the space under the roof right of the slot (the syrup tank, the jet's
 ///   escape and the waste shaft), x 0.6..4.3 m, y 0..8.1 m;
-/// - the enclosed space above the cup ceiling, x -4.3..0.6 m, y 3.9..8.2 m.
+/// - the enclosed space above the cup ceiling, x -4.3..0.6 m, y 3.9..7.6 m.
 const NO_PLACE: [GridRect; 3] = [
     GridRect::new(-26, 32, -3, 78),
     GridRect::new(12, 0, 86, 162),
-    GridRect::new(-86, 78, 12, 164),
+    GridRect::new(-86, 78, 12, 152),
 ];
 
 /// "Grand Finale": water, a jelly pad and syrup; up to two planks and one
@@ -188,19 +204,21 @@ pub(crate) const GRAND_FINALE: LevelSpec = LevelSpec {
     // The water's long route and the slow syrup need 15 s.
     step_limit: 900,
     tool_budget: &TOOL_BUDGET,
-    // x 0.1..4.2 m, y 2.95..9.5 m; the no-place zones carve it down to the
-    // plank area and the valve slot (x 0.1..0.2 m, y 2.95..3.15 m).
-    build_area: GridRect::new(2, 59, 84, 190),
+    // x 0.1..0.6 m, y 2.95..9.5 m: a column clear of the syrup that the
+    // no-place zones carve down to plank centres above the roof and the
+    // valve slot (x 0.1..0.2 m, y 2.95..3.15 m).
+    build_area: GridRect::new(2, 59, 12, 190),
     // D-07: ≥ target + 10% of full, and the reference peak held clears it by ≥ 5% of full.
     brim_count: 582,
     par_tools: 2,
     no_place: &NO_PLACE,
 };
 
-/// Reference plank pose: centre (2.3, 8.95) m at 15° (angle step 1), under
-/// the reservoir outlet and sloping down toward the roof.
+/// Reference plank pose: centre (0.5, 8.6) m at 15° (angle step 1). Its
+/// right end is under the reservoir outlet and its left end drops the water
+/// onto the left roof.
 #[cfg(test)]
-pub(crate) const REFERENCE_PLANK_POSE: [i32; 4] = [46, 179, 1, 0];
+pub(crate) const REFERENCE_PLANK_POSE: [i32; 4] = [10, 172, 1, 0];
 
 /// Reference valve pose: upright (angle step 6), centred at (0.2, 3.05) m,
 /// opening at tick 14 (7.0 s, step 420).
