@@ -8,9 +8,9 @@
  * contain every wall, the liquid spawn, the cup and the build area. Neither
  * pads for HUD chrome: the safe frame fits the world around HUD obstacles.
  *
- * The portrait frames keep every wall, which limits the phone height fill
- * (D-25). Re-authoring level geometry for a tighter phone fill belongs to
- * Phase 40 (LEVEL-04).
+ * The portrait frames keep every wall. first-pour's 12 m width limits its
+ * phone height fill (D-25); Phase 40 levels are authored about 8 m wide and
+ * 10-11 m tall so their portrait frames fill most of a phone (LEVEL-04).
  */
 
 import type { WorldBounds } from "../render/camera";
@@ -24,15 +24,20 @@ import type { SceneId } from "./scenes";
  */
 export const PUZZLE_VIEW_BOUNDS: Readonly<Record<PuzzleId, WorldBounds>> = {
   "first-pour": { minX: -6.2, minY: -0.7, maxX: 6.2, maxY: 9.2 },
+  "thick-syrup": { minX: -4.2, minY: -0.7, maxX: 4.2, maxY: 10.2 },
+  "jelly-pad": { minX: -4.2, minY: -0.7, maxX: 4.2, maxY: 11.2 },
 };
 
 /**
- * Portrait phone frames with strict wall containment (D-25): about 92% of the
- * width and 34% of the height at 390x844. No HUD padding; the safe frame
- * handles chrome.
+ * Portrait phone frames with strict wall containment and a 0.1 m stroke
+ * margin (D-25, D-22). At 390x844, first-pour fills the full width and about
+ * 34% of the height; thick-syrup about 60% and jelly-pad about 66%. No HUD
+ * padding; the safe frame handles chrome.
  */
 export const PUZZLE_PORTRAIT_BOUNDS: Readonly<Record<PuzzleId, WorldBounds>> = {
   "first-pour": { minX: -6.1, minY: -0.6, maxX: 6.1, maxY: 9.1 },
+  "thick-syrup": { minX: -4.1, minY: -0.6, maxX: 4.1, maxY: 10.1 },
+  "jelly-pad": { minX: -4.1, minY: -0.6, maxX: 4.1, maxY: 11.1 },
 };
 
 /**

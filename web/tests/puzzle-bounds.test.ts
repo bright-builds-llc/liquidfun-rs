@@ -20,6 +20,13 @@ const IPHONE = { width: 390, height: 844 } as const;
 const DESKTOP = { width: 1280, height: 800 } as const;
 const MIN_WIDTH_FRACTION = 0.85;
 const MIN_HEIGHT_FRACTION = 0.33;
+/**
+ * Phase 40 levels are authored for portrait (D-22), so their phone frames
+ * must fill at least half the height. first-pour keeps its locked 12 m wide
+ * geometry (D-09) and only the shared rule above.
+ */
+const MIN_TALL_LEVEL_HEIGHT_FRACTION = 0.5;
+const WIDE_LEVEL_IDS: readonly PuzzleId[] = ["first-pour"];
 
 type LevelGeometry = {
   readonly cupInterior: WorldBounds;
@@ -30,8 +37,9 @@ type LevelGeometry = {
 
 /**
  * Level geometry the frames must contain, hardcoded from the Rust level spec
- * and cross-checked once against the generated wasm (Phase 38 Plan 03 probe,
- * `target/phase38/level-probe.txt`).
+ * and cross-checked once against the generated wasm (first-pour: Phase 38
+ * Plan 03 probe, `target/phase38/level-probe.txt`; Phase 40 levels:
+ * `target/phase40/level-probe-<id>.txt`).
  */
 const LEVEL_GEOMETRY: Record<PuzzleId, LevelGeometry> = {
   "first-pour": {
@@ -44,6 +52,28 @@ const LEVEL_GEOMETRY: Record<PuzzleId, LevelGeometry> = {
     // captureFrame().particlePositions() extents (x -2.94..-0.66,
     // y 4.86..7.86, 1989 particles) widened by the particle radius.
     spawn: { minX: -2.96, minY: 4.84, maxX: -0.64, maxY: 7.9 },
+  },
+  "thick-syrup": {
+    // thick_syrup.rs cup_interior; levelInfo().cupInterior() = [1.8, 0, 3.8, 1.7] m (f32).
+    cupInterior: { minX: 1.8, minY: 0, maxX: 3.8, maxY: 1.7 },
+    // thick_syrup.rs build_area; levelInfo().buildArea() = grid [-36, 36, 32, 136] x 0.05 m.
+    buildArea: { minX: -1.8, minY: 1.8, maxX: 1.6, maxY: 6.8 },
+    // thick_syrup.rs WALLS; captureFrame().rigidSegments() extents: x -4..4, y -0.5..10.
+    walls: { minX: -4, minY: -0.5, maxX: 4, maxY: 10 },
+    // Syrup block; captureFrame().particlePositions() extents (x -3.72..-1.44,
+    // y 7.26..9.54, 1521 particles) widened by the 0.04 m particle radius.
+    spawn: { minX: -3.76, minY: 7.22, maxX: -1.4, maxY: 9.58 },
+  },
+  "jelly-pad": {
+    // jelly_pad.rs cup_interior; levelInfo().cupInterior() = [2, 2, 3.8, 3.4] m (f32).
+    cupInterior: { minX: 2, minY: 2, maxX: 3.8, maxY: 3.4 },
+    // jelly_pad.rs build_area; levelInfo().buildArea() = grid [-72, 96, -8, 152] x 0.05 m.
+    buildArea: { minX: -3.6, minY: 4.8, maxX: -0.4, maxY: 7.6 },
+    // jelly_pad.rs WALLS; captureFrame().rigidSegments() extents: x -4..4, y -0.5..11.
+    walls: { minX: -4, minY: -0.5, maxX: 4, maxY: 11 },
+    // Water block and jelly pad; captureFrame().particlePositions() extents
+    // (x -3.72..1.14, y 3.48..10.56, 1365 particles) widened by 0.04 m.
+    spawn: { minX: -3.76, minY: 3.44, maxX: 1.18, maxY: 10.6 },
   },
 };
 
@@ -112,6 +142,21 @@ describe("puzzle camera frames", () => {
     for (const fraction of fractions) {
       expect(fraction.width, fraction.id).toBeGreaterThan(MIN_WIDTH_FRACTION);
       expect(fraction.height, fraction.id).toBeGreaterThan(MIN_HEIGHT_FRACTION);
+    }
+  });
+
+  it("fills at least half an iPhone's height for every portrait-authored puzzle", () => {
+    // Arrange
+    const ids = PUZZLE_IDS.filter((id) => !WIDE_LEVEL_IDS.includes(id));
+
+    // Act
+    const fractions = ids.map((id) => ({ id, ...fittedFrameFraction(id, IPHONE) }));
+
+    // Assert
+    expect(fractions.length).toBeGreaterThan(0);
+    for (const fraction of fractions) {
+      expect(fraction.width, fraction.id).toBeGreaterThan(MIN_WIDTH_FRACTION);
+      expect(fraction.height, fraction.id).toBeGreaterThan(MIN_TALL_LEVEL_HEIGHT_FRACTION);
     }
   });
 

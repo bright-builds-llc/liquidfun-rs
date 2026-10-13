@@ -198,7 +198,7 @@ describe("puzzle level titles", () => {
     expect(title).toBe("First Pour");
   });
 
-  it("has no next level after the only level", () => {
+  it("links first-pour to the following registry level", () => {
     // Arrange
     const id = "first-pour";
 
@@ -206,6 +206,18 @@ describe("puzzle level titles", () => {
     const maybeNext = maybeNextPuzzleId(id);
 
     // Assert
+    expect(maybeNext).toBe("thick-syrup");
+  });
+
+  it("has no next level after the last level", () => {
+    // Arrange
+    const maybeLastId = PUZZLE_IDS.at(-1);
+
+    // Act
+    const maybeNext = maybeLastId && maybeNextPuzzleId(maybeLastId);
+
+    // Assert
+    expect(maybeLastId).toBeDefined();
     expect(maybeNext).toBeUndefined();
   });
 

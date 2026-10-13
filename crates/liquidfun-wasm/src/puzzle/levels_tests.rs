@@ -3,7 +3,7 @@
 //! the particle budget, and (release only) mostly still wins when its
 //! reference placements are nudged.
 //!
-//! A level plan adds its fixture pair to `FIXTURES` and, where it needs them,
+//! A level plan adds its fixture pair to `FIXTURES` and, in `level_proofs`,
 //! one-line tests calling `replay_fixture_file`, `assert_nudges_mostly_win`,
 //! `open_tick_sweep` or `run_spec_outcome`.
 
@@ -46,6 +46,22 @@ const FIXTURES: &[(&str, &str)] = &[
     (
         "first-pour-empty.txt",
         include_str!("fixtures/first-pour-empty.txt"),
+    ),
+    (
+        "thick-syrup-solution.txt",
+        include_str!("fixtures/thick-syrup-solution.txt"),
+    ),
+    (
+        "thick-syrup-empty.txt",
+        include_str!("fixtures/thick-syrup-empty.txt"),
+    ),
+    (
+        "jelly-pad-solution.txt",
+        include_str!("fixtures/jelly-pad-solution.txt"),
+    ),
+    (
+        "jelly-pad-empty.txt",
+        include_str!("fixtures/jelly-pad-empty.txt"),
     ),
 ];
 
@@ -579,13 +595,6 @@ fn step_zero_particles_fit_the_budget() {
     }
 }
 
-/// Debug runs are too slow for the sweep; run it with `--release`.
-#[test]
-#[cfg_attr(debug_assertions, ignore = "release-only nudge sweep (D-16)")]
-fn first_pour_nudges_mostly_win() {
-    assert_nudges_mostly_win("first-pour-solution.txt");
-}
-
 #[test]
 #[ignore = "informational D-23 timing; cargo test -p liquidfun-wasm --release --lib puzzle::levels_tests::level_step_costs -- --ignored --nocapture"]
 fn level_step_costs() {
@@ -613,3 +622,5 @@ fn level_step_costs() {
         assert!(ms_per_step.is_finite());
     }
 }
+
+mod level_proofs;

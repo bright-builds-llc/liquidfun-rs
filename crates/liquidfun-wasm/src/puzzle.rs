@@ -27,16 +27,15 @@ pub(crate) enum LevelId {
     /// "First Pour": plain water poured toward a cup.
     FirstPour,
     /// "Thick Syrup": viscous liquid needs a steeper path.
-    #[cfg_attr(not(test), allow(dead_code))] // Draft until it joins LEVEL_IDS.
     ThickSyrup,
     /// "Jelly Pad": an uncounted elastic pad turns the stream toward the cup.
-    #[cfg_attr(not(test), allow(dead_code))] // Draft until it joins LEVEL_IDS.
     JellyPad,
 }
 
-/// Every allowlisted level, in catalog order. Mirrored by `PUZZLE_IDS` in
-/// `web/src/catalog/puzzles.ts`.
-pub(crate) const LEVEL_IDS: [LevelId; 1] = [LevelId::FirstPour];
+/// Every allowlisted level, in catalog (Phase 40 D-09) order. Mirrored by
+/// `PUZZLE_IDS` in `web/src/catalog/puzzles.ts`.
+pub(crate) const LEVEL_IDS: [LevelId; 3] =
+    [LevelId::FirstPour, LevelId::ThickSyrup, LevelId::JellyPad];
 
 impl LevelId {
     /// Stable kebab-case id shared with the web catalog.

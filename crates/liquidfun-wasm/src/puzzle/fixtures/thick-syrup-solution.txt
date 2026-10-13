@@ -1,0 +1,8 @@
+level thick-syrup
+placement plank -18 100 22
+placement plank 18 60 21
+outcome won
+outcome_step 440
+final_count 660
+peak_held 705
+brim_step 501

@@ -1,0 +1,7 @@
+level jelly-pad
+placement plank -40 120 22
+outcome won
+outcome_step 351
+final_count 500
+peak_held 630
+brim_step 447

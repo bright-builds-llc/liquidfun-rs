@@ -3,6 +3,8 @@ import { PUZZLE_IDS, type PuzzleId } from "./puzzles";
 /** Level titles available before wasm loads; checked against `levelInfo().title` at load (D-26). */
 export const PUZZLE_TITLES: Readonly<Record<PuzzleId, string>> = {
   "first-pour": "First Pour",
+  "thick-syrup": "Thick Syrup",
+  "jelly-pad": "Jelly Pad",
 };
 
 /**
@@ -11,6 +13,8 @@ export const PUZZLE_TITLES: Readonly<Record<PuzzleId, string>> = {
  */
 export const PUZZLE_CAPTIONS: Readonly<Record<PuzzleId, string>> = {
   "first-pour": "Water runs downhill. Tilt a plank to pour it into the cup.",
+  "thick-syrup": "Syrup is thick and slow. Give it a steep slide.",
+  "jelly-pad": "Jelly never counts, but water slides across it. Drop the water onto the pad.",
 };
 
 /** First-level placement hint (LEVEL-03), shown on the caption leaf until dismissed. */

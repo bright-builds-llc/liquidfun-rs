@@ -421,7 +421,7 @@ describe("puzzle-replay fixture parser", () => {
 
     // Assert
     expect(fixtures.map((fixture) => fixture.maybeExpectation?.outcome)).toEqual(
-      ["won", "lost"],
+      FIXTURE_FILES.map((file) => (file.endsWith("-solution.txt") ? "won" : "lost")),
     );
   });
 });

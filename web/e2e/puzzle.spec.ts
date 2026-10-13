@@ -39,7 +39,8 @@ const ENDED_TIMEOUT_MS = 60_000;
 // Zero placements show the goal plus the tray hint (Phase 39 UI-SPEC empty state).
 const EMPTY_BUILDING_TEXT =
   "Fill the cup to 60% before time runs out. Pick a tool from the tray to start.";
-const NO_NEXT_LEVEL = "Next: No next level yet";
+// first-pour's Next links to the following registry level (D-14).
+const NEXT_LEVEL_HREF = "#/puzzle/thick-syrup";
 const EMPTY_HELD_STEP = "840";
 // Won-run literals follow the D-10 decision step, derived from the fixture.
 const SOLUTION = solutionExpectation();
@@ -87,7 +88,10 @@ function fillMeter(page: Page) {
 }
 
 async function expectResultActions(page: Page): Promise<void> {
-  await expect(page.getByRole("button", { name: NO_NEXT_LEVEL })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Next level" })).toHaveAttribute(
+    "href",
+    NEXT_LEVEL_HREF,
+  );
   await expect(page.getByRole("button", { name: "Retry" })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Edit" })).toBeEnabled();
 }
