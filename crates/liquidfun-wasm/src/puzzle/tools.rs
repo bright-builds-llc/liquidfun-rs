@@ -232,45 +232,51 @@ pub(super) fn check_lanes(kinds: &[u8], poses: &[i32]) -> Result<(), PlacementEr
     Ok(())
 }
 
-/// The placement a raw pose describes, ignoring budget and build area, so an
-/// out-of-area or disallowed tool still has an outline to draw. `None` when
-/// the kind, angle or grid position cannot describe a tool.
+/// The placement a raw pose describes, ignoring budget and build area, for
+/// tests that need a tool outline. `None` when the kind, angle or grid
+/// position cannot describe a tool.
+#[cfg(test)]
 pub(super) fn pose_placement(code: u8, pose: &[i32]) -> Option<Placement> {
-    let [x, y, angle] = *pose else {
-        return None;
-    };
-    Some(Placement {
-        kind: ToolKind::from_code(code)?,
-        x: i16::try_from(x).ok()?,
-        y: i16::try_from(y).ok()?,
-        angle: u8::try_from(angle).ok().and_then(AngleIndex::new)?,
-    })
+    decode_pose(code, pose).ok()
 }
 
-/// Parses one stride-3 pose, failing at the first Phase 37 rule it breaks.
-pub(super) fn parse_one(
-    code: u8,
-    pose: &[i32],
-    budget: &[ToolAllowance],
-    build_area: GridRect,
-) -> Result<Placement, PlacementError> {
+/// Decodes the kind, angle and grid position of one stride-3 pose, in that
+/// order. This is the only pose decoder, so [`parse_one`] and the inspector's
+/// outline lane cannot disagree about which poses describe a tool.
+pub(super) fn decode_pose(code: u8, pose: &[i32]) -> Result<Placement, PlacementError> {
     let [x, y, angle] = *pose else {
         return Err(PlacementError::LaneLengthMismatch);
     };
     let kind = ToolKind::from_code(code).ok_or(PlacementError::UnknownToolKind)?;
-    if !budget.iter().any(|allowance| allowance.kind == kind) {
-        return Err(PlacementError::ToolNotAllowed);
-    }
     let angle = u8::try_from(angle)
         .ok()
         .and_then(AngleIndex::new)
         .ok_or(PlacementError::AngleOutOfRange)?;
     let x = i16::try_from(x).map_err(|_error| PlacementError::PositionOutOfRange)?;
     let y = i16::try_from(y).map_err(|_error| PlacementError::PositionOutOfRange)?;
-    if !build_area.contains(x, y) {
+    Ok(Placement { kind, x, y, angle })
+}
+
+/// Parses one stride-3 pose, failing at the first Phase 37 rule it breaks:
+/// kind, allowance, angle, position, build area.
+pub(super) fn parse_one(
+    code: u8,
+    pose: &[i32],
+    budget: &[ToolAllowance],
+    build_area: GridRect,
+) -> Result<Placement, PlacementError> {
+    if pose.len() != POSE_STRIDE {
+        return Err(PlacementError::LaneLengthMismatch);
+    }
+    let kind = ToolKind::from_code(code).ok_or(PlacementError::UnknownToolKind)?;
+    if !budget.iter().any(|allowance| allowance.kind == kind) {
+        return Err(PlacementError::ToolNotAllowed);
+    }
+    let placement = decode_pose(code, pose)?;
+    if !build_area.contains(placement.x, placement.y) {
         return Err(PlacementError::OutsideBuildArea);
     }
-    Ok(Placement { kind, x, y, angle })
+    Ok(placement)
 }
 
 fn check_budget(placements: &[Placement], budget: &[ToolAllowance]) -> Result<(), PlacementError> {

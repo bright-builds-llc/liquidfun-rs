@@ -12,7 +12,7 @@ use super::sat::{rect_quad, separated_by_more_than};
 use super::spec::LevelSpec;
 use super::tools::{
     GRID_CELLS_PER_METER, GridRect, POSE_STRIDE, Placement, PlacementError, Placements, ToolKind,
-    check_lanes, parse_one, pose_placement,
+    check_lanes, decode_pose, parse_one,
 };
 use super::{level_spec, parse_level_id};
 use crate::session::SessionError;
@@ -105,7 +105,9 @@ impl PlacementStatus {
 pub(crate) struct Inspection {
     /// [`PlacementStatus`] codes.
     pub(crate) statuses: Vec<u8>,
-    /// Baked world-space corners, or eight zeros when the pose has no outline.
+    /// Baked world-space corners. Eight zeros exactly when the status is
+    /// `UnknownKind`, `AngleOutOfRange` or `PositionOutOfRange`, the wire rule
+    /// `isGeometricStatus` in `web/src/puzzle/placement-status.ts` relies on.
     pub(crate) outlines: Vec<f32>,
 }
 
@@ -172,8 +174,13 @@ pub(crate) fn inspect_level(
 
 type Quad = [Vec2; 4];
 
-/// Statuses and outlines in input order. Precedence per placement: the Phase
-/// 37 parse rules, then [`first_overlap`], then the per-kind budget.
+/// Statuses and outlines in input order. Precedence per placement: pose
+/// decoding (kind, angle, position), then the Phase 37 allowance and
+/// build-area rules, then [`first_overlap`], then the per-kind budget.
+///
+/// Decoding comes first so the status alone says whether an outline exists:
+/// a disallowed kind with an undecodable pose reports the decoding reason
+/// rather than `KindNotAllowed` with an all-zero outline.
 fn placement_statuses(
     spec: &LevelSpec,
     kinds: &[u8],
@@ -183,16 +190,29 @@ fn placement_statuses(
     let mut statuses = Vec::with_capacity(kinds.len());
     let mut quads = Vec::with_capacity(kinds.len());
     for (&code, pose) in kinds.iter().zip(poses.chunks_exact(POSE_STRIDE)) {
-        let status = match parse_one(code, pose, spec.tool_budget, spec.build_area) {
-            Ok(_placement) => PlacementStatus::Valid,
-            Err(error) => PlacementStatus::from_error(error).ok_or(error)?,
+        let (status, maybe_quad) = match decode_pose(code, pose) {
+            Err(error) => (status_for(Err(error))?, None),
+            Ok(placement) => {
+                let parsed = parse_one(code, pose, spec.tool_budget, spec.build_area);
+                (status_for(parsed)?, Some(placement.vertices()))
+            }
         };
         statuses.push(status);
-        quads.push(pose_placement(code, pose).map(Placement::vertices));
+        quads.push(maybe_quad);
     }
     mark_overlaps(spec, &mut statuses, &quads);
     mark_over_budget(spec, kinds, &mut statuses);
     Ok((statuses, quads))
+}
+
+/// The status for one parse result; lane-level errors reject the request.
+fn status_for(
+    parsed: Result<Placement, PlacementError>,
+) -> Result<PlacementStatus, PlacementError> {
+    match parsed {
+        Ok(_placement) => Ok(PlacementStatus::Valid),
+        Err(error) => PlacementStatus::from_error(error).ok_or(error),
+    }
 }
 
 /// Marks still-valid placements whose outline overlaps an obstacle. A tool

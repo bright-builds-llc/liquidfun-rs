@@ -255,6 +255,47 @@ fn poses_without_an_outline_emit_zeros() {
 }
 
 #[test]
+fn a_disallowed_kind_without_an_outline_reports_the_decoding_reason() {
+    // Arrange
+    let kinds = [1, 1, 0, 1];
+    let reference = REFERENCE_PLANK_POSE;
+    let poses = [[8, 64, 24], [40_000, 64, 0], reference, reference];
+    let non_geometric = [
+        PlacementStatus::UnknownKind,
+        PlacementStatus::AngleOutOfRange,
+        PlacementStatus::PositionOutOfRange,
+    ]
+    .map(PlacementStatus::code);
+
+    // Act
+    let inspection =
+        inspect(&NO_TOOLS, &kinds, poses.as_flattened()).expect("lanes are well formed");
+
+    // Assert
+    assert_eq!(
+        inspection.statuses,
+        codes(&[
+            PlacementStatus::AngleOutOfRange,
+            PlacementStatus::PositionOutOfRange,
+            PlacementStatus::UnknownKind,
+            PlacementStatus::KindNotAllowed,
+        ])
+    );
+    for (status, outline) in inspection
+        .statuses
+        .iter()
+        .zip(inspection.outlines.chunks_exact(OUTLINE_STRIDE))
+    {
+        let has_outline = outline.iter().any(|value| *value != 0.0);
+        assert_eq!(
+            has_outline,
+            !non_geometric.contains(status),
+            "status {status}"
+        );
+    }
+}
+
+#[test]
 fn more_than_sixteen_placements_fail_the_request() {
     // Arrange
     let kinds = [1_u8; MAX_PLACEMENTS + 1];
