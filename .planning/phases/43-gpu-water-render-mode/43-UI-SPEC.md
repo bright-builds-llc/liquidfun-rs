@@ -263,7 +263,7 @@ Rules:
 - **Disabled reason:** carried in the option text itself, so it is readable by sight and by screen reader without a separate description.
 - **Focus ring:** existing `select:focus-visible` outline (`2px solid #4DA3FF`, offset 4px).
 - **Non-color cues:** material identity stays in each particle's own hue (UI-D42); foam and highlights are decorative and carry no game information. The cup fill, target line and meter keep their own shapes, colors and keylines above the water.
-- **Contrast:** overlays keep dark keylines over the brightest foam (`#F4F7FA * 0.85` blend); foam never reaches flat `#FFFFFF` (UI-D44).
+- **Contrast:** overlays keep dark keylines over the brightest foam (`#F4F7FA * 0.85` blend); the foam blend alone never reaches flat `#FFFFFF` (UI-D44); the specular term is scaled by `(1 - foam)` so highlights do not stack on strong foam.
 - **Reduced motion:** the water look adds no animation of its own (UI-D46). `prefers-reduced-motion` needs no special case. Fallback switches are instant, not animated.
 - **Live regions:** none added.
 - **Text safety:** every rendered string is a TS constant; no `innerHTML`.
