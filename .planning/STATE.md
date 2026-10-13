@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Phase 43 UI-SPEC approved
-last_updated: "2026-10-13T23:39:03.802Z"
-last_activity: 2026-10-13 -- Phase 43 planning complete
+stopped_at: Completed 43-01-PLAN.md
+last_updated: "2026-10-13T23:57:28.507Z"
+last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 55
-  percent: 90
+  completed_plans: 56
+  percent: 92
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 42 — Opt-in Sound
+**Current focus:** Phase 43 — GPU Water Render Mode
 
 ## Current Position
 
-Phase: 43
-Plan: Not started
+Phase: 43 (GPU Water Render Mode) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-10-13 -- Phase 43 planning complete
+Last activity: 2026-10-13
 
 Progress: [██████████] 100%
 
@@ -171,6 +171,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 42]: 42-04: unavailable toggle is a separate disabled button behind Show; on/off share one button so focus stays; probe boxes match the UI-SPEC fit table (8 px clearance at all 5 viewports)
 - [Phase 42]: 42-05: sound on/off first-pour runs give identical RunFingerprint (outcome 201, decided 262, peak 811, hash 0cf8c2703dcd8fac); 16 source starts with sound on
 - [Phase 42]: 42-05: 32/32 phase gates exit=0 on first full run; 25/25 scene fingerprints identical to base
+- [Phase 43]: 43-01: speed lane is a stateless per-capture flag (captureFrame(true)); lane = length_squared().sqrt() from the same velocity read so max(lane) == maxSpeed bit for bit; TS parses RenderFrame.maybeParticleSpeeds fail closed (52eec199e, 62e62e041)
+- [Phase 43]: 43-01: SessionCore::capture_frame() (no lane) is #[cfg(test)]; wasm uses capture_frame_with_speeds; on/off 120-step proofs bit-identical for dam-break and first-pour
+- [Phase 43]: 43-01: baseline target/phase43/base.txt from scene-spot 2026-10-13T23-40-01Z at 2653fd987, identical to Phase 42 after-postfix; after-01 25/25 identical; wasm replay 6 LEVELHASH + 14 REPLAY pass
 
 ### Pending Todos
 
@@ -288,9 +291,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 42 P03 | 8min | 3 tasks | 15 files |
 | Phase 42 P04 | 5min | 2 tasks | 7 files |
 | Phase 42 P05 | 20min | 2 tasks | 3 files |
+| Phase 43 P01 | 17min | 3 tasks | 9 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T23:18:27.994Z
-Stopped at: Phase 43 UI-SPEC approved
-Resume file: .planning/phases/43-gpu-water-render-mode/43-UI-SPEC.md
+Last session: 2026-10-13T23:57:28.504Z
+Stopped at: Completed 43-01-PLAN.md
+Resume file: None
