@@ -150,7 +150,7 @@ describe("beginPuzzleRoute", () => {
     const lanes = loader.mock.calls[0]?.[1];
     expect(Array.from(lanes?.kinds ?? [9])).toEqual([]);
     expect(host.puzzle.current.editor.tools.map((tool) => tool.placement)).toEqual([
-      { kind: "plank", x: 8, y: 64, angle: 23 },
+      { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
     ]);
   });
 

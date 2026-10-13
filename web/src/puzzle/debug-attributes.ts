@@ -1,11 +1,19 @@
 import { canonicalPlacements, type BuildingEditor } from "./editor";
+import type { PuzzlePlacement } from "./placements";
 import { canPlay, isDeciding, type PuzzleState } from "./reduce-puzzle";
 
-/** Canonical `kind:x,y,angle` placements joined by `;` (D-27); empty for none. */
+/**
+ * One placement token: `plank:x,y,angle` (the Phase 39 form, kept so its e2e
+ * literals stay valid) or `valve:x,y,angle,openTick` (Phase 40 D-02).
+ */
+function placementToken(placement: PuzzlePlacement): string {
+  const pose = `${placement.kind}:${placement.x},${placement.y},${placement.angle}`;
+  return placement.kind === "valve" ? `${pose},${placement.openTick}` : pose;
+}
+
+/** Canonical placement tokens joined by `;` (D-27); empty for none. */
 function placementsAttribute(editor: BuildingEditor): string {
-  return canonicalPlacements(editor)
-    .map((placement) => `${placement.kind}:${placement.x},${placement.y},${placement.angle}`)
-    .join(";");
+  return canonicalPlacements(editor).map(placementToken).join(";");
 }
 
 /** Creation-order index of the selected tool, or empty. */

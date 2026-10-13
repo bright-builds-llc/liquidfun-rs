@@ -90,7 +90,7 @@ function stepped(state: PuzzleState, stepIndex: number, frameStatus: PuzzleFrame
 describe("reducePuzzle loading", () => {
   it("resets into loading with the given placements and speed", () => {
     // Arrange
-    const placements = [{ kind: "plank", x: 8, y: 64, angle: 23 }] as const;
+    const placements = [{ kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 }] as const;
 
     // Act
     const next = reducePuzzle(building(), { kind: "reset", placements, speed: 2 });
@@ -396,7 +396,7 @@ describe("reducePuzzle retry, edit and reset", () => {
     ["edit", false],
   ] as const)("%s from ended carries the editor and speed into loading", (kind, pendingRun) => {
     // Arrange
-    const editor = editorFromPlacements([{ kind: "plank", x: 8, y: 64, angle: 23 }], BUDGET);
+    const editor = editorFromPlacements([{ kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 }], BUDGET);
     const state: PuzzleState = { ...endedLost(), editor, speed: 4 };
 
     // Act

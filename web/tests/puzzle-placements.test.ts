@@ -5,15 +5,18 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_VALVE_OPEN_TICK,
   EMPTY_PLACEMENTS,
   PUZZLE_TEST_PLACEMENTS_GLOBAL,
+  defaultOpenTick,
   encodePlacementLanes,
   maybeReadTestPlacements,
   type PuzzlePlacement,
 } from "../src/puzzle/placements";
 
 const WEB_SRC = join(dirname(fileURLToPath(import.meta.url)), "../src");
-const SOLUTION_PLANK: PuzzlePlacement = { kind: "plank", x: 8, y: 64, angle: 23 };
+const SOLUTION_PLANK: PuzzlePlacement = { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 };
+const REFERENCE_VALVE: PuzzlePlacement = { kind: "valve", x: -16, y: 87, angle: 0, openTick: 4 };
 
 function seam(value: unknown): object {
   return { [PUZZLE_TEST_PLACEMENTS_GLOBAL]: value };
@@ -36,12 +39,23 @@ describe("encodePlacementLanes", () => {
     expect(Array.from(lanes.kinds)).toEqual([1]);
   });
 
-  it("encodes x, y and angle into the poses lane", () => {
+  it("encodes x, y, angle and open tick 0 into the poses lane", () => {
     // Act
     const lanes = encodePlacementLanes([SOLUTION_PLANK]);
 
     // Assert
-    expect(Array.from(lanes.poses)).toEqual([8, 64, 23]);
+    expect(Array.from(lanes.poses)).toEqual([8, 64, 23, 0]);
+  });
+
+  it("encodes a plank and a valve as stride-4 lanes in order", () => {
+    // Act
+    const lanes = encodePlacementLanes([SOLUTION_PLANK, REFERENCE_VALVE]);
+
+    // Assert
+    expect([Array.from(lanes.kinds), Array.from(lanes.poses)]).toEqual([
+      [1, 2],
+      [8, 64, 23, 0, -16, 87, 0, 4],
+    ]);
   });
 
   it.each([
@@ -50,6 +64,8 @@ describe("encodePlacementLanes", () => {
     ["an infinite angle", { angle: Number.POSITIVE_INFINITY }],
     ["an x above the i32 range", { x: 2 ** 31 }],
     ["an x below the i32 range", { x: -(2 ** 31) - 1 }],
+    ["a fractional open tick", { openTick: 4.5 }],
+    ["an open tick above the i32 range", { openTick: 2 ** 31 }],
   ])("rejects %s instead of coercing it", (_label, override) => {
     // Arrange
     const placement = { ...SOLUTION_PLANK, ...override };
@@ -69,18 +85,36 @@ describe("encodePlacementLanes", () => {
     const lanes = encodePlacementLanes([placement]);
 
     // Assert
-    expect(Array.from(lanes.poses)).toEqual([-(2 ** 31), 2 ** 31 - 1, 23]);
+    expect(Array.from(lanes.poses)).toEqual([-(2 ** 31), 2 ** 31 - 1, 23, 0]);
   });
 
   it("rejects an unknown tool kind", () => {
     // Arrange
-    const placement = { ...SOLUTION_PLANK, kind: "valve" } as unknown as PuzzlePlacement;
+    const placement = { ...SOLUTION_PLANK, kind: "gate" } as unknown as PuzzlePlacement;
 
     // Act
     const act = () => encodePlacementLanes([placement]);
 
     // Assert
     expect(act).toThrow("Invalid puzzle placement");
+  });
+});
+
+describe("defaultOpenTick", () => {
+  it("starts a new valve at 2.0 s", () => {
+    // Act
+    const openTick = defaultOpenTick("valve");
+
+    // Assert
+    expect([openTick, DEFAULT_VALVE_OPEN_TICK]).toEqual([4, 4]);
+  });
+
+  it("starts a new plank at open tick 0", () => {
+    // Act
+    const openTick = defaultOpenTick("plank");
+
+    // Assert
+    expect(openTick).toBe(0);
   });
 });
 
@@ -116,6 +150,34 @@ describe("maybeReadTestPlacements", () => {
     expect(maybePlacements?.[0]).not.toBe(input);
   });
 
+  it("reads a valve seam entry with its open tick", () => {
+    // Arrange
+    const source = seam({
+      level: "first-pour",
+      placements: [{ kind: "valve", x: -16, y: 87, angle: 0, openTick: 6 }],
+    });
+
+    // Act
+    const maybePlacements = maybeReadTestPlacements(source, "first-pour");
+
+    // Assert
+    expect(maybePlacements).toEqual([{ kind: "valve", x: -16, y: 87, angle: 0, openTick: 6 }]);
+  });
+
+  it("reads a seam entry without an open tick as open tick 0", () => {
+    // Arrange
+    const source = seam({
+      level: "first-pour",
+      placements: [{ kind: "plank", x: 8, y: 64, angle: 23 }],
+    });
+
+    // Act
+    const maybePlacements = maybeReadTestPlacements(source, "first-pour");
+
+    // Assert
+    expect(maybePlacements).toEqual([SOLUTION_PLANK]);
+  });
+
   it("rejects placements that name another level", () => {
     // Arrange
     const source = seam({ level: "second-pour", placements: [] });
@@ -139,7 +201,11 @@ describe("maybeReadTestPlacements", () => {
     ],
     [
       "a placement with a string x",
-      { level: "first-pour", placements: [{ kind: "plank", x: "8", y: 64, angle: 23 }] },
+      { level: "first-pour", placements: [{ kind: "plank", x: "8", y: 64, angle: 23, openTick: 0 }] },
+    ],
+    [
+      "a placement with a string open tick",
+      { level: "first-pour", placements: [{ kind: "valve", x: -16, y: 87, angle: 0, openTick: "4" }] },
     ],
     ["a null placement", { level: "first-pour", placements: [null] }],
   ])("rejects a malformed seam: %s", (_label, value) => {
@@ -157,7 +223,7 @@ describe("maybeReadTestPlacements", () => {
     // Arrange
     const source = seam({
       level: "first-pour",
-      placements: [{ kind: "plank", x: 8.5, y: 64, angle: 23 }],
+      placements: [{ kind: "plank", x: 8.5, y: 64, angle: 23, openTick: 0 }],
     });
 
     // Act

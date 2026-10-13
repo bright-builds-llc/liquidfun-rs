@@ -18,8 +18,8 @@ const QUAD = [
   { x: 0, y: 1 },
 ] as const;
 const TWO_PLANKS: readonly PuzzlePlacement[] = [
-  { kind: "plank", x: 8, y: 64, angle: 0 },
-  { kind: "plank", x: 20, y: 64, angle: 0 },
+  { kind: "plank", x: 8, y: 64, angle: 0, openTick: 0 },
+  { kind: "plank", x: 20, y: 64, angle: 0, openTick: 0 },
 ];
 
 /** Stores a committed inspection for the editor's current revision. */

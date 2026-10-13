@@ -129,7 +129,7 @@ describe("reducePuzzle edit events", () => {
 
     // Assert
     expect(next.editor.tools).toEqual([
-      { id: 1, placement: { kind: "plank", x: 10, y: 64, angle: 0 } },
+      { id: 1, placement: { kind: "plank", x: 10, y: 64, angle: 0, openTick: 0 } },
     ]);
     expect(next.editor.maybeSelectedId).toBe(1);
     expect(next.editor.maybeArmedKind).toBeUndefined();
@@ -341,7 +341,7 @@ describe("edit-history fingerprint (D-27 level 1)", () => {
 
   it("three place, remove, re-place and Play/Stop rounds equal one clean placement", () => {
     // Arrange
-    const clean = [{ kind: "plank", x: 8, y: 64, angle: 23 }] as const;
+    const clean = [{ kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 }] as const;
     const start = building();
 
     // Act

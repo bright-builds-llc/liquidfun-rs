@@ -44,10 +44,10 @@ vi.mock("../src/physics/puzzle-loader", () => ({
 }));
 
 const SEAM_PLACEMENTS: readonly PuzzlePlacement[] = [
-  { kind: "plank", x: 12, y: 64, angle: 0 },
-  { kind: "plank", x: 8, y: 64, angle: 23 },
+  { kind: "plank", x: 12, y: 64, angle: 0, openTick: 0 },
+  { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
 ];
-const ONE_PLANK: readonly PuzzlePlacement[] = [{ kind: "plank", x: 8, y: 64, angle: 23 }];
+const ONE_PLANK: readonly PuzzlePlacement[] = [{ kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 }];
 const ZERO_QUAD = [
   { x: 0, y: 0 },
   { x: 0, y: 0 },
@@ -156,7 +156,7 @@ describe("Play", () => {
     // Assert
     expect(lanesOf(syncBuild.mock.calls[0])).toEqual({
       kinds: [1, 1],
-      poses: [8, 64, 23, 12, 64, 0],
+      poses: [8, 64, 23, 0, 12, 64, 0, 0],
     });
     expect(preview.free).toHaveBeenCalledTimes(1);
     expect(host.puzzle.state().kind).toBe("running");
@@ -402,7 +402,7 @@ describe("Retry and Edit", () => {
     await flushMicrotasks();
 
     // Assert
-    expect(lanesOf(loader.mock.calls[1])).toEqual({ kinds: [1, 1], poses: [8, 64, 23, 12, 64, 0] });
+    expect(lanesOf(loader.mock.calls[1])).toEqual({ kinds: [1, 1], poses: [8, 64, 23, 0, 12, 64, 0, 0] });
     expect(host.puzzle.state().kind).toBe("running");
     expect(host.puzzle.state().editor.tools).toHaveLength(2);
     expect(host.puzzle.maybeHeldHash()).toBeUndefined();

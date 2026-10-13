@@ -381,6 +381,28 @@ describe("trayModel and selectionBarEnabled", () => {
     ]);
   });
 
+  it("labels a valve budget item \"Valve\" after the plank", () => {
+    // Arrange
+    const state = reducePuzzle(INITIAL_PUZZLE_STATE, {
+      kind: "loaded",
+      stepIndex: 0,
+      status: status(),
+      budget: [
+        { kind: "plank", count: 2 },
+        { kind: "valve", count: 1 },
+      ],
+    });
+
+    // Act
+    const items = trayModel(state);
+
+    // Assert
+    expect(items.map((item) => [item.kind, item.label])).toEqual([
+      ["plank", "Plank"],
+      ["valve", "Valve"],
+    ]);
+  });
+
   it("disables the tray outside building", () => {
     // Act
     const items = trayModel(running(10));

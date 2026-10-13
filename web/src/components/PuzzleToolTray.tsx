@@ -3,7 +3,7 @@ import { Index, createMemo } from "solid-js";
 import { trayModel } from "../puzzle/hud-format";
 import type { PuzzleToolKind } from "../puzzle/placements";
 import type { PuzzleState } from "../puzzle/reduce-puzzle";
-import { PlankIcon } from "./PuzzleIcons";
+import { PlankIcon, ValveIcon } from "./PuzzleIcons";
 
 export type PuzzleToolTrayProps = {
   readonly state: PuzzleState;
@@ -15,6 +15,8 @@ function ToolKindIcon(props: { readonly kind: PuzzleToolKind }) {
   switch (props.kind) {
     case "plank":
       return <PlankIcon />;
+    case "valve":
+      return <ValveIcon />;
     default: {
       const unreachable: never = props.kind;
       return unreachable;

@@ -37,8 +37,8 @@ function status(overrides: Partial<PuzzleFrameStatus> = {}): PuzzleFrameStatus {
 function twoPlanks(): BuildingEditor {
   const editor = editorFromPlacements(
     [
-      { kind: "plank", x: 30, y: 84, angle: 0 },
-      { kind: "plank", x: 8, y: 64, angle: 23 },
+      { kind: "plank", x: 30, y: 84, angle: 0, openTick: 0 },
+      { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
     ],
     [{ kind: "plank", count: 3 }],
   );
@@ -94,6 +94,27 @@ describe("puzzleDebugAttributes", () => {
       "data-puzzle-play-enabled": "true",
       "data-puzzle-deciding": "false",
     });
+  });
+
+  it("writes valves as kind:x,y,angle,openTick and keeps the plank form", () => {
+    // Arrange
+    const editor = editorFromPlacements(
+      [
+        { kind: "valve", x: -16, y: 87, angle: 0, openTick: 4 },
+        { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
+      ],
+      [
+        { kind: "plank", count: 1 },
+        { kind: "valve", count: 1 },
+      ],
+    );
+    const state: PuzzleState = { kind: "building", status: status(), editor, speed: 1 };
+
+    // Act
+    const attributes = puzzleDebugAttributes(state, undefined);
+
+    // Assert
+    expect(attributes["data-puzzle-placements"]).toBe("plank:8,64,23;valve:-16,87,0,4");
   });
 
   it("uses empty strings for an empty building editor", () => {

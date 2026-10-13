@@ -1,6 +1,11 @@
 import type { Point } from "../render/camera";
 import type { PlacementInspection } from "./placement-status";
-import { PUZZLE_TOOL_CODES, type PuzzlePlacement, type PuzzleToolKind } from "./placements";
+import {
+  defaultOpenTick,
+  PUZZLE_TOOL_CODES,
+  type PuzzlePlacement,
+  type PuzzleToolKind,
+} from "./placements";
 
 /** One placed tool; ids are editor-local and never reach wasm. */
 export type EditorTool = { readonly id: number; readonly placement: PuzzlePlacement };
@@ -71,7 +76,8 @@ function updateTool(
   const unchanged =
     placement.x === maybeTool.placement.x &&
     placement.y === maybeTool.placement.y &&
-    placement.angle === maybeTool.placement.angle;
+    placement.angle === maybeTool.placement.angle &&
+    placement.openTick === maybeTool.placement.openTick;
   if (unchanged) {
     return editor;
   }
@@ -87,7 +93,9 @@ export function editorFromPlacements(
   placements: readonly PuzzlePlacement[],
   budget: readonly ToolAllowance[] = [],
 ): BuildingEditor {
-  placements.forEach((placement) => checkCells(placement.x, placement.y, placement.angle));
+  placements.forEach((placement) =>
+    checkCells(placement.x, placement.y, placement.angle, placement.openTick),
+  );
   const tools = placements.map((placement, index) => ({ id: index + 1, placement }));
   return { ...EMPTY_EDITOR, tools, nextId: tools.length + 1, budget };
 }
@@ -126,7 +134,10 @@ export function disarm(editor: BuildingEditor): BuildingEditor {
   return editor.maybeArmedKind === undefined ? editor : { ...editor, maybeArmedKind: undefined };
 }
 
-/** Places one tool at angle 0, selects it and disarms; ignored when the budget is spent (D-23). */
+/**
+ * Places one tool at angle 0 with its kind's default open tick, selects it
+ * and disarms; ignored when the budget is spent (D-23, Phase 40 D-05).
+ */
 export function placeTool(
   editor: BuildingEditor,
   kind: PuzzleToolKind,
@@ -139,7 +150,10 @@ export function placeTool(
   }
 
   const id = editor.nextId;
-  const tool: EditorTool = { id, placement: { kind, x, y, angle: 0 } };
+  const tool: EditorTool = {
+    id,
+    placement: { kind, x, y, angle: 0, openTick: defaultOpenTick(kind) },
+  };
   return {
     ...withTools(editor, [...editor.tools, tool]),
     nextId: id + 1,
@@ -283,11 +297,12 @@ function comparePlacements(a: PuzzlePlacement, b: PuzzlePlacement): number {
     PUZZLE_TOOL_CODES[a.kind] - PUZZLE_TOOL_CODES[b.kind] ||
     a.x - b.x ||
     a.y - b.y ||
-    a.angle - b.angle
+    a.angle - b.angle ||
+    a.openTick - b.openTick
   );
 }
 
-/** Placements sorted by (kind code, x, y, angle), matching Rust `Placement: Ord` (D-27). */
+/** Placements sorted by (kind code, x, y, angle, openTick), matching Rust `Placement: Ord` (D-27, Phase 40 D-02). */
 export function canonicalPlacements(editor: BuildingEditor): readonly PuzzlePlacement[] {
   return [...placementsInOrder(editor)].sort(comparePlacements);
 }

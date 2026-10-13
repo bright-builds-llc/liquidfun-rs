@@ -15,6 +15,7 @@ export const PLACEMENT_STATUS = {
   overlapsWater: 10,
   overlapsTool: 11,
   overlapsNoPlace: 12,
+  valveTimeOutOfRange: 13,
 } as const;
 
 /** One inspector status code. */
@@ -29,7 +30,7 @@ export type PlacementInspection = {
   readonly outlines: readonly (Quad | undefined)[];
 };
 
-const MAX_STATUS_CODE = PLACEMENT_STATUS.overlapsNoPlace;
+const MAX_STATUS_CODE = PLACEMENT_STATUS.valveTimeOutOfRange;
 
 /** Player-facing short reasons for every invalid status (D-20, UI-SPEC). */
 const REASONS: Readonly<Record<Exclude<PlacementStatusCode, 0>, string>> = {
@@ -45,6 +46,7 @@ const REASONS: Readonly<Record<Exclude<PlacementStatusCode, 0>, string>> = {
   10: "Overlaps the water",
   11: "Overlaps another tool",
   12: "In a no-build zone",
+  13: "Valve time out of range",
 };
 
 /** True for an integer status the Rust inspector can return. */

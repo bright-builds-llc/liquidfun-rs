@@ -140,7 +140,7 @@ function throwingPuzzle(session: SceneRuntime): SceneRuntime {
 }
 
 function buildingWithOnePlank(): PuzzleState {
-  const editor = editorFromPlacements([{ kind: "plank", x: 8, y: 64, angle: 0 }]);
+  const editor = editorFromPlacements([{ kind: "plank", x: 8, y: 64, angle: 0, openTick: 0 }]);
   const quad = [
     { x: 0.3, y: 3.2 },
     { x: 0.5, y: 3.2 },

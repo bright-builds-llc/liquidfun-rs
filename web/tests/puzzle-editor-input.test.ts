@@ -52,7 +52,7 @@ function status(): PuzzleFrameStatus {
 }
 
 function plankEditor(): BuildingEditor {
-  const editor = editorFromPlacements([{ kind: "plank", x: 8, y: 64, angle: 0 }], [
+  const editor = editorFromPlacements([{ kind: "plank", x: 8, y: 64, angle: 0, openTick: 0 }], [
     { kind: "plank", count: 2 },
   ]);
   return applyInspection(

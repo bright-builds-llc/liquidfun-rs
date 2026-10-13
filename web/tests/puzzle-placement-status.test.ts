@@ -9,7 +9,7 @@ import {
 } from "../src/puzzle/placement-status";
 
 describe("PLACEMENT_STATUS", () => {
-  it("mirrors the Rust PlacementStatus wire codes 0 through 12", () => {
+  it("mirrors the Rust PlacementStatus wire codes 0 through 13", () => {
     // Act
     const codes = Object.entries(PLACEMENT_STATUS);
 
@@ -28,16 +28,17 @@ describe("PLACEMENT_STATUS", () => {
       ["overlapsWater", 10],
       ["overlapsTool", 11],
       ["overlapsNoPlace", 12],
+      ["valveTimeOutOfRange", 13],
     ]);
   });
 });
 
 describe("isPlacementStatusCode", () => {
-  it.each([0, 6, 12])("accepts %i", (value) => {
+  it.each([0, 6, 12, 13])("accepts %i", (value) => {
     expect(isPlacementStatusCode(value)).toBe(true);
   });
 
-  it.each([13, -1, 1.5, Number.NaN])("rejects %s", (value) => {
+  it.each([14, -1, 1.5, Number.NaN])("rejects %s", (value) => {
     expect(isPlacementStatusCode(value)).toBe(false);
   });
 });
@@ -47,7 +48,7 @@ describe("isGeometricStatus", () => {
     expect(isGeometricStatus(code)).toBe(false);
   });
 
-  it.each([0, 2, 3, 6, 7, 8, 9, 10, 11, 12] as const)(
+  it.each([0, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13] as const)(
     "is true for geometric status %i",
     (code) => {
       expect(isGeometricStatus(code)).toBe(true);
@@ -69,6 +70,7 @@ describe("placementReason", () => {
     [10, "Overlaps the water"],
     [11, "Overlaps another tool"],
     [12, "In a no-build zone"],
+    [13, "Valve time out of range"],
   ])("maps status %i to the UI-SPEC phrase", (code, phrase) => {
     expect(placementReason(code)).toBe(phrase);
   });

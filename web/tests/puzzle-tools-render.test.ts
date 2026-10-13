@@ -26,8 +26,8 @@ const QUAD_B: Quad = [
   { x: 2, y: 1.25 },
 ];
 const PLANKS: readonly PuzzlePlacement[] = [
-  { kind: "plank", x: 10, y: 2, angle: 0 },
-  { kind: "plank", x: 50, y: 22, angle: 0 },
+  { kind: "plank", x: 10, y: 2, angle: 0, openTick: 0 },
+  { kind: "plank", x: 50, y: 22, angle: 0, openTick: 0 },
 ];
 const CAMERA = createCamera(400, 300, IDENTITY_CAMERA_VIEW, {
   minX: 0,
@@ -172,7 +172,7 @@ describe("toolOverlay", () => {
     const inspected = inspectedEditor([0, 0]);
     const editor: BuildingEditor = {
       ...inspected,
-      tools: [...inspected.tools, { id: 3, placement: { kind: "plank", x: 1, y: 1, angle: 0 } }],
+      tools: [...inspected.tools, { id: 3, placement: { kind: "plank", x: 1, y: 1, angle: 0, openTick: 0 } }],
     };
 
     // Act

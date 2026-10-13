@@ -27,8 +27,8 @@ vi.mock("../src/physics/puzzle-loader", () => ({
 
 const PLACE_PLANK = { kind: "place", toolKind: "plank", x: 10, y: 64 } as const;
 const TWO_PLANKS: readonly PuzzlePlacement[] = [
-  { kind: "plank", x: 8, y: 64, angle: 0 },
-  { kind: "plank", x: 20, y: 64, angle: 0 },
+  { kind: "plank", x: 8, y: 64, angle: 0, openTick: 0 },
+  { kind: "plank", x: 20, y: 64, angle: 0, openTick: 0 },
 ];
 
 const loader = vi.mocked(loadPuzzleSession);
@@ -80,7 +80,7 @@ describe("committed edits", () => {
 
     // Assert
     const { editor } = host.puzzle.state();
-    expect(Array.from(inspector.mock.calls[0]?.[2] ?? [])).toEqual([10, 64, 0]);
+    expect(Array.from(inspector.mock.calls[0]?.[2] ?? [])).toEqual([10, 64, 0, 0]);
     expect(editor.tools).toHaveLength(1);
     expect(editor.maybeCommittedInspection?.revision).toBe(editor.revision);
     expect(host.drawSceneFrame).toHaveBeenCalledTimes(1);
@@ -247,7 +247,7 @@ describe("controller editing commands", () => {
     // Assert
     const { editor } = host.puzzle.state();
     expect(editor.tools.map((tool) => tool.placement)).toEqual([
-      { kind: "plank", x: 10, y: 64, angle: 0 },
+      { kind: "plank", x: 10, y: 64, angle: 0, openTick: 0 },
     ]);
     expect(editor.maybeSelectedId).toBe(editor.tools[0]?.id);
   });

@@ -38,6 +38,7 @@ function editorWith(count: number): BuildingEditor {
     x: index * 10,
     y: 64,
     angle: 0,
+    openTick: 0,
   }));
   return editorFromPlacements(placements, PLANK_BUDGET);
 }

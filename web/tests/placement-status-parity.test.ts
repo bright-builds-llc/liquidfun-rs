@@ -11,7 +11,7 @@ const VALIDATE_RS = join(
   "../../crates/liquidfun-wasm/src/puzzle/validate.rs",
 );
 
-const EXPECTED_STATUS_COUNT = 13;
+const EXPECTED_STATUS_COUNT = 14;
 
 /** `[name, code]` pairs from the body of Rust `enum PlacementStatus`, in source order. */
 function rustStatusPairs(): [string, number][] {
@@ -38,7 +38,7 @@ function toPascalCase(name: string): string {
 }
 
 describe("placement status parity with Rust (D-01)", () => {
-  it("Rust declares thirteen placement statuses", () => {
+  it("Rust declares fourteen placement statuses", () => {
     // Arrange
     const pairs = rustStatusPairs();
 

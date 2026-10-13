@@ -84,6 +84,17 @@ export function PlankIcon() {
   );
 }
 
+/** Valve: a shorter filled gate bar under a small clock face with one hand. */
+export function ValveIcon() {
+  return (
+    <Icon>
+      <rect x="4" y="15" width="16" height="5" rx="1.5" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="7.5" r="4.5" />
+      <path d="M12 5.5v2l1.5 1" />
+    </Icon>
+  );
+}
+
 /** Five points, outer radius 10 and inner radius 4.5, centred at (12, 12). */
 const STAR_PATH =
   "M12 2L14.65 8.36L21.51 8.91L16.28 13.39L17.88 20.09L12 16.5L6.12 20.09L7.72 13.39L2.49 8.91L9.35 8.36Z";

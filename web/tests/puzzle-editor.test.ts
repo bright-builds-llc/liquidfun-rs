@@ -31,13 +31,18 @@ import {
 import type { PlacementStatusCode } from "../src/puzzle/placement-status";
 
 const TWO_PLANKS = [{ kind: "plank", count: 2 }] as const;
+const PLANK_AND_VALVES = [
+  { kind: "plank", count: 2 },
+  { kind: "valve", count: 2 },
+] as const;
+const REFERENCE_VALVE = { kind: "valve", x: -16, y: 87, angle: 0, openTick: 6 } as const;
 
 function budgetEditor(): BuildingEditor {
   return withBudget(EMPTY_EDITOR, TWO_PLANKS);
 }
 
 function editorWithAngle(angle: number): BuildingEditor {
-  return editorFromPlacements([{ kind: "plank", x: 10, y: 64, angle }], TWO_PLANKS);
+  return editorFromPlacements([{ kind: "plank", x: 10, y: 64, angle, openTick: 0 }], TWO_PLANKS);
 }
 
 function selectedFirst(editor: BuildingEditor): BuildingEditor {
@@ -126,7 +131,7 @@ describe("placeTool", () => {
 
     // Assert
     expect(editor.tools).toEqual([
-      { id: before.nextId, placement: { kind: "plank", x: 10, y: 64, angle: 0 } },
+      { id: before.nextId, placement: { kind: "plank", x: 10, y: 64, angle: 0, openTick: 0 } },
     ]);
   });
 
@@ -196,7 +201,7 @@ describe("moveTool", () => {
 
     // Assert
     expect([editor.tools[0]?.placement, editor.revision]).toEqual([
-      { kind: "plank", x: 12, y: 60, angle: 5 },
+      { kind: "plank", x: 12, y: 60, angle: 5, openTick: 0 },
       before.revision + 1,
     ]);
   });
@@ -212,6 +217,71 @@ describe("moveTool", () => {
   it("throws for a non-integer position", () => {
     // Act
     const act = () => moveTool(editorWithAngle(0), 1, 10, Number.NaN);
+
+    // Assert
+    expect(act).toThrow("Invalid editor move");
+  });
+});
+
+describe("placeTool open tick (Phase 40 D-05)", () => {
+  it("starts a new valve at open tick 4", () => {
+    // Arrange
+    const before = withBudget(EMPTY_EDITOR, PLANK_AND_VALVES);
+
+    // Act
+    const editor = placeTool(before, "valve", -16, 87);
+
+    // Assert
+    expect(editor.tools[0]?.placement).toEqual({
+      kind: "valve",
+      x: -16,
+      y: 87,
+      angle: 0,
+      openTick: 4,
+    });
+  });
+
+  it("starts a new plank at open tick 0", () => {
+    // Arrange
+    const before = withBudget(EMPTY_EDITOR, PLANK_AND_VALVES);
+
+    // Act
+    const editor = placeTool(before, "plank", 10, 64);
+
+    // Assert
+    expect(editor.tools[0]?.placement.openTick).toBe(0);
+  });
+});
+
+describe("valve edits keep the open tick", () => {
+  it("rotating a valve keeps its open tick", () => {
+    // Arrange
+    const before = selectedFirst(editorFromPlacements([REFERENCE_VALVE], PLANK_AND_VALVES));
+
+    // Act
+    const editor = rotateSelected(before, 1);
+
+    // Assert
+    expect(editor.tools[0]?.placement).toEqual({ ...REFERENCE_VALVE, angle: 1 });
+  });
+
+  it("nudging a valve keeps its open tick", () => {
+    // Arrange
+    const before = selectedFirst(editorFromPlacements([REFERENCE_VALVE], PLANK_AND_VALVES));
+
+    // Act
+    const editor = nudgeSelected(before, 1, -1);
+
+    // Assert
+    expect(editor.tools[0]?.placement).toEqual({ ...REFERENCE_VALVE, x: -15, y: 86 });
+  });
+
+  it("editorFromPlacements rejects a fractional open tick", () => {
+    // Arrange
+    const placement = { ...REFERENCE_VALVE, openTick: 4.5 };
+
+    // Act
+    const act = () => editorFromPlacements([placement], PLANK_AND_VALVES);
 
     // Assert
     expect(act).toThrow("Invalid editor move");
@@ -259,7 +329,7 @@ describe("nudgeSelected", () => {
     const editor = nudgeSelected(before, -5, 1);
 
     // Assert
-    expect(editor.tools[0]?.placement).toEqual({ kind: "plank", x: 5, y: 65, angle: 0 });
+    expect(editor.tools[0]?.placement).toEqual({ kind: "plank", x: 5, y: 65, angle: 0, openTick: 0 });
   });
 
   it("returns the same editor with nothing selected", () => {
@@ -415,8 +485,8 @@ describe("canonicalPlacements", () => {
     // Arrange
     const editor = editorFromPlacements(
       [
-        { kind: "plank", x: 30, y: 84, angle: 0 },
-        { kind: "plank", x: 8, y: 64, angle: 23 },
+        { kind: "plank", x: 30, y: 84, angle: 0, openTick: 0 },
+        { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
       ],
       TWO_PLANKS,
     );
@@ -426,15 +496,29 @@ describe("canonicalPlacements", () => {
 
     // Assert
     expect(placements).toEqual([
-      { kind: "plank", x: 8, y: 64, angle: 23 },
-      { kind: "plank", x: 30, y: 84, angle: 0 },
+      { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
+      { kind: "plank", x: 30, y: 84, angle: 0, openTick: 0 },
     ]);
+  });
+
+  it("sorts planks before valves and breaks pose ties by open tick", () => {
+    // Arrange
+    const late = { ...REFERENCE_VALVE, openTick: 9 };
+    const early = { ...REFERENCE_VALVE, openTick: 2 };
+    const plank = { kind: "plank", x: 30, y: 84, angle: 0, openTick: 0 } as const;
+    const editor = editorFromPlacements([late, early, plank], PLANK_AND_VALVES);
+
+    // Act
+    const placements = canonicalPlacements(editor);
+
+    // Assert
+    expect(placements).toEqual([plank, early, late]);
   });
 
   it("placementsInOrder keeps creation order", () => {
     // Arrange
-    const first = { kind: "plank", x: 30, y: 84, angle: 0 } as const;
-    const second = { kind: "plank", x: 8, y: 64, angle: 23 } as const;
+    const first = { kind: "plank", x: 30, y: 84, angle: 0, openTick: 0 } as const;
+    const second = { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 } as const;
     const editor = editorFromPlacements([first, second], TWO_PLANKS);
 
     // Act / Assert
@@ -445,8 +529,8 @@ describe("canonicalPlacements", () => {
 describe("cycleSelection", () => {
   const editor = editorFromPlacements(
     [
-      { kind: "plank", x: 30, y: 84, angle: 0 },
-      { kind: "plank", x: 8, y: 64, angle: 23 },
+      { kind: "plank", x: 30, y: 84, angle: 0, openTick: 0 },
+      { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
     ],
     TWO_PLANKS,
   );

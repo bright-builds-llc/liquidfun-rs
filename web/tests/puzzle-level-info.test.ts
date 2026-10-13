@@ -47,6 +47,20 @@ describe("parsePuzzleLevelInfo stars and tools", () => {
     expect(info.toolBudget).toEqual([{ kind: "plank", count: 2 }]);
   });
 
+  it("parses plank and valve kind codes in lane order", () => {
+    // Arrange
+    const raw = fakeLevelInfo({
+      toolKinds: new Uint8Array([1, 2]),
+      toolCounts: new Uint32Array([2, 1]),
+    });
+
+    // Act
+    const info = parsePuzzleLevelInfo(raw, "first-pour");
+
+    // Assert
+    expect(info.toolBudget.map((allowance) => allowance.kind)).toEqual(["plank", "valve"]);
+  });
+
   it("parses the brim count", () => {
     // Arrange
     const raw = fakeLevelInfo();
@@ -92,7 +106,7 @@ describe("parsePuzzleLevelInfo stars and tools", () => {
   });
 
   const invalidCases: ReadonlyArray<[string, LevelInfoOverrides]> = [
-    ["an unknown kind code", { toolKinds: new Uint8Array([2]) }],
+    ["an unknown kind code", { toolKinds: new Uint8Array([3]) }],
     ["misaligned kind and count lanes", { toolCounts: new Uint32Array([2, 1]) }],
     [
       "a duplicate kind",

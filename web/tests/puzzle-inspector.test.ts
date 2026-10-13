@@ -24,7 +24,7 @@ function fakeRawInspection(statuses: number[], outlines: Float32Array): RawPlace
   };
 }
 
-const REFERENCE_PLANK: PuzzlePlacement = { kind: "plank", x: 8, y: 64, angle: 23 };
+const REFERENCE_PLANK: PuzzlePlacement = { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 };
 
 describe("decodeInspection", () => {
   it("decodes statuses in input order", () => {
@@ -66,6 +66,17 @@ describe("decodeInspection", () => {
     expect(inspection.outlines[1]).toBeUndefined();
   });
 
+  it("decodes the valve time status 13 with its outline", () => {
+    // Arrange
+    const outlines = outlineLanes(PLANK_OUTLINE);
+
+    // Act
+    const inspection = decodeInspection(1, new Uint8Array([13]), outlines);
+
+    // Assert
+    expect([inspection.statuses, inspection.outlines[0]?.length]).toEqual([[13], 4]);
+  });
+
   it("ignores non-finite floats in a non-geometric outline", () => {
     // Arrange
     const outlines = outlineLanes(new Array<number>(8).fill(Number.NaN));
@@ -92,7 +103,7 @@ describe("decodeInspection", () => {
     ["a short status lane", 2, new Uint8Array([0]), outlineLanes(PLANK_OUTLINE, PLANK_OUTLINE)],
     ["a short outline lane", 1, new Uint8Array([0]), new Float32Array(PLANK_OUTLINE.slice(0, 7))],
     ["a long outline lane", 1, new Uint8Array([0]), outlineLanes(PLANK_OUTLINE, [0])],
-    ["an unknown status code", 1, new Uint8Array([13]), outlineLanes(PLANK_OUTLINE)],
+    ["an unknown status code", 1, new Uint8Array([14]), outlineLanes(PLANK_OUTLINE)],
     [
       "a NaN in a geometric outline",
       1,
@@ -133,7 +144,7 @@ describe("inspectPlacements", () => {
     expect(inspect).toHaveBeenCalledWith(
       "first-pour",
       new Uint8Array([1]),
-      new Int32Array([8, 64, 23]),
+      new Int32Array([8, 64, 23, 0]),
     );
   });
 
@@ -161,7 +172,7 @@ describe("inspectPlacements", () => {
 
   it("frees the raw result once when decoding throws", () => {
     // Arrange
-    const raw = fakeRawInspection([13], outlineLanes(PLANK_OUTLINE));
+    const raw = fakeRawInspection([14], outlineLanes(PLANK_OUTLINE));
 
     // Act
     const act = () => inspectPlacements(() => raw, "first-pour", [REFERENCE_PLANK]);
@@ -174,7 +185,7 @@ describe("inspectPlacements", () => {
   it("rejects a non-integer placement before calling the inspector", () => {
     // Arrange
     const inspect = vi.fn(() => fakeRawInspection([], new Float32Array([])));
-    const placement: PuzzlePlacement = { kind: "plank", x: 8.5, y: 64, angle: 0 };
+    const placement: PuzzlePlacement = { kind: "plank", x: 8.5, y: 64, angle: 0, openTick: 0 };
 
     // Act
     const act = () => inspectPlacements(inspect, "first-pour", [placement]);
