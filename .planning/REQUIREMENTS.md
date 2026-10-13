@@ -56,9 +56,9 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 
 ### Sound
 
-- [ ] **SOUND-01**: Sound is off by default; player can turn it on with a toggle that is remembered.
-- [ ] **SOUND-02**: With sound on, player hears splash and impact sounds, rising-pitch plinks as the cup fills, and a win chime, with a cap on simultaneous sounds.
-- [ ] **SOUND-03**: Sound pauses when the tab is hidden or the player leaves the puzzle, and a hint mentions the phone silent switch.
+- [x] **SOUND-01**: Sound is off by default; player can turn it on with a toggle that is remembered.
+- [x] **SOUND-02**: With sound on, player hears splash and impact sounds, rising-pitch plinks as the cup fills, and a win chime, with a cap on simultaneous sounds.
+- [x] **SOUND-03**: Sound pauses when the tab is hidden or the player leaves the puzzle, and a hint mentions the phone silent switch.
 
 ### GPU water
 
@@ -126,9 +126,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROG-02 | Phase 41 | Complete |
 | PROG-03 | Phase 41 | Complete |
 | PROG-04 | Phase 41 | Complete |
-| SOUND-01 | Phase 42 | Pending |
-| SOUND-02 | Phase 42 | Pending |
-| SOUND-03 | Phase 42 | Pending |
+| SOUND-01 | Phase 42 | Complete |
+| SOUND-02 | Phase 42 | Complete |
+| SOUND-03 | Phase 42 | Complete |
 | WATER-01 | Phase 43 | Pending |
 | WATER-02 | Phase 43 | Pending |
 | WATER-03 | Phase 43 | Pending |

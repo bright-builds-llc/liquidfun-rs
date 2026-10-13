@@ -1,7 +1,9 @@
 ---
 phase: 42-opt-in-sound
 verified: 2026-10-13T20:50:32Z
-status: human_needed
+status: passed
+human_approved_at: "2026-10-13T21:51:01Z"
+human_approved_by: "user (repository owner) via chat: approved, please push it"
 score: 4/4 roadmap success criteria verified (30/30 plan must-have truths)
 generated_by: gsd-verifier
 lifecycle_mode: yolo
@@ -31,7 +33,7 @@ human_verification:
 
 **Phase Goal:** Players who turn sound on hear the puzzle: splashes, impacts, plinks that rise as the cup fills, and a win chime.
 **Verified:** 2026-10-13T20:50:32Z
-**Status:** human_needed
+**Status:** passed (automated checks passed; the owner approved the human-only checks on 2026-10-13T21:51:01Z)
 **Re-verification:** No. This is the initial verification, run after the code-review fix pass (commits 6772b0980..8cbf2587c, report 003656428).
 
 ## Goal Achievement
