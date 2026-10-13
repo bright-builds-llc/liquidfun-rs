@@ -1,5 +1,6 @@
-//! Optional puzzle scalars on `ProofFrame` (D-17, Phase 39 D-11); undefined
-//! in JS for scene frames.
+//! Optional puzzle scalars on `ProofFrame` (D-17, Phase 39 D-11) and the
+//! read-only per-step sound scalars (Phase 42 D-07); undefined in JS for
+//! scene frames.
 //!
 //! `status_is_consistent` is the one Rust rule set that a puzzle status must
 //! satisfy before it rides on a frame. `web/src/physics/frame-puzzle.ts`
@@ -87,6 +88,27 @@ impl ProofFrame {
         self.data
             .maybe_puzzle
             .and_then(|status| status.maybe_decided_step)
+    }
+
+    /// Returns the particle-fixture contacts new this step, or undefined for scenes.
+    #[must_use]
+    #[wasm_bindgen(js_name = splashContacts)]
+    pub fn splash_contacts(&self) -> Option<u32> {
+        self.data.maybe_sound.map(|signals| signals.splash_contacts)
+    }
+
+    /// Returns the rigid contacts that began touching this step, or undefined for scenes.
+    #[must_use]
+    #[wasm_bindgen(js_name = impactCount)]
+    pub fn impact_count(&self) -> Option<u32> {
+        self.data.maybe_sound.map(|signals| signals.impact_count)
+    }
+
+    /// Returns the strongest new rigid contact's normal impulse in N·s, or undefined for scenes.
+    #[must_use]
+    #[wasm_bindgen(js_name = impactImpulse)]
+    pub fn impact_impulse(&self) -> Option<f32> {
+        self.data.maybe_sound.map(|signals| signals.impact_impulse)
     }
 }
 

@@ -3,6 +3,7 @@
 use wasm_bindgen::prelude::*;
 
 use crate::puzzle::goal::PuzzleStatus;
+use crate::puzzle::sound::SoundSignals;
 
 const MAX_PARTICLE_COUNT: usize = 16_384;
 const MAX_RIGID_SEGMENTS: usize = 512;
@@ -54,6 +55,7 @@ pub(crate) struct FrameData {
     circle_labels: Vec<String>,
     diagnostics: FrameDiagnostics,
     maybe_puzzle: Option<PuzzleStatus>,
+    maybe_sound: Option<SoundSignals>,
 }
 
 impl FrameData {
@@ -104,6 +106,7 @@ impl FrameData {
             circle_labels: vec![String::new(); rigid_circle_count],
             diagnostics,
             maybe_puzzle: None,
+            maybe_sound: None,
         })
     }
 
@@ -128,6 +131,20 @@ impl FrameData {
             return Err(FrameError::InvalidDiagnostic);
         }
         self.maybe_puzzle = Some(status);
+        Ok(())
+    }
+
+    /// Attaches the read-only sound aggregates (Phase 42 D-07). Requires a puzzle
+    /// status already attached, a finite non-negative impulse, and no impulse
+    /// without a counted impact.
+    pub(crate) fn set_puzzle_sound(&mut self, signals: SoundSignals) -> Result<(), FrameError> {
+        let impulse = signals.impact_impulse;
+        let impulse_is_valid = impulse.is_finite() && impulse >= 0.0;
+        let impulse_has_impact = signals.impact_count != 0 || impulse == 0.0;
+        if self.maybe_puzzle.is_none() || !impulse_is_valid || !impulse_has_impact {
+            return Err(FrameError::InvalidDiagnostic);
+        }
+        self.maybe_sound = Some(signals);
         Ok(())
     }
 

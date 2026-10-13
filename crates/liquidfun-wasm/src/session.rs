@@ -14,6 +14,7 @@ use crate::puzzle::PuzzleLevelInfo;
 use crate::puzzle::builder::build_level;
 #[cfg(test)]
 use crate::puzzle::goal::PuzzleStatus;
+use crate::puzzle::sound::SoundTally;
 use crate::puzzle::tools::{PlacementError, Placements};
 use crate::puzzle::{LevelId, level_spec};
 use crate::scene::gravity_slider::{GRAVITY_CONTROL_NAME, parse_gravity_magnitude};
@@ -89,6 +90,8 @@ pub(crate) struct SessionCore {
     step_index: u32,
     authored_gravity: Vec2,
     last_failure_detail: String,
+    /// Puzzle-only read-only audio aggregates (Phase 42 D-07); None for scenes.
+    maybe_sound: Option<SoundTally>,
 }
 
 fn max_particle_speed(velocities: &[Vec2]) -> Result<f32, SessionError> {
@@ -185,6 +188,7 @@ impl SessionCore {
             .with_particle_iterations(particle_iterations)
             .map_err(|_error| SessionError::SceneConstruction)?;
         let authored_gravity = world.gravity();
+        let maybe_sound = matches!(source, SessionSource::Puzzle(..)).then(SoundTally::default);
 
         Ok(Self {
             world,
@@ -200,6 +204,7 @@ impl SessionCore {
             step_index: 0,
             authored_gravity,
             last_failure_detail: String::new(),
+            maybe_sound,
         })
     }
 
@@ -270,6 +275,12 @@ impl SessionCore {
                 error.message().clone_into(&mut self.last_failure_detail);
                 return Err(error);
             }
+            if let Some(tally) = self.maybe_sound.as_mut()
+                && let Err(error) = tally.observe(&self.world, self.particle_system, &report)
+            {
+                self.last_failure_detail = format!("sound tally failed: {}", error.message());
+                return Err(error);
+            }
         }
 
         self.step_index = next_step_index;
@@ -311,6 +322,12 @@ impl SessionCore {
             report.contact_transitions(),
         ) {
             error.message().clone_into(&mut self.last_failure_detail);
+            return Err(error);
+        }
+        if let Some(tally) = self.maybe_sound.as_mut()
+            && let Err(error) = tally.observe(&self.world, self.particle_system, &report)
+        {
+            self.last_failure_detail = format!("sound tally failed: {}", error.message());
             return Err(error);
         }
         self.step_index = next_step_index;
@@ -470,7 +487,8 @@ impl SessionCore {
     }
 
     /// Adds the hooks' circle labels and, for puzzles, the validated goal
-    /// status; scene hooks report no status, so scene frames are unchanged.
+    /// status and sound aggregates; scene hooks report no status and scenes
+    /// have no tally, so scene frames are unchanged.
     fn annotate_frame(
         &self,
         frame: &mut FrameData,
@@ -486,6 +504,11 @@ impl SessionCore {
         if let Some(status) = self.hooks.maybe_puzzle_status() {
             frame
                 .set_puzzle_status(status)
+                .map_err(|_error| SessionError::FrameCaptureFailed)?;
+        }
+        if let Some(tally) = &self.maybe_sound {
+            frame
+                .set_puzzle_sound(tally.signals())
                 .map_err(|_error| SessionError::FrameCaptureFailed)?;
         }
         Ok(())
@@ -504,6 +527,13 @@ impl SessionCore {
             }
             SessionSource::Scene(_) => Err(SessionError::NotAPuzzle),
         }
+    }
+
+    /// Test-only: drops the tally to prove it never changes stepping (D-12).
+    #[cfg(test)]
+    pub(crate) fn without_sound_tally(mut self) -> Self {
+        self.maybe_sound = None;
+        self
     }
 
     /// The puzzle goal status after the last fixed step, for puzzle sessions.

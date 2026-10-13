@@ -13,6 +13,7 @@ pub(crate) mod jelly_pad;
 pub(crate) mod level_hash;
 pub(crate) mod peak;
 pub(crate) mod sat;
+pub(crate) mod sound;
 pub(crate) mod spec;
 pub(crate) mod thick_syrup;
 pub(crate) mod timed_gate;
