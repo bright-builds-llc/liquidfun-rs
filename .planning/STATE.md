@@ -4,8 +4,8 @@ milestone: v1.5
 milestone_name: milestone
 status: executing
 stopped_at: Phase 41 UI-SPEC approved
-last_updated: "2026-10-13T16:40:45.229Z"
-last_activity: 2026-10-13 -- Phase 41 planning complete
+last_updated: "2026-10-13T16:41:05.086Z"
+last_activity: 2026-10-13 -- Phase 41 execution started
 progress:
   total_phases: 7
   completed_phases: 4
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 40 — Timed Valve and Teaching Levels
+**Current focus:** Phase 41 — Level Select and Progress
 
 ## Current Position
 
-Phase: 41
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-10-13 -- Phase 41 planning complete
+Phase: 41 (Level Select and Progress) — EXECUTING
+Plan: 1 of 8
+Status: Executing Phase 41
+Last activity: 2026-10-13 -- Phase 41 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
