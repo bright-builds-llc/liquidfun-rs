@@ -397,6 +397,74 @@ describe("stopAll and suspend", () => {
     expect(engine.hasContext()).toBe(true);
   });
 
+  it("logs and still disconnects when a repeated source stop throws", () => {
+    // Arrange
+    const audio = createFakeAudio();
+    const logError = vi.fn();
+    const engine = createSoundEngine({
+      createContext: audio.factory,
+      onFailure: vi.fn(),
+      maybeLogError: logError,
+    });
+    engine.ensureRunning();
+    engine.play([{ kind: "plink", frequency: 600 }]);
+    const context = audio.context();
+    const stopError = new Error("InvalidStateError");
+    for (const source of context.sources()) {
+      source.stop = () => {
+        throw stopError;
+      };
+    }
+    const voiceGain = context.ofKind("gain")[1];
+
+    // Act
+    const act = () => engine.stopAll();
+
+    // Assert
+    expect(act).not.toThrow();
+    expect(logError).toHaveBeenCalledWith(expect.any(String), stopError);
+    expect(voiceGain?.disconnects).toBeGreaterThanOrEqual(1);
+  });
+
+  it("reports a synchronous suspend throw to onFailure", () => {
+    // Arrange
+    const { engine, context, onFailure } = running();
+    const suspendError = new Error("suspend threw");
+    context.suspend = () => {
+      throw suspendError;
+    };
+
+    // Act
+    const act = () => engine.suspend();
+
+    // Assert
+    expect(act).not.toThrow();
+    expect(onFailure).toHaveBeenCalledWith(suspendError);
+  });
+
+  it("keeps a stop error when suspend also throws synchronously", () => {
+    // Arrange
+    const { engine, context, onFailure } = running();
+    engine.play([{ kind: "plink", frequency: 600 }]);
+    const disconnectError = new Error("disconnect threw");
+    const suspendError = new Error("suspend threw");
+    for (const gain of context.ofKind("gain").slice(1)) {
+      gain.disconnect = () => {
+        throw disconnectError;
+      };
+    }
+    context.suspend = () => {
+      throw suspendError;
+    };
+
+    // Act
+    const act = () => engine.suspend();
+
+    // Assert
+    expect(act).toThrow(disconnectError);
+    expect(onFailure).toHaveBeenCalledWith(suspendError);
+  });
+
   it("lets the next ensureRunning resume after suspending a pending resume", () => {
     // Arrange
     const { audio, engine } = harness({ resume: "pending" });

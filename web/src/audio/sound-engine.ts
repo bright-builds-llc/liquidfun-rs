@@ -68,12 +68,14 @@ export type SoundEngine = {
   readonly suspend: () => void;
 };
 
+type LogError = (message: string, error: unknown) => void;
+
 export type SoundEngineOptions = {
   readonly createContext: SoundContextFactory;
   /** Asynchronous resume or suspend failures. */
   readonly onFailure: (error: unknown) => void;
   /** Where a failed construction is logged; defaults to `console.error`. */
-  readonly maybeLogError?: (message: string, error: unknown) => void;
+  readonly maybeLogError?: LogError;
 };
 
 const MASTER_GAIN = 0.5;
@@ -85,6 +87,7 @@ const PLINK_ATTACK_SECONDS = 0.005;
 const CHIME_ATTACK_SECONDS = 0.01;
 const CONSTRUCTION_FAILED_MESSAGE =
   "Puzzle sound is unavailable: the audio context could not be created";
+const STOP_FAILED_MESSAGE = "Puzzle sound: a muted voice could not be stopped early";
 
 /** A constructed context with its master chain and lazily built noise buffer. */
 type LiveContext = {
@@ -221,12 +224,21 @@ function startChimeNote(live: LiveContext, note: ChimeNote, now: number): Starte
   return { sources: [oscillator], gain };
 }
 
-/** Silences one voice now: cancel its envelope, mute, stop and disconnect. */
-function silence(voice: StartedVoice, now: number): void {
+/**
+ * Silences one voice now: cancel its envelope, mute, stop and disconnect.
+ * Every source already has a later `stop()` scheduled, and older WebKit
+ * throws `InvalidStateError` on a repeated `stop()`. The mute and disconnect
+ * already silence the voice, so a stop error is logged, not rethrown.
+ */
+function silence(voice: StartedVoice, now: number, logError: LogError): void {
   voice.gain.gain.cancelScheduledValues(now);
   voice.gain.gain.value = 0;
   for (const source of voice.sources) {
-    source.stop(now);
+    try {
+      source.stop(now);
+    } catch (error) {
+      logError(STOP_FAILED_MESSAGE, error);
+    }
   }
   voice.gain.disconnect();
 }
@@ -343,7 +355,7 @@ export function createSoundEngine(options: SoundEngineOptions): SoundEngine {
         const maybeVoice = started.get(evicted.id);
         started.delete(evicted.id);
         if (maybeVoice !== undefined) {
-          silence(maybeVoice, now);
+          silence(maybeVoice, now, logError);
         }
       }
       // Each voice is registered only after its sources started (Research Pitfall 6).
@@ -367,7 +379,7 @@ export function createSoundEngine(options: SoundEngineOptions): SoundEngine {
     let maybeError: { readonly error: unknown } | undefined;
     for (const voice of voices) {
       try {
-        silence(voice, now);
+        silence(voice, now, logError);
       } catch (error) {
         maybeError ??= { error };
       }
@@ -384,7 +396,20 @@ export function createSoundEngine(options: SoundEngineOptions): SoundEngine {
     } finally {
       // A resume still pending when suspended must not block the next one.
       resumeInFlight = false;
-      maybeLive?.context.suspend().catch(options.onFailure);
+      suspendContext();
+    }
+  }
+
+  /** Reports both a synchronous throw and a rejection, so neither hides an error from `stopAll`. */
+  function suspendContext(): void {
+    const live = maybeLive;
+    if (live === undefined) {
+      return;
+    }
+    try {
+      live.context.suspend().catch(options.onFailure);
+    } catch (error) {
+      options.onFailure(error);
     }
   }
 
