@@ -22,6 +22,7 @@ const PUZZLE_COMPONENTS = [
   "components/PuzzleCaption.tsx",
   "components/PuzzleSelectPanel.tsx",
   "components/PuzzleLevelLinks.tsx",
+  "components/PuzzleSoundToggle.tsx",
 ] as const;
 
 /** Stylesheets of the canvas puzzle HUD, which branch on `data-puzzle-layout`. */
@@ -367,6 +368,74 @@ describe("puzzle stylesheet", () => {
     // Assert
     expect(block).toContain("width: 100px;");
     expect(block).toContain("height: 28px;");
+  });
+});
+
+describe("puzzle sound controls", () => {
+  const SOUND_COPY = [
+    '"Sound"',
+    '"Sound effects"',
+    '"No sound on iPhone? Check the silent switch."',
+    '"Sound unavailable in this browser"',
+    '"Sound is unavailable in this browser. The puzzle still works without it."',
+    '"Sound stopped after an audio error. Turn on Sound effects to try again."',
+  ];
+
+  it("keeps data-hud-obstacle off the sound toggle and section", () => {
+    // Arrange
+    const toggle = source("components/PuzzleSoundToggle.tsx");
+
+    // Act
+    const marksObstacle = toggle.includes("data-hud-obstacle");
+
+    // Assert
+    expect(marksObstacle).toBe(false);
+  });
+
+  it("contains every locked sound copy string verbatim", () => {
+    // Arrange
+    const toggle = source("components/PuzzleSoundToggle.tsx");
+
+    // Act
+    const missing = SOUND_COPY.filter((copy) => !toggle.includes(copy));
+
+    // Assert
+    expect(missing).toEqual([]);
+  });
+
+  it("never touches the audio context, storage or the audio session directly", () => {
+    // Arrange
+    const toggle = source("components/PuzzleSoundToggle.tsx");
+
+    // Act
+    const offenders = ["AudioContext", "localStorage", "audioSession"].filter((word) =>
+      toggle.includes(word),
+    );
+
+    // Assert
+    expect(offenders).toEqual([]);
+  });
+
+  it("styles the sound controls without the accent color", () => {
+    // Arrange
+    const css = source("styles/puzzle-sound.css");
+
+    // Act
+    const usesAccent = /#4DA3FF/i.test(css);
+
+    // Assert
+    expect(usesAccent).toBe(false);
+  });
+
+  it("styles the sound controls without transitions or animations", () => {
+    // Arrange
+    const css = source("styles/puzzle-sound.css");
+
+    // Act
+    const hasMotion = /transition|animation/.test(css);
+
+    // Assert
+    expect(hasMotion).toBe(false);
   });
 });
 

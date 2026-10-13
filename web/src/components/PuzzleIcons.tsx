@@ -113,6 +113,40 @@ export function ValveIcon() {
   );
 }
 
+/** Speaker body shared by the three sound icons, so their boxes never differ (UI-D30). */
+const SPEAKER_PATH = "M4 10h3l5-4v12l-5-4H4z";
+
+/** Speaker with two sound waves: sound on. */
+export function SoundOnIcon() {
+  return (
+    <Icon>
+      <path d={SPEAKER_PATH} />
+      <path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" />
+      <path d="M18 7a7 7 0 0 1 0 10" />
+    </Icon>
+  );
+}
+
+/** Speaker with a cross: sound off. */
+export function SoundOffIcon() {
+  return (
+    <Icon>
+      <path d={SPEAKER_PATH} />
+      <path d="M16 10l4 4M20 10l-4 4" />
+    </Icon>
+  );
+}
+
+/** Speaker with a full slash: sound unavailable in this browser. */
+export function SoundUnavailableIcon() {
+  return (
+    <Icon>
+      <path d={SPEAKER_PATH} />
+      <path d="M3 3l18 18" />
+    </Icon>
+  );
+}
+
 /** Five points, outer radius 10 and inner radius 4.5, centred at (12, 12). */
 const STAR_PATH =
   "M12 2L14.65 8.36L21.51 8.91L16.28 13.39L17.88 20.09L12 16.5L6.12 20.09L7.72 13.39L2.49 8.91L9.35 8.36Z";
