@@ -593,23 +593,27 @@ export async function installFakeAudio(page: Page): Promise<void> {
 | A4 | Unprefixed `AudioContext` in Safari since 14.1 | State of the Art | None in practice; the fallback stays. |
 | A5 | Adding ~15 lines keeps `session.rs` under the 628-line trigger | Pattern 1 | Bright Builds checker flags it; extract the per-step body into a helper. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Impacts in levels without dynamic rigid bodies**
    - What we know: only Float Up has a dynamic body; the rigid `impactCount` / `impactImpulse` scalars will be zero in five levels.
    - What's unclear: whether SOUND-02's "impact sounds" should be audible in every level.
    - Recommendation: keep the bridge scalars rigid-only (honest naming), and in `triggers.ts` also fire the impact voice on a **splash burst onset** (per-step splash contacts crossing a high threshold after a quiet window, for example the liquid's first hit on a plank or the cup floor). This stays within D-07 ("new-contact strength for impacts") and the discretion over aggregate definitions. Record it as a plan decision.
+   - RESOLVED: D-15 (42-CONTEXT.md). Impact voice also fires on a splash burst onset after a quiet interval; rigid scalars stay rigid-only. Implemented in Plan 02 `triggers.ts`.
 
 2. **"Turn sound off for the session" on audio failure (D-08)**
    - What's unclear: whether to persist "off".
    - Recommendation: disable in memory only (toggle shows off and disabled with the unavailable name if creation failed; otherwise off), do not overwrite the stored preference, so a later visit tries again.
+   - RESOLVED: D-16 (42-CONTEXT.md). Sound turns off in memory for the page session; the stored preference is not overwritten. Implemented in Plan 03 `puzzle-sound.ts`.
 
 3. **Form-factor (non canvas-stage) puzzle shell**
    - What we know: `PuzzlePanel` renders a `control-row` fallback without the HUD when `canvasStage` is false (`withFormFactorShell` in e2e).
    - Recommendation: render the same toggle in that control row (no `data-hud-obstacle` there) so SOUND-01 is reachable in both shells; the drawer section exists only on the canvas stage.
+   - RESOLVED: D-18 (42-CONTEXT.md). The form-factor shell puts the sound section in its control row.
 
 4. **Duplicate accessible name "Sound"**
    - The HUD button and the drawer control would both be named "Sound". Recommendation: keep the button "Sound" (D-01) and label the drawer checkbox "Sound effects" (or keep "Sound" and rely on roles in tests). UI-SPEC decides.
+   - RESOLVED: D-18 and UI-D38 (42-UI-SPEC.md "Distinct accessible names"). HUD button "Sound", mirror checkbox "Sound effects"; exactly one control named "Sound" on puzzle routes.
 
 ## Environment Availability
 
