@@ -281,7 +281,7 @@ Plans:
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
 | 39. Place-then-Play Tools and Stars | v1.5 | 14/14 | Complete    | 2026-10-13 |
-| 40. Timed Valve and Teaching Levels | v1.5 | 11/11 | Complete   | 2026-10-13 |
+| 40. Timed Valve and Teaching Levels | v1.5 | 11/11 | Complete    | 2026-10-13 |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
 | 43. GPU Water Render Mode | v1.5 | 0/TBD | Not started | - |

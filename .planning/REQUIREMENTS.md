@@ -33,10 +33,10 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 
 ### Levels
 
-- [ ] **LEVEL-01**: Player can play 5–8 teaching levels, each introducing one idea with a one-line caption, drawn from: plain water, viscous liquid, powder, jelly pad (an elastic deflector whose particles never count), buoyancy, timed valve, and a finale combining earlier ideas.
-- [ ] **LEVEL-02**: Every level is proven solvable by automated tests: a reference solution earning all three stars wins with margin, a run with no tools loses, and small nudges of the solution mostly still win.
-- [ ] **LEVEL-03**: The first level shows a one-time, dismissible placement hint.
-- [ ] **LEVEL-04**: Each level has its own portrait frame that fills a phone canvas and stays within a particle budget that runs smoothly on phones.
+- [x] **LEVEL-01**: Player can play 5–8 teaching levels, each introducing one idea with a one-line caption, drawn from: plain water, viscous liquid, powder, jelly pad (an elastic deflector whose particles never count), buoyancy, timed valve, and a finale combining earlier ideas.
+- [x] **LEVEL-02**: Every level is proven solvable by automated tests: a reference solution earning all three stars wins with margin, a run with no tools loses, and small nudges of the solution mostly still win.
+- [x] **LEVEL-03**: The first level shows a one-time, dismissible placement hint.
+- [x] **LEVEL-04**: Each level has its own portrait frame that fills a phone canvas and stays within a particle budget that runs smoothly on phones.
 
 ### Puzzle section
 
@@ -112,10 +112,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOOL-07 | Phase 39 | Complete |
 | STAR-01 | Phase 39 | Complete |
 | STAR-02 | Phase 39 | Complete |
-| LEVEL-01 | Phase 40 | Pending |
-| LEVEL-02 | Phase 40 | Pending |
-| LEVEL-03 | Phase 40 | Pending |
-| LEVEL-04 | Phase 40 | Pending |
+| LEVEL-01 | Phase 40 | Complete |
+| LEVEL-02 | Phase 40 | Complete |
+| LEVEL-03 | Phase 40 | Complete |
+| LEVEL-04 | Phase 40 | Complete |
 | PUZ-01 | Phase 41 | Pending |
 | PUZ-02 | Phase 38 | Complete |
 | PUZ-03 | Phase 38 | Complete |
