@@ -32,14 +32,17 @@ pub(crate) enum LevelId {
     /// "Jelly Pad": an uncounted elastic pad turns the stream toward the cup.
     JellyPad,
     /// "Timed Gate": the valve's open time decides the outcome.
-    #[cfg_attr(not(test), allow(dead_code))] // Draft until registered in LEVEL_IDS.
     TimedGate,
 }
 
 /// Every allowlisted level, in catalog (Phase 40 D-09) order. Mirrored by
 /// `PUZZLE_IDS` in `web/src/catalog/puzzles.ts`.
-pub(crate) const LEVEL_IDS: [LevelId; 3] =
-    [LevelId::FirstPour, LevelId::ThickSyrup, LevelId::JellyPad];
+pub(crate) const LEVEL_IDS: [LevelId; 4] = [
+    LevelId::FirstPour,
+    LevelId::ThickSyrup,
+    LevelId::JellyPad,
+    LevelId::TimedGate,
+];
 
 impl LevelId {
     /// Stable kebab-case id shared with the web catalog.

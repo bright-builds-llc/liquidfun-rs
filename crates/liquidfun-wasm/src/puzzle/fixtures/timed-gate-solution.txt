@@ -1,0 +1,7 @@
+level timed-gate
+placement valve 4 61 6 9
+outcome won
+outcome_step 429
+final_count 531
+peak_held 582
+brim_step 519

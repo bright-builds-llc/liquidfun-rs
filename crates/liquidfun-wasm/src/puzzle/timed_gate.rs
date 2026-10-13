@@ -1,7 +1,7 @@
 //! "Timed Gate": the valve's open time decides the outcome (Phase 40 D-13,
 //! D-26).
 //!
-//! A water tank in the upper left of a 9 m by 9 m box drains down a ramp. A
+//! A water tank in the upper left of a 9 m by 11 m box drains down a ramp. A
 //! launch lip turns the stream into a jet that flies right, over the cup and
 //! under a syrup tank, to waste on the floor beyond. The player's one valve
 //! has a single slot, standing upright between the jet and the cup's far
@@ -52,8 +52,8 @@ const fn quad(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> [Vec2; 4] {
 /// 0.5 m gap between x = -2.4 and x = -1.9.
 const WALLS: [[Vec2; 4]; 11] = [
     quad(-4.5, -0.5, 4.5, 0.0),
-    quad(-4.5, 0.0, -4.3, 9.0),
-    quad(4.3, 0.0, 4.5, 9.0),
+    quad(-4.5, 0.0, -4.3, 10.5),
+    quad(4.3, 0.0, 4.5, 10.5),
     [
         Vec2::new(0.41, 2.8),
         Vec2::new(1.81, 4.2),

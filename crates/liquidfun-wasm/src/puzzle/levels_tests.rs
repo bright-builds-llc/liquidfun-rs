@@ -34,36 +34,7 @@ const OPEN_TICK_NUDGES: [i32; 2] = [-1, 1];
 /// Steps timed per level by `level_step_costs`.
 const TIMED_STEPS: u32 = 720;
 
-/// Every checked-in fixture by file name.
-///
-/// Level plans add their pair here; extras such as timed-gate early/late
-/// losses go in too.
-const FIXTURES: &[(&str, &str)] = &[
-    (
-        "first-pour-solution.txt",
-        include_str!("fixtures/first-pour-solution.txt"),
-    ),
-    (
-        "first-pour-empty.txt",
-        include_str!("fixtures/first-pour-empty.txt"),
-    ),
-    (
-        "thick-syrup-solution.txt",
-        include_str!("fixtures/thick-syrup-solution.txt"),
-    ),
-    (
-        "thick-syrup-empty.txt",
-        include_str!("fixtures/thick-syrup-empty.txt"),
-    ),
-    (
-        "jelly-pad-solution.txt",
-        include_str!("fixtures/jelly-pad-solution.txt"),
-    ),
-    (
-        "jelly-pad-empty.txt",
-        include_str!("fixtures/jelly-pad-empty.txt"),
-    ),
-];
+use fixture_table::FIXTURES;
 
 /// The text of a fixture in `FIXTURES`.
 ///
@@ -623,4 +594,5 @@ fn level_step_costs() {
     }
 }
 
+mod fixture_table;
 mod level_proofs;

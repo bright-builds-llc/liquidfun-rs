@@ -5,6 +5,7 @@ export const PUZZLE_TITLES: Readonly<Record<PuzzleId, string>> = {
   "first-pour": "First Pour",
   "thick-syrup": "Thick Syrup",
   "jelly-pad": "Jelly Pad",
+  "timed-gate": "Timed Gate",
 };
 
 /**
@@ -15,6 +16,7 @@ export const PUZZLE_CAPTIONS: Readonly<Record<PuzzleId, string>> = {
   "first-pour": "Water runs downhill. Tilt a plank to pour it into the cup.",
   "thick-syrup": "Syrup is thick and slow. Give it a steep slide.",
   "jelly-pad": "Jelly never counts, but water slides across it. Drop the water onto the pad.",
+  "timed-gate": "The valve opens on a timer. Catch the water first, then let the syrup out.",
 };
 
 /** First-level placement hint (LEVEL-03), shown on the caption leaf until dismissed. */

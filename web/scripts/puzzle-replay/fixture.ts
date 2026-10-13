@@ -83,7 +83,7 @@ export interface ReplayLevel {
 }
 
 /** Fixtures outside the per-level pair, e.g. timed-gate early/late losses (Plan 07). */
-export const EXTRA_FIXTURE_FILES: readonly string[] = [];
+export const EXTRA_FIXTURE_FILES: readonly string[] = ["timed-gate-early.txt", "timed-gate-late.txt"];
 
 /**
  * Every checked-in fixture under `crates/liquidfun-wasm/src/puzzle/fixtures`:

@@ -75,6 +75,17 @@ const LEVEL_GEOMETRY: Record<PuzzleId, LevelGeometry> = {
     // (x -3.72..1.14, y 3.48..10.56, 1365 particles) widened by 0.04 m.
     spawn: { minX: -3.76, minY: 3.44, maxX: 1.18, maxY: 10.6 },
   },
+  "timed-gate": {
+    // timed_gate.rs cup_interior; levelInfo().cupInterior() = [-1.2, 0, 0.6, 1.6] m (f32).
+    cupInterior: { minX: -1.2, minY: 0, maxX: 0.6, maxY: 1.6 },
+    // timed_gate.rs build_area; levelInfo().buildArea() = grid [2, 59, 4, 63] x 0.05 m.
+    buildArea: { minX: 0.1, minY: 2.95, maxX: 0.2, maxY: 3.15 },
+    // timed_gate.rs WALLS; captureFrame().rigidSegments() extents: x -4.5..4.5, y -0.5..10.5.
+    walls: { minX: -4.5, minY: -0.5, maxX: 4.5, maxY: 10.5 },
+    // Water and syrup blocks; captureFrame().particlePositions() extents
+    // (x -4.26..1.74, y 4.5..6.18, 802 particles) widened by 0.04 m.
+    spawn: { minX: -4.3, minY: 4.46, maxX: 1.78, maxY: 6.22 },
+  },
 };
 
 /** Same fit rule as `fittedFrameFraction` in portrait-bounds.test.ts. */

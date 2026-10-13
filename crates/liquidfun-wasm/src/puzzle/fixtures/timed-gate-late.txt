@@ -1,0 +1,7 @@
+level timed-gate
+placement valve 4 61 6 24
+outcome lost
+outcome_step 720
+final_count 444
+peak_held 440
+brim_step none
