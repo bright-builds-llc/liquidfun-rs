@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 41-01-PLAN.md
-last_updated: "2026-10-13T16:53:22.100Z"
+stopped_at: Completed 41-02-PLAN.md
+last_updated: "2026-10-13T16:59:46.717Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 50
-  completed_plans: 43
-  percent: 86
+  completed_plans: 44
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 41 (Level Select and Progress) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -146,6 +146,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-11: final registry 6 levels (first-pour, thick-syrup, jelly-pad, float-up, timed-gate, grand-finale); sand-chute dropped (D-25), float-up kept (D-09); release ms/step 0.25-0.85 (informational, D-23)
 - [Phase 41]: 41-01: level hash = FNV-1a 64 of level-hash-v1|{LevelSpec:?}|grid={GRID_METERS:?}|tick={STEPS_PER_OPEN_TICK} (16 lowercase hex); pins in puzzle/level-hashes.txt checked by the native test and the wasm replay (LEVELHASH lines, native == wasm for all six levels)
 - [Phase 41]: 41-01: baseline target/phase41/base.txt from scene-spot 2026-10-13T16-42-00Z at f277ecad9, identical to Phase 40 after-final; after-01 25/25 identical; TS levelHash parsed fail-closed against /^[0-9a-f]{16}$/
+- [Phase 41]: 41-02: progress v1 core is pure: parseProgress fail-closed (json/shape/future-version), unknown level ids and top-level keys written back verbatim, unknown fields in known records dropped, brim/thrifty without win is shape; stars combine only via mergeLevelStars
+- [Phase 41]: 41-02: not-won placements stored with zero stars; restoreChoice restores only for the live levelHash, <= 16 entries, each through strict maybeParsePlacement, else discard; mergeProgress prefers stored placements and stored unknown data
 
 ### Pending Todos
 
@@ -251,9 +253,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P10 | 43min | 3 tasks | 13 files |
 | Phase 40 P11 | 11min | 2 tasks | 0 files |
 | Phase 41 P01 | 11min | 3 tasks | 12 files |
+| Phase 41 P02 | 6min | 2 tasks | 6 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T16:53:22.097Z
-Stopped at: Completed 41-01-PLAN.md
+Last session: 2026-10-13T16:59:46.713Z
+Stopped at: Completed 41-02-PLAN.md
 Resume file: None
