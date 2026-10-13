@@ -10,6 +10,7 @@ mod inspect;
 pub(crate) mod peak;
 pub(crate) mod sat;
 pub(crate) mod spec;
+pub(crate) mod thick_syrup;
 pub(crate) mod tools;
 pub(crate) mod validate;
 pub(crate) mod valve;
@@ -24,6 +25,9 @@ pub use inspect::{PlacementInspection, inspect_puzzle_placements};
 pub(crate) enum LevelId {
     /// "First Pour": plain water poured toward a cup.
     FirstPour,
+    /// "Thick Syrup": viscous liquid needs a steeper path.
+    #[cfg_attr(not(test), allow(dead_code))] // Draft until it joins LEVEL_IDS.
+    ThickSyrup,
 }
 
 /// Every allowlisted level, in catalog order. Mirrored by `PUZZLE_IDS` in
@@ -35,6 +39,7 @@ impl LevelId {
     pub(crate) const fn as_str(self) -> &'static str {
         match self {
             Self::FirstPour => "first-pour",
+            Self::ThickSyrup => "thick-syrup",
         }
     }
 }
@@ -48,6 +53,7 @@ pub(crate) fn parse_level_id(raw: &str) -> Option<LevelId> {
 pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
     match id {
         LevelId::FirstPour => &first_pour::FIRST_POUR,
+        LevelId::ThickSyrup => &thick_syrup::THICK_SYRUP,
     }
 }
 
