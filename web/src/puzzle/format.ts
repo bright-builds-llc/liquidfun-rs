@@ -228,16 +228,13 @@ export function resultCardModel(state: PuzzleState): ResultCardModel {
   }
 }
 
-/** Result actions: Next link state and which action is the accented primary (D-15). */
+/** Result actions: the Next link, always the accented primary action (D-15). */
 export type ResultActionsModel = {
   readonly next: {
-    readonly enabled: boolean;
     readonly label: "Next" | "All levels";
     readonly ariaLabel: string;
-    readonly maybeTitle: string | undefined;
-    readonly maybeHref: string | undefined;
+    readonly href: string;
   };
-  readonly primary: "next" | "retry";
 };
 
 /**
@@ -247,26 +244,8 @@ export type ResultActionsModel = {
  */
 export function resultActionsModel(maybeNextId: PuzzleId | undefined): ResultActionsModel {
   if (maybeNextId === undefined) {
-    return {
-      next: {
-        enabled: true,
-        label: "All levels",
-        ariaLabel: "All levels",
-        maybeTitle: undefined,
-        maybeHref: PUZZLES_HASH,
-      },
-      primary: "next",
-    };
+    return { next: { label: "All levels", ariaLabel: "All levels", href: PUZZLES_HASH } };
   }
 
-  return {
-    next: {
-      enabled: true,
-      label: "Next",
-      ariaLabel: "Next level",
-      maybeTitle: undefined,
-      maybeHref: puzzleHash(maybeNextId),
-    },
-    primary: "next",
-  };
+  return { next: { label: "Next", ariaLabel: "Next level", href: puzzleHash(maybeNextId) } };
 }

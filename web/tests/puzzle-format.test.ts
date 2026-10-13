@@ -281,31 +281,17 @@ describe("resultActionsModel", () => {
 
     // Assert
     expect(model).toEqual({
-      next: {
-        enabled: true,
-        label: "All levels",
-        ariaLabel: "All levels",
-        maybeTitle: undefined,
-        maybeHref: "#/puzzles",
-      },
-      primary: "next",
+      next: { label: "All levels", ariaLabel: "All levels", href: "#/puzzles" },
     });
   });
 
-  it("links Next to the next level and promotes it", () => {
+  it("links Next to the next level", () => {
     // Act
     const model = resultActionsModel("first-pour");
 
     // Assert
     expect(model).toEqual({
-      next: {
-        enabled: true,
-        label: "Next",
-        ariaLabel: "Next level",
-        maybeTitle: undefined,
-        maybeHref: "#/puzzle/first-pour",
-      },
-      primary: "next",
+      next: { label: "Next", ariaLabel: "Next level", href: "#/puzzle/first-pour" },
     });
   });
 });

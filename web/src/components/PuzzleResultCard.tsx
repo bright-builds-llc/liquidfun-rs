@@ -59,12 +59,6 @@ export function PuzzleResultCard(props: PuzzleResultCardProps) {
     const maybeRun = runStarsForState(props.state, maybeParTools);
     return starRows(maybeThresholds, props.maybeBestStars, maybeRun);
   });
-  const assignPrimary = (primary: "next" | "retry") => (element: HTMLElement) => {
-    if (actions().primary === primary) {
-      props.primaryRef(element);
-    }
-  };
-
   return (
     <section
       class="puzzle-result puzzle-chip"
@@ -106,26 +100,15 @@ export function PuzzleResultCard(props: PuzzleResultCardProps) {
       </Show>
       <Show when={maybeOutcomeCard()}>
         <div class="puzzle-result-actions">
-          <Show when={actions().next.maybeHref}>
-            {(href) => (
-              <a
-                ref={assignPrimary("next")}
-                class="product-control"
-                classList={{ "product-control--accent": actions().primary === "next" }}
-                href={href()}
-                aria-label={actions().next.ariaLabel}
-              >
-                {actions().next.label}
-              </a>
-            )}
-          </Show>
-          <button
-            ref={assignPrimary("retry")}
-            type="button"
-            class="product-control"
-            classList={{ "product-control--accent": actions().primary === "retry" }}
-            onClick={() => props.onRetry()}
+          <a
+            ref={(element) => props.primaryRef(element)}
+            class="product-control product-control--accent"
+            href={actions().next.href}
+            aria-label={actions().next.ariaLabel}
           >
+            {actions().next.label}
+          </a>
+          <button type="button" class="product-control" onClick={() => props.onRetry()}>
             Retry
           </button>
           <button type="button" class="product-control" onClick={() => props.onEdit()}>
