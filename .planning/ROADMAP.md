@@ -218,7 +218,18 @@ Plans:
 1. When storage is unavailable (a throwing getter or `setItem`, corrupt JSON, or a future version), every level is unlocked, the game stays fully playable, and a note says progress won't be saved.
 1. Reopening a level restores the player's last placements, and saved placements are discarded when the level has changed.
 
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+- [ ] 41-01-PLAN.md — Fingerprint baseline, then the pinned Rust `levelHash` getter, TS parse and the wasm replay pin check (wave 1)
+- [ ] 41-02-PLAN.md — Pure progress core: v1 document parse/serialize/merge, unlock rule, grid view model and restore decision (wave 2)
+- [ ] 41-03-PLAN.md — Progress shell with probe and degraded mode; star hydration and write-through; controller degraded flag (wave 3)
+- [ ] 41-04-PLAN.md — Restore saved placements on level entry and save after committed edits and at Play (wave 4)
+- [ ] 41-05-PLAN.md — `#/puzzles` route, level grid page and the sidebar Puzzles link (wave 5)
+- [ ] 41-06-PLAN.md — All levels links: options sheet with note, unknown-level fallback, last-level result action (wave 6)
+- [ ] 41-07-PLAN.md — Playwright puzzle-progress spec on desktop and phone, added to test:puzzle (wave 7)
+- [ ] 41-08-PLAN.md — Phase gates (D-21) and the decision record (wave 8)
+
 **UI hint**: yes
 
 ### Phase 42: Opt-in Sound

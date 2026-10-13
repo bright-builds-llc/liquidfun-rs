@@ -553,16 +553,19 @@ Restore check: read `main[data-puzzle-placements]` (from `puzzle/debug-attribute
 | A3 | Rust core float formatting is integer-only, so it is platform-independent | Pattern 5 | Low. The experiment confirmed equality for 2,000+ values, and the wasm replay pin check re-verifies the real specs. |
 | A4 | Choosing `primary: "next"` for the last-level All levels link | Pattern 7 | UX choice only. The planner or UI-SPEC may pick `"retry"` instead. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact document title for `#/puzzles`**
    - What we know: D-02 says `titleForPlayableRoute` "returns 'Puzzles'". Other titles use the form `"<X> · puzzle · liquidfun-rs playground"` or `"<Scene> · liquidfun-rs playground"`.
    - Recommendation: use `"Puzzles · liquidfun-rs playground"` for consistency, unless the bare word was intended. This is a minor point for the planner.
+   - RESOLVED: `"Puzzles · liquidfun-rs playground"` (UI-SPEC UI-D26, Plan 05).
 1. **Extra top-level JSON keys in a v1 document**
    - What we know: D-13 preserves unknown **level ids** but says nothing about other top-level keys.
    - Recommendation: preserve them verbatim in a null-prototype `extra` record. Writing them back costs little and keeps the "never destroy data" spirit. Alternatively treat them as `shape`, which would push a v1 document with extra keys into degraded mode. That is too strict.
+   - RESOLVED: preserved verbatim in a null-prototype `extra` record and written back (Plan 02).
 1. **Immediate versus lazy removal of mismatched placements**
    - Recommendation: remove them immediately through `discardPlacements`, which is a normal merged write. Edge case: an older build open in another tab could delete the newer build's placements. Accept this, because stars are never affected.
+   - RESOLVED: removed immediately through `maybeRestore` as a normal merged write, never in degraded mode (Plan 03).
 
 ## Environment Availability
 
