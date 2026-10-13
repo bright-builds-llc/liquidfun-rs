@@ -4,8 +4,10 @@
  * - `spike`: prints per-step wasm frame hashes for the spike scenes.
  * - `compare <left> <right>`: compares two spike hash files per scene.
  * - `replay [--record]`: replays the recorded puzzle fixtures through the
- *   generated wasm `newPuzzle` (D-19). `--record` prints `RECORD` lines and
- *   never writes a fixture.
+ *   generated wasm `newPuzzle` (D-19), checking the outcome, the peak held
+ *   count and the Brim step (Phase 39 D-12). `--record` replays only the
+ *   level and placement lines, prints `RECORD` lines and never writes a
+ *   fixture.
  */
 
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -28,8 +30,10 @@ import {
   spikeLine,
 } from "./puzzle-replay/spike";
 import {
+  brimToken,
   checkReplay,
   FIXTURE_FILES,
+  fixtureInputText,
   type FixtureOutcome,
   fixtureLanes,
   MARGIN_WIN_SLACK_STEPS,
@@ -104,6 +108,7 @@ function readLevel(session: GeneratedPuzzleSession): ReplayLevel {
     return {
       targetCount: info.targetCount(),
       fullCount: info.fullCount(),
+      brimCount: info.brimCount(),
       settleSteps: info.settleSteps(),
       stepLimit: info.stepLimit(),
     };
@@ -133,6 +138,7 @@ function capturePuzzle(
   if (
     puzzle.goalTarget !== level.targetCount ||
     puzzle.goalFull !== level.fullCount ||
+    puzzle.brimCount !== level.brimCount ||
     puzzle.stepLimit !== level.stepLimit
   ) {
     throw new Error(
@@ -153,6 +159,44 @@ function requireLatch(
   }
 }
 
+/** Peak held count and Brim step read from the frame at the decision step. */
+interface Decision {
+  readonly step: number;
+  readonly peakHeld: number;
+  readonly maybeBrimStep: number | undefined;
+}
+
+/**
+ * Mirrors Rust `observe_decision`: records the decision from the frame whose
+ * step is the decided step, and requires it never to change once present.
+ */
+function observeDecision(
+  maybeDecision: Decision | undefined,
+  stepIndex: number,
+  puzzle: PuzzleFrameStatus,
+): Decision | undefined {
+  if (maybeDecision !== undefined) {
+    if (puzzle.maybeDecidedStep !== maybeDecision.step) {
+      throw new Error(`decided step changed at step ${stepIndex}`);
+    }
+    return maybeDecision;
+  }
+  const decided = puzzle.maybeDecidedStep;
+  if (decided === undefined) {
+    return undefined;
+  }
+  if (decided !== stepIndex) {
+    throw new Error(
+      `decided step ${decided} first appeared on frame ${stepIndex}`,
+    );
+  }
+  return {
+    step: stepIndex,
+    peakHeld: puzzle.peakHeldCount,
+    maybeBrimStep: puzzle.maybeBrimStep,
+  };
+}
+
 /** Steps a puzzle session like Rust `replay::replay`, on one session. */
 function replaySession(
   session: GeneratedPuzzleSession,
@@ -160,12 +204,14 @@ function replaySession(
 ): ReplayTrace {
   const counts: number[] = [];
   let latch: { outcome: FixtureOutcome; outcomeStep: number; finalCount: number } | undefined;
+  let maybeDecision: Decision | undefined;
   let stepIndex = 0;
   while (latch === undefined) {
     session.advance(1);
     const captured = capturePuzzle(session, level);
     stepIndex = captured.stepIndex;
     counts.push(captured.puzzle.goalCount);
+    maybeDecision = observeDecision(maybeDecision, stepIndex, captured.puzzle);
     if (captured.puzzle.outcome !== "running") {
       const outcomeStep = captured.puzzle.maybeOutcomeStep;
       if (outcomeStep === undefined) {
@@ -183,13 +229,20 @@ function replaySession(
     }
   }
   const windowEnd = level.stepLimit - MARGIN_WIN_SLACK_STEPS;
-  while (stepIndex < windowEnd) {
+  while (maybeDecision === undefined || stepIndex < windowEnd) {
+    if (maybeDecision === undefined && stepIndex >= level.stepLimit) {
+      throw new Error(
+        `replay reached step limit ${level.stepLimit} without a decision`,
+      );
+    }
     session.advance(1);
     const captured = capturePuzzle(session, level);
     stepIndex = captured.stepIndex;
     requireLatch(stepIndex, captured.puzzle, latch.outcome, latch.outcomeStep);
     counts.push(captured.puzzle.goalCount);
+    maybeDecision = observeDecision(maybeDecision, stepIndex, captured.puzzle);
   }
+  const decision = maybeDecision;
   for (let done = 0; done < POST_LATCH_STEPS; done += POST_LATCH_ADVANCE) {
     session.advance(POST_LATCH_ADVANCE);
     const captured = capturePuzzle(session, level);
@@ -199,8 +252,15 @@ function replaySession(
       latch.outcome,
       latch.outcomeStep,
     );
+    observeDecision(decision, captured.stepIndex, captured.puzzle);
   }
-  return { ...latch, counts };
+  return {
+    ...latch,
+    peakHeld: decision.peakHeld,
+    maybeBrimStep: decision.maybeBrimStep,
+    decidedStep: decision.step,
+    counts,
+  };
 }
 
 async function runReplay(record: boolean): Promise<void> {
@@ -213,9 +273,8 @@ async function runReplay(record: boolean): Promise<void> {
   const generated = await loadGeneratedWasm();
   let failed = false;
   for (const file of FIXTURE_FILES) {
-    const fixture = parseFixture(
-      await readFile(resolve(FIXTURE_DIRECTORY, file), "utf8"),
-    );
+    const text = await readFile(resolve(FIXTURE_DIRECTORY, file), "utf8");
+    const fixture = parseFixture(record ? fixtureInputText(text) : text);
     const { kinds, poses } = fixtureLanes(fixture);
     const session = generated.ProofSession.newPuzzle(fixture.level, kinds, poses);
     try {
@@ -223,7 +282,7 @@ async function runReplay(record: boolean): Promise<void> {
       const trace = replaySession(session, level);
       if (record) {
         await report(
-          `RECORD ${file} outcome ${trace.outcome} outcome_step ${trace.outcomeStep} final_count ${trace.finalCount} profile wasm`,
+          `RECORD ${file} outcome ${trace.outcome} outcome_step ${trace.outcomeStep} final_count ${trace.finalCount} peak_held ${trace.peakHeld} brim_step ${brimToken(trace.maybeBrimStep)} profile wasm`,
         );
         continue;
       }
@@ -236,7 +295,7 @@ async function runReplay(record: boolean): Promise<void> {
       );
       if (failures.length === 0) {
         await report(
-          `REPLAY ${file} pass (outcome ${trace.outcome} step ${trace.outcomeStep} final_count ${trace.finalCount})`,
+          `REPLAY ${file} pass (outcome ${trace.outcome} step ${trace.outcomeStep} final_count ${trace.finalCount} peak_held ${trace.peakHeld} brim_step ${brimToken(trace.maybeBrimStep)})`,
         );
         continue;
       }

@@ -1,9 +1,10 @@
 /**
- * Puzzle replay fixtures (Phase 37 D-18, D-19, D-22).
+ * Puzzle replay fixtures (Phase 37 D-18, D-19, D-22; Phase 39 D-12).
  *
- * Mirrors `crates/liquidfun-wasm/src/puzzle/replay.rs` one to one: the same
- * strict line grammar, the same `fixture line N: ...` errors, and the same
- * contract, so both runtimes accept exactly the same text.
+ * Mirrors `crates/liquidfun-wasm/src/puzzle/replay/fixture.rs` (grammar) and
+ * `replay.rs` (contract) one to one: the same strict line grammar, the same
+ * `fixture line N: ...` errors, and the same contract, so both runtimes
+ * accept exactly the same text.
  */
 
 import { PUZZLE_IDS } from "../../src/catalog/puzzles";
@@ -19,12 +20,19 @@ export interface FixturePlacement {
   readonly angle: number;
 }
 
-/** The recorded `outcome`, `outcome_step` and `final_count` lines. */
+/**
+ * The recorded `outcome`, `outcome_step`, `final_count`, `peak_held` and
+ * `brim_step` lines.
+ */
 export interface FixtureExpectation {
   readonly outcome: FixtureOutcome;
   readonly outcomeStep: number;
   /** Frame goal count at `outcomeStep`. */
   readonly finalCount: number;
+  /** Frame peak held count at the decision step (D-12). */
+  readonly peakHeld: number;
+  /** Frame Brim step; undefined for the `none` token (D-12). */
+  readonly maybeBrimStep: number | undefined;
 }
 
 /** A parsed fixture; input-only fixtures have no expectation. */
@@ -39,7 +47,16 @@ export interface ReplayTrace {
   readonly outcome: FixtureOutcome;
   readonly outcomeStep: number;
   readonly finalCount: number;
-  /** `counts[i]` is the goal count after step `i + 1`. */
+  /** Frame peak held count at `decidedStep` (D-12). */
+  readonly peakHeld: number;
+  /** Frame Brim step at `decidedStep` (D-12). */
+  readonly maybeBrimStep: number | undefined;
+  /** The D-10 decision step, read from the frames. */
+  readonly decidedStep: number;
+  /**
+   * `counts[i]` is the goal count after step `i + 1`, through the later of
+   * `decidedStep` and `stepLimit - MARGIN_WIN_SLACK_STEPS`.
+   */
   readonly counts: readonly number[];
 }
 
@@ -47,6 +64,7 @@ export interface ReplayTrace {
 export interface ReplayLevel {
   readonly targetCount: number;
   readonly fullCount: number;
+  readonly brimCount: number;
   readonly settleSteps: number;
   readonly stepLimit: number;
 }
@@ -82,7 +100,12 @@ const KNOWN_KEYS = [
   "outcome",
   "outcome_step",
   "final_count",
+  "peak_held",
+  "brim_step",
 ] as const;
+
+/** The `brim_step` token for a run that never reached Brim. */
+export const NO_BRIM_TOKEN = "none";
 
 const I32_MIN = -2_147_483_648;
 const I32_MAX = 2_147_483_647;
@@ -211,19 +234,27 @@ function parseExpectation(
     throw lineError(outcomeField.number, "outcome must be `won` or `lost`");
   }
   const stepField = expectField(rows[1], "outcome_step", missingNumber);
+  const outcomeStep = parseU32(stepField.number, stepField.value);
   const countField = expectField(rows[2], "final_count", missingNumber);
-  const extra = rows[3];
+  const finalCount = parseU32(countField.number, countField.value);
+  const peakField = expectField(rows[3], "peak_held", missingNumber);
+  const peakHeld = parseU32(peakField.number, peakField.value);
+  const brimField = expectField(rows[4], "brim_step", missingNumber);
+  const maybeBrimStep =
+    brimField.value === NO_BRIM_TOKEN
+      ? undefined
+      : parseU32(brimField.number, brimField.value);
+  const extra = rows[5];
   if (extra !== undefined) {
-    throw lineError(extra.number, "unexpected line after final_count");
+    throw lineError(extra.number, "unexpected line after brim_step");
   }
-  return {
-    outcome,
-    outcomeStep: parseU32(stepField.number, stepField.value),
-    finalCount: parseU32(countField.number, countField.value),
-  };
+  return { outcome, outcomeStep, finalCount, peakHeld, maybeBrimStep };
 }
 
-/** Parses the strict D-18 line format; throws `fixture line N: ...`. */
+/**
+ * Parses the strict D-18 line format with the D-12 expectation lines; throws
+ * `fixture line N: ...`.
+ */
 export function parseFixture(text: string): Fixture {
   const rows = splitRows(text);
   const [levelRow, ...rest] = rows;
@@ -276,15 +307,17 @@ export function fillMarginCount(fullCount: number): number {
 
 /**
  * Mirrors Rust `goal::maybe_margin_win_step`: replays `counts` through a
- * `GoalTracker` at `targetCount + fillMarginCount(fullCount)` with the same
+ * `GoalTracker` at `count + fillMarginCount(fullCount)` with the same
  * `settleSteps` and a deadline `MARGIN_WIN_SLACK_STEPS` before `stepLimit`.
- * Returns the win step, or undefined when that tracker never wins.
+ * `count` is the target for the win margin and the Brim count for the Brim
+ * margin. Returns the win step, or undefined when that tracker never wins.
  */
 export function marginWinStep(
   counts: readonly number[],
+  count: number,
   level: ReplayLevel,
 ): number | undefined {
-  const raisedTarget = level.targetCount + fillMarginCount(level.fullCount);
+  const raisedTarget = count + fillMarginCount(level.fullCount);
   const deadline = level.stepLimit - MARGIN_WIN_SLACK_STEPS;
   if (
     deadline < 0 ||
@@ -308,14 +341,24 @@ export function marginWinStep(
   return undefined;
 }
 
+/** `count` raised by the fill margin must hold by the margin window end. */
+function raisedHoldFailures(
+  label: string,
+  trace: ReplayTrace,
+  count: number,
+  level: ReplayLevel,
+): string[] {
+  return marginWinStep(trace.counts, count, level) === undefined
+    ? [
+        `${label} does not hold at the raised count ${count + fillMarginCount(level.fullCount)} by step ${Math.max(0, level.stepLimit - MARGIN_WIN_SLACK_STEPS)}`,
+      ]
+    : [];
+}
+
 function marginFailures(trace: ReplayTrace, level: ReplayLevel): string[] {
   const margin = fillMarginCount(level.fullCount);
   if (trace.outcome === "won") {
-    return marginWinStep(trace.counts, level) === undefined
-      ? [
-          `win does not hold at the raised target ${level.targetCount + margin} by step ${Math.max(0, level.stepLimit - MARGIN_WIN_SLACK_STEPS)}`,
-        ]
-      : [];
+    return raisedHoldFailures("win", trace, level.targetCount, level);
   }
   if (trace.outcomeStep !== level.stepLimit) {
     return [
@@ -331,10 +374,84 @@ function marginFailures(trace: ReplayTrace, level: ReplayLevel): string[] {
       ];
 }
 
+/** The fixture token for an optional Brim step: digits or `none`. */
+export function brimToken(maybeBrimStep: number | undefined): string {
+  return maybeBrimStep === undefined ? NO_BRIM_TOKEN : String(maybeBrimStep);
+}
+
+function exactFailures(
+  trace: ReplayTrace,
+  expected: FixtureExpectation,
+): string[] {
+  if (trace.outcomeStep !== expected.outcomeStep) {
+    return [
+      `outcome step ${trace.outcomeStep} differs from recorded ${expected.outcomeStep}`,
+    ];
+  }
+  if (trace.finalCount !== expected.finalCount) {
+    return [
+      `final count ${trace.finalCount} differs from recorded ${expected.finalCount}`,
+    ];
+  }
+  if (trace.peakHeld !== expected.peakHeld) {
+    return [
+      `peak held ${trace.peakHeld} differs from recorded ${expected.peakHeld}`,
+    ];
+  }
+  return trace.maybeBrimStep === expected.maybeBrimStep
+    ? []
+    : [
+        `Brim step ${brimToken(trace.maybeBrimStep)} differs from recorded ${brimToken(expected.maybeBrimStep)}`,
+      ];
+}
+
+function toleranceFailures(
+  label: string,
+  step: number,
+  recorded: number,
+  tolerance: number,
+): string[] {
+  const spread = Math.abs(step - recorded);
+  return spread <= tolerance
+    ? []
+    : [
+        `${label} ${step} is ${spread} steps from recorded ${recorded} (tolerance ${tolerance})`,
+      ];
+}
+
+function fallbackFailures(
+  trace: ReplayTrace,
+  expected: FixtureExpectation,
+  tolerance: number,
+): string[] {
+  const outcome = toleranceFailures(
+    "outcome step",
+    trace.outcomeStep,
+    expected.outcomeStep,
+    tolerance,
+  );
+  if (outcome.length > 0) {
+    return outcome;
+  }
+  const { maybeBrimStep } = trace;
+  const maybeRecorded = expected.maybeBrimStep;
+  if (maybeBrimStep !== undefined && maybeRecorded !== undefined) {
+    return toleranceFailures("Brim step", maybeBrimStep, maybeRecorded, tolerance);
+  }
+  return maybeBrimStep === maybeRecorded
+    ? []
+    : [
+        `Brim step ${brimToken(maybeBrimStep)} differs from recorded ${brimToken(maybeRecorded)}`,
+      ];
+}
+
 /**
  * Mirrors Rust `check_contract`; returns failures (`[]` = pass). Both forms
- * require the recorded outcome and the margin; `exact` also requires the
- * recorded step and final count, otherwise the step may differ by `tolerance`.
+ * require the recorded outcome and the margin, and a recorded Brim step must
+ * still be reached with the Brim count raised by the margin (D-12). `exact`
+ * also requires the recorded step, final count, peak held count and Brim
+ * step; otherwise the outcome and Brim steps may differ by `tolerance` and
+ * Brim must be reached exactly when recorded.
  */
 export function checkReplay(
   fixture: Fixture,
@@ -358,22 +475,23 @@ export function checkReplay(
   if (margin.length > 0) {
     return margin;
   }
-  if (exact) {
-    if (trace.outcomeStep !== expected.outcomeStep) {
-      return [
-        `outcome step ${trace.outcomeStep} differs from recorded ${expected.outcomeStep}`,
-      ];
+  if (expected.maybeBrimStep !== undefined) {
+    const brim = raisedHoldFailures("Brim", trace, level.brimCount, level);
+    if (brim.length > 0) {
+      return brim;
     }
-    return trace.finalCount === expected.finalCount
-      ? []
-      : [
-          `final count ${trace.finalCount} differs from recorded ${expected.finalCount}`,
-        ];
   }
-  const spread = Math.abs(trace.outcomeStep - expected.outcomeStep);
-  return spread <= tolerance
-    ? []
-    : [
-        `outcome step ${trace.outcomeStep} is ${spread} steps from recorded ${expected.outcomeStep} (tolerance ${tolerance})`,
-      ];
+  return exact
+    ? exactFailures(trace, expected)
+    : fallbackFailures(trace, expected, tolerance);
+}
+
+/**
+ * The level and placement lines of a fixture. Record mode regenerates the
+ * expectation, so it must not depend on the recorded lines' grammar.
+ */
+export function fixtureInputText(text: string): string {
+  const lines = text.endsWith("\n") ? text.slice(0, -1).split("\n") : text.split("\n");
+  const end = lines.findIndex((line) => line.startsWith("outcome "));
+  return `${(end === -1 ? lines : lines.slice(0, end)).join("\n")}\n`;
 }

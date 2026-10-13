@@ -127,12 +127,13 @@ describe("puzzle-replay spike comparison", () => {
 });
 
 const FULL_WON =
-  "level first-pour\nplacement plank 8 64 23\noutcome won\noutcome_step 412\nfinal_count 640\n";
+  "level first-pour\nplacement plank 8 64 23\noutcome won\noutcome_step 412\nfinal_count 640\npeak_held 811\nbrim_step 262\n";
 
 /** first-pour level numbers, as `levelInfo()` reports them. */
 const FIRST_POUR: ReplayLevel = {
   targetCount: 540,
   fullCount: 900,
+  brimCount: 810,
   settleSteps: 30,
   stepLimit: 720,
 };
@@ -148,7 +149,13 @@ function fixtureExpecting(
   return {
     level: "first-pour",
     placements: [],
-    maybeExpectation: { outcome, outcomeStep, finalCount },
+    maybeExpectation: {
+      outcome,
+      outcomeStep,
+      finalCount,
+      peakHeld: finalCount,
+      maybeBrimStep: undefined,
+    },
   };
 }
 
@@ -165,15 +172,22 @@ function wonTrace(outcomeStep: number, held: number): ReplayTrace {
     outcome: "won",
     outcomeStep,
     finalCount: held,
+    peakHeld: held,
+    maybeBrimStep: undefined,
+    decidedStep: FIRST_POUR.stepLimit,
     counts: heldCounts(outcomeStep + 1 - FIRST_POUR.settleSteps, held),
   };
 }
 
 function lostTrace(counts: readonly number[]): ReplayTrace {
+  const finalCount = counts.at(-1) ?? 0;
   return {
     outcome: "lost",
     outcomeStep: FIRST_POUR.stepLimit,
-    finalCount: counts.at(-1) ?? 0,
+    finalCount,
+    peakHeld: finalCount,
+    maybeBrimStep: undefined,
+    decidedStep: FIRST_POUR.stepLimit,
     counts,
   };
 }
@@ -190,7 +204,13 @@ describe("puzzle-replay fixture parser", () => {
     expect(fixture).toEqual({
       level: "first-pour",
       placements: [{ kind: "plank", x: 8, y: 64, angle: 23 }],
-      maybeExpectation: { outcome: "won", outcomeStep: 412, finalCount: 640 },
+      maybeExpectation: {
+        outcome: "won",
+        outcomeStep: 412,
+        finalCount: 640,
+        peakHeld: 811,
+        maybeBrimStep: 262,
+      },
     });
   });
 
