@@ -75,6 +75,8 @@ function fakeCanvas(context = fakeContext()) {
     },
     getContext: vi.fn(() => context),
     getBoundingClientRect: () => ({ width: 390, height: 844 }),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   };
   return { canvas: canvas as unknown as HTMLCanvasElement, classes, context };
 }
@@ -322,6 +324,27 @@ describe("assignPuzzleCanvas", () => {
     expect(previous.detach).toHaveBeenCalledTimes(1);
     expect(session.maybeCanvasPointer).toBeUndefined();
     expect(classes.has("canvas-interactive")).toBe(false);
+  });
+
+  it("binds a separate editor input and detaches the previous one", () => {
+    // Arrange
+    const session = withPuzzle(fakeRuntime(PUZZLE_ROUTE));
+    session.frameDeps = () => resizeDeps(PUZZLE_ROUTE);
+    bindSurface(session);
+    const previous = { detach: vi.fn(), cancel: vi.fn() };
+    session.puzzle.maybeEditorInput = previous;
+    const { canvas } = fakeCanvas();
+
+    // Act
+    session.assignPuzzleCanvas(canvas);
+
+    // Assert
+    expect(previous.detach).toHaveBeenCalledTimes(1);
+    expect(session.puzzle.maybeEditorInput).toBeDefined();
+    expect(session.puzzle.maybeEditorInput).not.toBe(previous);
+    expect(canvas.addEventListener).toHaveBeenCalledWith("pointerdown", expect.any(Function));
+    expect(attachCanvasPointer).not.toHaveBeenCalled();
+    expect(session.maybeCanvasPointer).toBeUndefined();
   });
 
   it("stores the 2D context and connects the resize observer", () => {
