@@ -1,4 +1,5 @@
 import "../styles/puzzle.css";
+import "../styles/puzzle-editor.css";
 
 import {
   Show,

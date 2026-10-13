@@ -139,10 +139,16 @@ describe("puzzle stylesheet", () => {
     expect(hasMotion).toBe(false);
   });
 
-  it("gives the meter, timer, result, play and legend slots a fixed width and height", () => {
+  it("gives the meter, timer, result, transport and legend slots a fixed width and height", () => {
     // Arrange
-    const css = source("styles/puzzle.css");
-    const leaves = [".puzzle-meter", ".puzzle-timer", ".puzzle-result", ".puzzle-play", ".puzzle-legend-slot"];
+    const css = `${source("styles/puzzle.css")}\n${source("styles/puzzle-editor.css")}`;
+    const leaves = [
+      ".puzzle-meter",
+      ".puzzle-timer",
+      ".puzzle-result",
+      ".puzzle-transport",
+      ".puzzle-legend-slot",
+    ];
 
     // Act
     const unsized = leaves.filter((leaf) => {

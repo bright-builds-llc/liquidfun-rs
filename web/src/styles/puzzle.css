@@ -13,7 +13,7 @@
   --puzzle-inset-left: max(8px, env(safe-area-inset-left, 0px));
 }
 
-/* No pointer interactions on puzzle canvases, so no crosshair (D-16). */
+/* Never the scene crosshair; puzzle-editor.css adds the editor cursors. */
 .puzzle-panel canvas.scene-canvas {
   cursor: default;
 }
@@ -94,32 +94,6 @@
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
-}
-
-.puzzle-play.product-control {
-  box-sizing: border-box;
-  gap: 8px;
-  width: 136px;
-  height: 44px;
-  min-block-size: 44px;
-  padding: 0 16px;
-  border-radius: 12px;
-}
-
-.puzzle-play svg {
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  fill: currentColor;
-  stroke: none;
-}
-
-.puzzle-play.product-control[aria-disabled="true"],
-.puzzle-play.product-control[aria-disabled="true"]:hover {
-  color: #A9B4C0;
-  background: #151D28;
-  border-color: #2A3441;
-  cursor: default;
 }
 
 .puzzle-result {
@@ -222,7 +196,6 @@
   margin: 0;
 }
 
-.puzzle-hud .puzzle-play,
 .puzzle-hud .puzzle-result a,
 .puzzle-hud .puzzle-result button,
 .puzzle-hud .puzzle-options-slot button {
@@ -299,8 +272,13 @@
   display: block;
 }
 
+/* Next spans the card; Retry and Edit share the row below it (UI-D15). */
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-actions {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-actions > :first-child {
+  grid-column: 1 / -1;
 }
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-actions .product-control {
@@ -346,9 +324,9 @@
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-result {
   right: var(--puzzle-inset-right);
-  bottom: calc(var(--puzzle-inset-bottom) + 52px);
+  bottom: calc(var(--puzzle-inset-bottom) + 104px);
   left: var(--puzzle-inset-left);
-  height: 92px;
+  height: 160px;
 }
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-result:not([data-outcome]) .puzzle-result-message {
@@ -363,7 +341,7 @@
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-transport {
   bottom: var(--puzzle-inset-bottom);
   left: var(--puzzle-inset-left);
-  width: 136px;
+  width: 236px;
   height: 44px;
 }
 
@@ -376,8 +354,7 @@
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-meter,
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-timer,
-.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result,
-.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-play {
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result {
   position: static;
   flex: 0 0 auto;
 }
@@ -394,7 +371,7 @@
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result {
   width: min(100%, 480px);
-  height: 92px;
+  height: 160px;
 }
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result:not([data-outcome]) .puzzle-result-message {
@@ -404,12 +381,6 @@
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-result-actions {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-play.product-control {
-  justify-self: start;
-  width: 136px;
-  height: 44px;
 }
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .viewport-frame > .puzzle-legend-slot {

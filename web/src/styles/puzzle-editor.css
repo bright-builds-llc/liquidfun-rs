@@ -1,0 +1,312 @@
+/*
+ * Puzzle editor chrome (Phase 39 UI-SPEC): tool tray, selection bar, run
+ * controls, star rows and the focusable canvas. Every leaf keeps one fixed box
+ * per layout in every phase, so the safe frame never refits (D-26). Base rules
+ * are the portrait and form-factor look; landscape narrows the rail controls
+ * to joined 44 px icon buttons. No motion on puzzle chrome.
+ */
+
+/* Canvas editor: no page scroll or zoom while dragging, ring kept on screen. */
+
+.puzzle-panel canvas.scene-canvas {
+  touch-action: none;
+}
+
+.puzzle-panel canvas.scene-canvas:focus-visible {
+  outline: 2px solid #4DA3FF;
+  outline-offset: -4px;
+}
+
+.puzzle-panel canvas.scene-canvas.puzzle-canvas--over-tool {
+  cursor: grab;
+}
+
+.puzzle-panel canvas.scene-canvas.puzzle-canvas--armed {
+  cursor: copy;
+}
+
+.puzzle-panel canvas.scene-canvas.puzzle-canvas--dragging {
+  cursor: grabbing;
+}
+
+/* Icons. */
+
+.puzzle-icon {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Control groups and buttons. */
+
+.puzzle-tray,
+.puzzle-selection-bar,
+.puzzle-transport {
+  display: flex;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  gap: 8px;
+}
+
+.puzzle-hud .puzzle-tray button,
+.puzzle-hud .puzzle-selection-bar button,
+.puzzle-hud .puzzle-transport button {
+  pointer-events: auto;
+}
+
+.puzzle-tray .product-control,
+.puzzle-selection-bar .product-control,
+.puzzle-transport .product-control {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  min-width: 0;
+  min-block-size: 44px;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.puzzle-panel .product-control[aria-disabled="true"],
+.puzzle-panel .product-control[aria-disabled="true"]:hover {
+  color: #A9B4C0;
+  background: #151D28;
+  border-color: #2A3441;
+  cursor: default;
+}
+
+/* Tray items share the tray width; the name shows only where it fits. */
+
+.puzzle-tray .puzzle-tray-item {
+  flex: 1 1 0;
+  gap: 4px;
+  width: auto;
+  padding: 0 8px;
+}
+
+.puzzle-tray-item[aria-pressed="true"],
+.puzzle-tray-item[aria-pressed="true"]:hover {
+  background: #1C2734;
+  box-shadow: inset 0 0 0 2px #F4F7FA;
+}
+
+.puzzle-tray-name {
+  display: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.puzzle-tray[data-kind-count="1"] .puzzle-tray-name,
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-tray[data-kind-count="2"] .puzzle-tray-name,
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray[data-kind-count="2"] .puzzle-tray-name {
+  display: block;
+}
+
+.puzzle-tray-count {
+  flex: 0 0 auto;
+  color: #F4F7FA;
+}
+
+.puzzle-tray-count[data-empty="true"],
+.puzzle-tray-item[aria-disabled="true"] .puzzle-tray-count {
+  color: #A9B4C0;
+}
+
+/* Run controls: Play/Stop 96, Speed 52, Clear 72 (portrait, form-factor). */
+
+.puzzle-transport .product-control {
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.puzzle-transport .puzzle-play {
+  width: 96px;
+}
+
+.puzzle-transport .puzzle-speed {
+  width: 52px;
+}
+
+.puzzle-transport .puzzle-clear {
+  width: 72px;
+}
+
+.puzzle-clear .puzzle-icon {
+  display: none;
+}
+
+/* Star rows (UI-D12): earned filled amber, best amber outline, none muted. */
+
+.puzzle-stars {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.puzzle-star-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  overflow: hidden;
+  color: #F4F7FA;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.puzzle-star-glyph {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  color: #A9B4C0;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.puzzle-star-row[data-glyph="earned"] .puzzle-star-glyph,
+.puzzle-star-row[data-glyph="best"] .puzzle-star-glyph {
+  color: #E6C35C;
+}
+
+/* Result message states and the reached ★ tick (D-10). */
+
+.puzzle-result .puzzle-result-message--status {
+  color: #F07178;
+}
+
+.puzzle-result[data-deciding="true"] .puzzle-result-outcome {
+  color: #3DDC97;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.puzzle-result[data-deciding="true"] .puzzle-result-pending {
+  color: #A9B4C0;
+  font-weight: 400;
+}
+
+.puzzle-meter-tick[data-reached="true"] {
+  box-shadow: 0 0 0 2px rgb(230 195 92 / 40%);
+}
+
+/* Landscape rails: tray under the timer, selection bar above the legend. */
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-tray {
+  top: calc(var(--puzzle-inset-top) + 228px);
+  left: var(--puzzle-inset-left);
+  width: 136px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-selection-bar {
+  right: var(--puzzle-inset-right);
+  bottom: calc(var(--puzzle-inset-bottom) + 36px);
+  width: 136px;
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-tray-item {
+  font-size: 14px;
+}
+
+/* Joined 44 px groups: 0 gap, shared 1 px borders, left-aligned 132 px. */
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport,
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-selection-bar {
+  gap: 0;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport .product-control,
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-selection-bar .product-control {
+  width: 44px;
+  padding: 0;
+  border-radius: 0;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport .product-control:first-child,
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-selection-bar .product-control:first-child {
+  border-radius: 12px 0 0 12px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport .product-control:last-child,
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-selection-bar .product-control:last-child {
+  border-radius: 0 12px 12px 0;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport .product-control + .product-control,
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-selection-bar .product-control + .product-control {
+  border-left-width: 0;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport-text {
+  display: none;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-clear .puzzle-icon {
+  display: block;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-star-row {
+  height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-star-glyph {
+  width: 12px;
+  height: 12px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-outcome,
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-pending {
+  display: block;
+}
+
+/* Portrait: tray and selection bar share the row above the transport. */
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray {
+  bottom: calc(var(--puzzle-inset-bottom) + 52px);
+  left: var(--puzzle-inset-left);
+  width: calc(100% - var(--puzzle-inset-left) - var(--puzzle-inset-right) - 156px);
+  height: 44px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-selection-bar {
+  right: var(--puzzle-inset-right);
+  bottom: calc(var(--puzzle-inset-bottom) + 52px);
+  width: 148px;
+  height: 44px;
+}
+
+/* Form-factor shell: normal flow in the control row; no obstacles. */
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-transport {
+  width: 236px;
+  height: 44px;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-tray {
+  width: 320px;
+  height: 44px;
+}
+
+.puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-selection-bar {
+  width: 148px;
+  height: 44px;
+}
