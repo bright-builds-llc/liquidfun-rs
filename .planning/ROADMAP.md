@@ -189,7 +189,20 @@ Plans:
 1. The first level shows a placement hint that the player can dismiss and that does not return after dismissal.
 1. Each level has a portrait frame that fills a phone canvas (about 390 by 844 CSS pixels) and stays within its particle budget, and 25/25 scene fingerprints are unchanged.
 
-**Plans**: TBD
+**Plans**: 11 plans
+
+Plans:
+- [ ] 40-01-PLAN.md — Fingerprint baseline, then Rust stride-4 lanes, ToolKind::Valve, status 13, 5/6-token fixture grammar and the pre-step valve opening (wave 1)
+- [ ] 40-02-PLAN.md — Bun fixture grammar and registry-derived fixture files; TS stride-4 lanes, valve code, status 13, editor and debug attribute (wave 2)
+- [ ] 40-03-PLAN.md — Liquid materials, system tuning and circle floats; tuning probe and the table-driven level proof harness (wave 2)
+- [ ] 40-04-PLAN.md — Valve time UI: setValveTime, [ and ] keys, the always-mounted stepper, labels, countdown and open outline (wave 3)
+- [ ] 40-05-PLAN.md — Caption leaf, one-time first-level hint with guarded storage, and hint e2e (wave 4)
+- [ ] 40-06-PLAN.md — thick-syrup and jelly-pad levels with fixtures, captions, frames and proofs (wave 5)
+- [ ] 40-07-PLAN.md — timed-gate valve level, open-tick window sweep, reproducibility and the browser valve replay (wave 6)
+- [ ] 40-08-PLAN.md — Powder spike, then ship sand-chute with a measured caption or drop it under D-25 (wave 7)
+- [ ] 40-09-PLAN.md — float-up buoyancy level, or drop under D-09 (wave 8)
+- [ ] 40-10-PLAN.md — grand-finale level and the every-level route e2e (wave 9)
+- [ ] 40-11-PLAN.md — Phase gates (D-24) and the decision record (wave 10)
 **UI hint**: yes
 
 ### Phase 41: Level Select and Progress
