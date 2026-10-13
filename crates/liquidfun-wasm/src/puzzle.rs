@@ -3,6 +3,7 @@
 pub(crate) mod angles;
 pub(crate) mod builder;
 pub(crate) mod first_pour;
+pub(crate) mod float_up;
 pub(crate) mod goal;
 pub(crate) mod hooks;
 mod info;
@@ -31,6 +32,8 @@ pub(crate) enum LevelId {
     ThickSyrup,
     /// "Jelly Pad": an uncounted elastic pad turns the stream toward the cup.
     JellyPad,
+    /// "Float Up": a floating ball rises and plugs its well's drain.
+    FloatUp,
     /// "Timed Gate": the valve's open time decides the outcome.
     TimedGate,
 }
@@ -51,6 +54,7 @@ impl LevelId {
             Self::FirstPour => "first-pour",
             Self::ThickSyrup => "thick-syrup",
             Self::JellyPad => "jelly-pad",
+            Self::FloatUp => "float-up",
             Self::TimedGate => "timed-gate",
         }
     }
@@ -67,6 +71,7 @@ pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
         LevelId::FirstPour => &first_pour::FIRST_POUR,
         LevelId::ThickSyrup => &thick_syrup::THICK_SYRUP,
         LevelId::JellyPad => &jelly_pad::JELLY_PAD,
+        LevelId::FloatUp => &float_up::FLOAT_UP,
         LevelId::TimedGate => &timed_gate::TIMED_GATE,
     }
 }
