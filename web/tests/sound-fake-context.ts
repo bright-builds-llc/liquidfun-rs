@@ -44,12 +44,7 @@ export class FakeParam {
 }
 
 export type FakeNodeKind =
-  | "destination"
-  | "gain"
-  | "oscillator"
-  | "biquad"
-  | "bufferSource"
-  | "compressor";
+  "destination" | "gain" | "oscillator" | "biquad" | "bufferSource" | "compressor";
 
 export class FakeNode {
   readonly gain = new FakeParam();
