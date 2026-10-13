@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 42 context gathered
-last_updated: "2026-10-13T18:19:02.402Z"
+status: executing
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-10-13T19:23:02.354Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 50
-  completed_plans: 50
-  percent: 100
+  total_plans: 55
+  completed_plans: 51
+  percent: 93
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 41 — Level Select and Progress
+**Current focus:** Phase 42 — Opt-in Sound
 
 ## Current Position
 
-Phase: 42
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 42 (Opt-in Sound) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
 Last activity: 2026-10-13
 
 Progress: [██████████] 100%
@@ -158,6 +158,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 41]: 41-06: last level's Next slot is an accented primary All levels link to #/puzzles after win or loss; the disabled No next level yet button is deleted; fallback primary link is All levels
 - [Phase 41]: 41-07: progress e2e (24 tests, both viewports) reads the live first-pour hash via parseLevelHashes; a correct-hash seed must restore plank:8,64,23 so the wrong-hash discard is not vacuous; seam runs stay on their own page and seam-free checks use context().newPage()
 - [Phase 41]: 41-08: D-21 holds on 5e10940e9; 27/27 gates exit 0 on the first run, scene-spot 2026-10-13T17-31-31Z 25/25 fingerprints identical, engine untouched, six level-hash pins native == wasm, 14/14 wasm fixtures, puzzle e2e 81/81; no fix commit
+- [Phase 42]: 42-01: puzzle frames carry read-only splashContacts (new particle-fixture contacts), impactCount (non-sensor rigid Begin) and impactImpulse (max summed solved normal impulse) from the existing StepReport; tally-off stepping bit-identical; crates/liquidfun untouched (1a7f1ac99, 56b542f69)
+- [Phase 42]: 42-01: A2 held (float-up Begin contacts solved same step, impulse max 0.062 N·s); only float-up has rigid impacts; splash per-step max 86-153, p90 4-40 (target/phase42/sound-probe.txt)
+- [Phase 42]: 42-01: baseline target/phase42/base.txt from scene-spot 2026-10-13T19-08-15Z at bd685b08f, identical to Phase 41 after-final; after-01 25/25 identical; wasm replay 6 LEVELHASH + 14 REPLAY pass
 
 ### Pending Todos
 
@@ -270,9 +273,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 41 P06 | 3min | 2 tasks | 13 files |
 | Phase 41 P07 | 4min | 2 tasks | 2 files |
 | Phase 41 P08 | 9min | 2 tasks | 0 files |
+| Phase 42 P01 | 15min | 3 tasks | 12 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T18:19:02.397Z
-Stopped at: Phase 42 context gathered
-Resume file: .planning/phases/42-opt-in-sound/42-CONTEXT.md
+Last session: 2026-10-13T19:23:02.350Z
+Stopped at: Completed 42-01-PLAN.md
+Resume file: None
