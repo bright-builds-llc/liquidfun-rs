@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 40-04-PLAN.md
-last_updated: "2026-10-13T05:19:40.744Z"
+stopped_at: Completed 40-05-PLAN.md
+last_updated: "2026-10-13T05:26:42.993Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 35
-  percent: 83
+  completed_plans: 36
+  percent: 86
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 5 of 11
+Plan: 6 of 11
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -129,6 +129,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-03: levels_tests harness iterates LEVEL_IDS (coverage, 3-star, empty, 3,000 budget); run_outcome skips the id allowlist so drafts can be nudge-checked; first-pour nudges 8/8 wins in release
 - [Phase 40]: setValveTime is a PuzzleEvent handled in the reducer (needs stepLimit); applyPuzzleEdit/editAnnouncement take BuildingEditEvent
 - [Phase 40]: Landscape selection bar is a 280x44 bottom-centre joined row; portrait bar is 148x96 with the result card raised to inset+156
+- [Phase 40]: 40-05: landscape caption box is 48px (not 44) so the 44px Dismiss fits inside the chip border; portrait inset+124px x 52px; form-factor 480x52
+- [Phase 40]: 40-05: first-level hint dismissal under liquidfun.puzzle-first-hint.v1 via firstHintMemory (lazy read, in-memory fallback); placing the first tool also dismisses
 
 ### Pending Todos
 
@@ -226,9 +228,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P02 | 5min | 2 tasks | 26 files |
 | Phase 40 P03 | 26min | 2 tasks | 12 files |
 | Phase 40 P04 | 10min | 2 tasks | 25 files |
+| Phase 40 P05 | 7min | 3 tasks | 14 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T05:19:40.741Z
-Stopped at: Completed 40-04-PLAN.md
+Last session: 2026-10-13T05:26:42.990Z
+Stopped at: Completed 40-05-PLAN.md
 Resume file: None
