@@ -1,6 +1,7 @@
 import type { JSX } from "solid-js";
 
 import { RENDER_MODE_GROUPS, maybeParseRenderMode, type RenderMode } from "../render/mode";
+import { PuzzleLevelLinks } from "./PuzzleLevelLinks";
 import { GitHubSourceLink } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import {
@@ -26,16 +27,21 @@ export function PuzzleOptionsTrigger() {
 }
 
 /**
- * Bottom sheet holding only display options, the source link and the build
- * footer (D-24), so provenance stays reachable without any scene control.
+ * Bottom sheet holding only the level links, display options, the source link
+ * and the build footer (D-24, Phase 41 D-04), so the grid and provenance stay
+ * reachable without any scene control.
  */
-export function PuzzleOptionsSheet(props: { readonly children?: JSX.Element }) {
+export function PuzzleOptionsSheet(props: {
+  readonly progressDegraded: boolean;
+  readonly children?: JSX.Element;
+}) {
   return (
     <DrawerContent class="canvas-controls-sheet">
       <DrawerLabel>{OPTIONS_LABEL}</DrawerLabel>
       <DrawerDescription class="visually-hidden">{OPTIONS_DESCRIPTION}</DrawerDescription>
       <div class="canvas-controls-scroll">
         <div class="canvas-controls-body">
+          <PuzzleLevelLinks degraded={props.progressDegraded} />
           {props.children}
           <GitHubSourceLink />
           <SiteFooter />

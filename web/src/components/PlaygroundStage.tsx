@@ -258,6 +258,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
               <PuzzleFallbackPanel
                 canvasStage={props.canvasStage}
                 maybeRaw={unknown().maybeRaw}
+                progressDegraded={props.puzzleProgress.degraded()}
               />
             )}
           </Match>

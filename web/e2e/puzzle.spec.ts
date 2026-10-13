@@ -382,10 +382,14 @@ for (const viewport of [DESKTOP, PHONE_PORTRAIT]) {
     // Assert
     await expect(page.getByRole("heading", { name: "Level not found" })).toBeVisible();
     await expect(page.locator("body")).toContainText("No level is called “nope”.");
-    await expect(page.getByRole("link", { name: "Open First Pour" })).toHaveAttribute(
-      "href",
-      /#\/puzzle\/first-pour$/,
+    await expect(page.locator("body")).toContainText(
+      "Pick one from All levels, or go back to the scenes.",
     );
+    await expect(
+      page
+        .locator(".fallback-panel .control-row")
+        .getByRole("link", { name: "All levels", exact: true }),
+    ).toHaveAttribute("href", "#/puzzles");
     await expect(page.getByRole("link", { name: "Back to scenes" })).toHaveAttribute(
       "href",
       /#\/scene\/wave-machine$/,

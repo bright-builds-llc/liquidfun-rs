@@ -243,3 +243,15 @@ a.puzzle-level-card:hover {
   border: 0;
   border-radius: 0;
 }
+
+/* "All levels" link and note in the options sheet and form-factor row (D-04, D-15). */
+.puzzle-level-links {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.puzzle-level-links > a {
+  justify-self: start;
+  min-block-size: 44px;
+}

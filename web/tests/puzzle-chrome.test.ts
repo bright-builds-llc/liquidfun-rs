@@ -21,6 +21,7 @@ const PUZZLE_COMPONENTS = [
   "components/PuzzleIcons.tsx",
   "components/PuzzleCaption.tsx",
   "components/PuzzleSelectPanel.tsx",
+  "components/PuzzleLevelLinks.tsx",
 ] as const;
 
 /** Stylesheets of the canvas puzzle HUD, which branch on `data-puzzle-layout`. */
@@ -258,6 +259,17 @@ describe("puzzle HUD chrome", () => {
 
     // Assert
     expect(marksObstacle).toBe(false);
+  });
+
+  it("keeps data-hud-obstacle off the level links and the options sheet", () => {
+    // Arrange
+    const paths = ["components/PuzzleLevelLinks.tsx", "components/PuzzleOptionsDrawer.tsx"];
+
+    // Act
+    const offenders = paths.filter((path) => source(path).includes("data-hud-obstacle"));
+
+    // Assert
+    expect(offenders).toEqual([]);
   });
 });
 

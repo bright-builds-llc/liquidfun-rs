@@ -27,6 +27,7 @@ import { needsWebglSurface, particleSurface, type RenderMode } from "../render/m
 import type { ScreenRect } from "../render/safe-frame";
 import { PuzzleCaption } from "./PuzzleCaption";
 import { PuzzleFillMeter, PuzzleHud, PuzzleTimer, PuzzleTitle } from "./PuzzleHud";
+import { PuzzleLevelLinks } from "./PuzzleLevelLinks";
 import {
   PuzzleOptionsSheet,
   PuzzleOptionsTrigger,
@@ -378,6 +379,7 @@ function PuzzlePanelLayout(layoutProps: {
               {resultCard()}
             </div>
             <div class="control-row">
+              <PuzzleLevelLinks degraded={props.controller.progressDegraded()} />
               <PuzzleRenderModeSelect
                 renderMode={props.renderMode}
                 onRenderModeChange={props.onRenderModeChange}
@@ -386,7 +388,7 @@ function PuzzlePanelLayout(layoutProps: {
           </>
         }
       >
-        <PuzzleOptionsSheet>
+        <PuzzleOptionsSheet progressDegraded={props.controller.progressDegraded()}>
           <PuzzleRenderModeSelect
             renderMode={props.renderMode}
             onRenderModeChange={props.onRenderModeChange}
