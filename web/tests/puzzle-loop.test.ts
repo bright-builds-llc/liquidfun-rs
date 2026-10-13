@@ -5,7 +5,8 @@ import {
   STEP_SECONDS,
   accumulateStepTime,
 } from "../src/physics/clock";
-import type { PuzzleFrameStatus, RenderFrame } from "../src/physics/frame";
+import type { PresentedSoundSignals } from "../src/audio/sound-signals";
+import type { PuzzleFrameSound, PuzzleFrameStatus, RenderFrame } from "../src/physics/frame";
 import type { PuzzleSession } from "../src/physics/puzzle-session";
 import { createFrameClock, type FrameClock } from "../src/player/frame-loop";
 import type { FrameObservation } from "../src/player/observe";
@@ -25,12 +26,23 @@ const LATCH_STEP = 9;
 const FRAME_MS = 100;
 // 35 ms makes the accumulator request two fixed steps on the first stepping frame.
 const TWO_STEP_FRAME_MS = 35;
+// 55 ms makes the accumulator request three fixed steps on the first stepping frame.
+const THREE_STEP_FRAME_MS = 55;
 
 type ScriptedSteps = { readonly winStep: number; readonly decideStep: number };
 
-type Published = { frame: RenderFrame; observation: FrameObservation; state: PuzzleState };
+type Published = {
+  frame: RenderFrame;
+  observation: FrameObservation;
+  state: PuzzleState;
+  signals: PresentedSoundSignals;
+};
 
-function frameAt(stepIndex: number, maybePuzzle: PuzzleFrameStatus | undefined): RenderFrame {
+function frameAt(
+  stepIndex: number,
+  maybePuzzle: PuzzleFrameStatus | undefined,
+  maybeSound: PuzzleFrameSound | undefined = undefined,
+): RenderFrame {
   return {
     stepIndex,
     particleCount: 1,
@@ -45,6 +57,7 @@ function frameAt(stepIndex: number, maybePuzzle: PuzzleFrameStatus | undefined):
     rigidCircles: new Float32Array(),
     circleLabels: [],
     ...(maybePuzzle === undefined ? {} : { maybePuzzle }),
+    ...(maybeSound === undefined ? {} : { maybeSound }),
   };
 }
 
@@ -73,6 +86,8 @@ type HarnessOptions = {
   readonly speed?: PuzzleSpeed;
   /** Simulated wall time each `nextFrame` call takes. */
   readonly stepCostMs?: number;
+  /** Sound aggregates of each fixed step, by step index. */
+  readonly soundAt?: (stepIndex: number) => PuzzleFrameSound | undefined;
 };
 
 function fakeSession(steps: ScriptedSteps, options: HarnessOptions) {
@@ -80,7 +95,11 @@ function fakeSession(steps: ScriptedSteps, options: HarnessOptions) {
   const nextFrame = vi.fn((count = 1) => {
     step += count;
     nowMs += options.stepCostMs ?? 0;
-    return frameAt(step, options.omitStatus === true ? undefined : statusAt(step, steps));
+    return frameAt(
+      step,
+      options.omitStatus === true ? undefined : statusAt(step, steps),
+      options.soundAt?.(step),
+    );
   });
   const session = { nextFrame } as unknown as PuzzleSession;
   return { session, nextFrame };
@@ -110,8 +129,8 @@ function harness(options: HarnessOptions = {}) {
       state = reducePuzzle(state, event);
       return state;
     },
-    publish: (frame, observation, publishedState) => {
-      published.push({ frame, observation, state: publishedState });
+    publish: (frame, observation, publishedState, signals) => {
+      published.push({ frame, observation, state: publishedState, signals });
     },
     drawSceneFrame: vi.fn(),
     fail: vi.fn(),
@@ -382,5 +401,34 @@ describe("schedulePuzzleFrame fast-forward (D-24)", () => {
     expect(MAX_STEPS_PER_FRAME).toBe(4);
     expect(callsInFrame).toBe(MAX_STEPS_PER_FRAME * 4);
     expect(nextFrame.mock.calls.every((call) => call.length === 1 && call[0] === 1)).toBe(true);
+  });
+});
+
+describe("schedulePuzzleFrame sound fold (Phase 42 D-07)", () => {
+  it("publishes the fold of every fixed step of the presented frame", () => {
+    // Arrange
+    frameMs = THREE_STEP_FRAME_MS;
+    const sounds: readonly PuzzleFrameSound[] = [
+      { splashContacts: 3, impactCount: 0, impactImpulse: 0 },
+      { splashContacts: 2, impactCount: 1, impactImpulse: 0.4 },
+      { splashContacts: 0, impactCount: 0, impactImpulse: 0 },
+    ];
+    const { clock, context, deps, nextFrame, published } = harness({
+      soundAt: (stepIndex) => sounds[stepIndex - 1],
+    });
+    schedulePuzzleFrame(clock, context, deps);
+    runFrame();
+
+    // Act
+    runFrame();
+
+    // Assert
+    expect(nextFrame).toHaveBeenCalledTimes(3);
+    expect(published[0]?.signals).toEqual({
+      steps: 3,
+      splashContacts: 5,
+      impactCount: 1,
+      impactImpulse: 0.4,
+    });
   });
 });
