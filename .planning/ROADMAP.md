@@ -267,7 +267,15 @@ Plans:
 1. Exports keep their existing styles while Water mode is selected.
 1. The particle speed data used for foam is produced only while Water mode is active: 25/25 scene fingerprints are unchanged, and puzzle outcomes are the same in every render mode.
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 43-01-PLAN.md — Fingerprint baseline, Rust per-capture speed lane with on/off determinism tests, fail-closed TS lane parse (wave 1)
+- [ ] 43-02-PLAN.md — Shared per-canvas field pass, half-float render targets, ordered loss/restore repaint hook (wave 1)
+- [ ] 43-03-PLAN.md — Stable-walls refraction backdrop, highp water shaders, capability probe and drawWater (wave 2)
+- [ ] 43-04-PLAN.md — Water mode, fallback chain with data-drawn-surface, transparent overlays, shared pickers with "Water (unavailable)" (wave 3)
+- [ ] 43-05-PLAN.md — Speed lane only in Water for scene, puzzle and worker owners (wave 4)
+- [ ] 43-06-PLAN.md — Playwright Water spec, by-eye tuning and the phase gates with 25/25 fingerprints (wave 5)
 **UI hint**: yes
 
 ## Progress
