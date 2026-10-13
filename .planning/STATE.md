@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 41-03-PLAN.md
-last_updated: "2026-10-13T17:05:49.598Z"
+stopped_at: Completed 41-04-PLAN.md
+last_updated: "2026-10-13T17:11:03.271Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 50
-  completed_plans: 45
-  percent: 90
+  completed_plans: 46
+  percent: 92
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 41 (Level Select and Progress) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -150,6 +150,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 41]: 41-02: not-won placements stored with zero stars; restoreChoice restores only for the live levelHash, <= 16 entries, each through strict maybeParsePlacement, else discard; mergeProgress prefers stored placements and stored unknown data
 - [Phase 41]: 41-03: progress shell (player/puzzle-progress.ts) degrades once on any provider/probe/read/write failure or unusable value and never writes the progress key afterwards; probe uses liquidfun.puzzle-progress.probe; each write re-reads and merges
 - [Phase 41]: 41-03: runtime hydrates StarStore from persisted wins; recordStars writes through before publish and folds back another tab's stars only when they differ (sameLevelStars); createPuzzleRuntime() defaults to UNAVAILABLE_PROGRESS_STORAGE; PuzzleController.progressDegraded
+- [Phase 41]: 41-04: restore runs once per route entry in buildPuzzle after adopt and before loaded (seam disarms it; Retry/Edit/Stop/Try again never restore); reset re-dispatched, reducer unchanged
+- [Phase 41]: 41-04: placements save in commitNow (building) and playPuzzle after guards, never on live drag frames; dedupe key id|levelHash|JSON(tools) reset on entry and leave; restored first-pour tools dismiss the first hint (accepted)
 
 ### Pending Todos
 
@@ -257,9 +259,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 41 P01 | 11min | 3 tasks | 12 files |
 | Phase 41 P02 | 6min | 2 tasks | 6 files |
 | Phase 41 P03 | 6min | 2 tasks | 12 files |
+| Phase 41 P04 | 5min | 2 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T17:05:49.595Z
-Stopped at: Completed 41-03-PLAN.md
+Last session: 2026-10-13T17:11:03.247Z
+Stopped at: Completed 41-04-PLAN.md
 Resume file: None
