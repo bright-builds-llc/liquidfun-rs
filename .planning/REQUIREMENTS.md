@@ -18,17 +18,17 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 
 ### Tools and play
 
-- [ ] **TOOL-01**: Player sees a per-level tool tray with fixed-size tools and remaining counts.
+- [x] **TOOL-01**: Player sees a per-level tool tray with fixed-size tools and remaining counts.
 - [ ] **TOOL-02**: While building, player can place, move, rotate (15° steps) and remove tools with mouse or touch, including tap-to-place and touch targets of at least 44 px.
 - [x] **TOOL-03**: Player sees invalid placements highlighted (overlapping walls, the cup, water or other tools, or outside the build area), and Play is disabled while any placement is invalid.
-- [ ] **TOOL-04**: Player can press Play to run, and Stop/Reset to return to building with placements kept; a separate Clear action removes all tools.
+- [x] **TOOL-04**: Player can press Play to run, and Stop/Reset to return to building with placements kept; a separate Clear action removes all tools.
 - [ ] **TOOL-05**: Player can place a timed valve and set its opening time while building.
-- [ ] **TOOL-06**: Player can place, nudge, rotate, remove and play from the keyboard (arrows, R, Delete, Space).
+- [x] **TOOL-06**: Player can place, nudge, rotate, remove and play from the keyboard (arrows, R, Delete, Space).
 - [ ] **TOOL-07**: Player can fast-forward a run at 2× or 4× without changing its outcome.
 
 ### Stars
 
-- [ ] **STAR-01**: Player sees three star criteria before playing: ★ Win, ★ Brim (a higher fill held) and ★ Thrifty (at most the par tool count).
+- [x] **STAR-01**: Player sees three star criteria before playing: ★ Win, ★ Brim (a higher fill held) and ★ Thrifty (at most the par tool count).
 - [ ] **STAR-02**: Player earns stars on a winning run, and the best result per star is kept across runs.
 
 ### Levels
@@ -103,14 +103,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GOAL-02 | Phase 37 | Complete |
 | GOAL-03 | Phase 38 | Complete |
 | GOAL-04 | Phase 37 | Pending |
-| TOOL-01 | Phase 39 | Pending |
+| TOOL-01 | Phase 39 | Complete |
 | TOOL-02 | Phase 39 | Pending |
 | TOOL-03 | Phase 39 | Complete |
-| TOOL-04 | Phase 39 | Pending |
+| TOOL-04 | Phase 39 | Complete |
 | TOOL-05 | Phase 40 | Pending |
-| TOOL-06 | Phase 39 | Pending |
+| TOOL-06 | Phase 39 | Complete |
 | TOOL-07 | Phase 39 | Pending |
-| STAR-01 | Phase 39 | Pending |
+| STAR-01 | Phase 39 | Complete |
 | STAR-02 | Phase 39 | Pending |
 | LEVEL-01 | Phase 40 | Pending |
 | LEVEL-02 | Phase 40 | Pending |
