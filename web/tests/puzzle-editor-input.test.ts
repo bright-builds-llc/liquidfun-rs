@@ -101,8 +101,18 @@ function fakeCanvas() {
     point: { readonly x: number; readonly y: number },
     pointerType = "mouse",
     pointerId = 1,
+    buttons: { readonly button?: number; readonly isPrimary?: boolean } = {},
   ): void {
-    const event = { type, pointerId, pointerType, clientX: point.x, clientY: point.y };
+    const { button = 0, isPrimary = true } = buttons;
+    const event = {
+      type,
+      pointerId,
+      pointerType,
+      button,
+      isPrimary,
+      clientX: point.x,
+      clientY: point.y,
+    };
     for (const listener of listeners.get(type) ?? []) {
       listener(event as unknown as PointerEvent);
     }
@@ -182,6 +192,49 @@ describe("armed placement", () => {
     harness.fire("pointerdown", { x: 200, y: 200 });
     harness.fire("pointermove", { x: 260, y: 200 });
     harness.fire("pointerup", { x: 260, y: 200 });
+
+    // Assert
+    expect(harness.edits).toEqual([]);
+  });
+});
+
+describe("pointer buttons", () => {
+  it.each([
+    ["right", 2],
+    ["middle", 1],
+  ] as const)("does not place on a %s click with a kind armed", (_label, button) => {
+    // Arrange
+    const harness = attach(building(armKind(plankEditor(), "plank")));
+
+    // Act
+    harness.fire("pointerdown", EMPTY_CSS, "mouse", 1, { button });
+    harness.fire("pointerup", EMPTY_CSS, "mouse", 1, { button });
+
+    // Assert
+    expect(harness.edits).toEqual([]);
+  });
+
+  it("does not select or drag a tool on a right press", () => {
+    // Arrange
+    const harness = attach(building(plankEditor()));
+
+    // Act
+    harness.fire("pointerdown", PLANK_CSS, "mouse", 1, { button: 2 });
+    harness.fire("pointermove", { x: 140, y: 80 }, "mouse", 1, { button: 2 });
+    harness.fire("pointerup", { x: 140, y: 80 }, "mouse", 1, { button: 2 });
+
+    // Assert
+    expect(harness.edits).toEqual([]);
+    expect(harness.settle).not.toHaveBeenCalled();
+  });
+
+  it("ignores a non-primary pointer", () => {
+    // Arrange
+    const harness = attach(building(armKind(plankEditor(), "plank")));
+
+    // Act
+    harness.fire("pointerdown", EMPTY_CSS, "touch", 2, { isPrimary: false });
+    harness.fire("pointerup", EMPTY_CSS, "touch", 2, { isPrimary: false });
 
     // Assert
     expect(harness.edits).toEqual([]);

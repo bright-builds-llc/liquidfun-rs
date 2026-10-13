@@ -119,6 +119,15 @@ function pastThreshold(press: Press, css: Point): boolean {
   return Math.hypot(css.x - press.startCss.x, css.y - press.startCss.y) > threshold;
 }
 
+/**
+ * Only the primary pointer's main button edits (D-17, D-18). A right or
+ * middle click keeps its context menu or auto-scroll and never places,
+ * moves, selects or deselects a tool.
+ */
+function isEditingPress(event: PointerEvent): boolean {
+  return event.isPrimary && event.button === 0;
+}
+
 /** Attaches the editor pointer to a puzzle canvas; every handler ignores events outside building. */
 export function attachPuzzleEditorInput(
   canvas: HTMLCanvasElement,
@@ -169,7 +178,7 @@ export function attachPuzzleEditorInput(
 
   function onDown(event: PointerEvent): void {
     // One pointer edits at a time; a second finger never steals the press.
-    if (maybePress !== undefined) {
+    if (maybePress !== undefined || !isEditingPress(event)) {
       return;
     }
 
