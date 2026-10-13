@@ -2,7 +2,6 @@
 //!
 //! Grammar tests live in `replay/fixture/tests.rs`.
 
-use super::fixture::parse_fixture;
 use super::*;
 use crate::puzzle::{LevelId, level_spec};
 
@@ -80,64 +79,6 @@ fn lost_trace(counts: Vec<u32>, info: &PuzzleLevelInfo) -> ReplayTrace {
 
 fn raised_brim(info: &PuzzleLevelInfo) -> u32 {
     info.brim_count() + fill_margin_count(info.full_count())
-}
-
-fn is_record_mode() -> bool {
-    std::env::var_os("LIQUIDFUN_PUZZLE_RECORD").is_some_and(|value| value == "1")
-}
-
-/// The decision frame is the Brim step on a Brim win and the outcome step on
-/// a loss, and counts run through the later of it and the margin window.
-fn assert_trace_shape(trace: &ReplayTrace, info: &PuzzleLevelInfo) {
-    let expected_decision = match (trace.outcome, trace.maybe_brim_step) {
-        (FixtureOutcome::Won, Some(brim_step)) => brim_step,
-        (FixtureOutcome::Won, None) => info.step_limit(),
-        (FixtureOutcome::Lost, _) => trace.outcome_step,
-    };
-    assert_eq!(trace.decided_step, expected_decision, "decision step");
-    let window_end = info.step_limit() - MARGIN_WIN_SLACK_STEPS;
-    let expected_len = trace.decided_step.max(window_end);
-    assert_eq!(
-        u32::try_from(trace.counts.len()).ok(),
-        Some(expected_len),
-        "counts run through the decision and the margin window"
-    );
-}
-
-/// The level and placement lines of a fixture. Record mode regenerates the
-/// expectation, so it must not depend on the recorded lines' grammar.
-fn input_lines(text: &str) -> String {
-    let mut inputs = text
-        .lines()
-        .take_while(|line| !line.starts_with("outcome "))
-        .collect::<Vec<_>>()
-        .join("\n");
-    inputs.push('\n');
-    inputs
-}
-
-fn record_fixture_file(file: &str, text: &str) {
-    let fixture = parse_fixture(&input_lines(text)).expect("fixture inputs parse");
-    println!("{}", record_line(file, &replay(&fixture)));
-}
-
-fn replay_fixture_file(file: &str, text: &str) {
-    if is_record_mode() {
-        record_fixture_file(file, text);
-        return;
-    }
-
-    // Arrange
-    let fixture = parse_fixture(text).expect("checked-in fixture parses");
-    let info = PuzzleLevelInfo::from_spec(level_spec(fixture.level));
-
-    // Act
-    let trace = replay(&fixture);
-
-    // Assert
-    assert_trace_shape(&trace, &info);
-    let result = check_contract(&fixture, &trace, &info, !cfg!(debug_assertions));
-    assert_eq!(result, Ok(()), "{file} replay: {trace:?}");
 }
 
 #[test]

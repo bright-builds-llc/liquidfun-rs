@@ -54,7 +54,11 @@ pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
 #[cfg(test)]
 mod api_tests;
 #[cfg(test)]
+mod levels_tests;
+#[cfg(test)]
 mod materials_tests;
+#[cfg(test)]
+mod probe;
 #[cfg(test)]
 mod replay;
 #[cfg(test)]

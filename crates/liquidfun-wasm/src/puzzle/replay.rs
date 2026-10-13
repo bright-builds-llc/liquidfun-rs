@@ -7,13 +7,13 @@
 //! runtimes accept exactly the same text. Phase 39 D-12 adds the peak held
 //! count and the Brim step at the decision step.
 
-mod fixture;
+pub(in crate::puzzle) mod fixture;
 
-use fixture::{Fixture, FixtureExpectation, FixtureOutcome, NO_BRIM_TOKEN, lanes};
+use fixture::{Fixture, FixtureExpectation, FixtureOutcome, NO_BRIM_TOKEN, lanes, parse_fixture};
 
 use crate::frame::ProofFrame;
-use crate::puzzle::PuzzleLevelInfo;
 use crate::puzzle::goal::{MARGIN_WIN_SLACK_STEPS, fill_margin_count, maybe_margin_win_step};
+use crate::puzzle::{PuzzleLevelInfo, level_spec};
 use crate::session::SessionCore;
 
 /// What one fixture run produced.
@@ -373,6 +373,82 @@ pub(super) fn record_line(file: &str, trace: &ReplayTrace) -> String {
         trace.peak_held,
         brim_token(trace.maybe_brim_step)
     )
+}
+
+/// Whether `LIQUIDFUN_PUZZLE_RECORD=1` asks fixture tests to print `RECORD`
+/// lines instead of asserting.
+pub(in crate::puzzle) fn is_record_mode() -> bool {
+    std::env::var_os("LIQUIDFUN_PUZZLE_RECORD").is_some_and(|value| value == "1")
+}
+
+/// The decision frame is the Brim step on a Brim win and the outcome step on
+/// a loss, and counts run through the later of it and the margin window.
+///
+/// # Panics
+///
+/// Panics (test-only harness) when the trace has another shape.
+pub(in crate::puzzle) fn assert_trace_shape(trace: &ReplayTrace, info: &PuzzleLevelInfo) {
+    let expected_decision = match (trace.outcome, trace.maybe_brim_step) {
+        (FixtureOutcome::Won, Some(brim_step)) => brim_step,
+        (FixtureOutcome::Won, None) => info.step_limit(),
+        (FixtureOutcome::Lost, _) => trace.outcome_step,
+    };
+    assert_eq!(trace.decided_step, expected_decision, "decision step");
+    let window_end = info.step_limit() - MARGIN_WIN_SLACK_STEPS;
+    let expected_len = trace.decided_step.max(window_end);
+    assert_eq!(
+        u32::try_from(trace.counts.len()).ok(),
+        Some(expected_len),
+        "counts run through the decision and the margin window"
+    );
+}
+
+/// The level and placement lines of a fixture. Record mode regenerates the
+/// expectation, so it must not depend on the recorded lines' grammar.
+pub(in crate::puzzle) fn input_lines(text: &str) -> String {
+    let mut inputs = text
+        .lines()
+        .take_while(|line| !line.starts_with("outcome "))
+        .collect::<Vec<_>>()
+        .join("\n");
+    inputs.push('\n');
+    inputs
+}
+
+/// Replays a fixture's inputs and prints its `RECORD` line.
+///
+/// # Panics
+///
+/// Panics (test-only harness) when the inputs do not parse or replay.
+pub(in crate::puzzle) fn record_fixture_file(file: &str, text: &str) {
+    let fixture = parse_fixture(&input_lines(text)).expect("fixture inputs parse");
+    println!("{}", record_line(file, &replay(&fixture)));
+}
+
+/// Replays a checked-in fixture against its recorded contract: exact in
+/// release, the debug tolerance otherwise. Record mode prints instead.
+///
+/// # Panics
+///
+/// Panics (test-only harness) when the fixture does not parse, replay or
+/// meet its contract.
+pub(in crate::puzzle) fn replay_fixture_file(file: &str, text: &str) {
+    if is_record_mode() {
+        record_fixture_file(file, text);
+        return;
+    }
+
+    // Arrange
+    let fixture = parse_fixture(text).expect("checked-in fixture parses");
+    let info = PuzzleLevelInfo::from_spec(level_spec(fixture.level));
+
+    // Act
+    let trace = replay(&fixture);
+
+    // Assert
+    assert_trace_shape(&trace, &info);
+    let result = check_contract(&fixture, &trace, &info, !cfg!(debug_assertions));
+    assert_eq!(result, Ok(()), "{file} replay: {trace:?}");
 }
 
 #[cfg(test)]

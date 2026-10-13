@@ -269,13 +269,16 @@ fn parse_u32(number: usize, token: &str) -> Result<u32, String> {
 /// Flattens placements into the `newPuzzle` lanes in fixture order;
 /// canonical sorting is the bridge's job.
 pub(in crate::puzzle) fn lanes(fixture: &Fixture) -> (Vec<u8>, Vec<i32>) {
-    let kinds = fixture
-        .placements
+    placement_lanes(&fixture.placements)
+}
+
+/// Flattens placement lines into the `newPuzzle` lanes in the given order.
+pub(in crate::puzzle) fn placement_lanes(placements: &[FixturePlacement]) -> (Vec<u8>, Vec<i32>) {
+    let kinds = placements
         .iter()
         .map(|placement| placement.kind.code())
         .collect();
-    let poses = fixture
-        .placements
+    let poses = placements
         .iter()
         .flat_map(|placement| {
             [
