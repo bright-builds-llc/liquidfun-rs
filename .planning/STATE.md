@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Phase 39 UI-SPEC approved
-last_updated: "2026-10-12T23:49:04.303Z"
-last_activity: 2026-10-12 -- Phase 39 planning complete
+stopped_at: Completed 39-01-PLAN.md
+last_updated: "2026-10-13T00:05:32.097Z"
+last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 17
-  percent: 55
+  completed_plans: 18
+  percent: 58
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 38 — Puzzle Route and Player Shell
+**Current focus:** Phase 39 — Place-then-Play Tools and Stars
 
 ## Current Position
 
-Phase: 39
-Plan: Not started
+Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
+Plan: 2 of 14
 Status: Ready to execute
-Last activity: 2026-10-12 -- Phase 39 planning complete
+Last activity: 2026-10-13
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -85,6 +85,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 37]: 37-06 Option A: won margin = second GoalTracker at target + full.div_ceil(20), same settle_steps, wins by step_limit - 120 (goal::maybe_margin_win_step); window-minimum rule needs a one-step inflow > margin that no pour gives; 37-08-PLAN.md updated
 - [Phase 37]: 37-07: newPuzzle/levelInfo/PuzzleLevelInfo and six optional ProofFrame goal getters on the wasm surface; set_puzzle_status fails closed when hooks observed_step != frame step index (D-14); LEVEL_IDS drives parse_level_id; test-only puzzle helpers #[cfg(test)]; no temporary dead_code allows remain (bb34c4c04)
 - [Phase 37]: 37-08: first-pour fixtures replay identically in release, debug and wasm (won 201 / 689, lost 720 / 0); release and wasm exact, debug fallback with DEBUG_OUTCOME_STEP_TOLERANCE 5; 14/14 final gates incl. 25/25 fingerprints (410e2111b, 74b85a09e)
+- [Phase 39]: 39-01: placement status wire codes 0 Valid..12 OverlapsNoPlace; inspector and newPuzzle share placement_statuses/first_overlap (SAT, gap 2 x particle_radius, NaN fails closed)
+- [Phase 39]: 39-01: first-pour budget 2 planks, par_tools 1, brim_count 810, no_place empty; builder rejects specs unless target < brim <= full and par <= budget
+- [Phase 39]: 39-01: D-30 baseline target/phase39/base.txt from scene-spot stamp 2026-10-12T23-50-30Z (Rust == 424735672), identical to Phase 38 after-final
 
 ### Pending Todos
 
@@ -164,9 +167,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 37 P06 | 22min | 3 tasks | 5 files |
 | Phase 37 P07 | 11min | 3 tasks | 10 files |
 | Phase 37 P08 | 16min | 3 tasks | 10 files |
+| Phase 39 P01 | 15min | 3 tasks | 14 files |
 
 ## Session Continuity
 
-Last session: 2026-10-12T23:05:42.827Z
-Stopped at: Phase 39 UI-SPEC approved
-Resume file: .planning/phases/39-place-then-play-tools-and-stars/39-UI-SPEC.md
+Last session: 2026-10-13T00:05:32.094Z
+Stopped at: Completed 39-01-PLAN.md
+Resume file: None
