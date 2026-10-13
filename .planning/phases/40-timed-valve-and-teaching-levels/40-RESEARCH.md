@@ -413,18 +413,22 @@ fn timed_gate_nudges_mostly_still_win() { /* Arrange / Act / Assert */ }
 | A4 | A two-line fixed caption box fits both the hint and the captions at 390 px width without truncation. | Pitfall 10 | It may need ellipsis with a `title`, as `PuzzleTitle` does (`PuzzleHud.tsx:8-14`). |
 | A5 | A circle float's contacts do not depend on rotation, so the engine's trig cannot cause native/wasm divergence. | Pattern 4 | This is reasoned from the circle's local centre at (0,0) and is backed by the dam-break spike. Friction-driven angular velocity still integrates, but does not move geometry. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What does the powder level teach, given that `POWDER` behaves like water? (blocks `sand-chute` authoring)**
+   - RESOLVED: see 40-CONTEXT.md D-25.
    - What we know: four probes show no piling, no different drainage and no different ramp flow (Pitfall 2). D-09 forbids dropping any level except buoyancy, and the lesson details are Claude's discretion.
    - What's unclear: whether any authored, honest powder behavior is visible enough to be "one idea".
    - Recommendation: make the first powder-level task a time-boxed spike for a distinguishable behavior. Candidates: a larger per-level particle radius (coarse grains, a system-wide setting, allowed per level), how powder interacts with a jelly or viscous neighbour, or splash and scatter off a plank. If nothing reads as distinct, escalate to the owner: either reword the caption honestly ("Sand pours like water here") or replace the idea within LEVEL-01's "drawn from" list. Do not ship a caption that claims piling.
 2. **How does the valve level hold liquid despite the clearance leak? (blocks `timed-gate` and the finale)**
+   - RESOLVED: see 40-CONTEXT.md D-26.
    - What we know: water leaks 35–47% in 6 s through the mandatory slit. Viscous liquid at 1.0 leaks 3% (Pitfall 1). D-04 locks plank overlap rules.
    - Recommendation: (a) a viscous reservoir (strength 1.0–1.5) held by the valve feeding the shared chute, with a water reservoir released freely, which fits D-13's two-reservoir idea. Prove the early/late/window bands with the sweep. Fall back to (b), a valve that diverts a stream for its closed period. Record the choice in the summary.
 3. **Exact fixture arity rule for a 6-token plank line.**
+   - RESOLVED: see 40-CONTEXT.md D-27.
    - Recommendation: reject it as a grammar error in both parsers (Pitfall 6).
 4. **The buoyancy mechanism (D-12).**
+   - RESOLVED: see 40-CONTEXT.md D-28.
    - What we know: a density-0.3 circle (r 0.3 m) rises from the floor to the surface within 120 steps, density 0.6 within 240, and density 2 sinks [VERIFIED: probe]. Particle impulses wake bodies (`particle_coupling/executor.rs:158` uses `WakePolicy::Wake`).
    - Recommendation: a float in a static well that rises as the player's planks route water into the well, until it closes a spill gap or lifts into a deflecting position. Level-authored static seats may fit the ball snugly, because only tools have the clearance rule. Use the D-09 drop rule if the tests cannot pass.
 
