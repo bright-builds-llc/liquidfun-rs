@@ -28,6 +28,7 @@ import {
   waitForPuzzlePhase,
   type PuzzleCamera,
 } from "./puzzle-helpers";
+import { solutionExpectation } from "./puzzle-editor-helpers";
 
 test.describe.configure({ mode: "parallel" });
 
@@ -40,7 +41,8 @@ const EMPTY_BUILDING_TEXT =
   "Fill the cup to 60% before time runs out. Pick a tool from the tray to start.";
 const NO_NEXT_LEVEL = "Next: No next level yet";
 const EMPTY_HELD_STEP = "840";
-const SOLUTION_HELD_STEP = "321";
+// Won-run literals follow the D-10 decision step, derived from the fixture.
+const SOLUTION = solutionExpectation();
 
 const SCENE_CHROME_BUTTONS = [
   "Scene controls",
@@ -93,13 +95,13 @@ async function expectResultActions(page: Page): Promise<void> {
 async function expectSolutionWin(page: Page): Promise<void> {
   const main = page.locator("main");
   await expect(main).toHaveAttribute("data-puzzle-outcome", "won");
-  await expect(resultMessage(page)).toHaveText("Filled! 76% of 60%");
-  await expect(timer(page)).toHaveText("0:08.6");
+  await expect(resultMessage(page)).toHaveText(SOLUTION.cardText);
+  await expect(timer(page)).toHaveText(SOLUTION.timerText);
   await waitForHeld(page);
-  await expect(main).toHaveAttribute("data-step-index", SOLUTION_HELD_STEP);
+  await expect(main).toHaveAttribute("data-step-index", SOLUTION.heldStep);
   // The meter shows the latched count, not the last tail frame (D-11, UI-D5).
-  await expect(fillMeter(page)).toHaveAttribute("aria-valuenow", "76");
-  await expect(fillMeter(page)).toContainText("76%");
+  await expect(fillMeter(page)).toHaveAttribute("aria-valuenow", SOLUTION.meterValue);
+  await expect(fillMeter(page)).toContainText(`${SOLUTION.meterValue}%`);
   await expect(fillMeter(page)).toContainText(" / 60%");
 }
 

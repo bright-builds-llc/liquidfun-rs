@@ -37,7 +37,20 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: /puzzle-touch\.spec\.ts$/,
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      // Chromium only: `browser:install` installs chromium, so the phone
+      // project uses a Chromium device descriptor with an iPhone-sized viewport.
+      name: "touch",
+      testMatch: /puzzle-touch\.spec\.ts$/,
+      use: {
+        ...devices["Pixel 7"],
+        viewport: { width: 390, height: 844 },
+        hasTouch: true,
+        isMobile: true,
+      },
     },
   ],
   webServer: {

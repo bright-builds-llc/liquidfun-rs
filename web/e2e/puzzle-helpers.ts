@@ -11,7 +11,7 @@ export const DESKTOP = { width: 1280, height: 800 } as const;
 export const PHONE_PORTRAIT = { width: 390, height: 844 } as const;
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const SOLUTION_FIXTURE = resolve(
+export const SOLUTION_FIXTURE = resolve(
   REPO_ROOT,
   "crates/liquidfun-wasm/src/puzzle/fixtures/first-pour-solution.txt",
 );

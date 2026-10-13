@@ -15,7 +15,7 @@
     "readme-svg": "bun scripts/readme-svg.ts",
     "test:browser": "playwright test",
     "test:player": "playwright test e2e/player.spec.ts e2e/demo-media-clock.spec.ts e2e/shell.spec.ts e2e/reset-honesty.spec.ts e2e/animated-svg.spec.ts",
-    "test:puzzle": "playwright test e2e/puzzle.spec.ts",
+    "test:puzzle": "playwright test e2e/puzzle.spec.ts e2e/puzzle-editor.spec.ts e2e/puzzle-touch.spec.ts",
     "browser:install": "playwright install chromium"
   },
   "dependencies": {
