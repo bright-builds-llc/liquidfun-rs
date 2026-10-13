@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 40-03-PLAN.md
-last_updated: "2026-10-13T05:09:39.372Z"
+stopped_at: Completed 40-04-PLAN.md
+last_updated: "2026-10-13T05:19:40.744Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 34
-  percent: 81
+  completed_plans: 35
+  percent: 83
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 4 of 11
+Plan: 5 of 11
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -127,6 +127,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-02: TS POSE_STRIDE 4 with PuzzlePlacement.openTick (seam absent -> 0), valve code 2 default tick 4, status 13 'Valve time out of range'; debug attribute keeps plank:x,y,angle and writes valve:x,y,angle,openTick; puzzle e2e 29/29
 - [Phase 40]: 40-03: LiquidMaterial (Elastic = ELASTIC + SOLID), Option SystemTuning (None adds no builder call) and circle FloatBody floats; PuzzleHooks::new takes a LevelBodies bundle; first-pour fixtures exact
 - [Phase 40]: 40-03: levels_tests harness iterates LEVEL_IDS (coverage, 3-star, empty, 3,000 budget); run_outcome skips the id allowlist so drafts can be nudge-checked; first-pour nudges 8/8 wins in release
+- [Phase 40]: setValveTime is a PuzzleEvent handled in the reducer (needs stepLimit); applyPuzzleEdit/editAnnouncement take BuildingEditEvent
+- [Phase 40]: Landscape selection bar is a 280x44 bottom-centre joined row; portrait bar is 148x96 with the result card raised to inset+156
 
 ### Pending Todos
 
@@ -223,9 +225,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P01 | 21min | 3 tasks | 20 files |
 | Phase 40 P02 | 5min | 2 tasks | 26 files |
 | Phase 40 P03 | 26min | 2 tasks | 12 files |
+| Phase 40 P04 | 10min | 2 tasks | 25 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T05:09:39.367Z
-Stopped at: Completed 40-03-PLAN.md
+Last session: 2026-10-13T05:19:40.741Z
+Stopped at: Completed 40-04-PLAN.md
 Resume file: None
