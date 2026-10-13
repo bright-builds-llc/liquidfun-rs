@@ -23,6 +23,7 @@ import {
 } from "../src/player/puzzle-lifecycle";
 import { createPuzzleRuntime } from "../src/player/puzzle-runtime";
 import type { PlayerView } from "../src/player/view";
+import { EMPTY_EDITOR } from "../src/puzzle/editor";
 import { INITIAL_PUZZLE_STATE, type PuzzleState } from "../src/puzzle/reduce-puzzle";
 import { IDENTITY_CAMERA_VIEW, createCamera } from "../src/render/camera";
 
@@ -35,13 +36,19 @@ const ENDED_STATE: PuzzleState = {
   latch: {
     outcome: "lost",
     outcomeStep: 720,
+    decidedStep: 720,
     goalCount: 0,
+    peakHeldCount: 0,
+    maybeBrimStep: undefined,
     goalTarget: 540,
     goalFull: 900,
+    brimCount: 810,
     stepLimit: 720,
   },
   tailEndStep: 840,
   held: true,
+  editor: EMPTY_EDITOR,
+  speed: 1,
 };
 
 function fakeLevelInfo(title: string): RawPuzzleLevelInfo {

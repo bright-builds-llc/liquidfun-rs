@@ -27,10 +27,15 @@ export function floorPercent(count: number, full: number): number {
   return Math.min(100, Math.floor((count * 100) / full));
 }
 
-/** Data-driven tick list: ★ Win at the target, Full at capacity (D-13; Phase 39 appends ★ Brim). */
-export function goalTicks(targetCount: number, fullCount: number): readonly GoalTick[] {
+/** Data-driven tick list: ★ Win at the target, ★ Brim at the Brim count, Full at capacity (D-13, D-16). */
+export function goalTicks(
+  targetCount: number,
+  fullCount: number,
+  brimCount: number,
+): readonly GoalTick[] {
   return [
     { fraction: targetCount / fullCount, label: "★ Win" },
+    { fraction: brimCount / fullCount, label: "★ Brim" },
     { fraction: 1, label: "Full" },
   ];
 }
@@ -71,6 +76,7 @@ type GoalCounts = {
   readonly goalCount: number;
   readonly goalTarget: number;
   readonly goalFull: number;
+  readonly brimCount: number;
 };
 
 /** Counts the HUD shows: the live frame status, or the latch once ended (UI-D5). */
@@ -103,7 +109,7 @@ export function fillMeterModel(state: PuzzleState): FillMeterModel {
     percentText: `${fill}%`,
     targetText: ` / ${target}%`,
     fillPercent: fill,
-    ticks: goalTicks(maybeCounts.goalTarget, maybeCounts.goalFull),
+    ticks: goalTicks(maybeCounts.goalTarget, maybeCounts.goalFull, maybeCounts.brimCount),
     maybeValueNow: fill,
     maybeValueText: `${fill}% full, target ${target}%`,
   };

@@ -303,7 +303,7 @@ describe("reducePuzzle running and the D-10 decision", () => {
       "a lost run without a decided step",
       running(719),
       720,
-      { ...LOST_STATUS, maybeDecidedStep: undefined },
+      status({ outcome: "lost", maybeOutcomeStep: 720 }),
     ],
   ] as const)("rejects %s decided off its decided step", (_label, state, stepIndex, frameStatus) => {
     // Act

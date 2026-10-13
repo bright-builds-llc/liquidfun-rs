@@ -19,6 +19,8 @@ import { bindLifecycle, handleHashChange } from "../src/player/scene-lifecycle";
 import type { SceneRuntime } from "../src/player/scene-runtime";
 import { bindSurface } from "../src/player/scene-surface";
 import type { PlayerView } from "../src/player/view";
+import { EMPTY_EDITOR } from "../src/puzzle/editor";
+import type { PuzzleState } from "../src/puzzle/reduce-puzzle";
 import { createCamera, IDENTITY_CAMERA_VIEW } from "../src/render/camera";
 import { drawGlassCup, glassCup } from "../src/render/glass-cup";
 import { presentSceneFrame } from "../src/render/present-frame";
@@ -322,7 +324,12 @@ describe("frameDeps.maybeStartPuzzle", () => {
     const session = withPuzzle(fakeRuntime(PUZZLE_ROUTE));
     bindLifecycle(session);
     session.puzzle.setMaybeLevelId("first-pour");
-    const loading = { kind: "loading", pendingRun: true } as const;
+    const loading: PuzzleState = {
+      kind: "loading",
+      pendingRun: true,
+      editor: EMPTY_EDITOR,
+      speed: 1,
+    };
     session.puzzle.current = loading;
     const maybeStart = session.frameDeps().maybeStartPuzzle;
     if (maybeStart === undefined) {

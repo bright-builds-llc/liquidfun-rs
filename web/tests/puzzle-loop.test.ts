@@ -5,6 +5,7 @@ import type { PuzzleSession } from "../src/physics/puzzle-session";
 import { createFrameClock, type FrameClock } from "../src/player/frame-loop";
 import type { FrameObservation } from "../src/player/observe";
 import { schedulePuzzleFrame, type PuzzleLoopDeps } from "../src/player/puzzle-loop";
+import { EMPTY_EDITOR } from "../src/puzzle/editor";
 import {
   SETTLE_TAIL_STEPS,
   reducePuzzle,
@@ -44,9 +45,17 @@ function statusAt(stepIndex: number, latchStep: number): PuzzleFrameStatus {
     stepLimit: 720,
     brimCount: 810,
   };
+  // The win and Brim latch on the same step, so the run is decided there (D-10).
   return stepIndex < latchStep
     ? { ...base, outcome: "running", peakHeldCount: 0 }
-    : { ...base, outcome: "won", maybeOutcomeStep: latchStep, peakHeldCount: 540 };
+    : {
+        ...base,
+        outcome: "won",
+        maybeOutcomeStep: latchStep,
+        peakHeldCount: 810,
+        maybeBrimStep: latchStep,
+        maybeDecidedStep: latchStep,
+      };
 }
 
 function fakeSession(options: { latchStep: number; omitStatus?: boolean }) {
@@ -67,7 +76,13 @@ function harness(options: { latchStep?: number; omitStatus?: boolean } = {}) {
   const clock: FrameClock = createFrameClock();
   clock.maybeCamera = createCamera(390, 844);
   const context = {} as CanvasRenderingContext2D;
-  let state: PuzzleState = { kind: "running", stepIndex: 0, status: statusAt(0, LATCH_STEP) };
+  let state: PuzzleState = {
+    kind: "running",
+    stepIndex: 0,
+    status: statusAt(0, LATCH_STEP),
+    editor: EMPTY_EDITOR,
+    speed: 1,
+  };
   let current = true;
   const published: Published[] = [];
   const deps: PuzzleLoopDeps = {

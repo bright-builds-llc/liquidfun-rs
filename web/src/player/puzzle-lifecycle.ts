@@ -17,6 +17,7 @@ import {
   type PuzzleEvent,
   type PuzzleState,
 } from "../puzzle/reduce-puzzle";
+import { INITIAL_PUZZLE_SPEED } from "../puzzle/speed";
 import { IDENTITY_CAMERA_VIEW } from "../render/camera";
 import { glassCup } from "../render/glass-cup";
 import { cancelPendingFrame } from "./frame-loop";
@@ -137,13 +138,18 @@ async function buildPuzzle(host: PuzzleHost, id: PuzzleId): Promise<void> {
       info.cupInterior,
       info.targetCount,
       info.fullCount,
-      goalTicks(info.targetCount, info.fullCount),
+      goalTicks(info.targetCount, info.fullCount, info.brimCount),
     );
     canvas.dataset.simulationBackend = "direct";
     // Step 0 from a never-advanced world (D-07, Pitfall 2).
     const frame = owned.captureFrame();
     const status = requirePuzzleStatus(frame);
-    const state = dispatch(host, { kind: "loaded", stepIndex: frame.stepIndex, status });
+    const state = dispatch(host, {
+      kind: "loaded",
+      stepIndex: frame.stepIndex,
+      status,
+      budget: info.toolBudget,
+    });
     const maybeCamera = host.clock.maybeCamera;
     if (maybeCamera !== undefined) {
       host.drawSceneFrame(context, frame, maybeCamera);
@@ -195,9 +201,10 @@ export async function beginPuzzleRoute(host: PuzzleHost, id: PuzzleId): Promise<
     host.refreshCamera();
     host.puzzle.setMaybeLevelId(id);
     host.puzzle.maybeGlass = undefined;
-    publishState(host, dispatch(host, { kind: "reset" }));
-    host.setView({ kind: "loading" });
     host.puzzle.placements = maybeReadTestPlacements(window, id) ?? EMPTY_PLACEMENTS;
+    const placements = host.puzzle.placements;
+    publishState(host, dispatch(host, { kind: "reset", placements, speed: INITIAL_PUZZLE_SPEED }));
+    host.setView({ kind: "loading" });
   } catch (error) {
     host.failScene(error);
     return;
@@ -268,7 +275,12 @@ export function tryAgainPuzzle(host: PuzzleHost): void {
     return;
   }
 
-  publishState(host, dispatch(host, { kind: "reset" }));
+  const reset = {
+    kind: "reset",
+    placements: host.puzzle.placements,
+    speed: host.puzzle.current.speed,
+  } as const;
+  publishState(host, dispatch(host, reset));
   host.setView({ kind: "loading" });
   void buildPuzzle(host, maybeId);
 }

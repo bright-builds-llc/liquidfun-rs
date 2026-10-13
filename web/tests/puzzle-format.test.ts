@@ -11,6 +11,7 @@ import {
   resultCardModel,
   timerText,
 } from "../src/puzzle/format";
+import { EMPTY_EDITOR } from "../src/puzzle/editor";
 import {
   INITIAL_PUZZLE_STATE,
   SETTLE_TAIL_STEPS,
@@ -32,29 +33,41 @@ function status(overrides: Partial<PuzzleFrameStatus> = {}): PuzzleFrameStatus {
 }
 
 function building(goalCount = 0): PuzzleState {
-  return { kind: "building", status: status({ goalCount }) };
+  return { kind: "building", status: status({ goalCount }), editor: EMPTY_EDITOR, speed: 1 };
 }
 
 function running(stepIndex: number, goalCount = 0): PuzzleState {
-  return { kind: "running", stepIndex, status: status({ goalCount }) };
+  return {
+    kind: "running",
+    stepIndex,
+    status: status({ goalCount }),
+    editor: EMPTY_EDITOR,
+    speed: 1,
+  };
 }
 
 function ended(latch: Partial<PuzzleLatch> = {}, stepIndex?: number): PuzzleState {
   const full: PuzzleLatch = {
     outcome: "won",
     outcomeStep: 201,
+    decidedStep: 201,
     goalCount: 689,
+    peakHeldCount: 689,
+    maybeBrimStep: undefined,
     goalTarget: 540,
     goalFull: 900,
+    brimCount: 810,
     stepLimit: 720,
     ...latch,
   };
   return {
     kind: "ended",
-    stepIndex: stepIndex ?? full.outcomeStep,
+    stepIndex: stepIndex ?? full.decidedStep,
     latch: full,
-    tailEndStep: full.outcomeStep + SETTLE_TAIL_STEPS,
+    tailEndStep: full.decidedStep + SETTLE_TAIL_STEPS,
     held: false,
+    editor: EMPTY_EDITOR,
+    speed: 1,
   };
 }
 
@@ -102,13 +115,14 @@ describe("floorPercent", () => {
 });
 
 describe("goal copy and ticks", () => {
-  it("lists the win tick at the target fraction and the full tick at one", () => {
+  it("lists the win, Brim and full ticks in order", () => {
     // Act
-    const ticks = goalTicks(540, 900);
+    const ticks = goalTicks(540, 900, 810);
 
     // Assert
     expect(ticks).toEqual([
       { fraction: 0.6, label: "★ Win" },
+      { fraction: 0.9, label: "★ Brim" },
       { fraction: 1, label: "Full" },
     ]);
   });
@@ -162,7 +176,7 @@ describe("fillMeterModel", () => {
       percentText: "0%",
       targetText: " / 60%",
       fillPercent: 0,
-      ticks: goalTicks(540, 900),
+      ticks: goalTicks(540, 900, 810),
       maybeValueNow: 0,
       maybeValueText: "0% full, target 60%",
     });
@@ -236,7 +250,7 @@ describe("resultCardModel", () => {
     ["a loss at or above the target", { goalCount: 549, goalTarget: 540 }, "Out of time: 61% of 60%"],
   ] as const)("reports %s as a loss", (_label, counts, expected) => {
     // Arrange
-    const state = ended({ outcome: "lost", outcomeStep: 720, ...counts });
+    const state = ended({ outcome: "lost", outcomeStep: 720, decidedStep: 720, ...counts });
 
     // Act
     const model = resultCardModel(state);
