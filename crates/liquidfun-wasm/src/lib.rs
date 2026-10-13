@@ -162,14 +162,17 @@ impl ProofSession {
 
     /// Captures one coherent frame as validated owned data.
     ///
+    /// `particleSpeeds` true attaches the per-particle speed lane; omitted or
+    /// false returns the frame unchanged (Phase 43 D-10, D-11).
+    ///
     /// # Errors
     ///
     /// Returns a bounded JavaScript error when semantic engine state cannot be
     /// copied into the frame contract.
     #[wasm_bindgen(js_name = captureFrame)]
-    pub fn capture_frame(&self) -> Result<ProofFrame, JsError> {
+    pub fn capture_frame(&self, particle_speeds: Option<bool>) -> Result<ProofFrame, JsError> {
         self.core
-            .capture_frame()
+            .capture_frame_with_speeds(particle_speeds.unwrap_or(false))
             .map(ProofFrame::from)
             .map_err(js_error)
     }

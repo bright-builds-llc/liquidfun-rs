@@ -56,6 +56,9 @@ pub(crate) struct FrameData {
     diagnostics: FrameDiagnostics,
     maybe_puzzle: Option<PuzzleStatus>,
     maybe_sound: Option<SoundSignals>,
+    /// Optional per-particle speeds in m/s (Phase 43 D-10); present only when
+    /// the capture asked for them.
+    maybe_particle_speeds: Option<Vec<f32>>,
 }
 
 impl FrameData {
@@ -107,6 +110,7 @@ impl FrameData {
             diagnostics,
             maybe_puzzle: None,
             maybe_sound: None,
+            maybe_particle_speeds: None,
         })
     }
 
@@ -311,6 +315,7 @@ impl ProofFrame {
 }
 
 mod puzzle;
+mod speeds;
 
 #[cfg(test)]
 mod tests {

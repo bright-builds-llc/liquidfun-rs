@@ -94,26 +94,6 @@ pub(crate) struct SessionCore {
     maybe_sound: Option<SoundTally>,
 }
 
-fn max_particle_speed(velocities: &[Vec2]) -> Result<f32, SessionError> {
-    let mut max_squared = 0.0_f32;
-    for velocity in velocities {
-        if !velocity.is_valid() {
-            return Err(SessionError::FrameCaptureFailed);
-        }
-        let squared = velocity.length_squared();
-        if squared > max_squared {
-            max_squared = squared;
-        }
-    }
-
-    let speed = max_squared.sqrt();
-    if !speed.is_finite() {
-        return Err(SessionError::FrameCaptureFailed);
-    }
-
-    Ok(speed)
-}
-
 impl SessionCore {
     pub(crate) fn create(id: SceneId) -> Result<Self, SessionError> {
         Self::from_source(SessionSource::Scene(id), Vec::new())
@@ -385,8 +365,20 @@ impl SessionCore {
         )
     }
 
+    /// Captures a frame without the optional speed lane (native test callers).
+    #[cfg(test)]
     pub(crate) fn capture_frame(&self) -> Result<FrameData, SessionError> {
-        let (particle_positions, particle_colors, particle_radii, max_speed) = {
+        self.capture_frame_with_speeds(false)
+    }
+
+    /// Captures a frame; when `particle_speeds` is set, also attaches the
+    /// per-particle speed lane from the same velocity read (Phase 43 D-10).
+    /// The flag only changes the copied output, never the world.
+    pub(crate) fn capture_frame_with_speeds(
+        &self,
+        particle_speeds: bool,
+    ) -> Result<FrameData, SessionError> {
+        let (particle_positions, particle_colors, particle_radii, max_speed, maybe_speeds) = {
             let view = self
                 .world
                 .particle_system_view(self.particle_system)
@@ -426,13 +418,17 @@ impl SessionCore {
             if velocities.len() != particle_ids.len() {
                 return Err(SessionError::FrameCaptureFailed);
             }
-            let max_speed = max_particle_speed(velocities)?;
+            let max_speed = speeds::max_particle_speed(velocities)?;
+            let maybe_speeds = particle_speeds
+                .then(|| speeds::particle_speeds(velocities))
+                .transpose()?;
             let particle_radii = vec![self.particle_radius; particle_ids.len()];
             (
                 particle_positions,
                 particle_colors,
                 particle_radii,
                 max_speed,
+                maybe_speeds,
             )
         };
         let statistics = self
@@ -482,6 +478,7 @@ impl SessionCore {
             diagnostics,
         )
         .map_err(|_error| SessionError::FrameCaptureFailed)?;
+        speeds::attach_particle_speeds(&mut frame, maybe_speeds)?;
         self.annotate_frame(&mut frame, circle_count)?;
         Ok(frame)
     }
@@ -597,6 +594,7 @@ fn store_preset(presets: &mut Vec<(String, String)>, name: &str, value: &str) {
 }
 
 mod escape;
+mod speeds;
 
 #[cfg(test)]
 mod tests;
