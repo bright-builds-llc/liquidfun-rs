@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 42-01-PLAN.md
-last_updated: "2026-10-13T19:23:02.354Z"
+stopped_at: Completed 42-02-PLAN.md
+last_updated: "2026-10-13T19:30:11.801Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 55
-  completed_plans: 51
-  percent: 93
+  completed_plans: 52
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 42 (Opt-in Sound) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -161,6 +161,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 42]: 42-01: puzzle frames carry read-only splashContacts (new particle-fixture contacts), impactCount (non-sensor rigid Begin) and impactImpulse (max summed solved normal impulse) from the existing StepReport; tally-off stepping bit-identical; crates/liquidfun untouched (1a7f1ac99, 56b542f69)
 - [Phase 42]: 42-01: A2 held (float-up Begin contacts solved same step, impulse max 0.062 N·s); only float-up has rigid impacts; splash per-step max 86-153, p90 4-40 (target/phase42/sound-probe.txt)
 - [Phase 42]: 42-01: baseline target/phase42/base.txt from scene-spot 2026-10-13T19-08-15Z at bd685b08f, identical to Phase 41 after-final; after-01 25/25 identical; wasm replay 6 LEVELHASH + 14 REPLAY pass
+- [Phase 42]: 42-02: splash thresholds from the probe: rest p95 3 -> SPLASH_MIN_CONTACTS_PER_STEP 4, p90 of steps >= 4 is 29 -> SPLASH_FULL 29, IMPACT_FULL_IMPULSE 0.062008 (float-up solution impulse p90); first-pour solution audible 302/321 steps
+- [Phase 42]: 42-02: pure core: chime takes 3 pool entries and evicts oldest (startedAt, id); dropped requests keep lastStartedAt; burst onset and rigid impact merge into one impact at the larger strength; a non-increasing stepIndex resets memory then records the frame
 
 ### Pending Todos
 
@@ -274,9 +276,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 41 P07 | 4min | 2 tasks | 2 files |
 | Phase 41 P08 | 9min | 2 tasks | 0 files |
 | Phase 42 P01 | 15min | 3 tasks | 12 files |
+| Phase 42 P02 | 6min | 3 tasks | 10 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T19:23:02.350Z
-Stopped at: Completed 42-01-PLAN.md
+Last session: 2026-10-13T19:30:11.797Z
+Stopped at: Completed 42-02-PLAN.md
 Resume file: None
