@@ -9,7 +9,9 @@ use crate::puzzle::first_pour::REFERENCE_PLANK_POSE;
 use crate::puzzle::tools::{GRID_METERS, PlacementError};
 use crate::puzzle::{LevelId, PuzzleLevelInfo, level_spec};
 use crate::session::{SessionCore, SessionError};
-use crate::{ProofSession, build_core, build_puzzle_core};
+use crate::{
+    PlacementInspection, ProofSession, build_core, build_puzzle_core, inspect_puzzle_placements,
+};
 
 fn frame(core: &SessionCore) -> ProofFrame {
     ProofFrame::from(core.capture_frame().expect("frame captures"))
@@ -93,6 +95,8 @@ fn first_pour_frames_and_level_info_report_the_goal_contract() {
     assert_eq!(info.grid_meters().to_bits(), 0.05_f32.to_bits());
     assert_eq!(*info.tool_kinds(), [1]);
     assert_eq!(*info.tool_counts(), [2]);
+    assert_eq!(info.brim_count(), 810);
+    assert_eq!(info.par_tools(), 1);
     for (step, frame) in (0_u32..).zip(&frames) {
         assert_running_goal_contract(frame, &info, step);
     }
@@ -111,6 +115,24 @@ fn reference_plank_lanes_build_through_the_wasm_helper() {
     assert_eq!(
         frame(&planked).rigid_shape_count(),
         frame(&empty).rigid_shape_count() + 4
+    );
+}
+
+#[test]
+fn two_valid_planks_build_and_overlapping_planks_fail() {
+    // Arrange
+    let apart = [8, 64, 23, 30, 84, 0];
+    let crossed = [8, 64, 23, 8, 64, 0];
+
+    // Act
+    let apart_result = build_puzzle_core("first-pour", &[1, 1], &apart);
+    let crossed_result = build_puzzle_core("first-pour", &[1, 1], &crossed).err();
+
+    // Assert
+    assert!(apart_result.is_ok());
+    assert_eq!(
+        crossed_result,
+        Some(SessionError::InvalidPlacement(PlacementError::OverlapsTool))
     );
 }
 
@@ -232,10 +254,12 @@ fn new_puzzle_and_level_info_exist_on_proof_session() {
     // Arrange
     type NewPuzzle = fn(String, &[u8], &[i32]) -> Result<ProofSession, JsError>;
     type LevelInfo = fn(&ProofSession) -> Result<PuzzleLevelInfo, JsError>;
+    type Inspect = fn(&str, &[u8], &[i32]) -> Result<PlacementInspection, JsError>;
 
     // Act
     let new_puzzle: NewPuzzle = ProofSession::new_puzzle;
     let level_info: LevelInfo = ProofSession::level_info;
+    let inspect: Inspect = inspect_puzzle_placements;
 
     // Assert
     assert_eq!(
@@ -245,5 +269,9 @@ fn new_puzzle_and_level_info_exist_on_proof_session() {
     assert_eq!(
         core::mem::size_of_val(&level_info),
         core::mem::size_of::<LevelInfo>()
+    );
+    assert_eq!(
+        core::mem::size_of_val(&inspect),
+        core::mem::size_of::<Inspect>()
     );
 }

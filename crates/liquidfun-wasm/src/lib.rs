@@ -57,7 +57,8 @@ impl ProofSession {
     /// # Errors
     ///
     /// Returns a bounded JavaScript error for an unknown level id, an invalid
-    /// placement, or failed level construction.
+    /// placement (including any tool `inspectPuzzlePlacements` reports as
+    /// overlapping), or failed level construction.
     #[wasm_bindgen(js_name = newPuzzle)]
     pub fn new_puzzle(
         level_id: String,

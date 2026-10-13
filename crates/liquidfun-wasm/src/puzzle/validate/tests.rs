@@ -1,7 +1,11 @@
-use super::{Inspection, OUTLINE_STRIDE, PlacementStatus, inspect, validate_for_build};
+use super::{
+    Inspection, OUTLINE_STRIDE, PlacementStatus, inspect, inspect_level, validate_for_build,
+};
+use crate::build_puzzle_core;
 use crate::puzzle::first_pour::{FIRST_POUR, REFERENCE_PLANK_POSE};
 use crate::puzzle::spec::LevelSpec;
 use crate::puzzle::tools::{GridRect, MAX_PLACEMENTS, PlacementError, pose_placement};
+use crate::session::SessionError;
 
 const NO_WALLS: LevelSpec = LevelSpec {
     walls: &[],
@@ -305,4 +309,76 @@ fn first_pour_solution_fixture_placement_is_valid() {
     // Assert
     assert_eq!(pose, REFERENCE_PLANK_POSE);
     assert_eq!(statuses, codes(&[PlacementStatus::Valid]));
+}
+
+#[test]
+fn inspector_and_new_puzzle_agree() {
+    // Arrange
+    let cases: [(&[u8], &[i32]); 16] = [
+        (&[], &[]),
+        (&[1], &[8, 64, 23]),
+        (&[1], &[30, 84, 0]),
+        (&[1], &[-20, 44, 0]),
+        (&[1], &[10, 64, 0]),
+        (&[1], &[-20, 84, 6]),
+        (&[1], &[40, 44, 0]),
+        (&[1], &[38, 44, 6]),
+        (&[1], &[41, 64, 0]),
+        (&[1], &[8, 64, 24]),
+        (&[0], &[8, 64, 23]),
+        (&[2], &[8, 64, 23]),
+        (&[1], &[40_000, 64, 0]),
+        (&[1, 1], &[8, 64, 23, 30, 84, 0]),
+        (&[1, 1], &[8, 64, 23, 8, 64, 0]),
+        (&[1, 1, 1], &[8, 64, 23, 30, 84, 0, -20, 44, 0]),
+    ];
+
+    for (kinds, poses) in cases {
+        // Act
+        let inspection = inspect_level("first-pour", kinds, poses).expect("lanes are well formed");
+        let built = build_puzzle_core("first-pour", kinds, poses);
+
+        // Assert
+        let all_valid = inspection
+            .statuses
+            .iter()
+            .all(|status| *status == PlacementStatus::Valid.code());
+        assert_eq!(all_valid, built.is_ok(), "{kinds:?} {poses:?}");
+        if let Err(error) = built {
+            assert!(
+                matches!(error, SessionError::InvalidPlacement(_)),
+                "{kinds:?} {poses:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn inspect_level_reports_reference_outline() {
+    // Arrange
+    let poses = REFERENCE_PLANK_POSE;
+
+    // Act
+    let inspection = inspect_level("first-pour", &[1], &poses).expect("first-pour inspects");
+
+    // Assert
+    let actual: Vec<u32> = inspection
+        .outlines
+        .iter()
+        .map(|value| value.to_bits())
+        .collect();
+    assert_eq!(inspection.statuses, codes(&[PlacementStatus::Valid]));
+    assert_eq!(actual, plank_outline_bits(REFERENCE_PLANK_POSE));
+}
+
+#[test]
+fn inspect_level_rejects_unknown_levels() {
+    // Arrange
+    let ids = ["dam-break", "First-Pour", ""];
+
+    // Act
+    let results = ids.map(|id| inspect_level(id, &[], &[]).err());
+
+    // Assert
+    assert_eq!(results, [Some(SessionError::UnknownLevel); 3]);
 }

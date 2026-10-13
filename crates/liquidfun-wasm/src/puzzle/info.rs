@@ -47,6 +47,20 @@ impl PuzzleLevelInfo {
         self.spec.full_count
     }
 
+    /// Returns the count whose peak held fill earns ★ Brim.
+    #[must_use]
+    #[wasm_bindgen(js_name = brimCount)]
+    pub fn brim_count(&self) -> u32 {
+        self.spec.brim_count
+    }
+
+    /// Returns the most placements at Play that still earn ★ Thrifty.
+    #[must_use]
+    #[wasm_bindgen(js_name = parTools)]
+    pub fn par_tools(&self) -> u32 {
+        self.spec.par_tools
+    }
+
     /// Returns the consecutive steps at or above target needed to win.
     #[must_use]
     #[wasm_bindgen(js_name = settleSteps)]
