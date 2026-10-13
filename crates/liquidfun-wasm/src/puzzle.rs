@@ -78,8 +78,6 @@ mod levels_tests;
 #[cfg(test)]
 mod materials_tests;
 #[cfg(test)]
-mod powder_spike;
-#[cfg(test)]
 mod probe;
 #[cfg(test)]
 mod replay;
