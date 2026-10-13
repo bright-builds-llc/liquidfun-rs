@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 39-04-PLAN.md
-last_updated: "2026-10-13T00:19:46.376Z"
+stopped_at: Completed 39-05-PLAN.md
+last_updated: "2026-10-13T00:43:28.794Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 21
-  percent: 68
+  completed_plans: 22
+  percent: 71
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
-Plan: 5 of 14
+Plan: 6 of 14
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -95,6 +95,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-03: speed helpers multiply the per-frame step request by 1/2/4 and restore unrun steps as (unrun/speed)*STEP_SECONDS; MAX_STEPS_PER_FRAME stays 4
 - [Phase 39]: 39-04: TS frame parses D-11 peakHeldCount/brimCount/brimStep/decidedStep fail closed (target < brim <= full, won iff peak >= target, Brim iff peak >= brim within outcomeStep..min(step, limit), decided per D-10); peak never bounded by particle count
 - [Phase 39]: 39-04: puzzle parsing split into frame-puzzle.ts (type-only import of frame.ts) with shared helpers in frame-scalars.ts; frame.ts keeps all exported types
+- [Phase 39]: 39-05: PeakHeldTracker beside the unchanged GoalTracker (running max of the settle-window minimum, frozen after step_limit, first-step Brim latch); decided_step = loss latch, Brim step, or step_limit for a win without Brim; 200-sequence test proves first peak >= target equals the GoalTracker win step
+- [Phase 39]: 39-05: frame/puzzle.rs status_is_consistent is the single Rust rule set mirroring frame-puzzle.ts; D-07 measured reference peak held 541@201, 811@262, 1331@600, 1361@720, Brim 810 at step 262 (decided 262); fixtures unchanged (won 201/689, lost 720/0)
 
 ### Pending Todos
 
@@ -178,9 +180,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P02 | 3min | 2 tasks | 8 files |
 | Phase 39 P03 | 3min | 2 tasks | 9 files |
 | Phase 39 P04 | 5min | 2 tasks | 9 files |
+| Phase 39 P05 | 22min | 2 tasks | 12 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T00:19:46.373Z
-Stopped at: Completed 39-04-PLAN.md
+Last session: 2026-10-13T00:43:28.790Z
+Stopped at: Completed 39-05-PLAN.md
 Resume file: None
