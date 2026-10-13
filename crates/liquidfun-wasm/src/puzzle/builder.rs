@@ -1,8 +1,9 @@
 //! One generic builder that turns a `LevelSpec` plus placements into the
 //! existing `BuiltScene` (D-06, D-09).
 //!
-//! Creation order is fixed: static level geometry, then planks in canonical
-//! order, then the liquid. Every engine error maps to a typed `SceneError`.
+//! Creation order is fixed: static geometry, then tools in canonical order,
+//! then the liquid; valves are destroyed later by the hooks (Phase 40 D-03).
+//! Every engine error maps to a typed `SceneError`.
 
 use liquidfun::collision::{PolygonShape, Shape};
 use liquidfun::math::Vec2;
@@ -15,7 +16,8 @@ use super::goal::{GoalTracker, count_in_goal};
 use super::hooks::PuzzleHooks;
 use super::peak::PeakHeldTracker;
 use super::spec::{LevelSpec, LiquidBlock};
-use super::tools::Placements;
+use super::tools::{Placement, Placements, ToolKind};
+use super::valve::ValveGate;
 use crate::scene::{BuiltScene, RigidSegment, SceneError, attach_basin_fixture};
 use crate::session::SessionError;
 
@@ -34,9 +36,9 @@ fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene
         .set_gravity(spec.gravity)
         .map_err(|_error| SceneError::Gravity)?;
     create_geometry(&mut world, spec)?;
-    create_planks(&mut world, placements)?;
+    let valves = create_tools(&mut world, placements)?;
     let (particle_system, counted_groups) = create_liquid(&mut world, spec)?;
-    let segments = outline_segments(spec, placements);
+    let segments = static_segments(spec, placements);
     let initial_count = {
         let view = world
             .particle_system_view(particle_system)
@@ -59,6 +61,7 @@ fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene
             peak,
             initial_count,
             segments,
+            valves,
         )),
     })
 }
@@ -98,15 +101,21 @@ fn create_geometry(world: &mut World, spec: &LevelSpec) -> Result<(), SceneError
     Ok(())
 }
 
-/// One static body per plank at angle 0; the vertices are already in world space.
-fn create_planks(world: &mut World, placements: &Placements) -> Result<(), SceneError> {
+/// One static body per tool at angle 0, in canonical order; the vertices are
+/// already in world space. Returns one closed gate per valve.
+fn create_tools(world: &mut World, placements: &Placements) -> Result<Vec<ValveGate>, SceneError> {
+    let mut valves = Vec::new();
     for placement in placements.as_slice() {
         let body = world
             .create_body(&BodyDef::default())
             .map_err(|_error| SceneError::Body)?;
-        attach_basin_fixture(world, body, &placement.vertices())?;
+        let vertices = placement.vertices();
+        attach_basin_fixture(world, body, &vertices)?;
+        if placement.kind() == ToolKind::Valve {
+            valves.push(ValveGate::new(placement.open_tick(), body, edges(vertices)));
+        }
     }
-    Ok(())
+    Ok(valves)
 }
 
 /// Creates the particle system and one group per liquid block, returning the
@@ -153,21 +162,27 @@ fn create_block(
         .map_err(|_error| SceneError::Particle)
 }
 
-/// Four edges per wall, cup wall and plank quad, in creation order.
-fn outline_segments(spec: &LevelSpec, placements: &Placements) -> Vec<RigidSegment> {
-    let planks = placements
+/// Four edges per wall, cup wall and non-valve tool quad, in creation order.
+/// Valves contribute their edges through their gates while closed.
+fn static_segments(spec: &LevelSpec, placements: &Placements) -> Vec<RigidSegment> {
+    let fixed_tools = placements
         .as_slice()
         .iter()
-        .map(|placement| placement.vertices());
+        .copied()
+        .filter(|placement| placement.kind() != ToolKind::Valve)
+        .map(Placement::vertices);
     spec.walls
         .iter()
         .chain(spec.cup_walls)
         .copied()
-        .chain(planks)
-        .flat_map(|[v0, v1, v2, v3]| {
-            [(v0, v1), (v1, v2), (v2, v3), (v3, v0)].map(|(start, end)| RigidSegment { start, end })
-        })
+        .chain(fixed_tools)
+        .flat_map(edges)
         .collect()
+}
+
+/// The four edges of a counter-clockwise quad.
+fn edges([v0, v1, v2, v3]: [Vec2; 4]) -> [RigidSegment; 4] {
+    [(v0, v1), (v1, v2), (v2, v3), (v3, v0)].map(|(start, end)| RigidSegment { start, end })
 }
 
 #[cfg(test)]

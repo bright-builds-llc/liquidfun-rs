@@ -124,6 +124,23 @@ impl SessionCore {
         Self::from_source(SessionSource::Puzzle(level, placements), Vec::new())
     }
 
+    /// Test-only: builds an unregistered spec. `level_info()` still reports
+    /// the registered spec for `spec.id`; tests read `spec` directly.
+    #[cfg(test)]
+    pub(crate) fn create_puzzle_from_spec(
+        spec: &'static crate::puzzle::spec::LevelSpec,
+        placements: Placements,
+    ) -> Result<Self, SessionError> {
+        let built = build_level(spec, &placements)?;
+        Self::from_built(
+            SessionSource::Puzzle(spec.id, placements),
+            built,
+            Vec::new(),
+            spec.particle_iterations,
+            EscapeLimits::SHARED,
+        )
+    }
+
     fn from_source(
         source: SessionSource,
         presets: Vec<(String, String)>,
@@ -143,6 +160,16 @@ impl SessionCore {
                 )
             }
         };
+        Self::from_built(source, built, presets, particle_iterations, escape_limits)
+    }
+
+    fn from_built(
+        source: SessionSource,
+        built: BuiltScene,
+        presets: Vec<(String, String)>,
+        particle_iterations: u32,
+        escape_limits: EscapeLimits,
+    ) -> Result<Self, SessionError> {
         let BuiltScene {
             world,
             particle_system,

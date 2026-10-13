@@ -158,13 +158,11 @@ pub(crate) struct Placement {
 
 impl Placement {
     /// Tool kind.
-    #[cfg(test)]
     pub(crate) const fn kind(self) -> ToolKind {
         self.kind
     }
 
     /// Valve open tick in half-seconds; 0 for every other kind (D-02).
-    #[cfg(test)]
     pub(crate) const fn open_tick(self) -> u8 {
         self.open_tick
     }

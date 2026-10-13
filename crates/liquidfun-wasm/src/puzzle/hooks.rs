@@ -1,5 +1,6 @@
 //! Scene hooks for a built puzzle level: per-step cup counting, the
-//! outcome latch (D-11 to D-15) and the peak held fill (Phase 39 D-08 to D-10).
+//! outcome latch (D-11 to D-15), the peak held fill (Phase 39 D-08 to D-10)
+//! and the timed valves (Phase 40 D-01, D-03).
 
 use liquidfun::math::Vec2;
 use liquidfun::{ContactTransition, ParticleGroupId, ParticleSystemId, World};
@@ -7,6 +8,7 @@ use liquidfun::{ContactTransition, ParticleGroupId, ParticleSystemId, World};
 use super::goal::{GoalTracker, PuzzleStatus, count_in_goal};
 use super::peak::{PeakHeldTracker, decided_step};
 use super::spec::LevelSpec;
+use super::valve::ValveGate;
 use crate::scene::{ControlEffect, PointerKind, RigidSegment, SceneHooks};
 use crate::session::SessionError;
 
@@ -18,7 +20,10 @@ pub(crate) struct PuzzleHooks {
     peak: PeakHeldTracker,
     goal_count: u32,
     observed_step: u32,
+    /// Walls, cup walls and non-valve tools; closed valves add their own.
     segments: Vec<RigidSegment>,
+    /// Gates in canonical placement order.
+    valves: Vec<ValveGate>,
 }
 
 impl PuzzleHooks {
@@ -30,6 +35,7 @@ impl PuzzleHooks {
         peak: PeakHeldTracker,
         initial_count: u32,
         segments: Vec<RigidSegment>,
+        valves: Vec<ValveGate>,
     ) -> Self {
         Self {
             spec,
@@ -39,16 +45,38 @@ impl PuzzleHooks {
             goal_count: initial_count,
             observed_step: 0,
             segments,
+            valves,
         }
     }
 }
 
 impl SceneHooks for PuzzleHooks {
+    /// Opens every valve due for the step about to run by destroying its body.
+    ///
+    /// Runs before eviction and `world.step` (`session.rs`), so step
+    /// `open_tick × 30` is the first step without the gate (D-03). Uses only
+    /// the own step counter, never wall-clock time.
     fn on_advance(
         &mut self,
-        _world: &mut World,
+        world: &mut World,
         _system: ParticleSystemId,
     ) -> Result<(), SessionError> {
+        let next_step = self
+            .observed_step
+            .checked_add(1)
+            .ok_or(SessionError::StepIndexExhausted)?;
+        for valve in self
+            .valves
+            .iter_mut()
+            .filter(|valve| valve.is_due(next_step))
+        {
+            let Some(body) = valve.take_body() else {
+                continue;
+            };
+            world
+                .destroy_body(body)
+                .map_err(|_error| SessionError::StepFailed)?;
+        }
         Ok(())
     }
 
@@ -137,8 +165,10 @@ impl SceneHooks for PuzzleHooks {
         Err(SessionError::UnknownControl)
     }
 
+    /// Static segments, then each closed valve's edges in canonical order.
     fn collect_segments(&self, _world: &World) -> Result<Vec<RigidSegment>, SessionError> {
-        Ok(self.segments.clone())
+        let closed_valves = self.valves.iter().flat_map(ValveGate::closed_segments);
+        Ok(self.segments.iter().chain(closed_valves).copied().collect())
     }
 
     fn collect_circles(&self, _world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
