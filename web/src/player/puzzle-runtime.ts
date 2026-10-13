@@ -1,12 +1,18 @@
 import { createSignal, type Accessor, type Setter } from "solid-js";
 
-import type { PuzzleId } from "../catalog/puzzles";
+import { PUZZLE_IDS, type PuzzleId } from "../catalog/puzzles";
 import type { PuzzleLevelInfo, PuzzleSession } from "../physics/puzzle-session";
+import { maybeLevelStars } from "../puzzle/progress";
 import { INITIAL_PUZZLE_STATE, type PuzzleState } from "../puzzle/reduce-puzzle";
 import { createStarStore, type StarStore } from "../puzzle/star-store";
 import type { LevelStars } from "../puzzle/stars";
 import type { GlassCup } from "../render/glass-cup";
 import type { PuzzleEditorInput } from "./puzzle-editor-input";
+import {
+  UNAVAILABLE_PROGRESS_STORAGE,
+  createPuzzleProgress,
+  type PuzzleProgress,
+} from "./puzzle-progress";
 
 /** Mutable puzzle state shared by the lifecycle, loop, surface and UI. */
 export type PuzzleRuntime = {
@@ -26,8 +32,10 @@ export type PuzzleRuntime = {
   /** Latest committed editor announcement for the polite live region (UI-D14). */
   readonly announcement: Accessor<string>;
   readonly setAnnouncement: Setter<string>;
-  /** Page-session best-of stars; survives route changes but not a reload (D-14). */
+  /** Best-of stars: persisted wins plus this page session (D-09, D-14). */
   readonly starStore: StarStore;
+  /** Per-browser progress; hydrates the star store (D-09). */
+  readonly progress: PuzzleProgress;
   /** Non-reactive mirror the loop folds per-step events into; Solid state is published once per frame. */
   current: PuzzleState;
   maybeGlass: GlassCup | undefined;
@@ -38,8 +46,24 @@ export type PuzzleRuntime = {
   maybeEditorInput: PuzzleEditorInput | undefined;
 };
 
-/** Creates an idle puzzle runtime; call inside a Solid root so the signals have an owner. */
-export function createPuzzleRuntime(): PuzzleRuntime {
+function hydratedStarStore(progress: PuzzleProgress): StarStore {
+  const starStore = createStarStore();
+  for (const id of PUZZLE_IDS) {
+    const maybeStars = maybeLevelStars(progress.current(), id);
+    if (maybeStars !== undefined) {
+      starStore.record(id, maybeStars, maybeStars.bestPeakHeldPct);
+    }
+  }
+  return starStore;
+}
+
+/**
+ * Creates an idle puzzle runtime; call inside a Solid root so the signals have an owner.
+ * Without a progress argument the runtime is degraded: nothing persists (D-14).
+ */
+export function createPuzzleRuntime(
+  progress: PuzzleProgress = createPuzzleProgress(UNAVAILABLE_PROGRESS_STORAGE),
+): PuzzleRuntime {
   const [state, setState] = createSignal<PuzzleState>(INITIAL_PUZZLE_STATE);
   const [maybeLevelId, setMaybeLevelId] = createSignal<PuzzleId | undefined>(undefined);
   const [maybeLevelInfo, setMaybeLevelInfo] = createSignal<PuzzleLevelInfo | undefined>(
@@ -61,7 +85,8 @@ export function createPuzzleRuntime(): PuzzleRuntime {
     setMaybeHeldHash,
     announcement,
     setAnnouncement,
-    starStore: createStarStore(),
+    starStore: hydratedStarStore(progress),
+    progress,
     current: INITIAL_PUZZLE_STATE,
     maybeGlass: undefined,
     maybeOwned: undefined,

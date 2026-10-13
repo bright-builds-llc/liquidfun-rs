@@ -19,6 +19,7 @@ import {
   type PlayableRoute,
 } from "../routing/playable-route";
 import { maybePlayableTarget, titleForPlayableRoute } from "./playable-target";
+import { createPuzzleProgress } from "./puzzle-progress";
 import { createPuzzleRuntime } from "./puzzle-runtime";
 import type { SceneRuntime } from "./scene-runtime";
 import {
@@ -121,7 +122,7 @@ function createShell(): SceneRuntime {
     setTiltGravityEnabled,
     tiltDebug,
     setTiltDebug,
-    puzzle: createPuzzleRuntime(),
+    puzzle: createPuzzleRuntime(createPuzzleProgress(() => window.localStorage)),
   } as SceneRuntime;
   session.gravitySliderMagnitude = () =>
     maybeRouteGravitySliderMagnitude(session.route(), session.constructionValues);

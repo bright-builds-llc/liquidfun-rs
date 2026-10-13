@@ -10,7 +10,7 @@ import { runStarsForState } from "../puzzle/hud-format";
 import { EMPTY_PLACEMENTS, encodePlacementLanes } from "../puzzle/placements";
 import { canPlay, type PuzzleEvent, type PuzzleState } from "../puzzle/reduce-puzzle";
 import { nextPuzzleSpeed } from "../puzzle/speed";
-import { NO_STARS, starNames, type RunStars } from "../puzzle/stars";
+import { NO_STARS, sameLevelStars, starNames, type RunStars } from "../puzzle/stars";
 import { cancelPendingFrame } from "./frame-loop";
 import { isStaleGeneration } from "./generation";
 import { cancelPendingInspection, commitInspection } from "./puzzle-editing";
@@ -64,7 +64,14 @@ function recordStars(host: PuzzleHost, stars: RunStars, peakHeldPct: number): vo
     throw new Error("Puzzle level is unavailable");
   }
 
-  host.puzzle.starStore.record(maybeId, stars, peakHeldPct);
+  const maybeLocal = host.puzzle.starStore.record(maybeId, stars, peakHeldPct);
+  if (maybeLocal !== undefined) {
+    // Write-through re-reads storage, so stars from another tab come back here (D-09).
+    const merged = host.puzzle.progress.recordStars(maybeId, maybeLocal);
+    if (!sameLevelStars(merged, maybeLocal)) {
+      host.puzzle.starStore.record(maybeId, merged, merged.bestPeakHeldPct);
+    }
+  }
   host.puzzle.setMaybeBestStars(host.puzzle.starStore.get(maybeId));
 }
 

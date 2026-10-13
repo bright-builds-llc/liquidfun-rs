@@ -6,6 +6,7 @@ import {
   NO_STARS,
   mergeLevelStars,
   runStars,
+  sameLevelStars,
   starNames,
   type LevelStars,
   type RunStars,
@@ -277,5 +278,29 @@ describe("createStarStore", () => {
 
     // Assert
     expect(second.get("first-pour")).toBeUndefined();
+  });
+});
+
+describe("sameLevelStars", () => {
+  it("is true for equal bests", () => {
+    // Arrange
+    const best: LevelStars = { win: true, brim: true, thrifty: false, bestPeakHeldPct: 90 };
+
+    // Act
+    const same = sameLevelStars(best, { ...best });
+
+    // Assert
+    expect(same).toBe(true);
+  });
+
+  it("is false when only the peak held percent differs", () => {
+    // Arrange
+    const best: LevelStars = { win: true, brim: true, thrifty: false, bestPeakHeldPct: 90 };
+
+    // Act
+    const same = sameLevelStars(best, { ...best, bestPeakHeldPct: 95 });
+
+    // Assert
+    expect(same).toBe(false);
   });
 });

@@ -54,6 +54,16 @@ export function mergeLevelStars(
   };
 }
 
+/** True when two bests agree on every star and the peak held percent. */
+export function sameLevelStars(a: LevelStars, b: LevelStars): boolean {
+  return (
+    a.win === b.win &&
+    a.brim === b.brim &&
+    a.thrifty === b.thrifty &&
+    a.bestPeakHeldPct === b.bestPeakHeldPct
+  );
+}
+
 /** Display name of one star criterion. */
 export type StarName = "Win" | "Brim" | "Thrifty";
 

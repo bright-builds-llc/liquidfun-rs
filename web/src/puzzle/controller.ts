@@ -21,6 +21,8 @@ export interface PuzzleController {
   readonly maybeHeldHash: Accessor<string | undefined>;
   /** Latest committed editor announcement for the polite live region (UI-D14). */
   readonly announcement: Accessor<string>;
+  /** True when progress cannot be saved in this browser (D-15). */
+  readonly progressDegraded: Accessor<boolean>;
   /** building → running on a fresh run session built from the placements (D-21). */
   play(): void;
   /** running → building on a fresh preview with the placements kept (D-21). */

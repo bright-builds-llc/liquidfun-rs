@@ -9,6 +9,11 @@ import type {
 } from "../src/physics/puzzle-session";
 import { createFrameClock } from "../src/player/frame-loop";
 import type { PuzzleHost } from "../src/player/puzzle-host";
+import {
+  UNAVAILABLE_PROGRESS_STORAGE,
+  createPuzzleProgress,
+  type ProgressStorageProvider,
+} from "../src/player/puzzle-progress";
 import { createPuzzleRuntime } from "../src/player/puzzle-runtime";
 import type { PlayerView } from "../src/player/view";
 import { createCamera } from "../src/render/camera";
@@ -154,7 +159,7 @@ function setter<T>(): Setter<T> {
   return vi.fn() as unknown as Setter<T>;
 }
 
-export function createHost() {
+export function createHost(options: { readonly maybeStorage?: ProgressStorageProvider } = {}) {
   return createRoot((dispose) => {
     const [view, setView] = createSignal<PlayerView>({ kind: "fallback" });
     const clock = createFrameClock();
@@ -189,7 +194,9 @@ export function createHost() {
       setPanEnabled: setter(),
       setTiltGravityEnabled: setter(),
       setTiltDebug: setter(),
-      puzzle: createPuzzleRuntime(),
+      puzzle: createPuzzleRuntime(
+        createPuzzleProgress(options.maybeStorage ?? UNAVAILABLE_PROGRESS_STORAGE),
+      ),
     };
     return { host, canvas, dispose };
   });

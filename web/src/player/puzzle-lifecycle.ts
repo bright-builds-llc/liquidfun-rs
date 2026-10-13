@@ -192,6 +192,7 @@ export function createPuzzleController(host: PuzzleHost): PuzzleController {
     maybeBestStars: () => host.puzzle.maybeBestStars(),
     maybeHeldHash: () => host.puzzle.maybeHeldHash(),
     announcement: () => host.puzzle.announcement(),
+    progressDegraded: () => host.puzzle.progress.degraded(),
     play: () => playPuzzle(host),
     stop: () => stopPuzzle(host),
     retry: () => retryPuzzle(host),
