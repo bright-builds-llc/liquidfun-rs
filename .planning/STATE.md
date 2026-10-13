@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 41-04-PLAN.md
-last_updated: "2026-10-13T17:11:03.271Z"
+stopped_at: Completed 41-05-PLAN.md
+last_updated: "2026-10-13T17:19:10.156Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 50
-  completed_plans: 46
-  percent: 92
+  completed_plans: 47
+  percent: 94
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 41 (Level Select and Progress) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -152,6 +152,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 41]: 41-03: runtime hydrates StarStore from persisted wins; recordStars writes through before publish and folds back another tab's stars only when they differ (sameLevelStars); createPuzzleRuntime() defaults to UNAVAILABLE_PROGRESS_STORAGE; PuzzleController.progressDegraded
 - [Phase 41]: 41-04: restore runs once per route entry in buildPuzzle after adopt and before loaded (seam disarms it; Retry/Edit/Stop/Try again never restore); reset re-dispatched, reducer unchanged
 - [Phase 41]: 41-04: placements save in commitNow (building) and playPuzzle after guards, never on live drag frames; dedupe key id|levelHash|JSON(tools) reset on entry and leave; restored first-pour tools dismiss the first hint (accepted)
+- [Phase 41]: 41-05: #/puzzles (and #/puzzles/) is {kind:"puzzles"}, title 'Puzzles · liquidfun-rs playground', identity 'puzzles'; #/puzzles/<x> stays an unknown scene; grid is a self-scrolling fixed page in the canvas shell with an inline SiteFooter
+- [Phase 41]: 41-05: sidebar Puzzles link above Demos (aria-current page on grid, true on levels) adds one drawer focusable, so shell.spec focus-trap cycle is 27; puzzle-chrome splits HUD_STYLESHEETS from PUZZLE_STYLESHEETS
 
 ### Pending Todos
 
@@ -260,9 +262,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 41 P02 | 6min | 2 tasks | 6 files |
 | Phase 41 P03 | 6min | 2 tasks | 12 files |
 | Phase 41 P04 | 5min | 2 tasks | 8 files |
+| Phase 41 P05 | 7min | 3 tasks | 15 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T17:11:03.247Z
-Stopped at: Completed 41-04-PLAN.md
+Last session: 2026-10-13T17:19:10.153Z
+Stopped at: Completed 41-05-PLAN.md
 Resume file: None
