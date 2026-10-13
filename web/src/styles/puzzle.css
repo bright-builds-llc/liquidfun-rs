@@ -249,6 +249,7 @@
 .puzzle-hud .puzzle-transport,
 .puzzle-hud .puzzle-options-slot {
   display: flex;
+  gap: 8px;
 }
 
 /* Landscape: two 136px side rails (UI-D4). */
@@ -277,7 +278,7 @@
 /* 48px leaves 1px around the 44px Dismiss inside the chip border. */
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-caption {
   top: var(--puzzle-inset-top);
-  right: calc(var(--puzzle-inset-right) + 52px);
+  right: calc(var(--puzzle-inset-right) + 104px);
   left: calc(var(--puzzle-inset-left) + 52px);
   height: 48px;
 }
@@ -297,7 +298,7 @@
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-options-slot {
   top: var(--puzzle-inset-top);
   right: var(--puzzle-inset-right);
-  width: 44px;
+  width: 96px;
   height: 44px;
 }
 
@@ -343,7 +344,7 @@
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-title {
   top: var(--puzzle-inset-top);
   left: calc(var(--puzzle-inset-left) + 52px);
-  width: calc(100% - 120px);
+  width: calc(100% - var(--puzzle-inset-left) - var(--puzzle-inset-right) - 156px);
   height: 44px;
   text-align: center;
 }
@@ -351,7 +352,7 @@
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-options-slot {
   top: var(--puzzle-inset-top);
   right: var(--puzzle-inset-right);
-  width: 44px;
+  width: 96px;
   height: 44px;
 }
 

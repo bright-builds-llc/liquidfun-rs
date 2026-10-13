@@ -416,6 +416,66 @@ describe("puzzle sound controls", () => {
     expect(offenders).toEqual([]);
   });
 
+  it.each(["landscape", "portrait"])("sizes the %s options slot at 96 by 44 for two buttons", (layout) => {
+    // Arrange
+    const css = source("styles/puzzle.css");
+
+    // Act
+    const block = cssBlock(
+      css,
+      `.puzzle-panel--canvas-stage[data-puzzle-layout="${layout}"] .puzzle-options-slot`,
+    );
+
+    // Assert
+    expect(block).toContain("width: 96px;");
+    expect(block).toContain("height: 44px;");
+  });
+
+  it("ends the landscape caption 8 px left of the wider options slot", () => {
+    // Arrange
+    const css = source("styles/puzzle.css");
+
+    // Act
+    const block = cssBlock(
+      css,
+      '.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-caption',
+    );
+
+    // Assert
+    expect(block).toContain("right: calc(var(--puzzle-inset-right) + 104px);");
+  });
+
+  it("ends the portrait title 8 px left of the wider options slot", () => {
+    // Arrange
+    const css = source("styles/puzzle.css");
+
+    // Act
+    const block = cssBlock(
+      css,
+      '.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-title',
+    );
+
+    // Assert
+    expect(block).toContain(
+      "width: calc(100% - var(--puzzle-inset-left) - var(--puzzle-inset-right) - 156px);",
+    );
+  });
+
+  it("renders the sound toggle before the options trigger inside the options slot", () => {
+    // Arrange
+    const hud = source("components/PuzzleHud.tsx");
+    const slotStart = hud.indexOf('class="puzzle-options-slot"');
+    const slot = hud.slice(slotStart, hud.indexOf("</div>", slotStart));
+
+    // Act
+    const soundIndex = slot.indexOf("{props.soundToggle}");
+    const optionsIndex = slot.indexOf("{props.optionsTrigger}");
+
+    // Assert
+    expect(soundIndex).toBeGreaterThan(0);
+    expect(optionsIndex).toBeGreaterThan(soundIndex);
+  });
+
   it("styles the sound controls without the accent color", () => {
     // Arrange
     const css = source("styles/puzzle-sound.css");

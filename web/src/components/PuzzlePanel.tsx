@@ -35,6 +35,12 @@ import {
 } from "./PuzzleOptionsDrawer";
 import { PuzzleResultCard } from "./PuzzleResultCard";
 import { PuzzleSelectionBar } from "./PuzzleSelectionBar";
+import {
+  PuzzleSoundSection,
+  PuzzleSoundToggle,
+  SOUND_HELP_ID,
+  SOUND_HINT,
+} from "./PuzzleSoundToggle";
 import { PuzzleToolTray } from "./PuzzleToolTray";
 import { PuzzleTransport } from "./PuzzleTransport";
 import { ScaleLegend } from "./ScaleLegend";
@@ -362,6 +368,7 @@ function PuzzlePanelLayout(layoutProps: {
               selectionBar={selectionBar()}
               transport={transport()}
               resultCard={resultCard()}
+              soundToggle={<PuzzleSoundToggle controller={props.controller} />}
               optionsTrigger={<PuzzleOptionsTrigger />}
             />
           </Show>
@@ -384,6 +391,7 @@ function PuzzlePanelLayout(layoutProps: {
                 renderMode={props.renderMode}
                 onRenderModeChange={props.onRenderModeChange}
               />
+              <PuzzleSoundSection controller={props.controller} />
             </div>
           </>
         }
@@ -393,11 +401,15 @@ function PuzzlePanelLayout(layoutProps: {
             renderMode={props.renderMode}
             onRenderModeChange={props.onRenderModeChange}
           />
+          <PuzzleSoundSection controller={props.controller} />
         </PuzzleOptionsSheet>
       </Show>
 
       <p id={KEYBOARD_HELP_ID} class="visually-hidden">
         {KEYBOARD_HELP}
+      </p>
+      <p id={SOUND_HELP_ID} class="visually-hidden">
+        {SOUND_HINT}
       </p>
       <div id="puzzle-editor-status" class="visually-hidden" aria-live="polite" aria-atomic="true">
         {props.controller.announcement()}
