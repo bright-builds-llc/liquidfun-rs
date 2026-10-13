@@ -50,6 +50,8 @@ function fakeLevelInfo(title: string): RawPuzzleLevelInfo {
     title: () => title,
     targetCount: () => 540,
     fullCount: () => 900,
+    brimCount: () => 810,
+    parTools: () => 1,
     settleSteps: () => 30,
     stepLimit: () => 720,
     cupInterior: () => new Float32Array([1.6, 0, 3.4, 1.8]),

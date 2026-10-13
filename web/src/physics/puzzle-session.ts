@@ -1,4 +1,6 @@
 import type { PuzzleId } from "../catalog/puzzles";
+import type { ToolAllowance } from "../puzzle/editor";
+import { PUZZLE_TOOL_CODES, type PuzzleToolKind } from "../puzzle/placements";
 import type { WorldBounds } from "../render/camera";
 import { parseRenderFrame, type RenderFrame } from "./frame";
 import type { GeneratedProofSession, SceneSession } from "./session";
@@ -9,6 +11,7 @@ const INVALID_INFO_MESSAGE = "Invalid puzzle level info";
 const MIN_STEPS_PER_FRAME = 1;
 const MAX_STEPS_PER_FRAME = 4;
 const BOUNDS_LANE_LENGTH = 4;
+const MAX_TOOLS_PER_KIND = 16;
 
 /** Rejection raised by every scene input method of a puzzle session (D-16). */
 export const PUZZLE_SCENE_INPUT_MESSAGE = "Puzzle sessions accept no scene input";
@@ -19,6 +22,8 @@ export interface RawPuzzleLevelInfo {
   title(): string;
   targetCount(): number;
   fullCount(): number;
+  brimCount(): number;
+  parTools(): number;
   settleSteps(): number;
   stepLimit(): number;
   cupInterior(): Float32Array;
@@ -34,17 +39,27 @@ export interface GeneratedPuzzleSession extends GeneratedProofSession {
   levelInfo(): RawPuzzleLevelInfo;
 }
 
+/** Build area as integer grid cells: `[minX, minY, maxX, maxY]`. */
+export type GridCellBounds = readonly [number, number, number, number];
+
 /** Level numbers parsed once from `levelInfo()`; lengths in meters. */
 export type PuzzleLevelInfo = {
   readonly levelId: PuzzleId;
   readonly title: string;
   readonly targetCount: number;
   readonly fullCount: number;
+  /** Peak held count that earns the Brim star; `targetCount < brimCount <= fullCount` (D-05). */
+  readonly brimCount: number;
+  /** Most tools a win may use and still earn the Thrifty star (D-05). */
+  readonly parTools: number;
+  /** Allowed tool kinds and counts in level order (D-06). */
+  readonly toolBudget: readonly ToolAllowance[];
   readonly settleSteps: number;
   readonly stepLimit: number;
   readonly gridMeters: number;
   readonly cupInterior: WorldBounds;
   readonly buildArea: WorldBounds;
+  readonly buildAreaCells: GridCellBounds;
 };
 
 /** Direct-backend puzzle owner: SceneSession plus a step-0 capture and parsed level info. */
@@ -89,19 +104,80 @@ function parseCupInterior(lanes: Float32Array): WorldBounds {
   return { minX, minY, maxX, maxY };
 }
 
-function parseBuildArea(lanes: Int32Array, gridMeters: number): WorldBounds {
+function parseBuildAreaCells(lanes: Int32Array): GridCellBounds {
   const [minX, minY, maxX, maxY] = boundsLanes(lanes);
   const integral = [minX, minY, maxX, maxY].every(Number.isSafeInteger);
   if (!integral || minX > maxX || minY > maxY) {
     return invalidInfo();
   }
 
+  return [minX, minY, maxX, maxY];
+}
+
+function cellsToWorld(cells: GridCellBounds, gridMeters: number): WorldBounds {
+  const [minX, minY, maxX, maxY] = cells;
   return {
     minX: minX * gridMeters,
     minY: minY * gridMeters,
     maxX: maxX * gridMeters,
     maxY: maxY * gridMeters,
   };
+}
+
+const TOOL_KIND_BY_CODE: ReadonlyMap<number, PuzzleToolKind> = new Map(
+  Object.entries(PUZZLE_TOOL_CODES).map(([kind, code]) => [code, kind as PuzzleToolKind]),
+);
+
+function parseToolCount(value: number | undefined): number {
+  if (value === undefined || !Number.isSafeInteger(value)) {
+    return invalidInfo();
+  }
+  if (value < 1 || value > MAX_TOOLS_PER_KIND) {
+    return invalidInfo();
+  }
+
+  return value;
+}
+
+/** Aligned, non-empty lanes of allowlisted, unique kinds with counts in `1..=16` (T-39-18). */
+function parseToolBudget(kinds: Uint8Array, counts: Uint32Array): readonly ToolAllowance[] {
+  if (kinds.length === 0 || kinds.length !== counts.length) {
+    return invalidInfo();
+  }
+
+  const seen = new Set<PuzzleToolKind>();
+  return Array.from(kinds, (code, index) => {
+    const maybeKind = TOOL_KIND_BY_CODE.get(code);
+    if (maybeKind === undefined || seen.has(maybeKind)) {
+      return invalidInfo();
+    }
+
+    seen.add(maybeKind);
+    return { kind: maybeKind, count: parseToolCount(counts[index]) };
+  });
+}
+
+type StarThresholds = { readonly brimCount: number; readonly parTools: number };
+
+/** Requires `target < brim <= full` and `0 <= par <= total budget` (D-05). */
+function parseStarThresholds(
+  raw: RawPuzzleLevelInfo,
+  counts: { readonly targetCount: number; readonly fullCount: number },
+  budget: readonly ToolAllowance[],
+): StarThresholds {
+  const brimCount = raw.brimCount();
+  const brimOrdered = brimCount > counts.targetCount && brimCount <= counts.fullCount;
+  if (!Number.isSafeInteger(brimCount) || !brimOrdered) {
+    return invalidInfo();
+  }
+
+  const parTools = raw.parTools();
+  const totalTools = budget.reduce((sum, allowance) => sum + allowance.count, 0);
+  if (!Number.isSafeInteger(parTools) || parTools < 0 || parTools > totalTools) {
+    return invalidInfo();
+  }
+
+  return { brimCount, parTools };
 }
 
 /** Parses generated level info; throws `Invalid puzzle level info` (fail closed). Does not free `raw`. */
@@ -129,16 +205,21 @@ export function parsePuzzleLevelInfo(
     return invalidInfo();
   }
 
+  const toolBudget = parseToolBudget(raw.toolKinds(), raw.toolCounts());
+  const buildAreaCells = parseBuildAreaCells(raw.buildArea());
   return {
     levelId: expectedId,
     title,
     targetCount,
     fullCount,
+    ...parseStarThresholds(raw, { targetCount, fullCount }, toolBudget),
+    toolBudget,
     settleSteps: parsePositiveCount(raw.settleSteps()),
     stepLimit: parsePositiveCount(raw.stepLimit()),
     gridMeters,
     cupInterior: parseCupInterior(raw.cupInterior()),
-    buildArea: parseBuildArea(raw.buildArea(), gridMeters),
+    buildArea: cellsToWorld(buildAreaCells, gridMeters),
+    buildAreaCells,
   };
 }
 
