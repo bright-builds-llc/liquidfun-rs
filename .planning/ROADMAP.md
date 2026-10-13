@@ -18,8 +18,8 @@ v1.5 Puzzle Mode adds a small game to the playground. While a level is paused, t
 - [ ] **Phase 37: Puzzle Core in the Bridge** — Build levels from (level, placements) and decide fill, win and timeout per fixed step in Rust, identically natively and in wasm.
 - [ ] **Phase 38: Puzzle Route and Player Shell** — Open a level at `#/puzzle/<id>` in the shared player with a glass cup, fill meter, step timer and result card.
 - [ ] **Phase 39: Place-then-Play Tools and Stars** — Place, move, rotate and remove tools while building, then Play, Stop/Reset and earn stars.
-- [ ] **Phase 40: Timed Valve and Teaching Levels** — A timed valve plus 5–8 teaching levels, each proven solvable by automated tests.
-- [ ] **Phase 41: Level Select and Progress** — `#/puzzles` grid, soft unlocks and per-browser progress that survives blocked storage.
+- [x] **Phase 40: Timed Valve and Teaching Levels** — A timed valve plus 5–8 teaching levels, each proven solvable by automated tests.
+- [x] **Phase 41: Level Select and Progress** — `#/puzzles` grid, soft unlocks and per-browser progress that survives blocked storage.
 - [ ] **Phase 42: Opt-in Sound** — Muted-by-default splashes, impacts, filling plinks and a win chime.
 - [ ] **Phase 43: GPU Water Render Mode** — Closing phase: refraction, highlights and foam with safe fallbacks.
 
@@ -293,7 +293,7 @@ Plans:
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
 | 39. Place-then-Play Tools and Stars | v1.5 | 14/14 | Complete    | 2026-10-13 |
 | 40. Timed Valve and Teaching Levels | v1.5 | 11/11 | Complete    | 2026-10-13 |
-| 41. Level Select and Progress | v1.5 | 8/8 | Complete   | 2026-10-13 |
+| 41. Level Select and Progress | v1.5 | 8/8 | Complete    | 2026-10-13 |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
 | 43. GPU Water Render Mode | v1.5 | 0/TBD | Not started | - |
 

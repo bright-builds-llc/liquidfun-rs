@@ -40,7 +40,7 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 
 ### Puzzle section
 
-- [ ] **PUZ-01**: Player can open a Puzzles section (`#/puzzles`) from site navigation and see a level grid with title, idea, stars and lock state.
+- [x] **PUZ-01**: Player can open a Puzzles section (`#/puzzles`) from site navigation and see a level grid with title, idea, stars and lock state.
 - [x] **PUZ-02**: Player can open any level directly at `#/puzzle/<id>`; an unknown id shows a helpful fallback.
 - [x] **PUZ-03**: In puzzles, scene interactions (pointer poke and drag, tilt, gravity slider, zoom and pan) are disabled, and the camera does not jump when switching between building and running.
 - [x] **PUZ-04**: Player sees a puzzle HUD that follows existing chrome rules (`data-hud-obstacle` leaves, scale legend): a fill meter at the cup with target line and star ticks, the timer, and a result card with Next, Retry and Edit.
@@ -49,10 +49,10 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 
 ### Progress
 
-- [ ] **PROG-01**: Player's stars and solved levels persist in this browser across visits.
-- [ ] **PROG-02**: Levels unlock in order as earlier ones are solved, and direct links always open any level.
-- [ ] **PROG-03**: When storage is unavailable, every level is unlocked, the game stays fully playable, and a note says progress won't be saved.
-- [ ] **PROG-04**: Each level reopens with the player's last placements, which are discarded if the level has changed.
+- [x] **PROG-01**: Player's stars and solved levels persist in this browser across visits.
+- [x] **PROG-02**: Levels unlock in order as earlier ones are solved, and direct links always open any level.
+- [x] **PROG-03**: When storage is unavailable, every level is unlocked, the game stays fully playable, and a note says progress won't be saved.
+- [x] **PROG-04**: Each level reopens with the player's last placements, which are discarded if the level has changed.
 
 ### Sound
 
@@ -116,16 +116,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LEVEL-02 | Phase 40 | Complete |
 | LEVEL-03 | Phase 40 | Complete |
 | LEVEL-04 | Phase 40 | Complete |
-| PUZ-01 | Phase 41 | Pending |
+| PUZ-01 | Phase 41 | Complete |
 | PUZ-02 | Phase 38 | Complete |
 | PUZ-03 | Phase 38 | Complete |
 | PUZ-04 | Phase 38 | Complete |
 | PUZ-05 | Phase 38 | Complete |
 | PUZ-06 | Phase 38 | Complete |
-| PROG-01 | Phase 41 | Pending |
-| PROG-02 | Phase 41 | Pending |
-| PROG-03 | Phase 41 | Pending |
-| PROG-04 | Phase 41 | Pending |
+| PROG-01 | Phase 41 | Complete |
+| PROG-02 | Phase 41 | Complete |
+| PROG-03 | Phase 41 | Complete |
+| PROG-04 | Phase 41 | Complete |
 | SOUND-01 | Phase 42 | Pending |
 | SOUND-02 | Phase 42 | Pending |
 | SOUND-03 | Phase 42 | Pending |
