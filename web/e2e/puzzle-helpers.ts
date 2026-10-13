@@ -3,18 +3,27 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type { PuzzleId } from "../src/catalog/puzzles";
 import { parseFixture } from "../scripts/puzzle-replay/fixture";
 
-export const PUZZLE_PATH = "/liquidfun-rs/#/puzzle/first-pour";
+/** Playground path of a level route. */
+export function puzzlePath(id: PuzzleId): string {
+  return `/liquidfun-rs/#/puzzle/${id}`;
+}
+
+export const PUZZLE_PATH = puzzlePath("first-pour");
 export const UNKNOWN_PUZZLE_PATH = "/liquidfun-rs/#/puzzle/nope";
 export const DESKTOP = { width: 1280, height: 800 } as const;
 export const PHONE_PORTRAIT = { width: 390, height: 844 } as const;
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-export const SOLUTION_FIXTURE = resolve(
-  REPO_ROOT,
-  "crates/liquidfun-wasm/src/puzzle/fixtures/first-pour-solution.txt",
-);
+
+/** Absolute path of a recorded puzzle fixture file. */
+export function fixturePath(file: string): string {
+  return resolve(REPO_ROOT, "crates/liquidfun-wasm/src/puzzle/fixtures", file);
+}
+
+export const SOLUTION_FIXTURE = fixturePath("first-pour-solution.txt");
 
 /** Verifier screenshots for Phase 38. */
 export const SCREENS_DIR = resolve(REPO_ROOT, "target/phase38/screens");

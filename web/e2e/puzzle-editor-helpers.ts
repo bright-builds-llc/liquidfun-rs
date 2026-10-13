@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { worldBoundsForPuzzle } from "../src/catalog/puzzle-bounds";
+import type { PuzzleId } from "../src/catalog/puzzles";
 import { parseFixture } from "../scripts/puzzle-replay/fixture";
 import { SOLUTION_FIXTURE } from "./puzzle-helpers";
 
@@ -44,13 +45,14 @@ function parseWorldFrame(raw: string): readonly [number, number, number, number]
 }
 
 /**
- * Page coordinates of a first-pour world point, from the published camera
+ * Page coordinates of a level's world point, from the published camera
  * (`data-world-frame`). Fails fast when the derived scale disagrees with the
  * panel's `data-pixels-per-meter`.
  */
 export async function worldToPage(
   page: Page,
   world: { readonly x: number; readonly y: number },
+  levelId: PuzzleId = "first-pour",
 ): Promise<PagePoint> {
   const canvas = page.locator("canvas.scene-canvas");
   const maybeBox = await canvas.boundingBox();
@@ -64,7 +66,7 @@ export async function worldToPage(
     );
   }
   const [left, top, right] = parseWorldFrame(maybeFrame);
-  const bounds = worldBoundsForPuzzle("first-pour", maybeBox.width, maybeBox.height);
+  const bounds = worldBoundsForPuzzle(levelId, maybeBox.width, maybeBox.height);
   const scale = (right - left) / (bounds.maxX - bounds.minX);
   const publishedScale = Number(maybePixelsPerMeter);
   if (!(Math.abs(scale - publishedScale) <= SCALE_TOLERANCE)) {
@@ -79,8 +81,13 @@ export async function worldToPage(
 }
 
 /** Page coordinates of a placement grid cell centre. */
-export async function gridToPage(page: Page, cellX: number, cellY: number): Promise<PagePoint> {
-  return worldToPage(page, { x: cellX * GRID_METERS, y: cellY * GRID_METERS });
+export async function gridToPage(
+  page: Page,
+  cellX: number,
+  cellY: number,
+  levelId: PuzzleId = "first-pour",
+): Promise<PagePoint> {
+  return worldToPage(page, { x: cellX * GRID_METERS, y: cellY * GRID_METERS }, levelId);
 }
 
 /** Canonical `kind:x,y,angle` placements published on `main`. */
