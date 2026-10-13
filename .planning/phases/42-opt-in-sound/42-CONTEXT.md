@@ -98,6 +98,13 @@ Out of scope:
 
   The Web Audio shell takes an injectable context factory, so tests need no real `AudioContext`.
 
+### Research follow-ups (yolo, accepted recommendations from 42-RESEARCH.md open questions)
+
+- **D-15:** Every level except Float Up has no dynamic rigid body, so the impact voice also fires at the start of a splash burst: new splash contacts after a quiet interval. Rigid `impactCount` / `impactImpulse` still drive impacts where they exist.
+- **D-16:** After an audio-layer failure (D-08), sound turns off in memory for the page session. The stored preference is **not** overwritten.
+- **D-17:** The first-gesture unlock for a stored "on" (D-04) listens to `pointerup` and `keydown`, plus `pointerdown` for mouse. On touch, `pointerdown` does not count as user activation.
+- **D-18:** The form-factor shell, where no canvas stage HUD exists, puts the sound toggle in its control row. The HUD button and the drawer control get distinct accessible names, chosen by the UI-SPEC.
+
 ### Claude's Discretion
 
 - Exact synthesis parameters, scale root, envelope times, gains, filter frequencies, and the numeric rate limits and cap (within D-09).
