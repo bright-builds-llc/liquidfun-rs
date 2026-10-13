@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 39-01-PLAN.md
-last_updated: "2026-10-13T00:05:32.097Z"
+stopped_at: Completed 39-02-PLAN.md
+last_updated: "2026-10-13T00:10:48.600Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 18
-  percent: 58
+  completed_plans: 19
+  percent: 61
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
-Plan: 2 of 14
+Plan: 3 of 14
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -88,6 +88,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-01: placement status wire codes 0 Valid..12 OverlapsNoPlace; inspector and newPuzzle share placement_statuses/first_overlap (SAT, gap 2 x particle_radius, NaN fails closed)
 - [Phase 39]: 39-01: first-pour budget 2 planks, par_tools 1, brim_count 810, no_place empty; builder rejects specs unless target < brim <= full and par <= budget
 - [Phase 39]: 39-01: D-30 baseline target/phase39/base.txt from scene-spot stamp 2026-10-12T23-50-30Z (Rust == 424735672), identical to Phase 38 after-final
+- [Phase 39]: 39-02: TS PLACEMENT_STATUS mirrors Rust 0..12; BuildingEditor is pure with live (tint/hit-test) and committed (copy/Play) inspections; applyInspection drops stale revisions and length mismatches
+- [Phase 39]: 39-02: pickTool uses 22 CSS px slop, ties to selected then highest id; trayItems generic over kind strings (D-06); statusLine reads committed snapshot only (UI-D14)
 
 ### Pending Todos
 
@@ -168,9 +170,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 37 P07 | 11min | 3 tasks | 10 files |
 | Phase 37 P08 | 16min | 3 tasks | 10 files |
 | Phase 39 P01 | 15min | 3 tasks | 14 files |
+| Phase 39 P02 | 3min | 2 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T00:05:32.094Z
-Stopped at: Completed 39-01-PLAN.md
+Last session: 2026-10-13T00:10:48.597Z
+Stopped at: Completed 39-02-PLAN.md
 Resume file: None
