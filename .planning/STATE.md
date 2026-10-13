@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
-status: executing
-stopped_at: Completed 40-10-PLAN.md
-last_updated: "2026-10-13T09:25:21.450Z"
+status: verifying
+stopped_at: Completed 40-11-PLAN.md
+last_updated: "2026-10-13T09:38:49.699Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 42
-  completed_plans: 41
-  percent: 98
+  completed_plans: 42
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
 Plan: 11 of 11
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-13
 
 Progress: [░░░░░░░░░░] 0%
@@ -142,6 +142,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-09: early dense-control wins came from leaks (funnel jet through the window, roof/side-wall seam), fixed by a trap baffle and a 0.64 m thick roof edge; compressed LiquidFun water floats density 2.0 near 3 m depth, so the well column is kept low
 - [Phase 40]: 40-10 grand-finale combines jelly pad + timed valve + syrup (Timed Gate tent fed by a pad nozzle); build area is a column above the valve slot so it holds no liquid; ref plank 10 172 1 + valve 4 61 6 14, par 2, limit 900, 1,037 particles
 - [Phase 40]: 40-10 grand-finale window: ticks 1-9 and 28-30 lose, 10-27 win; nudges 16/16; exact wasm replay of all 14 fixtures; registry is 6 levels ending with grand-finale
+- [Phase 40]: 40-11: D-24 holds on 7353eaded; 27/27 gates exit 0 on the first run, scene-spot 2026-10-13T09-27-14Z 25/25 fingerprints identical, 14/14 wasm fixtures exact, puzzle e2e 57/57; no fix commit
+- [Phase 40]: 40-11: final registry 6 levels (first-pour, thick-syrup, jelly-pad, float-up, timed-gate, grand-finale); sand-chute dropped (D-25), float-up kept (D-09); release ms/step 0.25-0.85 (informational, D-23)
 
 ### Pending Todos
 
@@ -245,9 +247,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P08 | 12min | 2 tasks | 2 files |
 | Phase 40 P09 | 49min | 2 tasks | 10 files |
 | Phase 40 P10 | 43min | 3 tasks | 13 files |
+| Phase 40 P11 | 11min | 2 tasks | 0 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T09:25:21.447Z
-Stopped at: Completed 40-10-PLAN.md
+Last session: 2026-10-13T09:38:49.696Z
+Stopped at: Completed 40-11-PLAN.md
 Resume file: None

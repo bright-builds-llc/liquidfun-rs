@@ -202,7 +202,7 @@ Plans:
 - [x] 40-08-PLAN.md — Powder spike, then ship sand-chute with a measured caption or drop it under D-25 (wave 7)
 - [x] 40-09-PLAN.md — float-up buoyancy level, or drop under D-09 (wave 8)
 - [x] 40-10-PLAN.md — grand-finale level and the every-level route e2e (wave 9)
-- [ ] 40-11-PLAN.md — Phase gates (D-24) and the decision record (wave 10)
+- [x] 40-11-PLAN.md — Phase gates (D-24) and the decision record (wave 10)
 **UI hint**: yes
 
 ### Phase 41: Level Select and Progress
@@ -281,7 +281,7 @@ Plans:
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
 | 39. Place-then-Play Tools and Stars | v1.5 | 14/14 | Complete    | 2026-10-13 |
-| 40. Timed Valve and Teaching Levels | v1.5 | 10/11 | In Progress|  |
+| 40. Timed Valve and Teaching Levels | v1.5 | 11/11 | Complete   | 2026-10-13 |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
 | 43. GPU Water Render Mode | v1.5 | 0/TBD | Not started | - |
