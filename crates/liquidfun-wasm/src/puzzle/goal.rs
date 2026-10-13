@@ -227,6 +227,14 @@ pub(crate) struct PuzzleStatus {
     pub(crate) observed_step: u32,
     /// Level step limit.
     pub(crate) step_limit: u32,
+    /// Largest count held for the settle window at or before the step limit (D-08).
+    pub(crate) peak_held_count: u32,
+    /// Authored Brim star count (D-09).
+    pub(crate) brim_count: u32,
+    /// Step at which the peak first reached `brim_count`, if it has (D-09).
+    pub(crate) maybe_brim_step: Option<u32>,
+    /// Step at which the run was decided, if it has been (D-10).
+    pub(crate) maybe_decided_step: Option<u32>,
 }
 
 #[cfg(test)]

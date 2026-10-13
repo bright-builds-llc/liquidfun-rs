@@ -13,6 +13,7 @@ use liquidfun::{BodyDef, ParticleGroupId, ParticleSystemDef, ParticleSystemId, W
 
 use super::goal::{GoalTracker, count_in_goal};
 use super::hooks::PuzzleHooks;
+use super::peak::PeakHeldTracker;
 use super::spec::{LevelSpec, LiquidBlock};
 use super::tools::Placements;
 use crate::scene::{BuiltScene, RigidSegment, SceneError, attach_basin_fixture};
@@ -27,7 +28,7 @@ pub(crate) fn build_level(
 }
 
 fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene, SceneError> {
-    let tracker = validated_tracker(spec)?;
+    let (tracker, peak) = validated_trackers(spec)?;
     let mut world = World::new().map_err(|_error| SceneError::World)?;
     world
         .set_gravity(spec.gravity)
@@ -55,6 +56,7 @@ fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene
             spec,
             counted_groups,
             tracker,
+            peak,
             initial_count,
             segments,
         )),
@@ -62,7 +64,7 @@ fn build(spec: &'static LevelSpec, placements: &Placements) -> Result<BuiltScene
 }
 
 /// Rejects an inconsistent spec before any world is created.
-fn validated_tracker(spec: &LevelSpec) -> Result<GoalTracker, SceneError> {
+fn validated_trackers(spec: &LevelSpec) -> Result<(GoalTracker, PeakHeldTracker), SceneError> {
     let radius_is_valid = spec.particle_radius.is_finite() && spec.particle_radius > 0.0;
     let counts_are_ordered = spec.target_count < spec.brim_count
         && spec.brim_count <= spec.full_count
@@ -70,8 +72,11 @@ fn validated_tracker(spec: &LevelSpec) -> Result<GoalTracker, SceneError> {
     if !spec.cup_interior.is_valid() || !counts_are_ordered || !radius_is_valid {
         return Err(SceneError::Geometry);
     }
-    GoalTracker::new(spec.target_count, spec.settle_steps, spec.step_limit)
-        .ok_or(SceneError::Geometry)
+    let tracker = GoalTracker::new(spec.target_count, spec.settle_steps, spec.step_limit)
+        .ok_or(SceneError::Geometry)?;
+    let peak = PeakHeldTracker::new(spec.settle_steps, spec.step_limit, spec.brim_count)
+        .ok_or(SceneError::Geometry)?;
+    Ok((tracker, peak))
 }
 
 /// Placements the level allows across every kind.

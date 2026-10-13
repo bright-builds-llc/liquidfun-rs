@@ -7,6 +7,7 @@ pub(crate) mod goal;
 pub(crate) mod hooks;
 mod info;
 mod inspect;
+pub(crate) mod peak;
 pub(crate) mod sat;
 pub(crate) mod spec;
 pub(crate) mod tools;

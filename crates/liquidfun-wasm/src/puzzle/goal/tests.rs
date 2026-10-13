@@ -394,6 +394,10 @@ fn puzzle_status_carries_the_latched_outcome() {
         outcome: tracker.outcome(),
         observed_step: 600,
         step_limit: LIMIT,
+        peak_held_count: 0,
+        brim_count: 11,
+        maybe_brim_step: None,
+        maybe_decided_step: Some(LIMIT),
     };
 
     // Assert

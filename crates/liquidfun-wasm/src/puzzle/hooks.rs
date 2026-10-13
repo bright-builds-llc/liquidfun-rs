@@ -1,10 +1,11 @@
-//! Scene hooks for a built puzzle level: per-step cup counting and the
-//! outcome latch (D-11 to D-15).
+//! Scene hooks for a built puzzle level: per-step cup counting, the
+//! outcome latch (D-11 to D-15) and the peak held fill (Phase 39 D-08 to D-10).
 
 use liquidfun::math::Vec2;
 use liquidfun::{ContactTransition, ParticleGroupId, ParticleSystemId, World};
 
 use super::goal::{GoalTracker, PuzzleStatus, count_in_goal};
+use super::peak::{PeakHeldTracker, decided_step};
 use super::spec::LevelSpec;
 use crate::scene::{ControlEffect, PointerKind, RigidSegment, SceneHooks};
 use crate::session::SessionError;
@@ -14,6 +15,7 @@ pub(crate) struct PuzzleHooks {
     spec: &'static LevelSpec,
     counted_groups: Vec<ParticleGroupId>,
     tracker: GoalTracker,
+    peak: PeakHeldTracker,
     goal_count: u32,
     observed_step: u32,
     segments: Vec<RigidSegment>,
@@ -25,6 +27,7 @@ impl PuzzleHooks {
         spec: &'static LevelSpec,
         counted_groups: Vec<ParticleGroupId>,
         tracker: GoalTracker,
+        peak: PeakHeldTracker,
         initial_count: u32,
         segments: Vec<RigidSegment>,
     ) -> Self {
@@ -32,6 +35,7 @@ impl PuzzleHooks {
             spec,
             counted_groups,
             tracker,
+            peak,
             goal_count: initial_count,
             observed_step: 0,
             segments,
@@ -48,7 +52,7 @@ impl SceneHooks for PuzzleHooks {
         Ok(())
     }
 
-    /// Counts the cup and feeds the tracker.
+    /// Counts the cup and feeds the outcome and peak trackers.
     ///
     /// `SessionCore::advance` calls this once per fixed step, after
     /// `world.step` and eviction. The hooks are rebuilt at step 0 (D-10), so
@@ -74,17 +78,29 @@ impl SceneHooks for PuzzleHooks {
             self.spec.cup_interior,
         );
         self.tracker.observe(self.goal_count, self.observed_step);
+        self.peak.observe(self.goal_count, self.observed_step);
         Ok(())
     }
 
     fn maybe_puzzle_status(&self) -> Option<PuzzleStatus> {
+        let outcome = self.tracker.outcome();
+        let maybe_brim_step = self.peak.maybe_brim_step();
         Some(PuzzleStatus {
             goal_count: self.goal_count,
             target_count: self.spec.target_count,
             full_count: self.spec.full_count,
-            outcome: self.tracker.outcome(),
+            outcome,
             observed_step: self.observed_step,
             step_limit: self.spec.step_limit,
+            peak_held_count: self.peak.peak(),
+            brim_count: self.spec.brim_count,
+            maybe_brim_step,
+            maybe_decided_step: decided_step(
+                outcome,
+                maybe_brim_step,
+                self.observed_step,
+                self.spec.step_limit,
+            ),
         })
     }
 

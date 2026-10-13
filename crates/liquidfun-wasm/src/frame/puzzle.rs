@@ -80,6 +80,10 @@ mod tests {
             outcome,
             observed_step,
             step_limit: 600,
+            peak_held_count: 0,
+            brim_count: 4,
+            maybe_brim_step: None,
+            maybe_decided_step: None,
         }
     }
 

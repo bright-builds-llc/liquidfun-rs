@@ -232,6 +232,10 @@ fn empty_first_pour_starts_running_with_an_empty_cup() {
             outcome: Outcome::Running,
             observed_step: 0,
             step_limit: spec.step_limit,
+            peak_held_count: 0,
+            brim_count: spec.brim_count,
+            maybe_brim_step: None,
+            maybe_decided_step: None,
         })
     );
 }
