@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Phase 40 context gathered
-last_updated: "2026-10-13T04:10:50.478Z"
-last_activity: 2026-10-13 -- Phase 40 execution started
+stopped_at: Completed 40-01-PLAN.md
+last_updated: "2026-10-13T04:33:01.156Z"
+last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 31
-  percent: 74
+  completed_plans: 32
+  percent: 76
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 1 of 11
-Status: Executing Phase 40
-Last activity: 2026-10-13 -- Phase 40 execution started
+Plan: 2 of 11
+Status: Ready to execute
+Last activity: 2026-10-13
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -120,6 +120,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-13: run determinism in e2e is a four-attribute fingerprint (outcome, decided, peak held, held hash); Stop-replay, three-round edit history and 1x/2x/4x all equal a clean seam run
 - [Phase 39]: 39-14 D-30 gates: 25/25 pass on attempt 1 at a15f04eee (scene-spot 2026-10-13T02-05-45Z 25/25 identical, engine untouched, fixture outcomes unchanged debug/release/wasm, smoke 45, HUD 64, puzzle e2e 29); added cargo-clippy-wasm and cargo-test-wasm gates because default-members is only liquidfun
 - [Phase 39]: Phase 40 note: full_count 900 is below real cup capacity (peak held reaches ~1361), so almost any winning run also earns Brim 810
+- [Phase 40]: 40-01: POSE_STRIDE 4 (x, y, angle, open_tick); ToolKind::Valve = 2 (1.2 x 0.25 m); open tick checked in parse_one after build area (valve 1..=step_limit/30, others 0) -> PlacementStatus 13 ValveTimeOutOfRange with outline
+- [Phase 40]: 40-01: valves open in PuzzleHooks::on_advance (destroy_body before world.step of step open_tick x 30); frame S-1 has the gate's 4 segments, frame S does not; fixture plank 5 tokens / valve 6 tokens
+- [Phase 40]: 40-01: D-24 baseline target/phase40/base.txt from scene-spot 2026-10-13T04-11-43Z at 65a37d35b, identical to Phase 39 after-final; after-01 25/25 identical; first-pour release won 201/689/811/262, lost 720/0/0/none
 
 ### Pending Todos
 
@@ -213,9 +216,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P12 | 13min | 2 tasks | 11 files |
 | Phase 39 P13 | 9min | 3 tasks | 7 files |
 | Phase 39 P14 | 10min | 1 tasks | 0 files |
+| Phase 40 P01 | 21min | 3 tasks | 20 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T03:14:36.079Z
-Stopped at: Phase 40 context gathered
-Resume file: .planning/phases/40-timed-valve-and-teaching-levels/40-CONTEXT.md
+Last session: 2026-10-13T04:33:01.153Z
+Stopped at: Completed 40-01-PLAN.md
+Resume file: None

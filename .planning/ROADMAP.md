@@ -192,7 +192,7 @@ Plans:
 **Plans**: 11 plans
 
 Plans:
-- [ ] 40-01-PLAN.md — Fingerprint baseline, then Rust stride-4 lanes, ToolKind::Valve, status 13, 5/6-token fixture grammar and the pre-step valve opening (wave 1)
+- [x] 40-01-PLAN.md — Fingerprint baseline, then Rust stride-4 lanes, ToolKind::Valve, status 13, 5/6-token fixture grammar and the pre-step valve opening (wave 1)
 - [ ] 40-02-PLAN.md — Bun fixture grammar and registry-derived fixture files; TS stride-4 lanes, valve code, status 13, editor and debug attribute (wave 2)
 - [ ] 40-03-PLAN.md — Liquid materials, system tuning and circle floats; tuning probe and the table-driven level proof harness (wave 2)
 - [ ] 40-04-PLAN.md — Valve time UI: setValveTime, [ and ] keys, the always-mounted stepper, labels, countdown and open outline (wave 3)
@@ -281,7 +281,7 @@ Plans:
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
 | 39. Place-then-Play Tools and Stars | v1.5 | 14/14 | Complete    | 2026-10-13 |
-| 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
+| 40. Timed Valve and Teaching Levels | v1.5 | 1/11 | In Progress|  |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
 | 43. GPU Water Render Mode | v1.5 | 0/TBD | Not started | - |

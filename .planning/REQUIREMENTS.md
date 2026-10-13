@@ -22,7 +22,7 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 - [x] **TOOL-02**: While building, player can place, move, rotate (15° steps) and remove tools with mouse or touch, including tap-to-place and touch targets of at least 44 px.
 - [x] **TOOL-03**: Player sees invalid placements highlighted (overlapping walls, the cup, water or other tools, or outside the build area), and Play is disabled while any placement is invalid.
 - [x] **TOOL-04**: Player can press Play to run, and Stop/Reset to return to building with placements kept; a separate Clear action removes all tools.
-- [ ] **TOOL-05**: Player can place a timed valve and set its opening time while building.
+- [x] **TOOL-05**: Player can place a timed valve and set its opening time while building.
 - [x] **TOOL-06**: Player can place, nudge, rotate, remove and play from the keyboard (arrows, R, Delete, Space).
 - [x] **TOOL-07**: Player can fast-forward a run at 2× or 4× without changing its outcome.
 
@@ -107,7 +107,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOOL-02 | Phase 39 | Complete |
 | TOOL-03 | Phase 39 | Complete |
 | TOOL-04 | Phase 39 | Complete |
-| TOOL-05 | Phase 40 | Pending |
+| TOOL-05 | Phase 40 | Complete |
 | TOOL-06 | Phase 39 | Complete |
 | TOOL-07 | Phase 39 | Complete |
 | STAR-01 | Phase 39 | Complete |
