@@ -92,7 +92,6 @@ Two independent AI reviewers covered the phase diff from `424735672`: one for th
 
 ## Part A: Rust bridge
 
-## Phase 39: Code Review Report (Rust half)
 
 **Reviewed:** 2026-10-13T02:19:57Z
 **Depth:** standard
@@ -279,7 +278,6 @@ _Depth: standard_
 
 ## Part B: Web player
 
-## Phase 39: Code Review Report (web half)
 
 **Reviewed:** 2026-10-13T02:22:51Z
 **Depth:** standard
