@@ -1,7 +1,8 @@
 ---
 phase: 43
 slug: gpu-water-render-mode
-status: draft
+status: approved
+reviewed_at: 2026-10-13T23:18:05Z
 shadcn_initialized: false
 preset: none
 created: 2026-10-13
