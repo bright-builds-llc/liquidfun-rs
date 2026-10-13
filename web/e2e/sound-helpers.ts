@@ -122,6 +122,52 @@ export async function installUnavailableAudio(page: Page): Promise<void> {
   });
 }
 
+/** A browser whose `AudioContext` constructor exists but throws (D-05). */
+export async function installThrowingAudio(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    class ThrowingAudioContext {
+      constructor() {
+        throw new Error("audio context construction refused");
+      }
+    }
+    Object.defineProperty(window, "AudioContext", {
+      value: ThrowingAudioContext,
+      configurable: true,
+    });
+    Object.defineProperty(window, "webkitAudioContext", { value: undefined, configurable: true });
+  });
+}
+
+/** A context that builds its master chain but whose `resume()` throws synchronously (D-08, D-16). */
+export async function installThrowingResumeAudio(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const node = () => ({ gain: { value: 0 }, connect() {}, disconnect() {} });
+    class ThrowingResumeAudioContext {
+      state = "suspended";
+      currentTime = 0;
+      sampleRate = 48_000;
+      destination = node();
+      resume(): Promise<void> {
+        throw new Error("resume refused");
+      }
+      suspend(): Promise<void> {
+        return Promise.resolve();
+      }
+      createGain() {
+        return node();
+      }
+      createDynamicsCompressor() {
+        return node();
+      }
+    }
+    Object.defineProperty(window, "AudioContext", {
+      value: ThrowingResumeAudioContext,
+      configurable: true,
+    });
+    Object.defineProperty(window, "webkitAudioContext", { value: undefined, configurable: true });
+  });
+}
+
 /**
  * Seeds the stored sound choice on the first navigation only, so a later
  * reload observes what the app itself wrote.

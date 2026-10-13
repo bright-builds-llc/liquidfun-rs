@@ -7,7 +7,7 @@
  */
 import "../styles/puzzle-sound.css";
 
-import { Show } from "solid-js";
+import { Match, Show, Switch } from "solid-js";
 
 import type { PuzzleController } from "../puzzle/controller";
 import { SoundOffIcon, SoundOnIcon, SoundUnavailableIcon } from "./PuzzleIcons";
@@ -34,41 +34,42 @@ function soundState(controller: PuzzleController): SoundState {
 
 /**
  * 44 px HUD toggle. The accessible name stays "Sound" while `aria-pressed`
- * carries on and off (D-01); unavailable renders disabled in the same box (D-05).
+ * carries on and off (D-01); unavailable renders disabled in the same box
+ * (D-05). It is one element in every state, and unavailable uses
+ * `aria-disabled` rather than `disabled`, so a click whose context creation
+ * fails keeps keyboard focus on the button instead of dropping it to the body.
  */
 export function PuzzleSoundToggle(props: { readonly controller: PuzzleController }) {
+  const state = () => soundState(props.controller);
+  const unavailable = () => state() === "unavailable";
   return (
-    <Show
-      when={props.controller.soundAvailable()}
-      fallback={
-        <button
-          type="button"
-          class="hud-button puzzle-sound-toggle"
-          disabled
-          aria-pressed="false"
-          aria-label={SOUND_UNAVAILABLE_LABEL}
-          title={SOUND_UNAVAILABLE_LABEL}
-          data-sound-state="unavailable"
-        >
-          <SoundUnavailableIcon />
-        </button>
-      }
+    <button
+      type="button"
+      class="hud-button puzzle-sound-toggle"
+      aria-disabled={unavailable() ? "true" : undefined}
+      aria-pressed={state() === "on" ? "true" : "false"}
+      aria-label={unavailable() ? SOUND_UNAVAILABLE_LABEL : SOUND_LABEL}
+      title={unavailable() ? SOUND_UNAVAILABLE_LABEL : SOUND_HINT}
+      aria-describedby={unavailable() ? undefined : SOUND_HELP_ID}
+      data-sound-state={state()}
+      onClick={() => {
+        if (!unavailable()) {
+          props.controller.setSoundEnabled(!props.controller.soundEnabled());
+        }
+      }}
     >
-      <button
-        type="button"
-        class="hud-button puzzle-sound-toggle"
-        aria-pressed={props.controller.soundEnabled() ? "true" : "false"}
-        aria-label={SOUND_LABEL}
-        title={SOUND_HINT}
-        aria-describedby={SOUND_HELP_ID}
-        data-sound-state={props.controller.soundEnabled() ? "on" : "off"}
-        onClick={() => props.controller.setSoundEnabled(!props.controller.soundEnabled())}
-      >
-        <Show when={props.controller.soundEnabled()} fallback={<SoundOffIcon />}>
+      <Switch>
+        <Match when={state() === "on"}>
           <SoundOnIcon />
-        </Show>
-      </button>
-    </Show>
+        </Match>
+        <Match when={state() === "off"}>
+          <SoundOffIcon />
+        </Match>
+        <Match when={unavailable()}>
+          <SoundUnavailableIcon />
+        </Match>
+      </Switch>
+    </button>
   );
 }
 
@@ -91,7 +92,12 @@ export function PuzzleSoundSection(props: { readonly controller: PuzzleControlle
           aria-describedby="puzzle-sound-hint"
           checked={available() && props.controller.soundEnabled()}
           disabled={!available()}
-          onChange={(event) => props.controller.setSoundEnabled(event.currentTarget.checked)}
+          onChange={(event) => {
+            props.controller.setSoundEnabled(event.currentTarget.checked);
+            // A failed unlock leaves the bound value unchanged, so Solid would
+            // not rewrite the box the player just checked (IN-03).
+            event.currentTarget.checked = available() && props.controller.soundEnabled();
+          }}
         />
         {SOUND_EFFECTS_LABEL}
       </label>

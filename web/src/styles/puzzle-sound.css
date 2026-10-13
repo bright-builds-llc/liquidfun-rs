@@ -7,6 +7,15 @@
   box-shadow: inset 0 0 0 2px #F4F7FA;
 }
 
+/* Unavailable uses aria-disabled so focus survives (IN-03); match button:disabled. */
+.puzzle-sound-toggle[aria-disabled="true"],
+.puzzle-sound-toggle[aria-disabled="true"]:hover {
+  color: #A9B4C0;
+  background: #151D28;
+  border-color: #2A3441;
+  cursor: default;
+}
+
 .puzzle-sound-section {
   display: grid;
   gap: 8px;

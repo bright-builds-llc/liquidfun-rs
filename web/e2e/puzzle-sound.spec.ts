@@ -24,6 +24,8 @@ import {
 import { readRunFingerprint, type RunFingerprint } from "./puzzle-editor-helpers";
 import {
   installFakeAudio,
+  installThrowingAudio,
+  installThrowingResumeAudio,
   installUnavailableAudio,
   readAudioLog,
   readStoredSound,
@@ -49,6 +51,8 @@ const SOUND_HINT = "No sound on iPhone? Check the silent switch.";
 const SOUND_UNAVAILABLE_LABEL = "Sound unavailable in this browser";
 const SOUND_UNAVAILABLE_LINE =
   "Sound is unavailable in this browser. The puzzle still works without it.";
+const SOUND_FAILED_NOTE =
+  "Sound stopped after an audio error. Turn on Sound effects to try again.";
 const OPTIONS_LABEL = "Puzzle options";
 const RUN_TEST_TIMEOUT_MS = 90_000;
 const TWO_RUN_TEST_TIMEOUT_MS = 150_000;
@@ -344,6 +348,55 @@ test("disables both controls when Web Audio is unavailable and still plays", asy
 
   // Assert
   await waitForPuzzlePhase(page, "running");
+});
+
+test("keeps focus on the HUD toggle when context creation fails", async ({ page }) => {
+  // Arrange
+  await installThrowingAudio(page);
+  await openPuzzle(page);
+  await soundButton(page).focus();
+
+  // Act
+  await page.keyboard.press("Enter");
+
+  // Assert (D-05, IN-03): the same button turns unavailable and keeps focus.
+  const unavailable = page.getByRole("button", { name: SOUND_UNAVAILABLE_LABEL, exact: true });
+  await expect(unavailable).toBeDisabled();
+  await expect(unavailable).toBeFocused();
+  await expect(unavailable).toHaveAttribute("aria-pressed", "false");
+});
+
+test("unchecks the drawer checkbox when context creation fails", async ({ page }) => {
+  // Arrange
+  await installThrowingAudio(page);
+  await openPuzzle(page);
+  const dialog = await openOptions(page);
+  const checkbox = dialog.getByRole("checkbox", { name: SOUND_EFFECTS_LABEL });
+
+  // Act
+  await checkbox.click();
+
+  // Assert (D-05, IN-03)
+  await expect(checkbox).toBeDisabled();
+  await expect(checkbox).not.toBeChecked();
+  expect(await readStoredSound(page)).toBeNull();
+});
+
+test("unchecks the drawer checkbox when resume throws", async ({ page }) => {
+  // Arrange
+  await installThrowingResumeAudio(page);
+  await openPuzzle(page);
+  const dialog = await openOptions(page);
+  const checkbox = dialog.getByRole("checkbox", { name: SOUND_EFFECTS_LABEL });
+
+  // Act
+  await checkbox.click();
+
+  // Assert (D-08, D-16, IN-03): sound stays available but off after the failure.
+  await expect(dialog.locator(".puzzle-sound-note")).toContainText(SOUND_FAILED_NOTE);
+  await expect(checkbox).toBeEnabled();
+  await expect(checkbox).not.toBeChecked();
+  expect(await readStoredSound(page)).toBeNull();
 });
 
 for (const viewport of [DESKTOP, PHONE_PORTRAIT]) {
