@@ -1,4 +1,4 @@
-import { puzzleHash } from "../catalog/puzzle-levels";
+import { PUZZLES_HASH, puzzleHash } from "../catalog/puzzle-levels";
 import type { PuzzleId } from "../catalog/puzzles";
 import { buildingMessage } from "./editor-format";
 import { remainingSimulationSteps, type PuzzleState } from "./reduce-puzzle";
@@ -232,7 +232,7 @@ export function resultCardModel(state: PuzzleState): ResultCardModel {
 export type ResultActionsModel = {
   readonly next: {
     readonly enabled: boolean;
-    readonly label: "Next";
+    readonly label: "Next" | "All levels";
     readonly ariaLabel: string;
     readonly maybeTitle: string | undefined;
     readonly maybeHref: string | undefined;
@@ -240,18 +240,22 @@ export type ResultActionsModel = {
   readonly primary: "next" | "retry";
 };
 
-/** Next is a link to the following level, or disabled with "No next level yet" (D-15). */
+/**
+ * Next links to the next registry level even after a loss (locks are soft,
+ * D-12); on the last level the same slot is an `All levels` link to the grid,
+ * primary in won and lost runs (D-04, UI-D25).
+ */
 export function resultActionsModel(maybeNextId: PuzzleId | undefined): ResultActionsModel {
   if (maybeNextId === undefined) {
     return {
       next: {
-        enabled: false,
-        label: "Next",
-        ariaLabel: "Next: No next level yet",
-        maybeTitle: "No next level yet",
-        maybeHref: undefined,
+        enabled: true,
+        label: "All levels",
+        ariaLabel: "All levels",
+        maybeTitle: undefined,
+        maybeHref: PUZZLES_HASH,
       },
-      primary: "retry",
+      primary: "next",
     };
   }
 

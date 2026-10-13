@@ -330,6 +330,7 @@
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-result-actions .product-control {
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-legend-slot {

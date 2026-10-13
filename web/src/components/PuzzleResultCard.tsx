@@ -106,20 +106,7 @@ export function PuzzleResultCard(props: PuzzleResultCardProps) {
       </Show>
       <Show when={maybeOutcomeCard()}>
         <div class="puzzle-result-actions">
-          <Show
-            when={actions().next.maybeHref}
-            fallback={
-              <button
-                type="button"
-                class="product-control"
-                disabled
-                aria-label={actions().next.ariaLabel}
-                title={actions().next.maybeTitle}
-              >
-                {actions().next.label}
-              </button>
-            }
-          >
+          <Show when={actions().next.maybeHref}>
             {(href) => (
               <a
                 ref={assignPrimary("next")}

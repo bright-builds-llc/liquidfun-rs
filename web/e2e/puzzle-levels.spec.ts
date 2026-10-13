@@ -30,8 +30,8 @@ type Viewport = { readonly width: number; readonly height: number };
 
 const RUN_TEST_TIMEOUT_MS = 90_000;
 const ENDED_TIMEOUT_MS = 60_000;
-// The last level's Next stays disabled and says why (D-14).
-const NO_NEXT_LEVEL = "Next: No next level yet";
+// The last level's Next slot links back to the grid (Phase 41 D-04).
+const ALL_LEVELS = "All levels";
 
 function viewportName(viewport: Viewport): string {
   return `${viewport.width}x${viewport.height}`;
@@ -93,7 +93,7 @@ for (const id of PUZZLE_IDS) {
   const maybeNextId = maybeNextPuzzleId(id);
   const nextTitle =
     maybeNextId === undefined
-      ? "keeps Next disabled after the last level"
+      ? "links All levels after the last level"
       : `links Next to ${maybeNextId}`;
   test(`${id} ${nextTitle} at ${viewportName(DESKTOP)}`, async ({ page }) => {
     test.setTimeout(RUN_TEST_TIMEOUT_MS);
@@ -107,9 +107,19 @@ for (const id of PUZZLE_IDS) {
     // Assert
     await expect(page.locator("main")).toHaveAttribute("data-puzzle-outcome", "lost");
     if (maybeNextId === undefined) {
-      await expect(page.getByRole("button", { name: NO_NEXT_LEVEL, exact: true })).toBeDisabled();
+      const allLevels = page
+        .locator(".puzzle-result-actions")
+        .getByRole("link", { name: ALL_LEVELS, exact: true });
+      await expect(allLevels).toHaveAttribute("href", "#/puzzles");
+      await expect(allLevels).toHaveClass(/product-control--accent/);
       await expect(page.getByRole("link", { name: "Next level" })).toHaveCount(0);
       await page.screenshot({ path: resolve(SCREENS_DIR_40, `level-${id}-last-next.png`) });
+
+      // Act
+      await allLevels.click();
+
+      // Assert
+      await expect(page.getByRole("heading", { name: "Puzzles", level: 2 })).toBeVisible();
       return;
     }
     await expect(page.getByRole("link", { name: "Next level" })).toHaveAttribute(
