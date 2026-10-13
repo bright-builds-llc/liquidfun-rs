@@ -58,7 +58,19 @@ describe("unlockedLevelIds", () => {
     const unlocked = unlockedLevelIds(won("jelly-pad"), false);
 
     // Assert
-    expect([...unlocked]).toEqual(["first-pour", "float-up"]);
+    expect([...unlocked]).toEqual(["first-pour", "jelly-pad", "float-up"]);
+  });
+
+  it("keeps a solved level unlocked while its unsolved predecessor stays locked", () => {
+    // Arrange
+    const progress = won("jelly-pad");
+
+    // Act
+    const unlocked = unlockedLevelIds(progress, false);
+
+    // Assert
+    expect(unlocked.has("jelly-pad")).toBe(true);
+    expect(unlocked.has("thick-syrup")).toBe(false);
   });
 
   it("unlocks every level when degraded", () => {
@@ -173,17 +185,26 @@ describe("levelCardModels", () => {
     expect(second).toMatchObject({ locked: false, isNextUp: true, footer: "Not solved yet" });
   });
 
-  it("keeps an out-of-order solved card locked with its stars", () => {
+  it("unlocks an out-of-order solved card with its stars and best fill", () => {
     // Act
     const third = card(won("jelly-pad"), false, 2);
 
     // Assert
     expect(third).toMatchObject({
-      locked: true,
+      locked: false,
       solved: true,
+      isNextUp: false,
       stars: { win: true, brim: false, thrifty: false },
-      footer: "Solve Thick Syrup to unlock",
+      footer: "Best fill 61%",
     });
+  });
+
+  it("keeps the unsolved predecessor of an out-of-order solve locked", () => {
+    // Act
+    const second = card(won("jelly-pad"), false, 1);
+
+    // Assert
+    expect(second).toMatchObject({ locked: true, solved: false, footer: "Solve First Pour to unlock" });
   });
 
   it("has no next-up card when every level is solved", () => {

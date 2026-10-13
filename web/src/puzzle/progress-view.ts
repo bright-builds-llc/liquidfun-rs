@@ -12,16 +12,19 @@ export function isSolved(progress: ProgressDocument, id: PuzzleId): boolean {
   return progress.levels[id]?.win === true;
 }
 
-/** Index 0 always; index i when level i−1 is solved; every level when degraded (D-10). */
+/**
+ * Index 0 always; index i when level i−1 is solved; every level when degraded (D-10).
+ * A level solved through a deep link also stays unlocked so its card can reopen it.
+ */
 export function unlockedLevelIds(progress: ProgressDocument, degraded: boolean): ReadonlySet<PuzzleId> {
   if (degraded) {
     return new Set(PUZZLE_IDS);
   }
 
   return new Set(
-    PUZZLE_IDS.filter((_id, index) => {
+    PUZZLE_IDS.filter((id, index) => {
       const maybePreviousId = PUZZLE_IDS[index - 1];
-      return maybePreviousId === undefined || isSolved(progress, maybePreviousId);
+      return maybePreviousId === undefined || isSolved(progress, id) || isSolved(progress, maybePreviousId);
     }),
   );
 }
