@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 42-03-PLAN.md
-last_updated: "2026-10-13T19:40:44.625Z"
+stopped_at: Completed 42-04-PLAN.md
+last_updated: "2026-10-13T19:46:20.654Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 55
-  completed_plans: 53
-  percent: 96
+  completed_plans: 54
+  percent: 98
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 42 (Opt-in Sound) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -167,6 +167,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 42]: 42-03: engine suspend() clears the resume in-flight guard so a pending resume never blocks the next
 - [Phase 42]: 42-03: construction failure logs once via glue logError and makes sound unavailable; runtime failure sets failed and suspends once
 - [Phase 42]: 42-03: each chime note takes its own pool entry, oscillator and gain
+- [Phase 42]: 42-04: slot gap 8px on the shared transport/options-slot flex rule; transport computed gap unchanged; puzzle.css 452 lines
+- [Phase 42]: 42-04: unavailable toggle is a separate disabled button behind Show; on/off share one button so focus stays; probe boxes match the UI-SPEC fit table (8 px clearance at all 5 viewports)
 
 ### Pending Todos
 
@@ -282,9 +284,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 42 P01 | 15min | 3 tasks | 12 files |
 | Phase 42 P02 | 6min | 3 tasks | 10 files |
 | Phase 42 P03 | 8min | 3 tasks | 15 files |
+| Phase 42 P04 | 5min | 2 tasks | 7 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T19:40:44.622Z
-Stopped at: Completed 42-03-PLAN.md
+Last session: 2026-10-13T19:46:20.650Z
+Stopped at: Completed 42-04-PLAN.md
 Resume file: None
