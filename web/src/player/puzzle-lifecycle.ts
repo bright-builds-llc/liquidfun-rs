@@ -14,6 +14,7 @@ import {
   applyPuzzleEdit,
   cancelPendingInspection,
   placeAtCenter,
+  stepValveTime,
   toggleArm,
 } from "./puzzle-editing";
 import {
@@ -202,6 +203,9 @@ export function createPuzzleController(host: PuzzleHost): PuzzleController {
     placeAtCenter: (kind) => placeAtCenter(host, kind),
     rotateSelected: (direction) => applyPuzzleEdit(host, { kind: "rotate", direction }, "commit"),
     removeSelected: () => applyPuzzleEdit(host, { kind: "remove" }, "commit"),
+    stepValveTime: (direction) => {
+      stepValveTime(host, direction);
+    },
     command: (command) => applyPuzzleCommand(host, command),
   };
 }

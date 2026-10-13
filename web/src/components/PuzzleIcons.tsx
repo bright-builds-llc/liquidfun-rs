@@ -75,6 +75,24 @@ export function RemoveIcon() {
   );
 }
 
+/** Horizontal bar: open the valve earlier. */
+export function MinusIcon() {
+  return (
+    <Icon>
+      <path d="M6 12h12" />
+    </Icon>
+  );
+}
+
+/** Plus sign: open the valve later. */
+export function PlusIcon() {
+  return (
+    <Icon>
+      <path d="M6 12h12M12 6v12" />
+    </Icon>
+  );
+}
+
 /** Filled rounded bar. */
 export function PlankIcon() {
   return (

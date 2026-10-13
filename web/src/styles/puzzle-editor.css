@@ -72,6 +72,44 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Valve stepper: minus, readout and plus as one joined group (Phase 40 D-05). */
+
+.puzzle-valve-stepper {
+  display: flex;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  height: 44px;
+}
+
+.puzzle-valve-stepper .product-control:first-child {
+  border-radius: 12px 0 0 12px;
+}
+
+.puzzle-valve-stepper .product-control:last-child {
+  border-radius: 0 12px 12px 0;
+}
+
+.puzzle-valve-time {
+  box-sizing: border-box;
+  flex: 1 0 56px;
+  min-width: 56px;
+  height: 44px;
+  color: #F4F7FA;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 42px;
+  text-align: center;
+  background: #151D28;
+  border: 1px solid #2A3441;
+  border-right-width: 0;
+  border-left-width: 0;
+}
+
+.puzzle-valve-time[data-enabled="false"] {
+  color: #A9B4C0;
+}
+
 .puzzle-panel .product-control[aria-disabled="true"],
 .puzzle-panel .product-control[aria-disabled="true"]:hover {
   color: #A9B4C0;
@@ -204,7 +242,7 @@
   box-shadow: 0 0 0 2px rgb(230 195 92 / 40%);
 }
 
-/* Landscape rails: tray under the timer, selection bar above the legend. */
+/* Landscape rails: tray under the timer; the selection bar is one bottom-centre row. */
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-tray {
   top: calc(var(--puzzle-inset-top) + 228px);
@@ -214,10 +252,12 @@
 }
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-selection-bar {
-  right: var(--puzzle-inset-right);
-  bottom: calc(var(--puzzle-inset-bottom) + 36px);
-  width: 136px;
+  bottom: var(--puzzle-inset-bottom);
+  left: 50%;
+  justify-content: center;
+  width: 280px;
   height: 44px;
+  transform: translateX(-50%);
 }
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-tray-item {
@@ -253,6 +293,16 @@
   border-left-width: 0;
 }
 
+/* Stepper then rotate and Remove: one joined row of shared borders. */
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-valve-stepper .product-control:last-child {
+  border-radius: 0;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-valve-stepper + .product-control {
+  border-left-width: 0;
+}
+
 .puzzle-panel--canvas-stage[data-puzzle-layout="landscape"] .puzzle-transport-text {
   display: none;
 }
@@ -278,7 +328,7 @@
   display: block;
 }
 
-/* Portrait: tray and selection bar share the row above the transport. */
+/* Portrait: tray and selection bar share the rows above the transport; the bar stacks the stepper over the tool buttons. */
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray {
   bottom: calc(var(--puzzle-inset-bottom) + 52px);
@@ -290,8 +340,16 @@
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-selection-bar {
   right: var(--puzzle-inset-right);
   bottom: calc(var(--puzzle-inset-bottom) + 52px);
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: 44px 44px;
+  gap: 8px;
   width: 148px;
-  height: 44px;
+  height: 96px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-valve-stepper {
+  grid-column: 1 / -1;
 }
 
 /* Form-factor shell: normal flow in the control row; no obstacles. */
@@ -307,6 +365,6 @@
 }
 
 .puzzle-panel:not(.puzzle-panel--canvas-stage) .puzzle-selection-bar {
-  width: 148px;
+  width: 300px;
   height: 44px;
 }

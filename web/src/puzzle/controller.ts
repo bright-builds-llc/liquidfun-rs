@@ -43,6 +43,8 @@ export interface PuzzleController {
   rotateSelected(direction: 1 | -1): void;
   /** Removes the selected tool (D-19). */
   removeSelected(): void;
+  /** Moves the selected valve's open time by 0.5 s while building (D-05). */
+  stepValveTime(direction: 1 | -1): void;
   /** Applies a D-23 key command; true when handled so the caller calls preventDefault. */
   command(command: PuzzleKeyCommand): boolean;
 }

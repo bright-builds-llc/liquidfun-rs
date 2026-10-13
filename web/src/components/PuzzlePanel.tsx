@@ -54,7 +54,7 @@ const FAILURE_BODY =
   "Something went wrong while building the level. Try again, or open a scene from the list.";
 const KEYBOARD_HELP_ID = "puzzle-keyboard-help";
 const KEYBOARD_HELP =
-  "Build area. Pick a tool from the tray, or press Enter on a tray tool to place it in the middle. Tab selects placed tools. Arrow keys move the selected tool, Shift+Arrow moves it further. R rotates counterclockwise, Shift+R clockwise. Delete removes it. Space plays or stops. Escape deselects.";
+  "Build area. Pick a tool from the tray, or press Enter on a tray tool to place it in the middle. Tab selects placed tools. Arrow keys move the selected tool, Shift+Arrow moves it further. R rotates counterclockwise, Shift+R clockwise. Delete removes it. Space plays or stops. Escape deselects. [ and ] move a selected valve's opening time by half a second.";
 
 /** True when focus sits on nothing usable: gone, detached or `aria-disabled`. */
 function focusNeedsRescue(maybeActive: Element | null): boolean {
@@ -216,6 +216,7 @@ function PuzzlePanelLayout(layoutProps: {
       state={props.controller.state()}
       onRotate={(direction) => props.controller.rotateSelected(direction)}
       onRemove={() => props.controller.removeSelected()}
+      onStepValveTime={(direction) => props.controller.stepValveTime(direction)}
     />
   );
   const transport = (): JSX.Element => (

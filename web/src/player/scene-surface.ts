@@ -23,7 +23,7 @@ import { maybeObservedFrame } from "./view";
 import { isUsableViewport } from "./viewport";
 import { presentSceneFrame } from "../render/present-frame";
 import { drawGlassCup } from "../render/glass-cup";
-import { drawPuzzleTools, toolOverlay } from "../render/puzzle-tools";
+import { drawPuzzleTools, drawToolLabels, toolOverlay } from "../render/puzzle-tools";
 import { applyPuzzleEdit, inspectNow } from "./puzzle-editing";
 import { attachPuzzleEditorInput } from "./puzzle-editor-input";
 import {
@@ -75,7 +75,9 @@ function drawSceneFrame(
   // Route check first: scene routes never read puzzle state (D-12, Pitfall 6).
   // D-22 order: particles, then tools, then the glass cup.
   if (session.route().kind === "puzzle") {
-    drawPuzzleTools(context, camera, toolOverlay(session.puzzle.current));
+    const tools = toolOverlay(session.puzzle.current);
+    drawPuzzleTools(context, camera, tools);
+    drawToolLabels(context, camera, tools);
     const maybeGlass = session.puzzle.maybeGlass;
     if (maybeGlass !== undefined) drawGlassCup(context, camera, maybeGlass);
   }

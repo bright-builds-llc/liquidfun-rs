@@ -214,18 +214,22 @@ describe("puzzle stylesheet", () => {
   it("gives the tray and selection bar a fixed width and height in both canvas layouts", () => {
     // Arrange
     const css = source("styles/puzzle-editor.css");
-    const cases = ["landscape", "portrait"].flatMap((layout) =>
-      [".puzzle-tray", ".puzzle-selection-bar"].map((leaf) => ({ layout, leaf })),
-    );
+    // The portrait selection bar stacks the valve stepper over the tool buttons (Phase 40 D-05).
+    const cases = [
+      { layout: "landscape", leaf: ".puzzle-tray", height: 44 },
+      { layout: "landscape", leaf: ".puzzle-selection-bar", height: 44 },
+      { layout: "portrait", leaf: ".puzzle-tray", height: 44 },
+      { layout: "portrait", leaf: ".puzzle-selection-bar", height: 96 },
+    ];
 
     // Act
     const unsized = cases
-      .filter(({ layout, leaf }) => {
+      .filter(({ layout, leaf, height }) => {
         const block = cssBlock(
           css,
           `.puzzle-panel--canvas-stage[data-puzzle-layout="${layout}"] ${leaf}`,
         );
-        return !/\bwidth:/.test(block) || !/\bheight: 44px;/.test(block);
+        return !/\bwidth:/.test(block) || !block.includes(`height: ${height}px;`);
       })
       .map(({ layout, leaf }) => `${layout} ${leaf}`);
 

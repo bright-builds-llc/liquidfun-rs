@@ -324,7 +324,7 @@
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-result {
   right: var(--puzzle-inset-right);
-  bottom: calc(var(--puzzle-inset-bottom) + 104px);
+  bottom: calc(var(--puzzle-inset-bottom) + 156px);
   left: var(--puzzle-inset-left);
   height: 160px;
 }

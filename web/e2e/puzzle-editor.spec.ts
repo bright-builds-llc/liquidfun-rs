@@ -7,6 +7,7 @@ import {
   PHONE_PORTRAIT,
   PUZZLE_PATH,
   installSolutionPlacements,
+  overlappingLeaves,
   overlappingObstacles,
   readHudGeometry,
   stablePuzzleCamera,
@@ -16,6 +17,7 @@ import {
 } from "./puzzle-helpers";
 import {
   SCREENS_DIR_39,
+  SCREENS_DIR_40,
   expectPlayEnabled,
   gridToPage,
   readRunFingerprint,
@@ -338,6 +340,28 @@ test("keeps the best stars across Edit, Stop and a losing run", async ({ page })
 });
 
 for (const viewport of [DESKTOP, PHONE_PORTRAIT, PHONE_LANDSCAPE]) {
+  test(`mounts a disabled valve stepper with no overlapping leaves at ${viewportName(viewport)}`, async ({
+    page,
+  }) => {
+    // Arrange
+    await openEditor(page, viewport);
+    const stepper = page.getByRole("group", { name: "Valve opening time" });
+
+    // Act
+    const geometry = await readHudGeometry(page);
+    await page.screenshot({
+      path: resolve(SCREENS_DIR_40, `selection-bar-${viewportName(viewport)}.png`),
+    });
+
+    // Assert (Phase 40 D-05, Phase 38 D-18)
+    await expect(stepper).toBeVisible();
+    for (const name of ["Open the valve 0.5 s earlier", "Open the valve 0.5 s later"]) {
+      await expect(button(page, name)).toHaveAttribute("aria-disabled", "true");
+    }
+    expect(overlappingLeaves(geometry)).toEqual([]);
+    expect(overlappingObstacles(geometry)).toEqual([]);
+  });
+
   test(`keeps the camera fixed across place, Play and Stop at ${viewportName(viewport)}`, async ({
     page,
   }) => {

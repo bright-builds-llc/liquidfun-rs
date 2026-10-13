@@ -239,3 +239,17 @@ export function overlappingObstacles(geometry: HudGeometry): string[] {
         `${obstacle.label} overlaps by ${overlapPx(maybeFrame, obstacle).toFixed(1)}px`,
     );
 }
+
+/** Pairs of HUD obstacles that overlap each other by more than 1 px, as readable labels. */
+export function overlappingLeaves(geometry: HudGeometry): string[] {
+  const { obstacles } = geometry;
+  return obstacles.flatMap((first, index) =>
+    obstacles
+      .slice(index + 1)
+      .filter((second) => overlapPx(first, second) > OVERLAP_TOLERANCE_PX)
+      .map(
+        (second) =>
+          `${first.label} and ${second.label} overlap by ${overlapPx(first, second).toFixed(1)}px`,
+      ),
+  );
+}
