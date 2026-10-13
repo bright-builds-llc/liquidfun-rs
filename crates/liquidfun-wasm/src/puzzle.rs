@@ -7,6 +7,7 @@ pub(crate) mod goal;
 pub(crate) mod hooks;
 mod info;
 mod inspect;
+pub(crate) mod jelly_pad;
 pub(crate) mod peak;
 pub(crate) mod sat;
 pub(crate) mod spec;
@@ -28,6 +29,9 @@ pub(crate) enum LevelId {
     /// "Thick Syrup": viscous liquid needs a steeper path.
     #[cfg_attr(not(test), allow(dead_code))] // Draft until it joins LEVEL_IDS.
     ThickSyrup,
+    /// "Jelly Pad": an uncounted elastic pad turns the stream toward the cup.
+    #[cfg_attr(not(test), allow(dead_code))] // Draft until it joins LEVEL_IDS.
+    JellyPad,
 }
 
 /// Every allowlisted level, in catalog order. Mirrored by `PUZZLE_IDS` in
@@ -40,6 +44,7 @@ impl LevelId {
         match self {
             Self::FirstPour => "first-pour",
             Self::ThickSyrup => "thick-syrup",
+            Self::JellyPad => "jelly-pad",
         }
     }
 }
@@ -54,6 +59,7 @@ pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
     match id {
         LevelId::FirstPour => &first_pour::FIRST_POUR,
         LevelId::ThickSyrup => &thick_syrup::THICK_SYRUP,
+        LevelId::JellyPad => &jelly_pad::JELLY_PAD,
     }
 }
 
