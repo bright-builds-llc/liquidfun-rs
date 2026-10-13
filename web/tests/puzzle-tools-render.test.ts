@@ -11,7 +11,12 @@ import type { PlacementStatusCode, Quad } from "../src/puzzle/placement-status";
 import type { PuzzlePlacement } from "../src/puzzle/placements";
 import { INITIAL_PUZZLE_STATE, type PuzzleState } from "../src/puzzle/reduce-puzzle";
 import { createCamera, IDENTITY_CAMERA_VIEW } from "../src/render/camera";
-import { drawPuzzleTools, toolOverlay, type OverlayTool } from "../src/render/puzzle-tools";
+import {
+  drawPuzzleTools,
+  drawToolLabels,
+  toolOverlay,
+  type OverlayTool,
+} from "../src/render/puzzle-tools";
 
 const QUAD_A: Quad = [
   { x: 0, y: 0 },
@@ -54,6 +59,47 @@ function inspectedEditor(
 ): BuildingEditor {
   const editor = editorFromPlacements(PLANKS);
   return applyInspection(editor, { revision: editor.revision, statuses, outlines }, "live");
+}
+
+const PLANK_AND_VALVE: readonly PuzzlePlacement[] = [
+  { kind: "plank", x: 10, y: 2, angle: 0, openTick: 0 },
+  { kind: "valve", x: 50, y: 22, angle: 0, openTick: 4 },
+];
+
+function valveEditor(statuses: readonly PlacementStatusCode[] = [0, 0]): BuildingEditor {
+  const editor = editorFromPlacements(PLANK_AND_VALVE);
+  return applyInspection(
+    editor,
+    { revision: editor.revision, statuses, outlines: [QUAD_A, QUAD_B] },
+    "live",
+  );
+}
+
+function running(editor: BuildingEditor, stepIndex: number): PuzzleState {
+  return { kind: "running", stepIndex, status: status(), editor, speed: 1 };
+}
+
+function ended(editor: BuildingEditor, stepIndex: number): PuzzleState {
+  return {
+    kind: "ended",
+    stepIndex,
+    latch: {
+      outcome: "lost",
+      outcomeStep: 100,
+      decidedStep: 100,
+      goalCount: 0,
+      peakHeldCount: 0,
+      maybeBrimStep: undefined,
+      goalTarget: 540,
+      goalFull: 900,
+      brimCount: 810,
+      stepLimit: 720,
+    },
+    tailEndStep: 220,
+    held: false,
+    editor,
+    speed: 1,
+  };
 }
 
 function building(editor: BuildingEditor): PuzzleState {
@@ -246,7 +292,9 @@ describe("toolOverlay", () => {
 });
 
 describe("drawPuzzleTools", () => {
-  const SELECTED_INVALID: readonly OverlayTool[] = [{ quad: QUAD_B, style: "selectedInvalid" }];
+  const SELECTED_INVALID: readonly OverlayTool[] = [
+    { quad: QUAD_B, style: "selectedInvalid", maybeLabel: undefined },
+  ];
 
   it("draws halo, keyline, red fill and dashed red stroke for a selected invalid tool", () => {
     // Arrange
@@ -271,7 +319,7 @@ describe("drawPuzzleTools", () => {
     const { context, log } = recordingContext();
 
     // Act
-    drawPuzzleTools(context, CAMERA, [{ quad: QUAD_A, style: "normal" }]);
+    drawPuzzleTools(context, CAMERA, [{ quad: QUAD_A, style: "normal", maybeLabel: undefined }]);
 
     // Assert
     expect(drawScript(log)).toEqual([
@@ -286,7 +334,7 @@ describe("drawPuzzleTools", () => {
     const { context, log } = recordingContext();
 
     // Act
-    drawPuzzleTools(context, CAMERA, [{ quad: QUAD_A, style: "locked" }]);
+    drawPuzzleTools(context, CAMERA, [{ quad: QUAD_A, style: "locked", maybeLabel: undefined }]);
 
     // Assert
     const moves = log.filter(
@@ -320,6 +368,118 @@ describe("drawPuzzleTools", () => {
 
     // Act
     drawPuzzleTools(context, CAMERA, []);
+
+    // Assert
+    expect(log).toEqual([]);
+  });
+});
+
+describe("toolOverlay valves", () => {
+  it("labels a building valve with its open time and keeps its building style", () => {
+    // Arrange
+    const editor = selectTool(valveEditor([0, 9]), 2);
+
+    // Act
+    const overlay = toolOverlay(building(editor));
+
+    // Assert
+    expect(overlay[1]).toEqual({ quad: QUAD_B, style: "selectedInvalid", maybeLabel: "2.0 s" });
+  });
+
+  it("never labels a plank", () => {
+    // Arrange
+    const editor = valveEditor();
+
+    // Act
+    const labels = [building(editor), running(editor, 30)].map(
+      (state) => toolOverlay(state)[0]?.maybeLabel,
+    );
+
+    // Assert
+    expect(labels).toEqual([undefined, undefined]);
+  });
+
+  it("counts a running valve down from the frame step", () => {
+    // Act
+    const overlay = toolOverlay(running(valveEditor(), 30));
+
+    // Assert
+    expect(overlay[1]).toEqual({ quad: QUAD_B, style: "locked", maybeLabel: "1.5 s" });
+  });
+
+  it("draws a running valve open from its open step on", () => {
+    // Act
+    const overlay = toolOverlay(running(valveEditor(), 120));
+
+    // Assert
+    expect(overlay[1]).toEqual({ quad: QUAD_B, style: "open", maybeLabel: undefined });
+  });
+
+  it("keeps an opened valve open once ended", () => {
+    // Act
+    const overlay = toolOverlay(ended(valveEditor(), 150));
+
+    // Assert
+    expect(overlay.map((tool) => tool.style)).toEqual(["locked", "open"]);
+  });
+});
+
+describe("drawPuzzleTools open style", () => {
+  it("draws an open valve as a faint dashed outline with no keyline or visible fill", () => {
+    // Arrange
+    const { context, log } = recordingContext();
+
+    // Act
+    drawPuzzleTools(context, CAMERA, [{ quad: QUAD_A, style: "open", maybeLabel: undefined }]);
+
+    // Assert
+    expect(drawScript(log)).toEqual([
+      "fill rgba(0, 0, 0, 0)",
+      "dash [6,4]",
+      "stroke rgba(203, 213, 225, 0.35) 2",
+      "dash []",
+    ]);
+  });
+});
+
+describe("drawToolLabels", () => {
+  it("strokes then fills each label at the projected quad centroid", () => {
+    // Arrange
+    const { context, log } = recordingContext();
+    const tools: readonly OverlayTool[] = [
+      { quad: QUAD_A, style: "normal", maybeLabel: undefined },
+      { quad: QUAD_A, style: "selected", maybeLabel: "2.0 s" },
+    ];
+
+    // Act
+    drawToolLabels(context, CAMERA, tools);
+
+    // Assert
+    const center = [CAMERA.offsetX + 0.5 * CAMERA.scale, CAMERA.offsetY + 2.875 * CAMERA.scale];
+    const text = log.filter(
+      (entry) =>
+        entry.kind === "call" && (entry.name === "strokeText" || entry.name === "fillText"),
+    );
+    expect(text).toEqual([
+      { kind: "call", name: "strokeText", args: ["2.0 s", ...center] },
+      { kind: "call", name: "fillText", args: ["2.0 s", ...center] },
+    ]);
+    expect(log).toContainEqual({
+      kind: "set",
+      name: "font",
+      value: "600 12px system-ui, sans-serif",
+    });
+    expect(log).toContainEqual({ kind: "set", name: "lineWidth", value: 3 });
+    expect(calls(log, "save")).toBe(1);
+    expect(calls(log, "restore")).toBe(1);
+  });
+
+  it("does not touch the context when no tool has a label", () => {
+    // Arrange
+    const { context, log } = recordingContext();
+
+    // Act
+    drawToolLabels(context, CAMERA, [{ quad: QUAD_A, style: "normal", maybeLabel: undefined }]);
 
     // Assert
     expect(log).toEqual([]);

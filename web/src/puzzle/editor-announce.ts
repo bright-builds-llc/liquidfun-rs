@@ -1,4 +1,3 @@
-import type { PuzzleEditEvent } from "./edit-event";
 import type { BuildingEditor, EditorTool } from "./editor";
 import {
   CLEARED_ANNOUNCEMENT,
@@ -12,6 +11,8 @@ import {
   validityChangeAnnouncement,
 } from "./editor-format";
 import { PLACEMENT_STATUS, placementReason, type PlacementStatusCode } from "./placement-status";
+import type { BuildingEditEvent } from "./reduce-puzzle";
+import { valveSecondsText } from "./valve-format";
 
 function toolById(editor: BuildingEditor, id: number | undefined): EditorTool | undefined {
   return id === undefined ? undefined : editor.tools.find((tool) => tool.id === id);
@@ -109,6 +110,23 @@ function rotateAnnouncement(before: BuildingEditor, after: BuildingEditor): stri
   return maybeChange === undefined ? rotated : `${rotated} ${maybeChange}`;
 }
 
+/** "Valve opens at 2.5 s" when only the selected valve's open tick changed, plus any validity change. */
+function valveTimeAnnouncement(before: BuildingEditor, after: BuildingEditor): string | undefined {
+  const maybeAfter = toolById(after, after.maybeSelectedId);
+  const maybeBefore = toolById(before, before.maybeSelectedId);
+  if (maybeAfter === undefined || maybeBefore?.id !== maybeAfter.id) {
+    return undefined;
+  }
+  const { placement } = maybeAfter;
+  if (placement.kind !== "valve" || placement.openTick === maybeBefore.placement.openTick) {
+    return undefined;
+  }
+
+  const timed = `Valve opens at ${valveSecondsText(placement.openTick)}`;
+  const maybeChange = validityChange(before, after, maybeAfter.id);
+  return maybeChange === undefined ? timed : `${timed}. ${maybeChange}`;
+}
+
 function removeAnnouncement(before: BuildingEditor): string | undefined {
   const maybeRemoved = toolById(before, before.maybeSelectedId);
   return maybeRemoved === undefined
@@ -124,7 +142,7 @@ function removeAnnouncement(before: BuildingEditor): string | undefined {
 export function editAnnouncement(
   before: BuildingEditor,
   after: BuildingEditor,
-  event: PuzzleEditEvent,
+  event: BuildingEditEvent,
 ): string | undefined {
   switch (event.kind) {
     case "arm":
@@ -140,6 +158,8 @@ export function editAnnouncement(
       return validityChange(before, after, after.maybeSelectedId);
     case "rotate":
       return rotateAnnouncement(before, after);
+    case "setValveTime":
+      return valveTimeAnnouncement(before, after);
     case "remove":
       return removeAnnouncement(before);
     case "clear":

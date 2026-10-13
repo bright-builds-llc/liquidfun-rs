@@ -5,12 +5,14 @@ import {
   allPlacementsValid,
   clearInteraction,
   editorFromPlacements,
+  stepSelectedValveTime,
   withBudget,
   type BuildingEditor,
   type ToolAllowance,
 } from "./editor";
 import type { PuzzlePlacement } from "./placements";
 import { INITIAL_PUZZLE_SPEED, type PuzzleSpeed } from "./speed";
+import { maxOpenTick } from "./valve-format";
 
 /** Steps simulated after the decision so water visibly settles (2 s at 60 Hz) (D-08, D-10). */
 export const SETTLE_TAIL_STEPS = 120;
@@ -61,6 +63,15 @@ export type PuzzlePhase = PuzzleState["kind"];
 
 export type { PuzzleEditEvent } from "./edit-event";
 
+/**
+ * Moves the selected valve's open time by one half-second step while
+ * building, clamped to the level's step limit (Phase 40 D-05).
+ */
+export type SetValveTimeEvent = { readonly kind: "setValveTime"; readonly direction: 1 | -1 };
+
+/** Every committed building-phase edit the shell applies and announces. */
+export type BuildingEditEvent = PuzzleEditEvent | SetValveTimeEvent;
+
 /** Inputs to the puzzle phase machine; `stepped` carries one fixed step's frame data. */
 export type PuzzleEvent =
   | {
@@ -88,6 +99,7 @@ export type PuzzleEvent =
   | { readonly kind: "retry" }
   | { readonly kind: "edit" }
   | { readonly kind: "setSpeed"; readonly speed: PuzzleSpeed }
+  | SetValveTimeEvent
   | PuzzleEditEvent;
 
 type RunningState = Extract<PuzzleState, { kind: "running" }>;
@@ -144,6 +156,8 @@ export function reducePuzzle(state: PuzzleState, event: PuzzleEvent): PuzzleStat
       return state.kind === "loading" || state.speed === event.speed
         ? state
         : { ...state, speed: event.speed };
+    case "setValveTime":
+      return reduceValveTime(state, event.direction);
     case "arm":
     case "disarm":
     case "place":
@@ -229,6 +243,16 @@ function reduceEdit(state: PuzzleState, event: PuzzleEditEvent): PuzzleState {
   }
 
   const editor = applyEditEvent(state.editor, event);
+  return editor === state.editor ? state : { ...state, editor };
+}
+
+function reduceValveTime(state: PuzzleState, direction: 1 | -1): PuzzleState {
+  if (state.kind !== "building") {
+    return state;
+  }
+
+  const maxTick = maxOpenTick(state.status.stepLimit);
+  const editor = stepSelectedValveTime(state.editor, direction, maxTick);
   return editor === state.editor ? state : { ...state, editor };
 }
 

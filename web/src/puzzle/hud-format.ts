@@ -1,4 +1,4 @@
-import { committedPlacementsValid } from "./editor";
+import { committedPlacementsValid, selectedValve } from "./editor";
 import { statusLine, trayItems, type TrayItemModel } from "./editor-format";
 import { floorPercent } from "./format";
 import type { PuzzleToolKind } from "./placements";
@@ -6,6 +6,7 @@ import type { PuzzleState } from "./reduce-puzzle";
 import { speedLabel, type PuzzleSpeed } from "./speed";
 import type { StarThresholds } from "./star-format";
 import { runStars, type RunStars } from "./stars";
+import { maxOpenTick, valveSecondsText } from "./valve-format";
 
 /** Play/Stop, Speed and Clear contents (D-21, D-24, TOOL-04, TOOL-07). */
 export type TransportModel = {
@@ -93,6 +94,40 @@ export function trayModel(state: PuzzleState): readonly TrayItemModel<PuzzleTool
 /** Selection bar is live only while building with a selected tool (D-19). */
 export function selectionBarEnabled(state: PuzzleState): boolean {
   return state.kind === "building" && state.editor.maybeSelectedId !== undefined;
+}
+
+/** Valve open-time stepper contents; always mounted, live only for a selected valve while building (D-05). */
+export type ValveStepperModel = {
+  readonly enabled: boolean;
+  readonly earlierEnabled: boolean;
+  readonly laterEnabled: boolean;
+  readonly text: string;
+};
+
+const DISABLED_VALVE_STEPPER: ValveStepperModel = {
+  enabled: false,
+  earlierEnabled: false,
+  laterEnabled: false,
+  text: "\u2013",
+};
+
+/** Stepper model; each direction is disabled at its clamp (`1..=stepLimit/30`). */
+export function valveStepperModel(state: PuzzleState): ValveStepperModel {
+  if (state.kind !== "building") {
+    return DISABLED_VALVE_STEPPER;
+  }
+  const maybeValve = selectedValve(state.editor);
+  if (maybeValve === undefined) {
+    return DISABLED_VALVE_STEPPER;
+  }
+
+  const { openTick } = maybeValve.placement;
+  return {
+    enabled: true,
+    earlierEnabled: openTick > 1,
+    laterEnabled: openTick < maxOpenTick(state.status.stepLimit),
+    text: valveSecondsText(openTick),
+  };
 }
 
 /** This run's stars: none before a run, live latches while running, the latch once ended (D-13). */

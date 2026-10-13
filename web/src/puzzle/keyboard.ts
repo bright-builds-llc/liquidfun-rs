@@ -16,6 +16,7 @@ export type PuzzleKeyCommand =
   | { readonly kind: "nudge"; readonly dx: number; readonly dy: number }
   | { readonly kind: "rotate"; readonly direction: 1 | -1 }
   | { readonly kind: "remove" }
+  | { readonly kind: "valveTime"; readonly direction: 1 | -1 }
   | { readonly kind: "togglePlay" }
   | { readonly kind: "escape" }
   | { readonly kind: "cycleSelection"; readonly direction: 1 | -1 };
@@ -60,6 +61,10 @@ export function puzzleKeyCommand(input: PuzzleKeyInput): PuzzleKeyCommand | unde
     case "Delete":
     case "Backspace":
       return { kind: "remove" };
+    case "[":
+      return { kind: "valveTime", direction: -1 };
+    case "]":
+      return { kind: "valveTime", direction: 1 };
     case " ":
       return { kind: "togglePlay" };
     case "Escape":

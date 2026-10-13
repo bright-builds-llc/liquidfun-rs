@@ -30,6 +30,27 @@ function key(name: string, overrides: Partial<PuzzleKeyInput> = {}): PuzzleKeyIn
   };
 }
 
+describe("puzzleKeyCommand valve time", () => {
+  it("opens the valve earlier for [", () => {
+    expect(puzzleKeyCommand(key("["))).toEqual({ kind: "valveTime", direction: -1 });
+  });
+
+  it("opens the valve later for ]", () => {
+    expect(puzzleKeyCommand(key("]"))).toEqual({ kind: "valveTime", direction: 1 });
+  });
+
+  it.each([{ ctrlKey: true }, { metaKey: true }, { altKey: true }])(
+    "ignores a bracket with a modifier %o",
+    (modifier) => {
+      expect(puzzleKeyCommand(key("]", modifier))).toBeUndefined();
+    },
+  );
+
+  it("ignores a bracket in a form control", () => {
+    expect(puzzleKeyCommand(key("[", { target: "formControl" }))).toBeUndefined();
+  });
+});
+
 describe("puzzleKeyCommand nudges", () => {
   it("nudges left one cell for ArrowLeft", () => {
     expect(puzzleKeyCommand(key("ArrowLeft"))).toEqual({ kind: "nudge", dx: -1, dy: 0 });

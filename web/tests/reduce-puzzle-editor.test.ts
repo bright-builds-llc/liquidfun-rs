@@ -366,3 +366,110 @@ describe("reducePuzzle reset editor", () => {
     expect(next.editor).toEqual(EMPTY_EDITOR);
   });
 });
+
+describe("reducePuzzle setValveTime", () => {
+  const VALVE_BUDGET = [
+    { kind: "plank", count: 2 },
+    { kind: "valve", count: 1 },
+  ] as const;
+
+  function valveBuilding(): PuzzleState {
+    return reducePuzzle(INITIAL_PUZZLE_STATE, {
+      kind: "loaded",
+      stepIndex: 0,
+      status: status(),
+      budget: VALVE_BUDGET,
+    });
+  }
+
+  /** Building with one selected valve at the given open tick (720-step limit). */
+  function withValveAt(openTick: number): PuzzleState {
+    const placed = reducePuzzle(valveBuilding(), {
+      kind: "place",
+      toolKind: "valve",
+      x: 10,
+      y: 64,
+    });
+    const delta = openTick - 4;
+    const direction = delta > 0 ? 1 : -1;
+    const steps: PuzzleEvent[] = Array.from({ length: Math.abs(delta) }, () => ({
+      kind: "setValveTime",
+      direction,
+    }));
+    return apply(placed, steps);
+  }
+
+  function selectedOpenTick(state: PuzzleState): number | undefined {
+    return state.editor.tools.find((tool) => tool.id === state.editor.maybeSelectedId)?.placement
+      .openTick;
+  }
+
+  it("moves a selected valve half a second later and bumps the revision", () => {
+    // Arrange
+    const state = withValveAt(4);
+
+    // Act
+    const next = reducePuzzle(state, { kind: "setValveTime", direction: 1 });
+
+    // Assert
+    expect(selectedOpenTick(next)).toBe(5);
+    expect(next.editor.revision).toBe(state.editor.revision + 1);
+  });
+
+  it("ignores a later step at the step limit", () => {
+    // Arrange
+    const state = withValveAt(24);
+
+    // Act
+    const next = reducePuzzle(state, { kind: "setValveTime", direction: 1 });
+
+    // Assert
+    expect(selectedOpenTick(state)).toBe(24);
+    expect(next).toBe(state);
+  });
+
+  it("ignores an earlier step at half a second", () => {
+    // Arrange
+    const state = withValveAt(1);
+
+    // Act
+    const next = reducePuzzle(state, { kind: "setValveTime", direction: -1 });
+
+    // Assert
+    expect(selectedOpenTick(state)).toBe(1);
+    expect(next).toBe(state);
+  });
+
+  it("ignores a selected plank", () => {
+    // Arrange
+    const state = reducePuzzle(valveBuilding(), { kind: "place", toolKind: "plank", x: 10, y: 64 });
+
+    // Act
+    const next = reducePuzzle(state, { kind: "setValveTime", direction: 1 });
+
+    // Assert
+    expect(next).toBe(state);
+  });
+
+  it("ignores an empty selection", () => {
+    // Arrange
+    const state = reducePuzzle(withValveAt(4), { kind: "select", maybeId: undefined });
+
+    // Act
+    const next = reducePuzzle(state, { kind: "setValveTime", direction: 1 });
+
+    // Assert
+    expect(next).toBe(state);
+  });
+
+  it("ignores the event while loading, running and ended", () => {
+    // Arrange
+    const states = [INITIAL_PUZZLE_STATE, runningWithTool(), endedState()];
+
+    // Act
+    const next = states.map((state) => reducePuzzle(state, { kind: "setValveTime", direction: 1 }));
+
+    // Assert
+    next.forEach((state, index) => expect(state).toBe(states[index]));
+  });
+});

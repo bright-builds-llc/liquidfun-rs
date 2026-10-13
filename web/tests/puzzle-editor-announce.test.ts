@@ -4,6 +4,8 @@ import { applyEditEvent, type PuzzleEditEvent } from "../src/puzzle/edit-event";
 import {
   applyInspection,
   editorFromPlacements,
+  selectTool,
+  stepSelectedValveTime,
   type BuildingEditor,
 } from "../src/puzzle/editor";
 import { editAnnouncement } from "../src/puzzle/editor-announce";
@@ -227,6 +229,41 @@ describe("editAnnouncement removing", () => {
 
     // Act
     const text = editAnnouncement(before, applyEditEvent(before, event), event);
+
+    // Assert
+    expect(text).toBeUndefined();
+  });
+});
+
+describe("editAnnouncement valve time", () => {
+  const VALVE_BUDGET = [
+    { kind: "plank", count: 2 },
+    { kind: "valve", count: 1 },
+  ] as const;
+  const VALVE: readonly PuzzlePlacement[] = [{ kind: "valve", x: 8, y: 64, angle: 0, openTick: 4 }];
+
+  function selectedValve(statuses: readonly PlacementStatusCode[]): BuildingEditor {
+    return committed(selectTool(editorFromPlacements(VALVE, VALVE_BUDGET), 1), statuses);
+  }
+
+  it("announces the new open time", () => {
+    // Arrange
+    const before = selectedValve([0]);
+    const after = committed(stepSelectedValveTime(before, 1, 24), [0]);
+
+    // Act
+    const text = editAnnouncement(before, after, { kind: "setValveTime", direction: 1 });
+
+    // Assert
+    expect(text).toBe("Valve opens at 2.5 s");
+  });
+
+  it("announces nothing when the open time did not change", () => {
+    // Arrange
+    const before = selectedValve([0]);
+
+    // Act
+    const text = editAnnouncement(before, before, { kind: "setValveTime", direction: 1 });
 
     // Assert
     expect(text).toBeUndefined();

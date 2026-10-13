@@ -206,6 +206,30 @@ export function nudgeSelected(editor: BuildingEditor, dx: number, dy: number): B
   }));
 }
 
+/** The selected tool when it is a valve. */
+export function selectedValve(editor: BuildingEditor): EditorTool | undefined {
+  const maybeTool = editor.tools.find((tool) => tool.id === editor.maybeSelectedId);
+  return maybeTool?.placement.kind === "valve" ? maybeTool : undefined;
+}
+
+/**
+ * Moves the selected valve's open tick by one half-second step, clamped to
+ * `1..=maxTick`; the same editor when nothing changes (Phase 40 D-05).
+ */
+export function stepSelectedValveTime(
+  editor: BuildingEditor,
+  direction: 1 | -1,
+  maxTick: number,
+): BuildingEditor {
+  const maybeValve = selectedValve(editor);
+  if (maybeValve === undefined) {
+    return editor;
+  }
+
+  const openTick = Math.min(maxTick, Math.max(1, maybeValve.placement.openTick + direction));
+  return updateTool(editor, maybeValve.id, (placement) => ({ ...placement, openTick }));
+}
+
 /** Removes the selected tool and clears the selection. */
 export function removeSelected(editor: BuildingEditor): BuildingEditor {
   const maybeId = editor.maybeSelectedId;

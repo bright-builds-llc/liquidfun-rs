@@ -5,13 +5,14 @@ import {
   buildAreaCenterCells,
   cycleSelection,
   placementsInOrder,
+  selectedValve,
   type BuildingEditor,
   type InspectionMode,
 } from "../puzzle/editor";
 import { editAnnouncement } from "../puzzle/editor-announce";
 import type { PuzzleKeyCommand } from "../puzzle/keyboard";
 import type { PuzzleToolKind } from "../puzzle/placements";
-import type { PuzzleState } from "../puzzle/reduce-puzzle";
+import type { BuildingEditEvent, PuzzleState } from "../puzzle/reduce-puzzle";
 import { dispatch, ownsLiveSession, publishState, type PuzzleHost } from "./puzzle-host";
 
 /** `commit` inspects now and announces; `live` coalesces to one inspection per animation frame (D-02). */
@@ -120,7 +121,7 @@ function announce(
   host: PuzzleHost,
   before: BuildingEditor,
   after: BuildingEditor,
-  event: PuzzleEditEvent,
+  event: BuildingEditEvent,
 ): void {
   const maybeText = editAnnouncement(before, after, event);
   if (maybeText !== undefined) {
@@ -134,7 +135,7 @@ function announce(
  * commit inspects now, redraws, publishes and announces; a live edit
  * publishes now and coalesces its inspection to one animation frame (D-02).
  */
-export function applyPuzzleEdit(host: PuzzleHost, event: PuzzleEditEvent, mode: EditMode): void {
+export function applyPuzzleEdit(host: PuzzleHost, event: BuildingEditEvent, mode: EditMode): void {
   const before = host.puzzle.current;
   if (before.kind !== "building" || !ownsLiveSession(host)) {
     return;
@@ -184,6 +185,20 @@ function editSelected(host: PuzzleHost, editor: BuildingEditor, event: PuzzleEdi
 }
 
 /**
+ * Moves the selected valve's open time by 0.5 s while building (Phase 40
+ * D-05). True when a valve was selected, so the key is consumed.
+ */
+export function stepValveTime(host: PuzzleHost, direction: 1 | -1): boolean {
+  const current = host.puzzle.current;
+  if (current.kind !== "building" || selectedValve(current.editor) === undefined) {
+    return false;
+  }
+
+  applyPuzzleEdit(host, { kind: "setValveTime", direction }, "commit");
+  return true;
+}
+
+/**
  * Applies a D-23 editor key in building. Returns true when handled, so the
  * caller calls `preventDefault`; Tab past the last tool is unhandled so focus
  * can leave the canvas (UI-D18).
@@ -202,6 +217,8 @@ export function applyKeyCommand(host: PuzzleHost, command: EditorKeyCommand): bo
       return editSelected(host, editor, { kind: "rotate", direction: command.direction });
     case "remove":
       return editSelected(host, editor, { kind: "remove" });
+    case "valveTime":
+      return stepValveTime(host, command.direction);
     case "escape":
       applyPuzzleEdit(host, { kind: "disarm" }, "commit");
       applyPuzzleEdit(host, { kind: "select", maybeId: undefined }, "commit");
