@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 39-07-PLAN.md
-last_updated: "2026-10-13T00:59:26.079Z"
+stopped_at: Completed 39-08-PLAN.md
+last_updated: "2026-10-13T01:14:25.011Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 24
-  percent: 77
+  completed_plans: 25
+  percent: 81
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
-Plan: 8 of 14
+Plan: 9 of 14
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -103,6 +103,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-07: stop event carries stepIndex with status (like loaded) so non-step-0 previews throw; Plan 09 dispatches stop {stepIndex, status}
 - [Phase 39]: 39-07: edit events live in edit-event.ts and HUD transport/tray/star helpers in hud-format.ts; reduce-puzzle.ts 359 lines, format.ts 268
 - [Phase 39]: 39-07: canPlay gate means seeded-placement runs need a committed inspection on building entry (Plan 09); solution-win e2e cannot start a run until then
+- [Phase 39]: 39-08: replay fixtures record peak_held and brim_step at the decision step (solution 811/262, empty 0/none); release native == wasm; a recorded Brim must hold at brim+margin in both contracts; record mode parses only level/placement lines
 
 ### Pending Todos
 
@@ -189,9 +190,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P05 | 22min | 2 tasks | 12 files |
 | Phase 39 P06 | 5min | 2 tasks | 8 files |
 | Phase 39 P07 | 9min | 2 tasks | 14 files |
+| Phase 39 P08 | 14min | 2 tasks | 10 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T00:59:26.050Z
-Stopped at: Completed 39-07-PLAN.md
+Last session: 2026-10-13T01:14:25.008Z
+Stopped at: Completed 39-08-PLAN.md
 Resume file: None
