@@ -33,7 +33,7 @@ const ARROW_DIRECTIONS: ReadonlyMap<string, Direction> = new Map([
   ["ArrowDown", { dx: 0, dy: -1 }],
 ]);
 
-/** Space and Enter on a button already click it natively. */
+/** Space and Enter on a button or other activatable element already activate it natively. */
 function isNativeActivation(input: PuzzleKeyInput): boolean {
   return input.target === "button" && (input.key === " " || input.key === "Enter");
 }
@@ -73,23 +73,54 @@ export function puzzleKeyCommand(input: PuzzleKeyInput): PuzzleKeyCommand | unde
   }
 }
 
-/** Classifies an event target for the map: canvas, button/a, select/input/textarea, other HUD element. */
+/** The element facts the classifier reads, so it is testable without a DOM. */
+export type KeyTargetElement = {
+  readonly tagName: string;
+  readonly isContentEditable: boolean;
+  getAttribute(name: string): string | null;
+};
+
+/** Elements whose native Space/Enter activation the map must not take, such as a `<summary>`. */
+const ACTIVATABLE_TAGS: ReadonlySet<string> = new Set(["BUTTON", "A", "SUMMARY"]);
+const FORM_CONTROL_TAGS: ReadonlySet<string> = new Set(["SELECT", "INPUT", "TEXTAREA"]);
+/** ARIA widget roles that activate or toggle on Space or Enter. */
+const ACTIVATABLE_ROLES: ReadonlySet<string> = new Set([
+  "button",
+  "checkbox",
+  "link",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "option",
+  "radio",
+  "switch",
+  "tab",
+]);
+
+/**
+ * Classifies one element: canvas; a button, link, `<summary>` or ARIA
+ * activatable role as a button; select/input/textarea or editable text as a
+ * form control; anything else as other.
+ */
+export function classifyKeyTarget(element: KeyTargetElement): KeyTarget {
+  const tag = element.tagName.toUpperCase();
+  if (tag === "CANVAS") {
+    return "canvas";
+  }
+  if (FORM_CONTROL_TAGS.has(tag) || element.isContentEditable) {
+    return "formControl";
+  }
+  const maybeRole = element.getAttribute("role");
+  if (ACTIVATABLE_TAGS.has(tag) || (maybeRole !== null && ACTIVATABLE_ROLES.has(maybeRole))) {
+    return "button";
+  }
+  return "other";
+}
+
+/** Classifies an event target for the map; non-HTML targets are other. */
 export function keyTargetOf(target: EventTarget | null): KeyTarget {
   if (typeof HTMLElement === "undefined" || !(target instanceof HTMLElement)) {
     return "other";
   }
-  if (target instanceof HTMLCanvasElement) {
-    return "canvas";
-  }
-  if (target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement) {
-    return "button";
-  }
-  if (
-    target instanceof HTMLSelectElement ||
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement
-  ) {
-    return "formControl";
-  }
-  return "other";
+  return classifyKeyTarget(target);
 }

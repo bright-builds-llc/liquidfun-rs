@@ -2,10 +2,20 @@ import { describe, expect, it } from "vitest";
 
 import {
   NUDGE_SHIFT_CELLS,
+  classifyKeyTarget,
   keyTargetOf,
   puzzleKeyCommand,
+  type KeyTargetElement,
   type PuzzleKeyInput,
 } from "../src/puzzle/keyboard";
+
+function element(
+  tagName: string,
+  attributes: Readonly<Record<string, string>> = {},
+  isContentEditable = false,
+): KeyTargetElement {
+  return { tagName, isContentEditable, getAttribute: (name) => attributes[name] ?? null };
+}
 
 function key(name: string, overrides: Partial<PuzzleKeyInput> = {}): PuzzleKeyInput {
   return {
@@ -155,5 +165,55 @@ describe("keyTargetOf", () => {
 
   it("classifies a non-element target as other without a DOM", () => {
     expect(keyTargetOf(new EventTarget())).toBe("other");
+  });
+});
+
+describe("classifyKeyTarget", () => {
+  it.each([
+    ["a <summary> disclosure", element("SUMMARY")],
+    ["a role=button element", element("DIV", { role: "button" })],
+    ["a role=switch element", element("SPAN", { role: "switch" })],
+    ["a lowercase button tag", element("button")],
+  ] as const)("classifies %s as a button", (_label, target) => {
+    // Act
+    const kind = classifyKeyTarget(target);
+
+    // Assert
+    expect(kind).toBe("button");
+  });
+
+  it("classifies editable text as a form control", () => {
+    // Act
+    const kind = classifyKeyTarget(element("DIV", {}, true));
+
+    // Assert
+    expect(kind).toBe("formControl");
+  });
+
+  it("keeps the canvas a canvas despite its application role", () => {
+    // Act
+    const kind = classifyKeyTarget(element("CANVAS", { role: "application" }));
+
+    // Assert
+    expect(kind).toBe("canvas");
+  });
+
+  it("classifies a plain element as other", () => {
+    // Act
+    const kind = classifyKeyTarget(element("DIV"));
+
+    // Assert
+    expect(kind).toBe("other");
+  });
+
+  it("leaves Space on the failure details disclosure to its native toggle", () => {
+    // Arrange
+    const target = classifyKeyTarget(element("SUMMARY"));
+
+    // Act
+    const command = puzzleKeyCommand(key(" ", { target }));
+
+    // Assert
+    expect(command).toBeUndefined();
   });
 });
