@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 39-10-PLAN.md
-last_updated: "2026-10-13T01:30:41.367Z"
+stopped_at: Completed 39-11-PLAN.md
+last_updated: "2026-10-13T01:39:50.453Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 27
-  percent: 87
+  completed_plans: 28
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
-Plan: 11 of 14
+Plan: 12 of 14
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -110,6 +110,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-09: every state-changing committed edit runs a commit inspection; live edits coalesce to one rAF inspection; building entry and Stop commit before publishing (D-20, UI-D14)
 - [Phase 39]: 39-09: Space togglePlay routed by applyPuzzleCommand in the lifecycle; applyKeyCommand handles only editor keys
 - [Phase 39]: 39-10: puzzle loop requests stepCount x speed steps per frame via speedStepRequest; 12 ms budget and MAX_STEPS_PER_FRAME 4 unchanged; unrun steps restore as (unrun / speed) x STEP_SECONDS
+- [Phase 39]: 39-11: Tool overlay reads the latest (live or commit) inspection; drawPuzzleTools returns before save() for no tools and draws between particles and the glass cup
+- [Phase 39]: 39-11: Editor pointer is a separate PuzzleRuntime.maybeEditorInput handle: armed taps place at the press point without lift, press selects, drags past >4/>8 CSS px move live with grab offset and 48 px touch lift, one pointer at a time; leavePuzzle detaches it
+- [Phase 39]: 39-11: main carries data-puzzle-placements/selected/armed/speed/play-enabled/deciding always, outcome-step/decided-step/peak-held when ended, held-hash when set
 
 ### Pending Todos
 
@@ -199,9 +202,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P08 | 14min | 2 tasks | 10 files |
 | Phase 39 P09 | 9min | 2 tasks | 14 files |
 | Phase 39 P10 | 2min | 1 tasks | 2 files |
+| Phase 39 P11 | 7min | 3 tasks | 12 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T01:30:41.364Z
-Stopped at: Completed 39-10-PLAN.md
+Last session: 2026-10-13T01:39:50.450Z
+Stopped at: Completed 39-11-PLAN.md
 Resume file: None

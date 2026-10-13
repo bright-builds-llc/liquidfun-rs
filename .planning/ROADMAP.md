@@ -169,7 +169,7 @@ Plans:
 - [x] 39-08-PLAN.md — Replay fixtures and harnesses with peak_held and brim_step (wave 4)
 - [x] 39-09-PLAN.md — Shell wiring: preview/run sessions, editing with committed/live inspection, stars and held hash (wave 5)
 - [x] 39-10-PLAN.md — Fast-forward step multiplier in the puzzle loop (wave 5)
-- [ ] 39-11-PLAN.md — Tool overlay, building-only pointer editor and debug attributes (wave 6)
+- [x] 39-11-PLAN.md — Tool overlay, building-only pointer editor and debug attributes (wave 6)
 - [ ] 39-12-PLAN.md — Tool tray, selection bar, transport, star list, result card and keyboard-operable panel (wave 6)
 - [ ] 39-13-PLAN.md — Editor, keyboard, touch, edit-history and fast-forward e2e; Phase 38 D-10 literal updates (wave 7)
 - [ ] 39-14-PLAN.md — D-30 phase gates: 25/25 fingerprints, engine untouched, replays, suites and grep gates (wave 8)
@@ -267,7 +267,7 @@ Plans:
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
-| 39. Place-then-Play Tools and Stars | v1.5 | 10/14 | In Progress|  |
+| 39. Place-then-Play Tools and Stars | v1.5 | 11/14 | In Progress|  |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
