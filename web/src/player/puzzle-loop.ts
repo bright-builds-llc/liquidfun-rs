@@ -1,11 +1,8 @@
-import {
-  FRAME_STEP_BUDGET_MS,
-  accumulateStepTime,
-  restoreUnrunSteps,
-} from "../physics/clock";
+import { FRAME_STEP_BUDGET_MS, accumulateStepTime } from "../physics/clock";
 import type { PuzzleFrameStatus, RenderFrame } from "../physics/frame";
 import type { PuzzleSession } from "../physics/puzzle-session";
 import { puzzleStepBudget, type PuzzleEvent, type PuzzleState } from "../puzzle/reduce-puzzle";
+import { restoreUnrunSpeedSteps, speedStepRequest } from "../puzzle/speed";
 import type { Camera } from "../render/camera";
 import type { FrameClock } from "./frame-loop";
 import { observeFrame, type FrameObservation } from "./observe";
@@ -48,7 +45,9 @@ function isHeld(state: PuzzleState): boolean {
 /**
  * Runs the puzzle on fixed steps (D-08, D-11). Each step is captured on its
  * own so the latch is observed at its outcome step; the settle tail is clamped
- * and the loop stops scheduling once held. The rAF id lives in
+ * and the loop stops scheduling once held. Fast-forward (D-24) only scales
+ * how many steps a frame requests; the 12 ms budget still bounds the work and
+ * unrun steps return as wall time. The rAF id lives in
  * `clock.maybeAnimationFrameId`, so `cancelPendingFrame` stops this loop too.
  */
 export function schedulePuzzleFrame(
@@ -60,6 +59,7 @@ export function schedulePuzzleFrame(
 
   function presentSteps(session: PuzzleSession, camera: Camera, requested: number): void {
     let state = deps.current();
+    const { speed } = state;
     const budget = puzzleStepBudget(state, requested);
     if (budget === 0) {
       requestNext();
@@ -81,7 +81,12 @@ export function schedulePuzzleFrame(
       frame = stepOnce();
     }
 
-    clock.frameRemainderSeconds = restoreUnrunSteps(clock.frameRemainderSeconds, budget, ran);
+    clock.frameRemainderSeconds = restoreUnrunSpeedSteps(
+      clock.frameRemainderSeconds,
+      budget,
+      ran,
+      speed,
+    );
     deps.drawSceneFrame(context, frame, camera);
     const observation = observeFrame(frame, clock.maybePreviousFrame, movedFrameCount);
     movedFrameCount = observation.movedFrameCount;
@@ -127,7 +132,8 @@ export function schedulePuzzleFrame(
     clock.frameRemainderSeconds = stepTime.remainderSeconds;
     clock.maybeLastTimestamp = timestamp;
     try {
-      presentSteps(maybeSession, camera, stepTime.stepCount);
+      const requested = speedStepRequest(stepTime.stepCount, deps.current().speed);
+      presentSteps(maybeSession, camera, requested);
     } catch (error) {
       deps.fail(error);
     }
