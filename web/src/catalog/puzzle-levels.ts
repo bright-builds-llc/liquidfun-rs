@@ -5,6 +5,17 @@ export const PUZZLE_TITLES: Readonly<Record<PuzzleId, string>> = {
   "first-pour": "First Pour",
 };
 
+/**
+ * One-line teaching captions, shown on each level's caption leaf before wasm
+ * loads (D-21). Unlike titles, they are not cross-checked against Rust.
+ */
+export const PUZZLE_CAPTIONS: Readonly<Record<PuzzleId, string>> = {
+  "first-pour": "Water runs downhill. Tilt a plank to pour it into the cup.",
+};
+
+/** First-level placement hint (LEVEL-03), shown on the caption leaf until dismissed. */
+export const FIRST_LEVEL_HINT = "Tap the plank in the tray, then tap the canvas to place it.";
+
 /** First registry level. The level-select entry point and default puzzle link. */
 export const FIRST_PUZZLE_ID: PuzzleId = firstPuzzleId();
 
@@ -20,6 +31,11 @@ function firstPuzzleId(): PuzzleId {
 /** Display title for an allowlisted level id. */
 export function puzzleTitleForId(id: PuzzleId): string {
   return PUZZLE_TITLES[id];
+}
+
+/** One-line teaching caption for an allowlisted level id. */
+export function puzzleCaptionForId(id: PuzzleId): string {
+  return PUZZLE_CAPTIONS[id];
 }
 
 /** Canonical playground hash for a level. */
