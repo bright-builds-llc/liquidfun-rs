@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 40-05-PLAN.md
-last_updated: "2026-10-13T05:26:42.993Z"
+stopped_at: Completed 40-06-PLAN.md
+last_updated: "2026-10-13T06:24:48.978Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 36
-  percent: 86
+  completed_plans: 37
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 6 of 11
+Plan: 7 of 11
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -131,6 +131,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: Landscape selection bar is a 280x44 bottom-centre joined row; portrait bar is 148x96 with the result card raised to inset+156
 - [Phase 40]: 40-05: landscape caption box is 48px (not 44) so the 44px Dismiss fits inside the chip border; portrait inset+124px x 52px; form-factor 480x52
 - [Phase 40]: 40-05: first-level hint dismissal under liquidfun.puzzle-first-hint.v1 via firstHintMemory (lazy read, in-memory fallback); placing the first tool also dismisses
+- [Phase 40]: 40-06 thick-syrup: viscous strength 1.5, reference planks -30/-45 deg win at 440 (Brim 501); the same planks at -15 deg peak 577 < target 610 while water wins at 207 (thick_syrup_needs_a_steep_path)
+- [Phase 40]: 40-06 jelly-pad: fixed uncounted elastic pad fills a slotted cradle at the chimney foot; a raised roofed cup is reachable only along the channel past the pad; no-pad copy loses (peak 40), pad drift 0.138 m; no D-11 tool change
+- [Phase 40]: 40-06: viscous and elastic levels replay exactly release-native vs wasm and debug (spread 0); per-level proofs live in levels_tests/level_proofs.rs (levels_tests.rs at 626/628 lines)
 
 ### Pending Todos
 
@@ -229,9 +232,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P03 | 26min | 2 tasks | 12 files |
 | Phase 40 P04 | 10min | 2 tasks | 25 files |
 | Phase 40 P05 | 7min | 3 tasks | 14 files |
+| Phase 40 P06 | 57min | 3 tasks | 16 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T05:26:42.990Z
-Stopped at: Completed 40-05-PLAN.md
+Last session: 2026-10-13T06:24:48.975Z
+Stopped at: Completed 40-06-PLAN.md
 Resume file: None
