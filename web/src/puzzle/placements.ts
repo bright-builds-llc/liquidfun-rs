@@ -117,6 +117,38 @@ function parseSeamPlacement(entry: unknown): PuzzlePlacement {
   return placement;
 }
 
+function maybePoseInteger(value: unknown): number | undefined {
+  return typeof value === "number" && isPoseInteger(value) ? value : undefined;
+}
+
+/**
+ * Strict, non-throwing parse of untrusted saved placement data (Phase 41
+ * D-18). Same checks as the test seam, but `openTick` is required and a bad
+ * entry yields undefined instead of an error. Never returns the input object.
+ */
+export function maybeParsePlacement(entry: unknown): PuzzlePlacement | undefined {
+  if (!isRecord(entry)) {
+    return undefined;
+  }
+
+  const kind = entry["kind"];
+  const maybeX = maybePoseInteger(entry["x"]);
+  const maybeY = maybePoseInteger(entry["y"]);
+  const maybeAngle = maybePoseInteger(entry["angle"]);
+  const maybeOpenTick = maybePoseInteger(entry["openTick"]);
+  if (
+    !isToolKind(kind) ||
+    maybeX === undefined ||
+    maybeY === undefined ||
+    maybeAngle === undefined ||
+    maybeOpenTick === undefined
+  ) {
+    return undefined;
+  }
+
+  return { kind, x: maybeX, y: maybeY, angle: maybeAngle, openTick: maybeOpenTick };
+}
+
 /** Test-only placements from `source[PUZZLE_TEST_PLACEMENTS_GLOBAL]`, undefined when absent; throws when present but invalid. */
 export function maybeReadTestPlacements(
   source: object,

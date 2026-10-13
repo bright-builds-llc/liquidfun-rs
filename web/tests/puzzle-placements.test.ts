@@ -10,6 +10,7 @@ import {
   PUZZLE_TEST_PLACEMENTS_GLOBAL,
   defaultOpenTick,
   encodePlacementLanes,
+  maybeParsePlacement,
   maybeReadTestPlacements,
   type PuzzlePlacement,
 } from "../src/puzzle/placements";
@@ -243,5 +244,41 @@ describe("maybeReadTestPlacements", () => {
 
     // Assert
     expect(found).toEqual([]);
+  });
+});
+
+describe("maybeParsePlacement", () => {
+  it("returns an equal, fresh placement", () => {
+    // Arrange
+    const entry = { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 };
+
+    // Act
+    const maybePlacement = maybeParsePlacement(entry);
+
+    // Assert
+    expect(maybePlacement).toEqual(SOLUTION_PLANK);
+    expect(maybePlacement).not.toBe(entry);
+  });
+
+  const valid = { kind: "valve", x: -16, y: 87, angle: 0, openTick: 4 };
+
+  it.each([
+    ["null", null],
+    ["an array", []],
+    ["a string", "plank"],
+    ["an unknown kind", { ...valid, kind: "gate" }],
+    ["an inherited kind name", { ...valid, kind: "toString" }],
+    ["a missing openTick", { kind: "plank", x: 8, y: 64, angle: 23 }],
+    ["a fractional x", { ...valid, x: 1.5 }],
+    ["a NaN y", { ...valid, y: Number.NaN }],
+    ["a string angle", { ...valid, angle: "3" }],
+    ["an openTick above i32", { ...valid, openTick: 2 ** 31 }],
+    ["an x below i32", { ...valid, x: -(2 ** 31) - 1 }],
+  ])("rejects %s", (_name, entry) => {
+    // Act
+    const maybePlacement = maybeParsePlacement(entry);
+
+    // Assert
+    expect(maybePlacement).toBeUndefined();
   });
 });
