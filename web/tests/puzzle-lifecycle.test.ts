@@ -1,15 +1,13 @@
-import { createRoot, createSignal, type Setter } from "solid-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PUZZLE_PORTRAIT_BOUNDS } from "../src/catalog/puzzle-bounds";
-import type { RawProofFrame } from "../src/physics/frame";
-import { loadPuzzleSession } from "../src/physics/puzzle-loader";
-import type {
-  GeneratedPuzzleSession,
-  RawPuzzleLevelInfo,
-} from "../src/physics/puzzle-session";
+import {
+  buildPuzzleSessionSync,
+  inspectPlacementLanes,
+  loadPuzzleSession,
+} from "../src/physics/puzzle-loader";
+import type { GeneratedPuzzleSession } from "../src/physics/puzzle-session";
 import type { PlayerSession } from "../src/physics/live-session";
-import { createFrameClock } from "../src/player/frame-loop";
 import {
   beginPuzzleRoute,
   createPuzzleController,
@@ -19,17 +17,27 @@ import {
   retryPuzzle,
   startPuzzleUnlessLoading,
   tryAgainPuzzle,
-  type PuzzleHost,
 } from "../src/player/puzzle-lifecycle";
-import { createPuzzleRuntime } from "../src/player/puzzle-runtime";
 import type { PlayerView } from "../src/player/view";
 import { EMPTY_EDITOR } from "../src/puzzle/editor";
 import { INITIAL_PUZZLE_STATE, type PuzzleState } from "../src/puzzle/reduce-puzzle";
-import { IDENTITY_CAMERA_VIEW, createCamera } from "../src/render/camera";
+import { IDENTITY_CAMERA_VIEW } from "../src/render/camera";
+import {
+  createHost,
+  deferred,
+  fakeGenerated,
+  fakeRawInspection,
+  flushMicrotasks,
+  stubPuzzleGlobals,
+  type AnimationFrames,
+} from "./puzzle-host-fixture";
 
-vi.mock("../src/physics/puzzle-loader", () => ({ loadPuzzleSession: vi.fn() }));
+vi.mock("../src/physics/puzzle-loader", () => ({
+  loadPuzzleSession: vi.fn(),
+  buildPuzzleSessionSync: vi.fn(),
+  inspectPlacementLanes: vi.fn(),
+}));
 
-const PARTICLE_COUNT = 4;
 const ENDED_STATE: PuzzleState = {
   kind: "ended",
   stepIndex: 840,
@@ -51,145 +59,20 @@ const ENDED_STATE: PuzzleState = {
   speed: 1,
 };
 
-function fakeLevelInfo(title: string): RawPuzzleLevelInfo {
-  return {
-    levelId: () => "first-pour",
-    title: () => title,
-    targetCount: () => 540,
-    fullCount: () => 900,
-    brimCount: () => 810,
-    parTools: () => 1,
-    settleSteps: () => 30,
-    stepLimit: () => 720,
-    cupInterior: () => new Float32Array([1.6, 0, 3.4, 1.8]),
-    buildArea: () => new Int32Array([-20, 44, 40, 84]),
-    gridMeters: () => 0.05,
-    toolKinds: () => new Uint8Array([1]),
-    toolCounts: () => new Uint32Array([2]),
-    free: vi.fn(),
-  };
-}
-
-function rawFrame(stepIndex: number): RawProofFrame {
-  return {
-    stepIndex: () => stepIndex,
-    particleCount: () => PARTICLE_COUNT,
-    rigidShapeCount: () => 0,
-    maxSpeed: () => 0,
-    stuckCandidateCount: () => 0,
-    bodyContactCount: () => 0,
-    particlePositions: () => new Float32Array([0, 0, 0.1, 0, 0.2, 0, 0.3, 0]),
-    particleColors: () => new Uint8Array(PARTICLE_COUNT * 4).fill(200),
-    particleRadii: () => new Float32Array(PARTICLE_COUNT).fill(0.05),
-    rigidSegments: () => new Float32Array(),
-    rigidCircles: () => new Float32Array(),
-    circleLabels: () => [],
-    goalCount: () => 0,
-    goalTarget: () => 540,
-    goalFull: () => 900,
-    outcome: () => 0,
-    outcomeStep: () => undefined,
-    stepLimit: () => 720,
-    peakHeldCount: () => 0,
-    brimCount: () => 810,
-    brimStep: () => undefined,
-    decidedStep: () => undefined,
-    free: () => undefined,
-  };
-}
-
-function fakeGenerated(title = "First Pour") {
-  let step = 0;
-  const generated = {
-    advance: vi.fn((count: number) => {
-      step += count;
-    }),
-    captureFrame: vi.fn(() => rawFrame(step)),
-    applyControl: vi.fn(() => false),
-    applyAction: vi.fn(),
-    pointerAction: vi.fn(),
-    setGravity: vi.fn(),
-    restoreAuthoredGravity: vi.fn(),
-    levelInfo: vi.fn(() => fakeLevelInfo(title)),
-    free: vi.fn(),
-  } satisfies GeneratedPuzzleSession;
-  return generated;
-}
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((yes) => {
-    resolve = yes;
-  });
-  return { promise, resolve };
-}
-
-function setter<T>(): Setter<T> {
-  return vi.fn() as unknown as Setter<T>;
-}
-
-function createHost() {
-  return createRoot((dispose) => {
-    const [view, setView] = createSignal<PlayerView>({ kind: "fallback" });
-    const clock = createFrameClock();
-    clock.viewportWidth = 390;
-    clock.viewportHeight = 844;
-    clock.cameraView = { zoom: 2, panX: 10, panY: -4 };
-    const canvas = { dataset: {} as DOMStringMap } as HTMLCanvasElement;
-    const host: PuzzleHost = {
-      generation: 0,
-      clock,
-      maybeCanvas: canvas,
-      maybeContext: {} as CanvasRenderingContext2D,
-      maybeSession: undefined,
-      maybeCanvasPointer: undefined,
-      tiltBinding: { request: 0, stop: vi.fn(), maybeLive: undefined },
-      constructionValues: { width: "3" },
-      view,
-      setView,
-      refreshCamera: () => {
-        clock.maybeCamera = createCamera(
-          clock.viewportWidth,
-          clock.viewportHeight,
-          clock.cameraView,
-          clock.worldBounds,
-        );
-      },
-      drawSceneFrame: vi.fn(),
-      failScene: vi.fn(),
-      setMaybeDebugFrame: setter(),
-      setStepsThisFrame: setter(),
-      setFpsTicks: setter(),
-      setPanEnabled: setter(),
-      setTiltGravityEnabled: setter(),
-      setTiltDebug: setter(),
-      puzzle: createPuzzleRuntime(),
-    };
-    return { host, canvas, dispose };
-  });
-}
-
-async function flushMicrotasks(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 0));
-}
-
-let callbacks: Map<number, FrameRequestCallback>;
-let rafId: number;
+let frames: AnimationFrames;
 const loader = vi.mocked(loadPuzzleSession);
+const syncBuild = vi.mocked(buildPuzzleSessionSync);
+const inspector = vi.mocked(inspectPlacementLanes);
 
 beforeEach(() => {
-  callbacks = new Map();
-  rafId = 0;
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    rafId += 1;
-    callbacks.set(rafId, callback);
-    return rafId;
-  });
-  vi.stubGlobal("cancelAnimationFrame", (id: number) => callbacks.delete(id));
-  vi.stubGlobal("document", { hidden: false });
-  vi.stubGlobal("performance", { now: () => 0 });
-  vi.stubGlobal("window", {});
+  frames = stubPuzzleGlobals();
   loader.mockReset();
+  syncBuild.mockReset();
+  syncBuild.mockImplementation(() => fakeGenerated());
+  inspector.mockReset();
+  inspector.mockImplementation((_level, kinds) =>
+    fakeRawInspection(Array.from(kinds, () => 0)),
+  );
 });
 
 afterEach(() => {
@@ -249,7 +132,7 @@ describe("beginPuzzleRoute", () => {
     expect(Array.from(lanes?.poses ?? [9])).toEqual([]);
   });
 
-  it("builds with the test seam's placements when the window global is set", async () => {
+  it("seeds the editor from the test seam and still builds an empty preview", async () => {
     // Arrange
     vi.stubGlobal("window", {
       __liquidfunPuzzleTestPlacements: {
@@ -265,8 +148,10 @@ describe("beginPuzzleRoute", () => {
 
     // Assert
     const lanes = loader.mock.calls[0]?.[1];
-    expect(Array.from(lanes?.kinds ?? [])).toEqual([1]);
-    expect(Array.from(lanes?.poses ?? [])).toEqual([8, 64, 23]);
+    expect(Array.from(lanes?.kinds ?? [9])).toEqual([]);
+    expect(host.puzzle.current.editor.tools.map((tool) => tool.placement)).toEqual([
+      { kind: "plank", x: 8, y: 64, angle: 23 },
+    ]);
   });
 
   it("fails visibly on an invalid test seam without building", async () => {
@@ -381,7 +266,7 @@ describe("puzzle commands", () => {
     // Assert
     expect(host.puzzle.state().kind).toBe("running");
     expect(host.view().kind).toBe("playing");
-    expect(callbacks.size).toBe(1);
+    expect(frames.callbacks.size).toBe(1);
   });
 
   it("Play does nothing outside building", async () => {
@@ -397,7 +282,7 @@ describe("puzzle commands", () => {
 
     // Assert
     expect(host.puzzle.state()).toBe(ENDED_STATE);
-    expect(callbacks.size).toBe(0);
+    expect(frames.callbacks.size).toBe(0);
   });
 
   it("Retry builds a fresh session with the same placements and lands in running", async () => {
@@ -407,8 +292,8 @@ describe("puzzle commands", () => {
     loader.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
     const { host } = createHost();
     await beginPuzzleRoute(host, "first-pour");
-    const placements = host.puzzle.placements;
-    host.puzzle.current = ENDED_STATE;
+    const { editor } = host.puzzle.current;
+    host.puzzle.current = { ...ENDED_STATE, editor };
 
     // Act
     retryPuzzle(host);
@@ -418,8 +303,8 @@ describe("puzzle commands", () => {
     expect(loader).toHaveBeenCalledTimes(2);
     expect(first.free).toHaveBeenCalledTimes(1);
     expect(host.puzzle.state().kind).toBe("running");
-    expect(host.puzzle.placements).toBe(placements);
-    expect(callbacks.size).toBe(1);
+    expect(host.puzzle.state().editor.tools).toBe(editor.tools);
+    expect(frames.callbacks.size).toBe(1);
   });
 
   it("Edit builds a fresh session with the same placements and lands in building", async () => {
@@ -429,8 +314,8 @@ describe("puzzle commands", () => {
     loader.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
     const { host } = createHost();
     await beginPuzzleRoute(host, "first-pour");
-    const placements = host.puzzle.placements;
-    host.puzzle.current = ENDED_STATE;
+    const { editor } = host.puzzle.current;
+    host.puzzle.current = { ...ENDED_STATE, editor };
 
     // Act
     editPuzzle(host);
@@ -440,7 +325,7 @@ describe("puzzle commands", () => {
     expect(loader).toHaveBeenCalledTimes(2);
     expect(first.free).toHaveBeenCalledTimes(1);
     expect(host.puzzle.state().kind).toBe("building");
-    expect(host.puzzle.placements).toBe(placements);
+    expect(host.puzzle.state().editor.tools).toBe(editor.tools);
     expect(host.view().kind).toBe("paused");
   });
 
@@ -564,8 +449,8 @@ describe("leavePuzzle and the controller", () => {
     expect(host.puzzle.maybeGlass).toBeUndefined();
     expect(host.puzzle.maybeOwned).toBeUndefined();
     expect(host.puzzle.maybeLevelId()).toBeUndefined();
-    expect(host.puzzle.placements).toEqual([]);
-    expect(callbacks.size).toBe(0);
+    expect(host.puzzle.current.editor.tools).toEqual([]);
+    expect(frames.callbacks.size).toBe(0);
     expect(host.clock.maybeAnimationFrameId).toBeUndefined();
   });
 
