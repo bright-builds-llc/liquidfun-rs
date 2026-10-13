@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 39-09-PLAN.md
-last_updated: "2026-10-13T01:28:17.174Z"
+stopped_at: Completed 39-10-PLAN.md
+last_updated: "2026-10-13T01:30:41.367Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 26
-  percent: 84
+  completed_plans: 27
+  percent: 87
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
-Plan: 10 of 14
+Plan: 11 of 14
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -109,6 +109,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-09: stars recorded in the loop dispatch closure on running->ended win, and by Stop before the preview rebuild (D-15); store lives in PuzzleRuntime.starStore for the page session
 - [Phase 39]: 39-09: every state-changing committed edit runs a commit inspection; live edits coalesce to one rAF inspection; building entry and Stop commit before publishing (D-20, UI-D14)
 - [Phase 39]: 39-09: Space togglePlay routed by applyPuzzleCommand in the lifecycle; applyKeyCommand handles only editor keys
+- [Phase 39]: 39-10: puzzle loop requests stepCount x speed steps per frame via speedStepRequest; 12 ms budget and MAX_STEPS_PER_FRAME 4 unchanged; unrun steps restore as (unrun / speed) x STEP_SECONDS
 
 ### Pending Todos
 
@@ -197,9 +198,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P07 | 9min | 2 tasks | 14 files |
 | Phase 39 P08 | 14min | 2 tasks | 10 files |
 | Phase 39 P09 | 9min | 2 tasks | 14 files |
+| Phase 39 P10 | 2min | 1 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T01:28:17.171Z
-Stopped at: Completed 39-09-PLAN.md
+Last session: 2026-10-13T01:30:41.364Z
+Stopped at: Completed 39-10-PLAN.md
 Resume file: None
