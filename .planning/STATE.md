@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 40-07-PLAN.md
-last_updated: "2026-10-13T07:32:08.787Z"
+stopped_at: Completed 40-08-PLAN.md
+last_updated: "2026-10-13T07:47:20.696Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 38
-  percent: 90
+  completed_plans: 39
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 8 of 11
+Plan: 9 of 11
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -137,6 +137,7 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-07 timed-gate ships the D-26 syrup fallback (strength 1.0) as a tent: an upright valve in a one-slot build area stops a water jet into the cup and seals a syrup tank; the preferred diverter spike was monotone in every variant
 - [Phase 40]: 40-07 timed-gate window: ticks 1-2 lost, 3-21 won, 22-24 lost; reference tick 9 (only ticks 5-10 hold the raised Brim by step 600); target 502 / full 800 / Brim 582; wasm replay exact for all four fixtures
 - [Phase 40]: 40-07 FIXTURES table moved to levels_tests/fixture_table.rs; later level plans add fixtures there
+- [Phase 40]: 40-08 sand-chute dropped under D-25: six same-geometry powder-vs-water spike configs; only the r 0.08 slit drain passed 25% (-31% at 0.28 m), in a 0.28-0.32 m band that reverses at 0.20 m (+68% powder) and fades to -1% at 0.56 m; no placement wins only for powder
 
 ### Pending Todos
 
@@ -237,9 +238,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P05 | 7min | 3 tasks | 14 files |
 | Phase 40 P06 | 57min | 3 tasks | 16 files |
 | Phase 40 P07 | 66min | 3 tasks | 16 files |
+| Phase 40 P08 | 12min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T07:32:08.784Z
-Stopped at: Completed 40-07-PLAN.md
+Last session: 2026-10-13T07:47:20.693Z
+Stopped at: Completed 40-08-PLAN.md
 Resume file: None
