@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 40-02-PLAN.md
-last_updated: "2026-10-13T04:39:53.241Z"
+stopped_at: Completed 40-03-PLAN.md
+last_updated: "2026-10-13T05:09:39.372Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 33
-  percent: 79
+  completed_plans: 34
+  percent: 81
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 3 of 11
+Plan: 4 of 11
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -125,6 +125,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-01: D-24 baseline target/phase40/base.txt from scene-spot 2026-10-13T04-11-43Z at 65a37d35b, identical to Phase 39 after-final; after-01 25/25 identical; first-pour release won 201/689/811/262, lost 720/0/0/none
 - [Phase 40]: 40-02: Bun fixture grammar mirrors Rust (plank 5 / valve 6 tokens, kind before arity); FIXTURE_FILES derives from PUZZLE_IDS plus EXTRA_FIXTURE_FILES; wasm replay exact won 201/689/811/262, lost 720/0/0/none
 - [Phase 40]: 40-02: TS POSE_STRIDE 4 with PuzzlePlacement.openTick (seam absent -> 0), valve code 2 default tick 4, status 13 'Valve time out of range'; debug attribute keeps plank:x,y,angle and writes valve:x,y,angle,openTick; puzzle e2e 29/29
+- [Phase 40]: 40-03: LiquidMaterial (Elastic = ELASTIC + SOLID), Option SystemTuning (None adds no builder call) and circle FloatBody floats; PuzzleHooks::new takes a LevelBodies bundle; first-pour fixtures exact
+- [Phase 40]: 40-03: levels_tests harness iterates LEVEL_IDS (coverage, 3-star, empty, 3,000 budget); run_outcome skips the id allowlist so drafts can be nudge-checked; first-pour nudges 8/8 wins in release
 
 ### Pending Todos
 
@@ -220,9 +222,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P14 | 10min | 1 tasks | 0 files |
 | Phase 40 P01 | 21min | 3 tasks | 20 files |
 | Phase 40 P02 | 5min | 2 tasks | 26 files |
+| Phase 40 P03 | 26min | 2 tasks | 12 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T04:39:53.237Z
-Stopped at: Completed 40-02-PLAN.md
+Last session: 2026-10-13T05:09:39.367Z
+Stopped at: Completed 40-03-PLAN.md
 Resume file: None
