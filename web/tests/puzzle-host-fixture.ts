@@ -47,7 +47,13 @@ export function winWithoutBrimFrom(step: number): (stepIndex: number) => FakePuz
   return (stepIndex) =>
     stepIndex < step
       ? RUNNING_SCALARS
-      : { outcome: 1, outcomeStep: step, peakHeldCount: 600, brimStep: undefined, decidedStep: undefined };
+      : {
+          outcome: 1,
+          outcomeStep: step,
+          peakHeldCount: 600,
+          brimStep: undefined,
+          decidedStep: undefined,
+        };
 }
 
 /** Loss at the 720-step limit. */

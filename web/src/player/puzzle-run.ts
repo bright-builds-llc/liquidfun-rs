@@ -3,15 +3,17 @@ import type { PuzzleFrameStatus, RenderFrame } from "../physics/frame";
 import { buildPuzzleSessionSync, loadPuzzleSession } from "../physics/puzzle-loader";
 import type { PuzzleLevelInfo, PuzzleSession } from "../physics/puzzle-session";
 import { canonicalPlacements } from "../puzzle/editor";
+import { stoppedAnnouncement } from "../puzzle/editor-format";
 import { floorPercent } from "../puzzle/format";
 import { fnv1a64Lanes, hex16 } from "../puzzle/frame-hash";
 import { runStarsForState } from "../puzzle/hud-format";
 import { EMPTY_PLACEMENTS, encodePlacementLanes } from "../puzzle/placements";
 import { canPlay, type PuzzleEvent, type PuzzleState } from "../puzzle/reduce-puzzle";
 import { nextPuzzleSpeed } from "../puzzle/speed";
-import { NO_STARS, type RunStars } from "../puzzle/stars";
+import { NO_STARS, starNames, type RunStars } from "../puzzle/stars";
 import { cancelPendingFrame } from "./frame-loop";
 import { isStaleGeneration } from "./generation";
+import { cancelPendingInspection, commitInspection } from "./puzzle-editing";
 import {
   adoptPuzzleSession,
   disposeCurrentSession,
@@ -139,6 +141,7 @@ export async function buildPuzzle(host: PuzzleHost, id: PuzzleId): Promise<void>
 
   try {
     cancelPendingFrame(host.clock);
+    cancelPendingInspection(host);
     disposeCurrentSession(host);
     const current = host.puzzle.current;
     const run = current.kind === "loading" && current.pendingRun;
@@ -151,14 +154,11 @@ export async function buildPuzzle(host: PuzzleHost, id: PuzzleId): Promise<void>
     const owned = adoptPuzzleSession(host, generated, id);
     const info = owned.levelInfo;
     const { frame, status } = captureStepZero(owned);
-    const state = dispatch(host, {
-      kind: "loaded",
-      stepIndex: frame.stepIndex,
-      status,
-      budget: info.toolBudget,
-    });
+    dispatch(host, { kind: "loaded", stepIndex: frame.stepIndex, status, budget: info.toolBudget });
     host.puzzle.setMaybeLevelInfo(info);
     host.puzzle.setMaybeBestStars(host.puzzle.starStore.get(id));
+    // Building is published only with a committed inspection, so Play never lags a load (D-20).
+    const state = commitInspection(host);
     presentStepZero(host, context, frame, state);
     if (state.kind === "running") {
       startLoop(host, context);
@@ -185,6 +185,7 @@ export function playPuzzle(host: PuzzleHost): void {
   incrementGeneration(host);
   try {
     cancelPendingFrame(host.clock);
+    cancelPendingInspection(host);
     host.puzzle.setMaybeHeldHash(undefined);
     const generated = buildPuzzleSessionSync(maybeId, lanesFor(current, true));
     const { frame } = captureStepZero(adoptPuzzleSession(host, generated, maybeId));
@@ -208,12 +209,15 @@ export function stopPuzzle(host: PuzzleHost): void {
   incrementGeneration(host);
   try {
     cancelPendingFrame(host.clock);
-    recordStop(host, current);
+    cancelPendingInspection(host);
+    const stars = recordStop(host, current);
     host.puzzle.setMaybeHeldHash(undefined);
     const generated = buildPuzzleSessionSync(maybeId, lanesFor(current, false));
     const { frame, status } = captureStepZero(adoptPuzzleSession(host, generated, maybeId));
-    const state = dispatch(host, { kind: "stop", stepIndex: frame.stepIndex, status });
+    dispatch(host, { kind: "stop", stepIndex: frame.stepIndex, status });
+    const state = commitInspection(host);
     presentStepZero(host, context, frame, state);
+    host.puzzle.setAnnouncement(stoppedAnnouncement(starNames(stars)));
   } catch (error) {
     host.failScene(error);
   }

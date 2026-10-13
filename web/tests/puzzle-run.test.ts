@@ -148,7 +148,10 @@ describe("Play", () => {
     playPuzzle(host);
 
     // Assert
-    expect(lanesOf(syncBuild.mock.calls[0])).toEqual({ kinds: [1, 1], poses: [8, 64, 23, 12, 64, 0] });
+    expect(lanesOf(syncBuild.mock.calls[0])).toEqual({
+      kinds: [1, 1],
+      poses: [8, 64, 23, 12, 64, 0],
+    });
     expect(preview.free).toHaveBeenCalledTimes(1);
     expect(host.puzzle.state().kind).toBe("running");
     expect(host.view().kind).toBe("playing");

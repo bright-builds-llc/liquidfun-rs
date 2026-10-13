@@ -147,7 +147,7 @@ describe("live edits (D-02, UI-D14)", () => {
     expect(inspector).not.toHaveBeenCalled();
   });
 
-  it("runs the coalesced inspection in live mode without touching the committed snapshot", async () => {
+  it("runs the coalesced live inspection without touching the committed snapshot", async () => {
     // Arrange
     const host = await enterBuilding(TWO_PLANKS);
     const committed = host.puzzle.current.editor.maybeCommittedInspection;
@@ -348,7 +348,8 @@ describe("key commands (D-23)", () => {
     const controller = createPuzzleController(host);
 
     // Act
-    const results = [1, 1, 1].map(() => controller.command({ kind: "cycleSelection", direction: 1 }));
+    const next = { kind: "cycleSelection", direction: 1 } as const;
+    const results = [1, 2, 3].map(() => controller.command(next));
 
     // Assert
     expect(results).toEqual([true, true, false]);

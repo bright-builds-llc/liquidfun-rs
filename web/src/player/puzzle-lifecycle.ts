@@ -3,11 +3,19 @@ import type { PuzzleId } from "../catalog/puzzles";
 import { changeTiltGravity } from "../input/tilt-binding";
 import type { PuzzleController } from "../puzzle/controller";
 import { placementsInOrder } from "../puzzle/editor";
+import type { PuzzleKeyCommand } from "../puzzle/keyboard";
 import { EMPTY_PLACEMENTS, maybeReadTestPlacements } from "../puzzle/placements";
-import { INITIAL_PUZZLE_STATE } from "../puzzle/reduce-puzzle";
+import { INITIAL_PUZZLE_STATE, canPlay } from "../puzzle/reduce-puzzle";
 import { INITIAL_PUZZLE_SPEED } from "../puzzle/speed";
 import { IDENTITY_CAMERA_VIEW } from "../render/camera";
 import { cancelPendingFrame } from "./frame-loop";
+import {
+  applyKeyCommand,
+  applyPuzzleEdit,
+  cancelPendingInspection,
+  placeAtCenter,
+  toggleArm,
+} from "./puzzle-editing";
 import {
   disposeCurrentSession,
   dispatch,
@@ -27,10 +35,12 @@ import {
 export type { PuzzleHost } from "./puzzle-host";
 export { editPuzzle, playPuzzle, retryPuzzle, stopPuzzle } from "./puzzle-run";
 
-/** Clears per-level puzzle signals; the page-session star store is kept (D-14). */
+/** Clears per-level puzzle signals and any pending inspection; the page-session star store is kept (D-14). */
 function clearLevelSignals(host: PuzzleHost): void {
+  cancelPendingInspection(host);
   host.puzzle.setMaybeLevelInfo(undefined);
   host.puzzle.setMaybeHeldHash(undefined);
+  host.puzzle.setAnnouncement("");
 }
 
 /**
@@ -131,6 +141,28 @@ export function leavePuzzle(host: PuzzleHost): void {
   host.puzzle.setMaybeBestStars(undefined);
 }
 
+/** Space toggles Play/Stop (D-21, D-23): handled in building and running, Play only when allowed. */
+function togglePlay(host: PuzzleHost): boolean {
+  const current = host.puzzle.current;
+  if (current.kind === "building") {
+    if (canPlay(current)) {
+      playPuzzle(host);
+    }
+    return true;
+  }
+  if (current.kind === "running") {
+    stopPuzzle(host);
+    return true;
+  }
+
+  return false;
+}
+
+/** Applies a D-23 key command; true when handled so the caller calls `preventDefault`. */
+export function applyPuzzleCommand(host: PuzzleHost, command: PuzzleKeyCommand): boolean {
+  return command.kind === "togglePlay" ? togglePlay(host) : applyKeyCommand(host, command);
+}
+
 /** Lazy controller: reads `host.puzzle` only when an accessor or command runs. */
 export function createPuzzleController(host: PuzzleHost): PuzzleController {
   return {
@@ -139,11 +171,18 @@ export function createPuzzleController(host: PuzzleHost): PuzzleController {
     maybeLevelInfo: () => host.puzzle.maybeLevelInfo(),
     maybeBestStars: () => host.puzzle.maybeBestStars(),
     maybeHeldHash: () => host.puzzle.maybeHeldHash(),
+    announcement: () => host.puzzle.announcement(),
     play: () => playPuzzle(host),
     stop: () => stopPuzzle(host),
     retry: () => retryPuzzle(host),
     edit: () => editPuzzle(host),
     tryAgain: () => tryAgainPuzzle(host),
     cycleSpeed: () => cycleSpeed(host),
+    clear: () => applyPuzzleEdit(host, { kind: "clear" }, "commit"),
+    toggleArm: (kind) => toggleArm(host, kind),
+    placeAtCenter: (kind) => placeAtCenter(host, kind),
+    rotateSelected: (direction) => applyPuzzleEdit(host, { kind: "rotate", direction }, "commit"),
+    removeSelected: () => applyPuzzleEdit(host, { kind: "remove" }, "commit"),
+    command: (command) => applyPuzzleCommand(host, command),
   };
 }
