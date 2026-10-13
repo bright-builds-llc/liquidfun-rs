@@ -19,10 +19,11 @@ import { bindLifecycle, handleHashChange } from "../src/player/scene-lifecycle";
 import type { SceneRuntime } from "../src/player/scene-runtime";
 import { bindSurface } from "../src/player/scene-surface";
 import type { PlayerView } from "../src/player/view";
-import { EMPTY_EDITOR } from "../src/puzzle/editor";
+import { EMPTY_EDITOR, applyInspection, editorFromPlacements } from "../src/puzzle/editor";
 import type { PuzzleState } from "../src/puzzle/reduce-puzzle";
 import { createCamera, IDENTITY_CAMERA_VIEW } from "../src/render/camera";
 import { drawGlassCup, glassCup } from "../src/render/glass-cup";
+import { drawPuzzleTools, toolOverlay } from "../src/render/puzzle-tools";
 import { presentSceneFrame } from "../src/render/present-frame";
 import type { PlayableRoute } from "../src/routing/playable-route";
 
@@ -30,6 +31,10 @@ vi.mock("../src/render/present-frame", () => ({ presentSceneFrame: vi.fn() }));
 vi.mock("../src/render/glass-cup", async (importOriginal) => {
   const original = await importOriginal<typeof import("../src/render/glass-cup")>();
   return { ...original, drawGlassCup: vi.fn() };
+});
+vi.mock("../src/render/puzzle-tools", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../src/render/puzzle-tools")>();
+  return { ...original, drawPuzzleTools: vi.fn() };
 });
 vi.mock("../src/input/canvas-pointer", async (importOriginal) => {
   const original = await importOriginal<typeof import("../src/input/canvas-pointer")>();
@@ -132,6 +137,34 @@ function throwingPuzzle(session: SceneRuntime): SceneRuntime {
   return session;
 }
 
+function buildingWithOnePlank(): PuzzleState {
+  const editor = editorFromPlacements([{ kind: "plank", x: 8, y: 64, angle: 0 }]);
+  const quad = [
+    { x: 0.3, y: 3.2 },
+    { x: 0.5, y: 3.2 },
+    { x: 0.5, y: 3.25 },
+    { x: 0.3, y: 3.25 },
+  ] as const;
+  return {
+    kind: "building",
+    status: {
+      goalCount: 0,
+      goalTarget: 540,
+      goalFull: 900,
+      outcome: "running",
+      stepLimit: 720,
+      peakHeldCount: 0,
+      brimCount: 810,
+    },
+    editor: applyInspection(
+      editor,
+      { revision: editor.revision, statuses: [0], outlines: [quad] },
+      "commit",
+    ),
+    speed: 1,
+  };
+}
+
 function camera() {
   return createCamera(390, 844, IDENTITY_CAMERA_VIEW, worldBoundsForViewport("dam-break", 390, 844));
 }
@@ -185,6 +218,7 @@ beforeEach(() => {
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.mocked(presentSceneFrame).mockClear();
   vi.mocked(drawGlassCup).mockClear();
+  vi.mocked(drawPuzzleTools).mockClear();
   vi.mocked(attachCanvasPointer).mockClear();
   vi.mocked(loadPuzzleSession).mockClear();
   vi.mocked(loadSceneSession).mockClear();
@@ -214,6 +248,31 @@ describe("glass overlay hook", () => {
     expect(glassOrder).toBeGreaterThan(presentOrder);
   });
 
+  it("draws the tools between the frame and the glass (D-22)", () => {
+    // Arrange
+    const session = withPuzzle(fakeRuntime(PUZZLE_ROUTE));
+    bindSurface(session);
+    session.puzzle.maybeGlass = GLASS;
+    session.puzzle.current = buildingWithOnePlank();
+    const context = fakeContext();
+    const view = camera();
+
+    // Act
+    session.drawSceneFrame(context, FRAME, view);
+
+    // Assert
+    expect(drawPuzzleTools).toHaveBeenCalledWith(
+      context,
+      view,
+      toolOverlay(session.puzzle.current),
+    );
+    const presentOrder = vi.mocked(presentSceneFrame).mock.invocationCallOrder[0] ?? 0;
+    const toolsOrder = vi.mocked(drawPuzzleTools).mock.invocationCallOrder[0] ?? 0;
+    const glassOrder = vi.mocked(drawGlassCup).mock.invocationCallOrder[0] ?? 0;
+    expect(toolsOrder).toBeGreaterThan(presentOrder);
+    expect(glassOrder).toBeGreaterThan(toolsOrder);
+  });
+
   it("never reads puzzle state or draws the glass on a scene route", () => {
     // Arrange
     const session = throwingPuzzle(fakeRuntime(SCENE_ROUTE));
@@ -225,6 +284,7 @@ describe("glass overlay hook", () => {
     // Assert
     expect(presentSceneFrame).toHaveBeenCalledTimes(1);
     expect(drawGlassCup).not.toHaveBeenCalled();
+    expect(drawPuzzleTools).not.toHaveBeenCalled();
   });
 
   it("redraws the glass when the held frame is repainted", () => {
