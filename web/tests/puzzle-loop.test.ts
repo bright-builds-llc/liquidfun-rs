@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  MAX_STEPS_PER_FRAME,
+  STEP_SECONDS,
+  accumulateStepTime,
+} from "../src/physics/clock";
 import type { PuzzleFrameStatus, RenderFrame } from "../src/physics/frame";
 import type { PuzzleSession } from "../src/physics/puzzle-session";
 import { createFrameClock, type FrameClock } from "../src/player/frame-loop";
@@ -9,13 +14,19 @@ import { EMPTY_EDITOR } from "../src/puzzle/editor";
 import {
   SETTLE_TAIL_STEPS,
   reducePuzzle,
+  type PuzzleEvent,
   type PuzzleState,
 } from "../src/puzzle/reduce-puzzle";
+import type { PuzzleSpeed } from "../src/puzzle/speed";
 import { createCamera } from "../src/render/camera";
 
 const LATCH_STEP = 9;
 // Each frame is 100 ms apart, so the accumulator always requests the 4-step cap.
 const FRAME_MS = 100;
+// 35 ms makes the accumulator request two fixed steps on the first stepping frame.
+const TWO_STEP_FRAME_MS = 35;
+
+type ScriptedSteps = { readonly winStep: number; readonly decideStep: number };
 
 type Published = { frame: RenderFrame; observation: FrameObservation; state: PuzzleState };
 
@@ -37,7 +48,8 @@ function frameAt(stepIndex: number, maybePuzzle: PuzzleFrameStatus | undefined):
   };
 }
 
-function statusAt(stepIndex: number, latchStep: number): PuzzleFrameStatus {
+function statusAt(stepIndex: number, steps: ScriptedSteps): PuzzleFrameStatus {
+  const { winStep, decideStep } = steps;
   const base = {
     goalCount: stepIndex,
     goalTarget: 540,
@@ -45,50 +57,56 @@ function statusAt(stepIndex: number, latchStep: number): PuzzleFrameStatus {
     stepLimit: 720,
     brimCount: 810,
   };
-  // The win and Brim latch on the same step, so the run is decided there (D-10).
-  return stepIndex < latchStep
-    ? { ...base, outcome: "running", peakHeldCount: 0 }
-    : {
-        ...base,
-        outcome: "won",
-        maybeOutcomeStep: latchStep,
-        peakHeldCount: 810,
-        maybeBrimStep: latchStep,
-        maybeDecidedStep: latchStep,
-      };
+  if (stepIndex < winStep) {
+    return { ...base, outcome: "running", peakHeldCount: 0 };
+  }
+  const won = { ...base, outcome: "won", maybeOutcomeStep: winStep } as const;
+  // A win stays undecided ("Filled!") until Brim latches at the decide step (D-10).
+  return stepIndex < decideStep
+    ? { ...won, peakHeldCount: 600 }
+    : { ...won, peakHeldCount: 810, maybeBrimStep: decideStep, maybeDecidedStep: decideStep };
 }
 
-function fakeSession(options: { latchStep: number; omitStatus?: boolean }) {
+type HarnessOptions = {
+  readonly steps?: ScriptedSteps;
+  readonly omitStatus?: boolean;
+  readonly speed?: PuzzleSpeed;
+  /** Simulated wall time each `nextFrame` call takes. */
+  readonly stepCostMs?: number;
+};
+
+function fakeSession(steps: ScriptedSteps, options: HarnessOptions) {
   let step = 0;
   const nextFrame = vi.fn((count = 1) => {
     step += count;
-    return frameAt(step, options.omitStatus === true ? undefined : statusAt(step, options.latchStep));
+    nowMs += options.stepCostMs ?? 0;
+    return frameAt(step, options.omitStatus === true ? undefined : statusAt(step, steps));
   });
   const session = { nextFrame } as unknown as PuzzleSession;
   return { session, nextFrame };
 }
 
-function harness(options: { latchStep?: number; omitStatus?: boolean } = {}) {
-  const { session, nextFrame } = fakeSession({
-    latchStep: options.latchStep ?? LATCH_STEP,
-    ...(options.omitStatus === undefined ? {} : { omitStatus: options.omitStatus }),
-  });
+function harness(options: HarnessOptions = {}) {
+  const steps = options.steps ?? { winStep: LATCH_STEP, decideStep: LATCH_STEP };
+  const { session, nextFrame } = fakeSession(steps, options);
   const clock: FrameClock = createFrameClock();
   clock.maybeCamera = createCamera(390, 844);
   const context = {} as CanvasRenderingContext2D;
   let state: PuzzleState = {
     kind: "running",
     stepIndex: 0,
-    status: statusAt(0, LATCH_STEP),
+    status: statusAt(0, steps),
     editor: EMPTY_EDITOR,
-    speed: 1,
+    speed: options.speed ?? 1,
   };
   let current = true;
   const published: Published[] = [];
+  const dispatched: PuzzleEvent[] = [];
   const deps: PuzzleLoopDeps = {
     maybeSession: () => session,
     current: () => state,
     dispatch: (event) => {
+      dispatched.push(event);
       state = reducePuzzle(state, event);
       return state;
     },
@@ -103,6 +121,7 @@ function harness(options: { latchStep?: number; omitStatus?: boolean } = {}) {
     clock,
     context,
     deps,
+    dispatched,
     nextFrame,
     published,
     supersede: () => {
@@ -114,6 +133,8 @@ function harness(options: { latchStep?: number; omitStatus?: boolean } = {}) {
 let callbacks: Map<number, FrameRequestCallback>;
 let rafId: number;
 let timestamp: number;
+let frameMs: number;
+let nowMs: number;
 let documentStub: { hidden: boolean };
 
 function runFrame(): void {
@@ -124,7 +145,7 @@ function runFrame(): void {
   const [id, callback] = entry.value;
   callbacks.delete(id);
   callback(timestamp);
-  timestamp += FRAME_MS;
+  timestamp += frameMs;
 }
 
 function runUntilIdle(limit: number): number {
@@ -140,6 +161,8 @@ beforeEach(() => {
   callbacks = new Map();
   rafId = 0;
   timestamp = 0;
+  frameMs = FRAME_MS;
+  nowMs = 0;
   documentStub = { hidden: false };
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
     rafId += 1;
@@ -148,7 +171,7 @@ beforeEach(() => {
   });
   vi.stubGlobal("cancelAnimationFrame", (id: number) => callbacks.delete(id));
   vi.stubGlobal("document", documentStub);
-  vi.stubGlobal("performance", { now: () => 0 });
+  vi.stubGlobal("performance", { now: () => nowMs });
 });
 
 afterEach(() => {
@@ -272,5 +295,92 @@ describe("schedulePuzzleFrame", () => {
     expect(nextFrame).not.toHaveBeenCalled();
     expect(clock.maybeLastTimestamp).toBeUndefined();
     expect(callbacks.size).toBe(1);
+  });
+});
+
+describe("schedulePuzzleFrame fast-forward (D-24)", () => {
+  it("multiplies the frame's step request by the speed and dispatches every step", () => {
+    // Arrange
+    frameMs = TWO_STEP_FRAME_MS;
+    const { clock, context, deps, dispatched, nextFrame } = harness({ speed: 4 });
+    schedulePuzzleFrame(clock, context, deps);
+    runFrame();
+
+    // Act
+    runFrame();
+
+    // Assert
+    expect(nextFrame).toHaveBeenCalledTimes(8);
+    expect(dispatched.filter((event) => event.kind === "stepped")).toHaveLength(8);
+  });
+
+  it("ends with the same latch, decision and tail end at 1x, 2x and 4x", () => {
+    // Arrange
+    const steps = { winStep: 6, decideStep: 9 };
+    const speeds: readonly PuzzleSpeed[] = [1, 2, 4];
+
+    // Act
+    const endings = speeds.map((speed) => {
+      callbacks.clear();
+      const { clock, context, deps, nextFrame, published } = harness({ steps, speed });
+      schedulePuzzleFrame(clock, context, deps);
+      runUntilIdle(200);
+      const last = published.at(-1)?.state;
+      return {
+        outcomeStep: last?.kind === "ended" ? last.latch.outcomeStep : undefined,
+        decidedStep: last?.kind === "ended" ? last.latch.decidedStep : undefined,
+        stepIndex: last?.kind === "ended" ? last.stepIndex : undefined,
+        held: last?.kind === "ended" && last.held,
+        steps: nextFrame.mock.calls.length,
+      };
+    });
+
+    // Assert
+    const expected = {
+      outcomeStep: 6,
+      decidedStep: 9,
+      stepIndex: 9 + SETTLE_TAIL_STEPS,
+      held: true,
+      steps: 9 + SETTLE_TAIL_STEPS,
+    };
+    expect(endings).toEqual([expected, expected, expected]);
+  });
+
+  it("restores steps the frame budget left unrun at wall-time scale", () => {
+    // Arrange
+    frameMs = TWO_STEP_FRAME_MS;
+    // 2.5 ms per step crosses the 12 ms budget after the fifth step.
+    const { clock, context, deps, nextFrame } = harness({ speed: 4, stepCostMs: 2.5 });
+    schedulePuzzleFrame(clock, context, deps);
+    runFrame();
+    const accumulated = accumulateStepTime(0, TWO_STEP_FRAME_MS / 1000);
+
+    // Act
+    runFrame();
+
+    // Assert
+    expect(accumulated.stepCount).toBe(2);
+    expect(nextFrame).toHaveBeenCalledTimes(5);
+    expect(clock.frameRemainderSeconds).toBeCloseTo(
+      accumulated.remainderSeconds + ((8 - 5) / 4) * STEP_SECONDS,
+      12,
+    );
+  });
+
+  it("captures one fixed step per call at 4x under the unchanged four-step cap", () => {
+    // Arrange
+    const { clock, context, deps, nextFrame } = harness({ speed: 4 });
+    schedulePuzzleFrame(clock, context, deps);
+    runFrame();
+
+    // Act
+    runFrame();
+    const callsInFrame = nextFrame.mock.calls.length;
+    runUntilIdle(200);
+
+    // Assert
+    expect(MAX_STEPS_PER_FRAME).toBe(4);
+    expect(callsInFrame).toBe(MAX_STEPS_PER_FRAME * 4);
+    expect(nextFrame.mock.calls.every((call) => call.length === 1 && call[0] === 1)).toBe(true);
   });
 });
