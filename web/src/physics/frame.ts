@@ -1,3 +1,6 @@
+import { parsePuzzleStatus } from "./frame-puzzle";
+import { invalidFrame, parseNonNegativeInteger } from "./frame-scalars";
+
 const MAX_PARTICLE_COUNT = 16384;
 const MAX_RIGID_SEGMENT_COUNT = 512;
 const MAX_RIGID_CIRCLE_COUNT = 48;
@@ -6,7 +9,6 @@ const PARTICLE_COLOR_STRIDE = 4;
 const PARTICLE_RADIUS_STRIDE = 1;
 const RIGID_SEGMENT_STRIDE = 4;
 const RIGID_CIRCLE_STRIDE = 3;
-const INVALID_FRAME_MESSAGE = "Invalid Rust/WASM frame";
 
 /** Generated frame methods consumed by the validated browser boundary. */
 export interface RawProofFrame {
@@ -29,13 +31,21 @@ export interface RawProofFrame {
   outcome?(): number | undefined;
   outcomeStep?(): number | undefined;
   stepLimit?(): number | undefined;
+  /** Largest count held for the settle window at or before the step limit (D-08). */
+  peakHeldCount?(): number | undefined;
+  /** The level's Brim count (D-09). */
+  brimCount?(): number | undefined;
+  /** Step Brim latched; undefined until it latches (D-09). */
+  brimStep?(): number | undefined;
+  /** Step the run was decided; undefined until decided (D-10). */
+  decidedStep?(): number | undefined;
   free(): void;
 }
 
 /** Puzzle outcome latched per fixed step in Rust. */
 export type PuzzleOutcome = "running" | "won" | "lost";
 
-/** Per-step puzzle readout decided in Rust (D-17). Absent on scene frames. */
+/** Per-step puzzle readout decided in Rust (D-17, D-11). Absent on scene frames. */
 export interface PuzzleFrameStatus {
   readonly goalCount: number;
   readonly goalTarget: number;
@@ -43,6 +53,17 @@ export interface PuzzleFrameStatus {
   readonly outcome: PuzzleOutcome;
   readonly maybeOutcomeStep?: number;
   readonly stepLimit: number;
+  /**
+   * Peak held count: the largest count held for the settle window at or
+   * before the step limit (D-08). Never bounded by the live particle count.
+   */
+  readonly peakHeldCount: number;
+  /** Count the peak held count must reach for the Brim star (D-09). */
+  readonly brimCount: number;
+  /** Step Brim latched; present only on won runs that reached Brim (D-09). */
+  readonly maybeBrimStep?: number;
+  /** Step the run was decided; present only once decided (D-10). */
+  readonly maybeDecidedStep?: number;
 }
 
 /** Bounded JavaScript-owned numeric lanes ready for rendering. */
@@ -60,20 +81,6 @@ export interface RenderFrame {
   readonly rigidCircles: Float32Array;
   readonly circleLabels: readonly string[];
   readonly maybePuzzle?: PuzzleFrameStatus;
-}
-
-const PUZZLE_OUTCOMES: readonly PuzzleOutcome[] = ["running", "won", "lost"];
-
-function invalidFrame(): never {
-  throw new Error(INVALID_FRAME_MESSAGE);
-}
-
-function parseNonNegativeInteger(value: number): number {
-  if (!Number.isSafeInteger(value) || value < 0) {
-    return invalidFrame();
-  }
-
-  return value;
 }
 
 function parseNonNegativeFinite(value: number): number {
@@ -148,106 +155,6 @@ function requirePositiveCircleRadii(circles: Float32Array): void {
       invalidFrame();
     }
   }
-}
-
-function parsePositiveInteger(value: number): number {
-  const parsed = parseNonNegativeInteger(value);
-  if (parsed < 1) {
-    return invalidFrame();
-  }
-
-  return parsed;
-}
-
-function parseOutcomeStep(
-  outcome: PuzzleOutcome,
-  maybeOutcomeStep: number | undefined,
-  stepIndex: number,
-  stepLimit: number,
-): number | undefined {
-  if (outcome === "running") {
-    return maybeOutcomeStep === undefined ? undefined : invalidFrame();
-  }
-
-  if (maybeOutcomeStep === undefined) {
-    return invalidFrame();
-  }
-
-  const outcomeStep = parseNonNegativeInteger(maybeOutcomeStep);
-  if (outcomeStep > stepIndex || outcomeStep > stepLimit) {
-    return invalidFrame();
-  }
-
-  if (outcome === "lost" && outcomeStep !== stepLimit) {
-    return invalidFrame();
-  }
-
-  return outcomeStep;
-}
-
-/**
- * Parses the optional D-17 puzzle scalars, failing closed on partial or
- * inconsistent values. Returns undefined for scene frames.
- */
-function parsePuzzleStatus(
-  rawFrame: RawProofFrame,
-  stepIndex: number,
-  particleCount: number,
-): PuzzleFrameStatus | undefined {
-  const maybeGoalCount = rawFrame.goalCount?.();
-  const maybeGoalTarget = rawFrame.goalTarget?.();
-  const maybeGoalFull = rawFrame.goalFull?.();
-  const maybeOutcome = rawFrame.outcome?.();
-  const maybeOutcomeStep = rawFrame.outcomeStep?.();
-  const maybeStepLimit = rawFrame.stepLimit?.();
-  if (
-    maybeGoalCount === undefined &&
-    maybeGoalTarget === undefined &&
-    maybeGoalFull === undefined &&
-    maybeOutcome === undefined &&
-    maybeOutcomeStep === undefined &&
-    maybeStepLimit === undefined
-  ) {
-    return undefined;
-  }
-
-  if (
-    maybeGoalCount === undefined ||
-    maybeGoalTarget === undefined ||
-    maybeGoalFull === undefined ||
-    maybeOutcome === undefined ||
-    maybeStepLimit === undefined
-  ) {
-    return invalidFrame();
-  }
-
-  const goalCount = parseNonNegativeInteger(maybeGoalCount);
-  const goalTarget = parsePositiveInteger(maybeGoalTarget);
-  const goalFull = parseNonNegativeInteger(maybeGoalFull);
-  const stepLimit = parsePositiveInteger(maybeStepLimit);
-  if (goalFull < goalTarget || goalCount > particleCount) {
-    return invalidFrame();
-  }
-
-  const outcome = PUZZLE_OUTCOMES[parseNonNegativeInteger(maybeOutcome)];
-  if (outcome === undefined) {
-    return invalidFrame();
-  }
-
-  const outcomeStep = parseOutcomeStep(
-    outcome,
-    maybeOutcomeStep,
-    stepIndex,
-    stepLimit,
-  );
-  return {
-    goalCount,
-    goalTarget,
-    goalFull,
-    outcome,
-    ...(outcomeStep === undefined ? {} : { maybeOutcomeStep: outcomeStep }),
-    stepLimit,
-  };
 }
 
 /**
