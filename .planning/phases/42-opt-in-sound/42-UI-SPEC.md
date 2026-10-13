@@ -1,7 +1,8 @@
 ---
 phase: 42
 slug: opt-in-sound
-status: draft
+status: approved
+reviewed_at: 2026-10-13
 shadcn_initialized: false
 preset: none
 created: 2026-10-13
