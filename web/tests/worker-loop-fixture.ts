@@ -9,6 +9,7 @@ import { createFrameClock, type FrameLoopDeps } from "../src/player/frame-loop";
 import { observeFrame } from "../src/player/observe";
 import type { PlayerView } from "../src/player/view";
 import { createCamera } from "../src/render/camera";
+import { createPuzzleRuntime } from "../src/player/puzzle-runtime";
 import type { SceneRuntime } from "../src/player/scene-runtime";
 import { createTiltBinding } from "../src/input/tilt-binding";
 
@@ -124,6 +125,7 @@ export function workerLoopFixture() {
     drawSceneFrame: deps.drawSceneFrame,
     frameDeps: () => deps,
     failScene: deps.fail,
+    puzzle: createPuzzleRuntime(),
   } as unknown as SceneRuntime;
   return {
     owner,
