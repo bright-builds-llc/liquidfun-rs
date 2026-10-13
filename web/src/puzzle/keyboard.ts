@@ -73,6 +73,15 @@ export function puzzleKeyCommand(input: PuzzleKeyInput): PuzzleKeyCommand | unde
   }
 }
 
+/**
+ * True for an auto-repeated Play/Stop toggle. Only the first keydown of a held
+ * Space toggles; the caller swallows repeats so a long press never stops the
+ * run it just started. Arrow-nudge repeats stay useful and pass through.
+ */
+export function isRepeatedPlayToggle(command: PuzzleKeyCommand, repeat: boolean): boolean {
+  return repeat && command.kind === "togglePlay";
+}
+
 /** The element facts the classifier reads, so it is testable without a DOM. */
 export type KeyTargetElement = {
   readonly tagName: string;

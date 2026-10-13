@@ -16,7 +16,7 @@ import type { PuzzleId } from "../catalog/puzzles";
 import { createHudObstacles } from "../player/hud-obstacles";
 import type { PlayerStatus } from "../player/view";
 import type { PuzzleController } from "../puzzle/controller";
-import { keyTargetOf, puzzleKeyCommand } from "../puzzle/keyboard";
+import { isRepeatedPlayToggle, keyTargetOf, puzzleKeyCommand } from "../puzzle/keyboard";
 import { needsWebglSurface, particleSurface, type RenderMode } from "../render/mode";
 import type { ScreenRect } from "../render/safe-frame";
 import { PuzzleFillMeter, PuzzleHud, PuzzleTimer, PuzzleTitle } from "./PuzzleHud";
@@ -175,7 +175,14 @@ function PuzzlePanelLayout(layoutProps: {
       altKey: event.altKey,
       target: keyTargetOf(event.target),
     });
-    if (maybeCommand !== undefined && props.controller.command(maybeCommand)) {
+    if (maybeCommand === undefined) {
+      return;
+    }
+    if (isRepeatedPlayToggle(maybeCommand, event.repeat)) {
+      event.preventDefault();
+      return;
+    }
+    if (props.controller.command(maybeCommand)) {
       event.preventDefault();
     }
   };

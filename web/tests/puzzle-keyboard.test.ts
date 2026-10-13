@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   NUDGE_SHIFT_CELLS,
   classifyKeyTarget,
+  isRepeatedPlayToggle,
   keyTargetOf,
   puzzleKeyCommand,
   type KeyTargetElement,
@@ -215,5 +216,31 @@ describe("classifyKeyTarget", () => {
 
     // Assert
     expect(command).toBeUndefined();
+  });
+});
+
+describe("isRepeatedPlayToggle", () => {
+  it("swallows an auto-repeated Space toggle", () => {
+    // Act
+    const swallowed = isRepeatedPlayToggle({ kind: "togglePlay" }, true);
+
+    // Assert
+    expect(swallowed).toBe(true);
+  });
+
+  it("lets the first Space press toggle", () => {
+    // Act
+    const swallowed = isRepeatedPlayToggle({ kind: "togglePlay" }, false);
+
+    // Assert
+    expect(swallowed).toBe(false);
+  });
+
+  it("keeps auto-repeated arrow nudges", () => {
+    // Act
+    const swallowed = isRepeatedPlayToggle({ kind: "nudge", dx: 1, dy: 0 }, true);
+
+    // Assert
+    expect(swallowed).toBe(false);
   });
 });
