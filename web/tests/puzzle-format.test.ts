@@ -176,7 +176,11 @@ describe("fillMeterModel", () => {
       percentText: "0%",
       targetText: " / 60%",
       fillPercent: 0,
-      ticks: goalTicks(540, 900, 810),
+      ticks: [
+        { fraction: 0.6, label: "★ Win", star: true, reached: false },
+        { fraction: 0.9, label: "★ Brim", star: true, reached: false },
+        { fraction: 1, label: "Full", star: false, reached: false },
+      ],
       maybeValueNow: 0,
       maybeValueText: "0% full, target 60%",
     });
@@ -216,16 +220,26 @@ describe("resultCardModel", () => {
     expect(model).toEqual({ kind: "loading", message: "Loading level…" });
   });
 
-  it.each([
-    ["building", building()],
-    ["running", running(50, 120)],
-  ] as const)("shows the goal while %s", (_label, state) => {
+  it("shows the empty hint while building with zero tools", () => {
     // Act
-    const model = resultCardModel(state);
+    const model = resultCardModel(building());
 
     // Assert
     expect(model).toEqual({
       kind: "goal",
+      tone: "hint",
+      message: "Fill the cup to 60% before time runs out. Pick a tool from the tray to start.",
+    });
+  });
+
+  it("shows the goal while running", () => {
+    // Act
+    const model = resultCardModel(running(50, 120));
+
+    // Assert
+    expect(model).toEqual({
+      kind: "goal",
+      tone: "goal",
       message: "Fill the cup to 60% before time runs out.",
     });
   });
