@@ -172,7 +172,7 @@ describe("star write-through", () => {
     expect(seenAtPublish[0]?.win).toBe(true);
   });
 
-  it("writes nothing to the progress key for a lost run", async () => {
+  it("persists no stars for a lost run, only Play's placement save", async () => {
     // Arrange
     const fake = createFakeStorage();
     const host = await enterBuilding(fake);
@@ -183,7 +183,8 @@ describe("star write-through", () => {
     // Assert
     const state = host.puzzle.current;
     expect(state.kind === "ended" && state.latch.outcome).toBe("lost");
-    expect(fake.writes.filter((key) => key === PROGRESS_STORAGE_KEY)).toEqual([]);
+    expect(fake.writes.filter((key) => key === PROGRESS_STORAGE_KEY)).toHaveLength(1);
+    expect(maybeLevelStars(storedDocument(fake), "first-pour")).toBeUndefined();
   });
 
   it("absorbs stars another tab wrote after startup", async () => {

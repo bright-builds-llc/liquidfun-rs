@@ -1,4 +1,6 @@
 import type { PuzzleId } from "../catalog/puzzles";
+import { placementsInOrder } from "../puzzle/editor";
+import { savedPlacementsFor } from "../puzzle/progress-view";
 import { dispatch, type PuzzleHost } from "./puzzle-host";
 
 /**
@@ -19,4 +21,29 @@ export function restorePendingPlacements(host: PuzzleHost, id: PuzzleId, levelHa
   if (maybeRestored !== undefined) {
     dispatch(host, { kind: "reset", placements: maybeRestored, speed: current.speed });
   }
+}
+
+/**
+ * Saves the editor's placements in creation order with the live level hash
+ * (D-16). Skips when no level is loaded or nothing changed since the last
+ * save for this level. Storage failures degrade inside the progress shell
+ * and never reach the edit path.
+ */
+export function saveEditorPlacements(host: PuzzleHost): void {
+  const maybeId = host.puzzle.maybeLevelId();
+  const maybeInfo = host.puzzle.maybeLevelInfo();
+  if (maybeId === undefined || maybeInfo === undefined) {
+    return;
+  }
+
+  const placements = placementsInOrder(host.puzzle.current.editor);
+  const { levelHash } = maybeInfo;
+  const tools = JSON.stringify(savedPlacementsFor(levelHash, placements).tools);
+  const key = `${maybeId}|${levelHash}|${tools}`;
+  if (key === host.puzzle.maybeLastSavedKey) {
+    return;
+  }
+
+  host.puzzle.maybeLastSavedKey = key;
+  host.puzzle.progress.savePlacements(maybeId, levelHash, placements);
 }

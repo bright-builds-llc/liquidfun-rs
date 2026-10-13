@@ -14,6 +14,7 @@ import type { PuzzleKeyCommand } from "../puzzle/keyboard";
 import type { PuzzleToolKind } from "../puzzle/placements";
 import type { BuildingEditEvent, PuzzleState } from "../puzzle/reduce-puzzle";
 import { dispatch, ownsLiveSession, publishState, type PuzzleHost } from "./puzzle-host";
+import { saveEditorPlacements } from "./puzzle-saved-placements";
 
 /** `commit` inspects now and announces; `live` coalesces to one inspection per animation frame (D-02). */
 export type EditMode = "commit" | "live";
@@ -73,10 +74,14 @@ export function redrawBuilding(host: PuzzleHost): void {
   host.drawSceneFrame(context, maybeFrame, maybeCamera);
 }
 
+/** Inspects, redraws and publishes a committed edit, then saves the placements (D-16). */
 function commitNow(host: PuzzleHost): PuzzleState {
   const state = commitInspection(host);
   redrawBuilding(host);
   publishState(host, state);
+  if (state.kind === "building") {
+    saveEditorPlacements(host);
+  }
   return state;
 }
 

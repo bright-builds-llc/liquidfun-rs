@@ -26,7 +26,7 @@ import {
   type PuzzleHost,
 } from "./puzzle-host";
 import { requirePuzzleStatus, schedulePuzzleFrame } from "./puzzle-loop";
-import { restorePendingPlacements } from "./puzzle-saved-placements";
+import { restorePendingPlacements, saveEditorPlacements } from "./puzzle-saved-placements";
 
 type RunningState = Extract<PuzzleState, { kind: "running" }>;
 type PuzzleLanes = ReturnType<typeof encodePlacementLanes>;
@@ -192,6 +192,8 @@ export function playPuzzle(host: PuzzleHost): void {
     return;
   }
 
+  // Play persists the run's placements even when the last edit was not saved (D-16).
+  saveEditorPlacements(host);
   incrementGeneration(host);
   try {
     cancelPendingFrame(host.clock);
