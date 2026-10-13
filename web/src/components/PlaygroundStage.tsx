@@ -7,7 +7,7 @@ import {
   sceneControlsIdentity,
   sceneTitleForId,
 } from "../player/runtime";
-import { playableRouteIdentity } from "../player/playable-target";
+import { playableRouteIdentity, puzzlesNavCurrent } from "../player/playable-target";
 import { maybeObservedFrame, playerStatus, type PlayerView } from "../player/view";
 import type { PuzzleProgress } from "../player/puzzle-progress";
 import type { PuzzleController } from "../puzzle/controller";
@@ -141,6 +141,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
     <PlaygroundShell
       canvasStage={props.canvasStage}
       maybeCurrentSceneId={maybeCurrentSceneId()}
+      maybePuzzlesCurrent={puzzlesNavCurrent(props.route())}
       routeIdentity={routeIdentity()}
     >
       <main

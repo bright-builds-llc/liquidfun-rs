@@ -232,8 +232,8 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
     .toBe(true);
 
   // Act / Assert
-  // Dismiss + twenty-five scene links = 26 focusables; exercise wrap past one full cycle.
-  for (let tabIndex = 0; tabIndex < 27; tabIndex += 1) {
+  // Dismiss + the Puzzles link + twenty-five scene links = 27 focusables; exercise wrap past one full cycle.
+  for (let tabIndex = 0; tabIndex < 28; tabIndex += 1) {
     await page.keyboard.press("Tab");
     await expect
       .poll(() =>
@@ -249,8 +249,8 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
   await expect(closeButton).toBeFocused();
 
   // Act / Assert
-  // Dismiss + twenty-five scene links = 26 focusables; 27 reverse tabs ≡ 1 (mod 26) lands on last.
-  for (let reverseTabIndex = 0; reverseTabIndex < 27; reverseTabIndex += 1) {
+  // Dismiss + the Puzzles link + twenty-five scene links = 27 focusables; 28 reverse tabs ≡ 1 (mod 27) lands on last.
+  for (let reverseTabIndex = 0; reverseTabIndex < 28; reverseTabIndex += 1) {
     await page.keyboard.press("Shift+Tab");
     await expect
       .poll(() =>

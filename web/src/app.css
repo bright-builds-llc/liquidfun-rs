@@ -164,6 +164,35 @@ html[data-demo-media-capture="true"] .scale-legend {
   box-shadow: inset 3px 0 0 #4DA3FF;
 }
 
+.puzzles-navigation {
+  padding-bottom: var(--space-md);
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid #2A3441;
+}
+.puzzles-nav-link {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-block-size: 44px;
+  padding: var(--space-sm) var(--space-md);
+  color: #F4F7FA;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.puzzles-nav-link:hover {
+  background: #1C2734;
+  border-color: #2A3441;
+}
+.puzzles-nav-link[aria-current] {
+  background: #132844;
+  border-color: #4DA3FF;
+  box-shadow: inset 3px 0 0 #4DA3FF;
+}
+
 .demo-nav-title {
   overflow-wrap: anywhere;
   font-size: 16px;

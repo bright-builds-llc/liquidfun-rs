@@ -1,5 +1,6 @@
 import { createEffect, Show, type JSX } from "solid-js";
 
+import { PUZZLES_HASH } from "../catalog/puzzle-levels";
 import type { SceneId } from "../catalog/scenes";
 import { DemoNavigation } from "./DemoNavigation";
 import { SiteFooter } from "./SiteFooter";
@@ -16,6 +17,8 @@ import {
 export type PlaygroundShellProps = {
   readonly canvasStage: boolean;
   readonly maybeCurrentSceneId: SceneId | undefined;
+  /** `aria-current` of the sidebar Puzzles link (UI-D24). */
+  readonly maybePuzzlesCurrent: "page" | "true" | undefined;
   readonly routeIdentity: string;
   readonly children: JSX.Element;
 };
@@ -27,6 +30,7 @@ export function PlaygroundShell(props: PlaygroundShellProps) {
       <PlaygroundFrame
         canvasStage={props.canvasStage}
         maybeCurrentSceneId={props.maybeCurrentSceneId}
+        maybePuzzlesCurrent={props.maybePuzzlesCurrent}
         routeIdentity={props.routeIdentity}
       >
         {props.children}
@@ -66,6 +70,17 @@ function PlaygroundFrame(props: PlaygroundShellProps) {
           </DrawerDescription>
         </Show>
         <SidebarContent class="demo-sidebar-content">
+          {/* Text only: no preview or icon, so the 25-preview scene list counts hold (D-03). */}
+          <nav class="puzzles-navigation" aria-label="Puzzles">
+            <a
+              class="puzzles-nav-link"
+              href={PUZZLES_HASH}
+              aria-current={props.maybePuzzlesCurrent}
+              onClick={() => sidebar.setOpenMobile(false)}
+            >
+              Puzzles
+            </a>
+          </nav>
           <DemoNavigation
             label="Demos"
             maybeCurrentSceneId={props.maybeCurrentSceneId}
