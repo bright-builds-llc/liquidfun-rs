@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 39-08-PLAN.md
-last_updated: "2026-10-13T01:14:25.011Z"
+stopped_at: Completed 39-09-PLAN.md
+last_updated: "2026-10-13T01:28:17.174Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 25
-  percent: 81
+  completed_plans: 26
+  percent: 84
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
-Plan: 9 of 14
+Plan: 10 of 14
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -104,6 +104,11 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-07: edit events live in edit-event.ts and HUD transport/tray/star helpers in hud-format.ts; reduce-puzzle.ts 359 lines, format.ts 268
 - [Phase 39]: 39-07: canPlay gate means seeded-placement runs need a committed inspection on building entry (Plan 09); solution-win e2e cannot start a run until then
 - [Phase 39]: 39-08: replay fixtures record peak_held and brim_step at the decision step (solution 811/262, empty 0/none); release native == wasm; a recorded Brim must hold at brim+margin in both contracts; record mode parses only level/placement lines
+- [Phase 39]: 39-09: host primitives in puzzle-host.ts; buildPuzzle, Play, Stop, Retry and Edit in puzzle-run.ts; lifecycle keeps route entry, Try again, leave and the controller (acyclic imports)
+- [Phase 39]: 39-09: building shows an empty-lane preview; Play and Stop build sessions synchronously via buildPuzzleSessionSync; Retry still uses the async build with canonical run lanes
+- [Phase 39]: 39-09: stars recorded in the loop dispatch closure on running->ended win, and by Stop before the preview rebuild (D-15); store lives in PuzzleRuntime.starStore for the page session
+- [Phase 39]: 39-09: every state-changing committed edit runs a commit inspection; live edits coalesce to one rAF inspection; building entry and Stop commit before publishing (D-20, UI-D14)
+- [Phase 39]: 39-09: Space togglePlay routed by applyPuzzleCommand in the lifecycle; applyKeyCommand handles only editor keys
 
 ### Pending Todos
 
@@ -191,9 +196,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P06 | 5min | 2 tasks | 8 files |
 | Phase 39 P07 | 9min | 2 tasks | 14 files |
 | Phase 39 P08 | 14min | 2 tasks | 10 files |
+| Phase 39 P09 | 9min | 2 tasks | 14 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T01:14:25.008Z
-Stopped at: Completed 39-08-PLAN.md
+Last session: 2026-10-13T01:28:17.171Z
+Stopped at: Completed 39-09-PLAN.md
 Resume file: None
