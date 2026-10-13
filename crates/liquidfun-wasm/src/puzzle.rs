@@ -5,6 +5,7 @@ pub(crate) mod builder;
 pub(crate) mod first_pour;
 pub(crate) mod float_up;
 pub(crate) mod goal;
+pub(crate) mod grand_finale;
 pub(crate) mod hooks;
 mod info;
 mod inspect;
@@ -36,6 +37,8 @@ pub(crate) enum LevelId {
     FloatUp,
     /// "Timed Gate": the valve's open time decides the outcome.
     TimedGate,
+    /// "Grand Finale": a jelly pad, a timed valve and syrup together.
+    GrandFinale,
 }
 
 /// Every allowlisted level, in catalog (Phase 40 D-09) order. Mirrored by
@@ -57,6 +60,7 @@ impl LevelId {
             Self::JellyPad => "jelly-pad",
             Self::FloatUp => "float-up",
             Self::TimedGate => "timed-gate",
+            Self::GrandFinale => "grand-finale",
         }
     }
 }
@@ -74,6 +78,7 @@ pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
         LevelId::JellyPad => &jelly_pad::JELLY_PAD,
         LevelId::FloatUp => &float_up::FLOAT_UP,
         LevelId::TimedGate => &timed_gate::TIMED_GATE,
+        LevelId::GrandFinale => &grand_finale::GRAND_FINALE,
     }
 }
 
