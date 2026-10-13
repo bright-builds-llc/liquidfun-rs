@@ -118,4 +118,11 @@ impl PuzzleLevelInfo {
             .map(|allowance| u32::from(allowance.count))
             .collect()
     }
+
+    /// Returns the 16-hex-digit level fingerprint that keys saved placements (D-17).
+    #[must_use]
+    #[wasm_bindgen(js_name = levelHash)]
+    pub fn level_hash(&self) -> String {
+        super::level_hash::level_hash_hex(self.spec)
+    }
 }

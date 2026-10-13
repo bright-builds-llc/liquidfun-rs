@@ -1,0 +1,8 @@
+# Level fingerprints (Phase 41 D-17): FNV-1a 64 of each LevelSpec's Debug text.
+# Changing a level changes its line here and discards saved placements for it.
+first-pour f0d2fdf9d2efb050
+thick-syrup 1acd4f5d5af07d9c
+jelly-pad d48dd7deeeb39443
+float-up a94c5fd51fb29304
+timed-gate bebe1822f5fb7ea9
+grand-finale 88c192beb348641e
