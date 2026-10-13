@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   checkReplay,
+  EXTRA_FIXTURE_FILES,
   FIXTURE_FILES,
   type Fixture,
   type FixtureOutcome,
@@ -26,6 +27,7 @@ import {
   spikeLine,
 } from "../scripts/puzzle-replay/spike";
 import { repoRoot } from "../scripts/puzzle-replay/wasm";
+import { PUZZLE_IDS } from "../src/catalog/puzzles";
 
 const HASH_A = "0000000000000001";
 const HASH_B = "0000000000000002";
@@ -203,7 +205,7 @@ describe("puzzle-replay fixture parser", () => {
     // Assert
     expect(fixture).toEqual({
       level: "first-pour",
-      placements: [{ kind: "plank", x: 8, y: 64, angle: 23 }],
+      placements: [{ kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 }],
       maybeExpectation: {
         outcome: "won",
         outcomeStep: 412,
@@ -248,20 +250,85 @@ describe("puzzle-replay fixture parser", () => {
     expect(parse).toThrow("fixture line");
   });
 
-  it("parseFixture rejects an unknown level or tool", () => {
+  it("parseFixture rejects an unknown level", () => {
     // Arrange
-    const texts = [
-      "level dam-break\n",
-      "level first-pour\nplacement valve 1 2 3\n",
-    ];
+    const text = "level dam-break\n";
 
     // Act
-    const parses = texts.map((text) => () => parseFixture(text));
+    const parse = () => parseFixture(text);
 
     // Assert
-    for (const parse of parses) {
-      expect(parse).toThrow("fixture line");
-    }
+    expect(parse).toThrow("fixture line 1: unknown level");
+  });
+
+  it("parseFixture rejects an unknown tool before checking arity", () => {
+    // Arrange
+    const text = "level first-pour\nplacement gate 1 2 3\n";
+
+    // Act
+    const parse = () => parseFixture(text);
+
+    // Assert
+    expect(parse).toThrow("fixture line 2: unknown tool");
+  });
+
+  it("parseFixture reads a 6-token valve line with its open tick", () => {
+    // Arrange
+    const text = "level first-pour\nplacement valve -16 87 0 4\n";
+
+    // Act
+    const fixture = parseFixture(text);
+
+    // Assert
+    expect(fixture.placements).toEqual([
+      { kind: "valve", x: -16, y: 87, angle: 0, openTick: 4 },
+    ]);
+  });
+
+  it("parseFixture reads a 5-token plank line as open tick 0", () => {
+    // Arrange
+    const text = "level first-pour\nplacement plank 8 64 23\n";
+
+    // Act
+    const fixture = parseFixture(text);
+
+    // Assert
+    expect(fixture.placements).toEqual([
+      { kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 },
+    ]);
+  });
+
+  it("parseFixture rejects a plank line with an open tick", () => {
+    // Arrange
+    const text = "level first-pour\nplacement plank 8 64 23 0\n";
+
+    // Act
+    const parse = () => parseFixture(text);
+
+    // Assert
+    expect(parse).toThrow("fixture line 2: expected 5 space-separated tokens");
+  });
+
+  it("parseFixture rejects a valve line without an open tick", () => {
+    // Arrange
+    const text = "level first-pour\nplacement valve 1 2 3\n";
+
+    // Act
+    const parse = () => parseFixture(text);
+
+    // Assert
+    expect(parse).toThrow("fixture line 2: expected 6 space-separated tokens");
+  });
+
+  it("parseFixture rejects a bare placement line", () => {
+    // Arrange
+    const text = "level first-pour\nplacement\n";
+
+    // Act
+    const parse = () => parseFixture(text);
+
+    // Assert
+    expect(parse).toThrow("fixture line 2: expected 5 space-separated tokens");
   });
 
   it("parseFixture rejects malformed integers", () => {
@@ -312,7 +379,35 @@ describe("puzzle-replay fixture parser", () => {
 
     // Assert
     expect(Array.from(lanes.kinds)).toEqual([1, 1]);
-    expect(Array.from(lanes.poses)).toEqual([8, 64, 23, -3, 50, 0]);
+    expect(Array.from(lanes.poses)).toEqual([8, 64, 23, 0, -3, 50, 0, 0]);
+  });
+
+  it("fixtureLanes carries the valve kind code and open tick", () => {
+    // Arrange
+    const fixture = parseFixture(
+      "level first-pour\nplacement plank 8 64 23\nplacement valve -16 87 0 4\n",
+    );
+
+    // Act
+    const lanes = fixtureLanes(fixture);
+
+    // Assert
+    expect(Array.from(lanes.kinds)).toEqual([1, 2]);
+    expect(Array.from(lanes.poses)).toEqual([8, 64, 23, 0, -16, 87, 0, 4]);
+  });
+
+  it("FIXTURE_FILES lists a solution and an empty run per level, then the extras", () => {
+    // Arrange
+    const perLevel = PUZZLE_IDS.flatMap((id) => [
+      `${id}-solution.txt`,
+      `${id}-empty.txt`,
+    ]);
+
+    // Act
+    const files = [...FIXTURE_FILES];
+
+    // Assert
+    expect(files).toEqual([...perLevel, ...EXTRA_FIXTURE_FILES]);
   });
 
   it("checked-in fixtures parse", () => {

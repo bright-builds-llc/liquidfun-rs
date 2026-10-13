@@ -5,6 +5,11 @@
  * `replay.rs` (contract) one to one: the same strict line grammar, the same
  * `fixture line N: ...` errors, and the same contract, so both runtimes
  * accept exactly the same text.
+ *
+ * Placement lines are `placement plank <x> <y> <angle>` (5 tokens) or
+ * `placement valve <x> <y> <angle> <open_tick>` (6 tokens); the arity depends
+ * on the kind, so a plank line with an open tick is rejected (Phase 40 D-07,
+ * D-27).
  */
 
 import { PUZZLE_IDS } from "../../src/catalog/puzzles";
@@ -12,12 +17,20 @@ import { PUZZLE_IDS } from "../../src/catalog/puzzles";
 /** Recorded outcome tokens. */
 export type FixtureOutcome = "won" | "lost";
 
-/** One `placement <kind> <x> <y> <angle>` line. */
+/** Tool tokens and their `kinds` lane codes; mirrors Rust `ToolKind`. */
+export const TOOL_CODES = { plank: 1, valve: 2 } as const;
+
+/** One fixture tool token. */
+export type FixtureToolKind = keyof typeof TOOL_CODES;
+
+/** One `placement <kind> <x> <y> <angle> [<open_tick>]` line. */
 export interface FixturePlacement {
-  readonly kind: "plank";
+  readonly kind: FixtureToolKind;
   readonly x: number;
   readonly y: number;
   readonly angle: number;
+  /** Valve open tick; 0 for 5-token plank lines. */
+  readonly openTick: number;
 }
 
 /**
@@ -69,14 +82,17 @@ export interface ReplayLevel {
   readonly stepLimit: number;
 }
 
-/** Checked-in fixtures under `crates/liquidfun-wasm/src/puzzle/fixtures`. */
-export const FIXTURE_FILES = [
-  "first-pour-solution.txt",
-  "first-pour-empty.txt",
-] as const;
+/** Fixtures outside the per-level pair, e.g. timed-gate early/late losses (Plan 07). */
+export const EXTRA_FIXTURE_FILES: readonly string[] = [];
 
-/** Tool tokens and their `kinds` lane codes. */
-export const TOOL_CODES = { plank: 1 } as const;
+/**
+ * Every checked-in fixture under `crates/liquidfun-wasm/src/puzzle/fixtures`:
+ * a solution and an empty run per registered level, then the extras.
+ */
+export const FIXTURE_FILES: readonly string[] = [
+  ...PUZZLE_IDS.flatMap((id) => [`${id}-solution.txt`, `${id}-empty.txt`]),
+  ...EXTRA_FIXTURE_FILES,
+];
 
 /** Steps run after the latch and the margin window: two `advance(4)` calls. */
 export const POST_LATCH_STEPS = 8;
@@ -193,21 +209,34 @@ function parseLevelLine(row: Row): string {
   return level;
 }
 
-function isToolToken(raw: string): raw is keyof typeof TOOL_CODES {
+/** Placement line token counts per kind (D-07, D-27). */
+const PLACEMENT_ARITY: Readonly<Record<FixtureToolKind, number>> = {
+  plank: 5,
+  valve: 6,
+};
+
+function isToolToken(raw: string): raw is FixtureToolKind {
   return Object.hasOwn(TOOL_CODES, raw);
 }
 
+/** Mirrors Rust `parse_placement_line`: kind before arity, then integers. */
 function parsePlacementLine(row: Row): FixturePlacement {
-  checkArity(row, 5);
-  const kind = token(row, 1);
-  if (!isToolToken(kind)) {
+  const maybeKind = row.tokens[1];
+  if (maybeKind === undefined) {
+    throw lineError(row.number, "expected 5 space-separated tokens");
+  }
+  if (!isToolToken(maybeKind)) {
     throw lineError(row.number, "unknown tool");
   }
+  const kind = maybeKind;
+  checkArity(row, PLACEMENT_ARITY[kind]);
+  const openTick = kind === "valve" ? parseI32(row.number, token(row, 5)) : 0;
   return {
     kind,
     x: parseI32(row.number, token(row, 2)),
     y: parseI32(row.number, token(row, 3)),
     angle: parseI32(row.number, token(row, 4)),
+    openTick,
   };
 }
 
@@ -281,7 +310,10 @@ export function parseFixture(text: string): Fixture {
   };
 }
 
-/** Flattens placements into the `newPuzzle` lanes in fixture order. */
+/**
+ * Flattens placements into the `newPuzzle` lanes in fixture order: one kind
+ * code and four pose integers `(x, y, angle, openTick)` per placement.
+ */
 export function fixtureLanes(fixture: Fixture): {
   readonly kinds: Uint8Array;
   readonly poses: Int32Array;
@@ -295,6 +327,7 @@ export function fixtureLanes(fixture: Fixture): {
         placement.x,
         placement.y,
         placement.angle,
+        placement.openTick,
       ]),
     ),
   };
