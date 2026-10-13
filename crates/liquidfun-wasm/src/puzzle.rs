@@ -12,6 +12,7 @@ pub(crate) mod peak;
 pub(crate) mod sat;
 pub(crate) mod spec;
 pub(crate) mod thick_syrup;
+pub(crate) mod timed_gate;
 pub(crate) mod tools;
 pub(crate) mod validate;
 pub(crate) mod valve;
@@ -30,6 +31,9 @@ pub(crate) enum LevelId {
     ThickSyrup,
     /// "Jelly Pad": an uncounted elastic pad turns the stream toward the cup.
     JellyPad,
+    /// "Timed Gate": the valve's open time decides the outcome.
+    #[cfg_attr(not(test), allow(dead_code))] // Draft until registered in LEVEL_IDS.
+    TimedGate,
 }
 
 /// Every allowlisted level, in catalog (Phase 40 D-09) order. Mirrored by
@@ -44,6 +48,7 @@ impl LevelId {
             Self::FirstPour => "first-pour",
             Self::ThickSyrup => "thick-syrup",
             Self::JellyPad => "jelly-pad",
+            Self::TimedGate => "timed-gate",
         }
     }
 }
@@ -59,6 +64,7 @@ pub(crate) const fn level_spec(id: LevelId) -> &'static LevelSpec {
         LevelId::FirstPour => &first_pour::FIRST_POUR,
         LevelId::ThickSyrup => &thick_syrup::THICK_SYRUP,
         LevelId::JellyPad => &jelly_pad::JELLY_PAD,
+        LevelId::TimedGate => &timed_gate::TIMED_GATE,
     }
 }
 
