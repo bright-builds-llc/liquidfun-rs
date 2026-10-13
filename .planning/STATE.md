@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 39-06-PLAN.md
-last_updated: "2026-10-13T00:47:58.092Z"
+stopped_at: Completed 39-07-PLAN.md
+last_updated: "2026-10-13T00:59:26.079Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 31
-  completed_plans: 23
-  percent: 74
+  completed_plans: 24
+  percent: 77
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 39 (Place-then-Play Tools and Stars) — EXECUTING
-Plan: 7 of 14
+Plan: 8 of 14
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -100,6 +100,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 39]: 39-06: PuzzleLevelInfo parses brimCount, parTools, toolBudget (aligned allowlisted unique kinds, counts 1..16) and buildAreaCells fail-closed; target < brim <= full, 0 <= par <= total budget
 - [Phase 39]: 39-06: decodeInspection fails closed on lane lengths, unknown codes and non-finite geometric outlines; non-geometric codes decode to undefined; inspectPlacements frees in finally
 - [Phase 39]: 39-06: puzzle-loader caches one init promise; buildPuzzleSessionSync and inspectPlacementLanes throw 'Puzzle wasm is not initialized' before the first load
+- [Phase 39]: 39-07: stop event carries stepIndex with status (like loaded) so non-step-0 previews throw; Plan 09 dispatches stop {stepIndex, status}
+- [Phase 39]: 39-07: edit events live in edit-event.ts and HUD transport/tray/star helpers in hud-format.ts; reduce-puzzle.ts 359 lines, format.ts 268
+- [Phase 39]: 39-07: canPlay gate means seeded-placement runs need a committed inspection on building entry (Plan 09); solution-win e2e cannot start a run until then
 
 ### Pending Todos
 
@@ -185,9 +188,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 39 P04 | 5min | 2 tasks | 9 files |
 | Phase 39 P05 | 22min | 2 tasks | 12 files |
 | Phase 39 P06 | 5min | 2 tasks | 8 files |
+| Phase 39 P07 | 9min | 2 tasks | 14 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T00:47:58.089Z
-Stopped at: Completed 39-06-PLAN.md
+Last session: 2026-10-13T00:59:26.050Z
+Stopped at: Completed 39-07-PLAN.md
 Resume file: None

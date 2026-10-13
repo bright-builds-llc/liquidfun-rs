@@ -165,7 +165,7 @@ Plans:
 - [x] 39-04-PLAN.md — TS frame parsing of peak held, Brim and decided step with fail-closed rules (wave 1)
 - [x] 39-05-PLAN.md — Rust peak-held tracker, Brim latch, decided step, frame getters and permuted-order fingerprint (wave 2)
 - [x] 39-06-PLAN.md — Rebuilt wasm, level-info budget/brim/par parsing, inspector decoding and status-code parity (wave 3)
-- [ ] 39-07-PLAN.md — Phase machine with editor, Stop, speed and the D-10 decision, plus HUD view models (wave 4)
+- [x] 39-07-PLAN.md — Phase machine with editor, Stop, speed and the D-10 decision, plus HUD view models (wave 4)
 - [ ] 39-08-PLAN.md — Replay fixtures and harnesses with peak_held and brim_step (wave 4)
 - [ ] 39-09-PLAN.md — Shell wiring: preview/run sessions, editing with committed/live inspection, stars and held hash (wave 5)
 - [ ] 39-10-PLAN.md — Fast-forward step multiplier in the puzzle loop (wave 5)
@@ -267,7 +267,7 @@ Plans:
 | 36. Re-survey and Wrap Up | v1.4 | 3/3 | Complete    | 2026-10-11 |
 | 37. Puzzle Core in the Bridge | v1.5 | 8/8 | Complete    | 2026-10-12 |
 | 38. Puzzle Route and Player Shell | v1.5 | 9/9 | Complete    | 2026-10-12 |
-| 39. Place-then-Play Tools and Stars | v1.5 | 6/14 | In Progress|  |
+| 39. Place-then-Play Tools and Stars | v1.5 | 7/14 | In Progress|  |
 | 40. Timed Valve and Teaching Levels | v1.5 | 0/TBD | Not started | - |
 | 41. Level Select and Progress | v1.5 | 0/TBD | Not started | - |
 | 42. Opt-in Sound | v1.5 | 0/TBD | Not started | - |
