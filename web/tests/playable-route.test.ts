@@ -65,7 +65,7 @@ describe("maybeParsePlayableRoute", () => {
     });
   });
 
-  it("leaves the plural puzzles hash as an unknown scene route", () => {
+  it("parses the plural puzzles hash as the level grid", () => {
     // Arrange
     const hash = "#/puzzles";
 
@@ -73,7 +73,29 @@ describe("maybeParsePlayableRoute", () => {
     const route = maybeParsePlayableRoute(hash);
 
     // Assert
-    expect(route).toEqual({ kind: "unknown", maybeRaw: "puzzles" });
+    expect(route).toEqual({ kind: "puzzles" });
+  });
+
+  it("parses the puzzles hash with a trailing slash as the level grid", () => {
+    // Arrange
+    const hash = "#/puzzles/";
+
+    // Act
+    const route = maybeParsePlayableRoute(hash);
+
+    // Assert
+    expect(route).toEqual({ kind: "puzzles" });
+  });
+
+  it("leaves an extra segment under puzzles as an unknown scene route", () => {
+    // Arrange
+    const hash = "#/puzzles/first-pour";
+
+    // Act
+    const route = maybeParsePlayableRoute(hash);
+
+    // Assert
+    expect(route).toEqual({ kind: "unknown", maybeRaw: "puzzles/first-pour" });
   });
 
   it("does not resolve a level id under the scene prefix", () => {
@@ -129,6 +151,17 @@ describe("normalizePlayableRoute", () => {
       route: { kind: "puzzle", id: "first-pour" },
       maybeReplacementHash: undefined,
     });
+  });
+
+  it("keeps the level grid hash without a replacement", () => {
+    // Arrange
+    const hash = "#/puzzles";
+
+    // Act
+    const normalized = normalizePlayableRoute(hash);
+
+    // Assert
+    expect(normalized).toEqual({ route: { kind: "puzzles" }, maybeReplacementHash: undefined });
   });
 
   it("keeps an unknown level hash without a replacement", () => {

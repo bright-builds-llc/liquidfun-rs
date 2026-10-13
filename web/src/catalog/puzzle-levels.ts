@@ -48,6 +48,15 @@ export function puzzleCaptionForId(id: PuzzleId): string {
   return PUZZLE_CAPTIONS[id];
 }
 
+/** Level-select hash (Phase 41 D-01). */
+export const PUZZLES_HASH = "#/puzzles";
+
+/** One-line intro under the level-select heading (D-07). */
+export const PUZZLES_INTRO = "Get enough water into the cup before time runs out.";
+
+/** Degraded-storage note on the grid and in the options sheet (D-15). */
+export const PROGRESS_NOTE = "Progress can't be saved in this browser, so every level is unlocked.";
+
 /** Canonical playground hash for a level. */
 export function puzzleHash(id: PuzzleId): string {
   return `#/puzzle/${id}`;

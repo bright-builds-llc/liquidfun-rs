@@ -12,6 +12,7 @@ import {
   maybePlayableTarget,
   type PlayableTarget,
   playableRouteIdentity,
+  puzzlesNavCurrent,
   samePlayableTarget,
   titleForPlayableRoute,
 } from "../src/player/playable-target";
@@ -58,6 +59,17 @@ describe("maybePlayableTarget", () => {
 
     // Assert
     expect(targets).toEqual([undefined, undefined, undefined]);
+  });
+
+  it("has no target for the level grid", () => {
+    // Arrange
+    const route: PlayableRoute = { kind: "puzzles" };
+
+    // Act
+    const maybeTarget = maybePlayableTarget(route);
+
+    // Assert
+    expect(maybeTarget).toBeUndefined();
   });
 });
 
@@ -123,6 +135,17 @@ describe("titleForPlayableRoute", () => {
     expect(title).toBe("First Pour · puzzle · liquidfun-rs playground");
   });
 
+  it("titles the level grid as Puzzles", () => {
+    // Arrange
+    const route: PlayableRoute = { kind: "puzzles" };
+
+    // Act
+    const title = titleForPlayableRoute(route);
+
+    // Assert
+    expect(title).toBe("Puzzles · liquidfun-rs playground");
+  });
+
   it("uses the default title for an unknown puzzle", () => {
     // Arrange
     const route: PlayableRoute = { kind: "unknown-puzzle", maybeRaw: "nope" };
@@ -159,6 +182,7 @@ describe("playableRouteIdentity", () => {
       { kind: "empty" },
       { kind: "puzzle", id: "first-pour" },
       { kind: "unknown-puzzle", maybeRaw: "nope" },
+      { kind: "puzzles" },
     ];
 
     // Act
@@ -171,7 +195,48 @@ describe("playableRouteIdentity", () => {
       "empty",
       "puzzle:first-pour",
       "unknown-puzzle:nope",
+      "puzzles",
     ]);
+  });
+});
+
+describe("puzzlesNavCurrent", () => {
+  it("marks the Puzzles link as the current page on the grid", () => {
+    // Arrange
+    const route: PlayableRoute = { kind: "puzzles" };
+
+    // Act
+    const maybeCurrent = puzzlesNavCurrent(route);
+
+    // Assert
+    expect(maybeCurrent).toBe("page");
+  });
+
+  it("marks the Puzzles link as the current section on a level route", () => {
+    // Arrange
+    const route: PlayableRoute = { kind: "puzzle", id: "first-pour" };
+
+    // Act
+    const maybeCurrent = puzzlesNavCurrent(route);
+
+    // Assert
+    expect(maybeCurrent).toBe("true");
+  });
+
+  it("leaves the Puzzles link unmarked on scene, empty and unknown routes", () => {
+    // Arrange
+    const routes: PlayableRoute[] = [
+      { kind: "scene", id: "dam-break" },
+      { kind: "empty" },
+      { kind: "unknown", maybeRaw: "x" },
+      { kind: "unknown-puzzle", maybeRaw: "nope" },
+    ];
+
+    // Act
+    const currents = routes.map((route) => puzzlesNavCurrent(route));
+
+    // Assert
+    expect(currents).toEqual([undefined, undefined, undefined, undefined]);
   });
 });
 
