@@ -24,6 +24,8 @@ import { isUsableViewport } from "./viewport";
 import { presentSceneFrame } from "../render/present-frame";
 import { drawGlassCup } from "../render/glass-cup";
 import { drawPuzzleTools, toolOverlay } from "../render/puzzle-tools";
+import { applyPuzzleEdit, inspectNow } from "./puzzle-editing";
+import { attachPuzzleEditorInput } from "./puzzle-editor-input";
 import {
   IDENTITY_CAMERA_VIEW,
   createCamera,
@@ -191,7 +193,7 @@ function assignCanvas(session: SceneRuntime, canvas: HTMLCanvasElement): void {
   );
 }
 
-/** Puzzle canvases share the resize observer but take no pointer input (D-16). */
+/** Puzzle canvases share the resize observer and take only the building editor pointer (D-16, D-17). */
 function assignPuzzleCanvas(
   session: SceneRuntime,
   canvas: HTMLCanvasElement,
@@ -200,6 +202,14 @@ function assignPuzzleCanvas(
   session.maybeCanvasPointer = undefined;
   session.maybeCanvas = canvas;
   canvas.classList.remove("canvas-interactive", "canvas-panning");
+  session.puzzle.maybeEditorInput?.detach();
+  session.puzzle.maybeEditorInput = attachPuzzleEditorInput(canvas, {
+    state: () => session.puzzle.current,
+    camera: () => session.clock.maybeCamera,
+    gridMeters: () => session.puzzle.maybeLevelInfo()?.gridMeters,
+    edit: (event, mode) => applyPuzzleEdit(session, event, mode),
+    settle: () => inspectNow(session),
+  });
 
   const maybeNextContext = canvas.getContext("2d");
   if (maybeNextContext === null) {

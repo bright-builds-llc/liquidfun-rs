@@ -371,6 +371,19 @@ describe("phase guard and classes", () => {
     expect(harness.classes.has("puzzle-canvas--over-tool")).toBe(false);
   });
 
+  it("ignores a second pointer while one press is active", () => {
+    // Arrange
+    const harness = attach(building(plankEditor()));
+    harness.fire("pointerdown", PLANK_CSS, "touch", 1);
+
+    // Act
+    harness.fire("pointerdown", EMPTY_CSS, "touch", 2);
+    harness.fire("pointerup", EMPTY_CSS, "touch", 2);
+
+    // Assert
+    expect(harness.edits.map((edit) => edit.event)).toEqual([{ kind: "select", maybeId: 1 }]);
+  });
+
   it("removes its listeners on detach", () => {
     // Arrange
     const harness = attach(building(plankEditor()));

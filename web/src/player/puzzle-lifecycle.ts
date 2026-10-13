@@ -132,6 +132,8 @@ export function tryAgainPuzzle(host: PuzzleHost): void {
  */
 export function leavePuzzle(host: PuzzleHost): void {
   cancelPendingFrame(host.clock);
+  host.puzzle.maybeEditorInput?.detach();
+  host.puzzle.maybeEditorInput = undefined;
   host.puzzle.maybeGlass = undefined;
   host.puzzle.maybeOwned = undefined;
   host.puzzle.current = INITIAL_PUZZLE_STATE;

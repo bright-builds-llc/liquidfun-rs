@@ -454,6 +454,20 @@ describe("leavePuzzle and the controller", () => {
     expect(host.clock.maybeAnimationFrameId).toBeUndefined();
   });
 
+  it("leavePuzzle detaches the editor pointer", () => {
+    // Arrange
+    const { host } = createHost();
+    const editorInput = { cancel: vi.fn(), detach: vi.fn() };
+    host.puzzle.maybeEditorInput = editorInput;
+
+    // Act
+    leavePuzzle(host);
+
+    // Assert
+    expect(editorInput.detach).toHaveBeenCalledTimes(1);
+    expect(host.puzzle.maybeEditorInput).toBeUndefined();
+  });
+
   it("createPuzzleController does not read the puzzle bag until used", () => {
     // Arrange
     const { host } = createHost();

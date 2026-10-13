@@ -6,6 +6,7 @@ import { INITIAL_PUZZLE_STATE, type PuzzleState } from "../puzzle/reduce-puzzle"
 import { createStarStore, type StarStore } from "../puzzle/star-store";
 import type { LevelStars } from "../puzzle/stars";
 import type { GlassCup } from "../render/glass-cup";
+import type { PuzzleEditorInput } from "./puzzle-editor-input";
 
 /** Mutable puzzle state shared by the lifecycle, loop, surface and UI. */
 export type PuzzleRuntime = {
@@ -33,6 +34,8 @@ export type PuzzleRuntime = {
   maybeOwned: PuzzleSession | undefined;
   /** Pending coalesced live inspection (one per animation frame, D-02). */
   maybeInspectionFrame: number | undefined;
+  /** Building-only canvas editor pointer; separate from the scene pointer (Pitfall 6). */
+  maybeEditorInput: PuzzleEditorInput | undefined;
 };
 
 /** Creates an idle puzzle runtime; call inside a Solid root so the signals have an owner. */
@@ -63,5 +66,6 @@ export function createPuzzleRuntime(): PuzzleRuntime {
     maybeGlass: undefined,
     maybeOwned: undefined,
     maybeInspectionFrame: undefined,
+    maybeEditorInput: undefined,
   };
 }
