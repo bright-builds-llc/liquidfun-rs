@@ -9,6 +9,7 @@ type LevelInfoOverrides = {
   toolCounts?: Uint32Array;
   brimCount?: number;
   parTools?: number;
+  levelHash?: string;
 };
 
 /** first-pour as `levelInfo()` reports it after Phase 39 Plan 01. */
@@ -17,6 +18,7 @@ function fakeLevelInfo(overrides: LevelInfoOverrides = {}): RawPuzzleLevelInfo {
   const toolCounts = overrides.toolCounts ?? new Uint32Array([2]);
   const brimCount = overrides.brimCount ?? 810;
   const parTools = overrides.parTools ?? 1;
+  const levelHash = overrides.levelHash ?? "0123456789abcdef";
   return {
     levelId: () => "first-pour",
     title: () => "First Pour",
@@ -31,6 +33,7 @@ function fakeLevelInfo(overrides: LevelInfoOverrides = {}): RawPuzzleLevelInfo {
     gridMeters: () => 0.05,
     toolKinds: () => toolKinds,
     toolCounts: () => toolCounts,
+    levelHash: () => levelHash,
     free: vi.fn(),
   };
 }
@@ -125,6 +128,38 @@ describe("parsePuzzleLevelInfo stars and tools", () => {
   it.each(invalidCases)("%s throws invalid level info", (_name, overrides) => {
     // Arrange
     const raw = fakeLevelInfo(overrides);
+
+    // Act
+    const act = () => parsePuzzleLevelInfo(raw, "first-pour");
+
+    // Assert
+    expect(act).toThrow(INVALID_INFO_MESSAGE);
+  });
+});
+
+describe("parsePuzzleLevelInfo level hash", () => {
+  it("keeps a 16-digit lowercase hex level hash", () => {
+    // Arrange
+    const raw = fakeLevelInfo({ levelHash: "0123456789abcdef" });
+
+    // Act
+    const info = parsePuzzleLevelInfo(raw, "first-pour");
+
+    // Assert
+    expect(info.levelHash).toBe("0123456789abcdef");
+  });
+
+  const badHashes: ReadonlyArray<[string, string]> = [
+    ["an empty hash", ""],
+    ["an uppercase hash", "0123456789ABCDEF"],
+    ["a 15-digit hash", "0123456789abcde"],
+    ["a 17-digit hash", "0123456789abcdef0"],
+    ["a non-hex digit", "0123456789abcdeg"],
+  ];
+
+  it.each(badHashes)("%s throws invalid level info", (_name, levelHash) => {
+    // Arrange
+    const raw = fakeLevelInfo({ levelHash });
 
     // Act
     const act = () => parsePuzzleLevelInfo(raw, "first-pour");

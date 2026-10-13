@@ -31,6 +31,7 @@ export interface RawPuzzleLevelInfo {
   gridMeters(): number;
   toolKinds(): Uint8Array;
   toolCounts(): Uint32Array;
+  levelHash(): string;
   free(): void;
 }
 
@@ -46,6 +47,8 @@ export type GridCellBounds = readonly [number, number, number, number];
 export type PuzzleLevelInfo = {
   readonly levelId: PuzzleId;
   readonly title: string;
+  /** 16 lowercase hex digits of the Rust level fingerprint; keys saved placements (Phase 41 D-17). */
+  readonly levelHash: string;
   readonly targetCount: number;
   readonly fullCount: number;
   /** Peak held count that earns the Brim star; `targetCount < brimCount <= fullCount` (D-05). */
@@ -71,6 +74,12 @@ export interface PuzzleSession extends SceneSession {
 
 function invalidInfo(): never {
   throw new Error(INVALID_INFO_MESSAGE);
+}
+
+const LEVEL_HASH_PATTERN = /^[0-9a-f]{16}$/;
+
+function parseLevelHash(value: string): string {
+  return LEVEL_HASH_PATTERN.test(value) ? value : invalidInfo();
 }
 
 function parsePositiveCount(value: number): number {
@@ -210,6 +219,7 @@ export function parsePuzzleLevelInfo(
   return {
     levelId: expectedId,
     title,
+    levelHash: parseLevelHash(raw.levelHash()),
     targetCount,
     fullCount,
     ...parseStarThresholds(raw, { targetCount, fullCount }, toolBudget),

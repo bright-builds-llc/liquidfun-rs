@@ -56,6 +56,7 @@ function fakeLevelInfo(overrides: Partial<LevelInfoValues> = {}) {
     gridMeters: () => values.gridMeters,
     toolKinds: () => new Uint8Array([1]),
     toolCounts: () => new Uint32Array([2]),
+    levelHash: () => "0123456789abcdef",
     free: vi.fn(),
   } satisfies RawPuzzleLevelInfo;
 }

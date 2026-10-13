@@ -7,7 +7,9 @@
  *   generated wasm `newPuzzle` (D-19), checking the outcome, the peak held
  *   count and the Brim step (Phase 39 D-12). `--record` replays only the
  *   level and placement lines, prints `RECORD` lines and never writes a
- *   fixture.
+ *   fixture. Without `--record` it first checks every level's
+ *   `levelInfo().levelHash()` against `level-hashes.txt`, the pin file the
+ *   native Rust test also checks (Phase 41 D-17).
  */
 
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -20,8 +22,10 @@ import {
   type RenderFrame,
 } from "../src/physics/frame";
 import type { GeneratedProofSession } from "../src/physics/session";
+import { PUZZLE_IDS } from "../src/catalog/puzzles";
 
 import { fnv1a64Lanes } from "./puzzle-replay/hash";
+import { LEVEL_HASH_FILE, parseLevelHashes } from "./puzzle-replay/level-hashes";
 import {
   compareSpikes,
   parseSpikeLines,
@@ -46,6 +50,7 @@ import {
 } from "./puzzle-replay/fixture";
 import {
   type GeneratedPuzzleSession,
+  type GeneratedPuzzleWasm,
   loadGeneratedWasm,
   type RawPuzzleLevelInfo,
   repoRoot,
@@ -263,6 +268,45 @@ function replaySession(
   };
 }
 
+function liveLevelHash(generated: GeneratedPuzzleWasm, id: string): string {
+  const session = generated.ProofSession.newPuzzle(id, new Uint8Array(0), new Int32Array(0));
+  try {
+    const info = session.levelInfo();
+    try {
+      return info.levelHash();
+    } finally {
+      info.free();
+    }
+  } finally {
+    session.free();
+  }
+}
+
+/** Compares each level's wasm `levelHash()` with the native pin; returns whether all match. */
+async function checkLevelHashes(
+  generated: GeneratedPuzzleWasm,
+  report: (line: string) => Promise<void>,
+): Promise<boolean> {
+  const pins = parseLevelHashes(await readFile(resolve(repoRoot, LEVEL_HASH_FILE), "utf8"));
+  const pinIds = [...pins.keys()];
+  let passed = true;
+  if (pinIds.length !== PUZZLE_IDS.length || pinIds.some((id, index) => id !== PUZZLE_IDS[index])) {
+    await report("LEVELHASH pins fail ids");
+    passed = false;
+  }
+  for (const id of PUZZLE_IDS) {
+    const maybePin = pins.get(id);
+    const live = liveLevelHash(generated, id);
+    if (maybePin === live) {
+      await report(`LEVELHASH ${id} pass ${live}`);
+      continue;
+    }
+    passed = false;
+    await report(`LEVELHASH ${id} fail expected ${maybePin ?? "missing"} got ${live}`);
+  }
+  return passed;
+}
+
 async function runReplay(record: boolean): Promise<void> {
   await mkdir(REPLAY_LOG_DIRECTORY, { recursive: true });
   await writeFile(REPLAY_LOG, "");
@@ -272,6 +316,9 @@ async function runReplay(record: boolean): Promise<void> {
   };
   const generated = await loadGeneratedWasm();
   let failed = false;
+  if (!record && !(await checkLevelHashes(generated, report))) {
+    failed = true;
+  }
   for (const file of FIXTURE_FILES) {
     const text = await readFile(resolve(FIXTURE_DIRECTORY, file), "utf8");
     const fixture = parseFixture(record ? fixtureInputText(text) : text);

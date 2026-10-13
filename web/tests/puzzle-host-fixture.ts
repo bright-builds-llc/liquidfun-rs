@@ -78,6 +78,7 @@ export function fakeLevelInfo(title: string): RawPuzzleLevelInfo {
     gridMeters: () => 0.05,
     toolKinds: () => new Uint8Array([1]),
     toolCounts: () => new Uint32Array([2]),
+    levelHash: () => "0123456789abcdef",
     free: vi.fn(),
   };
 }
