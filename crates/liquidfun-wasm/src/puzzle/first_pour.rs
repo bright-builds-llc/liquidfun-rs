@@ -79,4 +79,4 @@ pub(crate) const FIRST_POUR: LevelSpec = LevelSpec {
 
 /// Reference solution pose: centre (0.4, 3.2) m, angle -15° (step 23).
 #[cfg(test)]
-pub(crate) const REFERENCE_PLANK_POSE: [i32; 3] = [8, 64, 23];
+pub(crate) const REFERENCE_PLANK_POSE: [i32; 4] = [8, 64, 23, 0];

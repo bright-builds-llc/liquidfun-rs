@@ -65,7 +65,7 @@ mod tests {
         rect_quad(Vec2::new(min_x, 0.0), Vec2::new(min_x + 1.0, 1.0))
     }
 
-    fn plank(pose: [i32; 3]) -> [Vec2; 4] {
+    fn plank(pose: [i32; 4]) -> [Vec2; 4] {
         pose_placement(1, &pose)
             .expect("test pose describes a plank")
             .vertices()
@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn crossed_tau_24_planks_overlap() {
         // Arrange
-        let (reference, flat) = (plank([8, 64, 23]), plank([8, 64, 0]));
+        let (reference, flat) = (plank([8, 64, 23, 0]), plank([8, 64, 0, 0]));
 
         // Act
         let separated = separated_by_more_than(&reference, &flat, 0.08);
@@ -135,7 +135,7 @@ mod tests {
     #[test]
     fn distant_tau_24_planks_separate() {
         // Arrange
-        let (reference, upper) = (plank([8, 64, 23]), plank([30, 84, 0]));
+        let (reference, upper) = (plank([8, 64, 23, 0]), plank([30, 84, 0, 0]));
 
         // Act
         let separated = separated_by_more_than(&reference, &upper, 0.08);

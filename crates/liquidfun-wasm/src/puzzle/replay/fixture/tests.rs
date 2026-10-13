@@ -31,6 +31,7 @@ fn parses_a_full_won_fixture() {
                 x: 8,
                 y: 64,
                 angle: 23,
+                open_tick: 0,
             }],
             maybe_expectation: Some(FixtureExpectation {
                 outcome: FixtureOutcome::Won,
@@ -203,20 +204,110 @@ fn rejects_expectation_lines_out_of_order() {
 }
 
 #[test]
-fn rejects_an_unknown_level_or_tool() {
+fn rejects_an_unknown_level() {
     // Arrange
-    let texts = [
-        "level dam-break\n",
-        "level first-pour\nplacement valve 1 2 3\n",
-    ];
+    let text = "level dam-break\n";
 
     // Act
-    let results = texts.map(parse_fixture);
+    let result = parse_fixture(text);
 
     // Assert
-    for result in results {
-        assert!(result.is_err(), "{result:?}");
-    }
+    assert_eq!(result, Err("fixture line 1: unknown level".to_owned()));
+}
+
+#[test]
+fn rejects_an_unknown_tool() {
+    // Arrange
+    let text = "level first-pour\nplacement gate 1 2 3\n";
+
+    // Act
+    let result = parse_fixture(text);
+
+    // Assert
+    assert_eq!(result, Err("fixture line 2: unknown tool".to_owned()));
+}
+
+#[test]
+fn parses_a_valve_line_with_its_open_tick() {
+    // Arrange
+    let text = "level first-pour\nplacement valve -16 87 0 4\n";
+
+    // Act
+    let fixture = parse_fixture(text).expect("a 6-token valve line parses");
+
+    // Assert
+    assert_eq!(
+        fixture.placements,
+        vec![FixturePlacement {
+            kind: ToolKind::Valve,
+            x: -16,
+            y: 87,
+            angle: 0,
+            open_tick: 4,
+        }]
+    );
+}
+
+#[test]
+fn a_plank_line_means_open_tick_zero() {
+    // Arrange
+    let text = "level first-pour\nplacement plank 8 64 23\n";
+
+    // Act
+    let fixture = parse_fixture(text).expect("a 5-token plank line parses");
+
+    // Assert
+    let open_ticks: Vec<i32> = fixture
+        .placements
+        .iter()
+        .map(|placement| placement.open_tick)
+        .collect();
+    assert_eq!(open_ticks, vec![0]);
+}
+
+#[test]
+fn rejects_a_plank_line_with_an_open_tick() {
+    // Arrange
+    let text = "level first-pour\nplacement plank 8 64 23 0\n";
+
+    // Act
+    let result = parse_fixture(text);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err("fixture line 2: expected 5 space-separated tokens".to_owned())
+    );
+}
+
+#[test]
+fn rejects_a_valve_line_without_an_open_tick() {
+    // Arrange
+    let text = "level first-pour\nplacement valve 1 2 3\n";
+
+    // Act
+    let result = parse_fixture(text);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err("fixture line 2: expected 6 space-separated tokens".to_owned())
+    );
+}
+
+#[test]
+fn rejects_a_bare_placement_key() {
+    // Arrange
+    let text = "level first-pour\nplacement\n";
+
+    // Act
+    let result = parse_fixture(text);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err("fixture line 2: expected 5 space-separated tokens".to_owned())
+    );
 }
 
 #[test]
@@ -269,5 +360,25 @@ fn lanes_flatten_placements_in_fixture_order() {
     let (kinds, poses) = lanes(&fixture);
 
     // Assert
-    assert_eq!((kinds, poses), (vec![1, 1], vec![8, 64, 23, -3, 50, 0]));
+    assert_eq!(
+        (kinds, poses),
+        (vec![1, 1], vec![8, 64, 23, 0, -3, 50, 0, 0])
+    );
+}
+
+#[test]
+fn lanes_carry_the_valve_open_tick() {
+    // Arrange
+    let fixture =
+        parse_fixture("level first-pour\nplacement plank 8 64 23\nplacement valve -16 87 0 4\n")
+            .expect("plank and valve fixture parses");
+
+    // Act
+    let (kinds, poses) = lanes(&fixture);
+
+    // Assert
+    assert_eq!(
+        (kinds, poses),
+        (vec![1, 2], vec![8, 64, 23, 0, -16, 87, 0, 4])
+    );
 }

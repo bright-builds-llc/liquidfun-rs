@@ -22,7 +22,7 @@ impl From<Inspection> for PlacementInspection {
 
 #[wasm_bindgen]
 impl PlacementInspection {
-    /// Returns one status code per placement: 0 is valid, 1 through 12 name
+    /// Returns one status code per placement: 0 is valid, 1 through 13 name
     /// the first rule the placement breaks.
     #[must_use]
     pub fn statuses(&self) -> Box<[u8]> {
@@ -42,7 +42,8 @@ impl PlacementInspection {
 /// # Errors
 ///
 /// Returns a bounded JavaScript error for an unknown level id, more than 16
-/// placements, or a `poses` lane that is not three values per kind.
+/// placements, or a `poses` lane that is not four values per kind (x, y,
+/// angle, open tick).
 #[wasm_bindgen(js_name = inspectPuzzlePlacements)]
 pub fn inspect_puzzle_placements(
     level_id: &str,

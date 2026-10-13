@@ -121,8 +121,8 @@ fn reference_plank_lanes_build_through_the_wasm_helper() {
 #[test]
 fn two_valid_planks_build_and_overlapping_planks_fail() {
     // Arrange
-    let apart = [8, 64, 23, 30, 84, 0];
-    let crossed = [8, 64, 23, 8, 64, 0];
+    let apart = [8, 64, 23, 0, 30, 84, 0, 0];
+    let crossed = [8, 64, 23, 0, 8, 64, 0, 0];
 
     // Act
     let apart_result = build_puzzle_core("first-pour", &[1, 1], &apart);
@@ -180,10 +180,10 @@ fn invalid_placement_lanes_fail_closed() {
     let cases: [(&[u8], &[i32], PlacementError); 3] = [
         (
             &[1, 1, 1],
-            &[8, 64, 23, 30, 84, 0, -20, 44, 0],
+            &[8, 64, 23, 0, 30, 84, 0, 0, -20, 44, 0, 0],
             PlacementError::ToolBudgetExceeded,
         ),
-        (&[1], &[8, 64, 24], PlacementError::AngleOutOfRange),
+        (&[1], &[8, 64, 24, 0], PlacementError::AngleOutOfRange),
         (&[1], &[8, 64], PlacementError::LaneLengthMismatch),
     ];
 

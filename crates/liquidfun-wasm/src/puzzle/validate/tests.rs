@@ -5,6 +5,7 @@ use crate::build_puzzle_core;
 use crate::puzzle::first_pour::{FIRST_POUR, REFERENCE_PLANK_POSE};
 use crate::puzzle::spec::LevelSpec;
 use crate::puzzle::tools::{GridRect, MAX_PLACEMENTS, PlacementError, pose_placement};
+use crate::puzzle::valve::{REFERENCE_VALVE_POSE, VALVE_TEST_SPEC};
 use crate::session::SessionError;
 
 const NO_WALLS: LevelSpec = LevelSpec {
@@ -21,7 +22,7 @@ const NO_PLACE_ZONE: LevelSpec = LevelSpec {
 };
 
 fn inspect_planks(spec: &LevelSpec, poses: &[i32]) -> Inspection {
-    let kinds = vec![1_u8; poses.len() / 3];
+    let kinds = vec![1_u8; poses.len() / 4];
     inspect(spec, &kinds, poses).expect("test lanes are well formed")
 }
 
@@ -33,8 +34,12 @@ fn codes(statuses: &[PlacementStatus]) -> Vec<u8> {
     statuses.iter().map(|status| status.code()).collect()
 }
 
-fn plank_outline_bits(pose: [i32; 3]) -> Vec<u32> {
-    let placement = pose_placement(1, &pose).expect("test pose describes a plank");
+fn plank_outline_bits(pose: [i32; 4]) -> Vec<u32> {
+    outline_bits(1, pose)
+}
+
+fn outline_bits(code: u8, pose: [i32; 4]) -> Vec<u32> {
+    let placement = pose_placement(code, &pose).expect("test pose describes a tool");
     placement
         .vertices()
         .iter()
@@ -57,7 +62,7 @@ fn the_reference_pose_is_valid() {
 #[test]
 fn a_plank_through_the_reservoir_floor_overlaps_a_wall() {
     // Arrange
-    let poses = [-20, 84, 6];
+    let poses = [-20, 84, 6, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -69,7 +74,7 @@ fn a_plank_through_the_reservoir_floor_overlaps_a_wall() {
 #[test]
 fn a_plank_against_the_backstop_overlaps_the_cup_wall() {
     // Arrange
-    let poses = [40, 44, 0];
+    let poses = [40, 44, 0, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -81,7 +86,7 @@ fn a_plank_against_the_backstop_overlaps_the_cup_wall() {
 #[test]
 fn a_plank_hanging_into_the_cup_is_inside_the_cup() {
     // Arrange
-    let poses = [38, 44, 6];
+    let poses = [38, 44, 6, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -93,7 +98,7 @@ fn a_plank_hanging_into_the_cup_is_inside_the_cup() {
 #[test]
 fn a_plank_through_the_water_overlaps_the_water() {
     // Arrange
-    let poses = [-20, 84, 6];
+    let poses = [-20, 84, 6, 0];
 
     // Act
     let statuses = statuses_of(&NO_WALLS, &poses);
@@ -105,7 +110,7 @@ fn a_plank_through_the_water_overlaps_the_water() {
 #[test]
 fn crossed_planks_both_overlap_a_tool() {
     // Arrange
-    let poses = [8, 64, 23, 8, 64, 0];
+    let poses = [8, 64, 23, 0, 8, 64, 0, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -120,7 +125,7 @@ fn crossed_planks_both_overlap_a_tool() {
 #[test]
 fn an_authored_zone_rejects_a_plank_as_no_place() {
     // Arrange
-    let poses = [10, 64, 0];
+    let poses = [10, 64, 0, 0];
 
     // Act
     let (plain, zoned) = (
@@ -136,7 +141,7 @@ fn an_authored_zone_rejects_a_plank_as_no_place() {
 #[test]
 fn a_centre_past_the_build_area_is_outside_it() {
     // Arrange
-    let poses = [41, 64, 0];
+    let poses = [41, 64, 0, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -148,7 +153,7 @@ fn a_centre_past_the_build_area_is_outside_it() {
 #[test]
 fn the_third_plank_in_input_order_is_over_budget() {
     // Arrange
-    let poses = [8, 64, 23, 30, 84, 0, -20, 44, 0];
+    let poses = [8, 64, 23, 0, 30, 84, 0, 0, -20, 44, 0, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -167,7 +172,7 @@ fn the_third_plank_in_input_order_is_over_budget() {
 #[test]
 fn angle_index_24_is_out_of_range() {
     // Arrange
-    let poses = [8, 64, 24];
+    let poses = [8, 64, 24, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -177,12 +182,12 @@ fn angle_index_24_is_out_of_range() {
 }
 
 #[test]
-fn kind_codes_zero_and_two_are_unknown() {
+fn kind_codes_zero_and_three_are_unknown() {
     // Arrange
-    let poses = [8, 64, 23, 30, 84, 0];
+    let poses = [8, 64, 23, 0, 30, 84, 0, 0];
 
     // Act
-    let inspection = inspect(&FIRST_POUR, &[0, 2], &poses).expect("lanes are well formed");
+    let inspection = inspect(&FIRST_POUR, &[0, 3], &poses).expect("lanes are well formed");
 
     // Assert
     assert_eq!(
@@ -206,7 +211,7 @@ fn a_kind_missing_from_the_budget_is_not_allowed() {
 #[test]
 fn a_coordinate_beyond_i16_is_out_of_range() {
     // Arrange
-    let poses = [40_000, 64, 0];
+    let poses = [40_000, 64, 0, 0];
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &poses);
@@ -218,7 +223,7 @@ fn a_coordinate_beyond_i16_is_out_of_range() {
 #[test]
 fn geometric_statuses_carry_the_baked_outline_bits() {
     // Arrange
-    let poses = [[8, 64, 23], [-20, 84, 6], [41, 64, 0]];
+    let poses = [[8, 64, 23, 0], [-20, 84, 6, 0], [41, 64, 0, 0]];
 
     // Act
     let inspection = inspect_planks(&FIRST_POUR, poses.as_flattened());
@@ -237,7 +242,7 @@ fn geometric_statuses_carry_the_baked_outline_bits() {
 fn poses_without_an_outline_emit_zeros() {
     // Arrange
     let kinds = [0, 1, 1];
-    let poses = [8, 64, 23, 8, 64, 24, 40_000, 64, 0];
+    let poses = [8, 64, 23, 0, 8, 64, 24, 0, 40_000, 64, 0, 0];
 
     // Act
     let inspection = inspect(&FIRST_POUR, &kinds, &poses).expect("lanes are well formed");
@@ -259,7 +264,7 @@ fn a_disallowed_kind_without_an_outline_reports_the_decoding_reason() {
     // Arrange
     let kinds = [1, 1, 0, 1];
     let reference = REFERENCE_PLANK_POSE;
-    let poses = [[8, 64, 24], [40_000, 64, 0], reference, reference];
+    let poses = [[8, 64, 24, 0], [40_000, 64, 0, 0], reference, reference];
     let non_geometric = [
         PlacementStatus::UnknownKind,
         PlacementStatus::AngleOutOfRange,
@@ -299,7 +304,7 @@ fn a_disallowed_kind_without_an_outline_reports_the_decoding_reason() {
 fn more_than_sixteen_placements_fail_the_request() {
     // Arrange
     let kinds = [1_u8; MAX_PLACEMENTS + 1];
-    let poses = [0_i32; 3 * (MAX_PLACEMENTS + 1)];
+    let poses = [0_i32; 4 * (MAX_PLACEMENTS + 1)];
 
     // Act
     let result = inspect(&FIRST_POUR, &kinds, &poses);
@@ -323,7 +328,7 @@ fn misaligned_pose_lanes_fail_the_request() {
 #[test]
 fn build_validation_rejects_crossed_planks_as_a_tool_overlap() {
     // Arrange
-    let poses = [8, 64, 23, 8, 64, 0];
+    let poses = [8, 64, 23, 0, 8, 64, 0, 0];
 
     // Act
     let result = validate_for_build(&FIRST_POUR, &[1, 1], &poses);
@@ -336,13 +341,14 @@ fn build_validation_rejects_crossed_planks_as_a_tool_overlap() {
 fn first_pour_solution_fixture_placement_is_valid() {
     // Arrange
     let fixture = include_str!("../fixtures/first-pour-solution.txt");
-    let pose: Vec<i32> = fixture
+    let plank_pose = fixture
         .lines()
         .find_map(|line| line.strip_prefix("placement plank "))
         .expect("solution fixture records a plank")
         .split_whitespace()
-        .map(|value| value.parse().expect("fixture pose values are integers"))
-        .collect();
+        .map(|value| value.parse().expect("fixture pose values are integers"));
+    // A 5-token plank line means open tick 0 (D-07).
+    let pose: Vec<i32> = plank_pose.chain([0]).collect();
 
     // Act
     let statuses = statuses_of(&FIRST_POUR, &pose);
@@ -355,23 +361,26 @@ fn first_pour_solution_fixture_placement_is_valid() {
 #[test]
 fn inspector_and_new_puzzle_agree() {
     // Arrange
-    let cases: [(&[u8], &[i32]); 16] = [
+    let cases: [(&[u8], &[i32]); 19] = [
         (&[], &[]),
-        (&[1], &[8, 64, 23]),
-        (&[1], &[30, 84, 0]),
-        (&[1], &[-20, 44, 0]),
-        (&[1], &[10, 64, 0]),
-        (&[1], &[-20, 84, 6]),
-        (&[1], &[40, 44, 0]),
-        (&[1], &[38, 44, 6]),
-        (&[1], &[41, 64, 0]),
-        (&[1], &[8, 64, 24]),
-        (&[0], &[8, 64, 23]),
-        (&[2], &[8, 64, 23]),
-        (&[1], &[40_000, 64, 0]),
-        (&[1, 1], &[8, 64, 23, 30, 84, 0]),
-        (&[1, 1], &[8, 64, 23, 8, 64, 0]),
-        (&[1, 1, 1], &[8, 64, 23, 30, 84, 0, -20, 44, 0]),
+        (&[1], &[8, 64, 23, 0]),
+        (&[1], &[30, 84, 0, 0]),
+        (&[1], &[-20, 44, 0, 0]),
+        (&[1], &[10, 64, 0, 0]),
+        (&[1], &[-20, 84, 6, 0]),
+        (&[1], &[40, 44, 0, 0]),
+        (&[1], &[38, 44, 6, 0]),
+        (&[1], &[41, 64, 0, 0]),
+        (&[1], &[8, 64, 24, 0]),
+        (&[0], &[8, 64, 23, 0]),
+        (&[3], &[8, 64, 23, 0]),
+        (&[2], &[8, 64, 23, 4]),
+        (&[1], &[8, 64, 23, 1]),
+        (&[1], &[8, 64, 23, -1]),
+        (&[1], &[40_000, 64, 0, 0]),
+        (&[1, 1], &[8, 64, 23, 0, 30, 84, 0, 0]),
+        (&[1, 1], &[8, 64, 23, 0, 8, 64, 0, 0]),
+        (&[1, 1, 1], &[8, 64, 23, 0, 30, 84, 0, 0, -20, 44, 0, 0]),
     ];
 
     for (kinds, poses) in cases {
@@ -422,4 +431,142 @@ fn inspect_level_rejects_unknown_levels() {
 
     // Assert
     assert_eq!(results, [Some(SessionError::UnknownLevel); 3]);
+}
+
+fn valve_statuses(poses: &[i32]) -> Vec<u8> {
+    inspect(&VALVE_TEST_SPEC, &[2], poses)
+        .expect("test lanes are well formed")
+        .statuses
+}
+
+#[test]
+fn the_reference_valve_pose_is_valid() {
+    // Arrange
+    let poses = REFERENCE_VALVE_POSE;
+
+    // Act
+    let statuses = valve_statuses(&poses);
+
+    // Assert
+    assert_eq!(statuses, codes(&[PlacementStatus::Valid]));
+}
+
+#[test]
+fn valve_ticks_one_and_the_step_limit_tick_are_valid() {
+    // Arrange
+    let ticks = [1, 24];
+
+    for tick in ticks {
+        // Act
+        let statuses = valve_statuses(&[-16, 87, 0, tick]);
+
+        // Assert
+        assert_eq!(statuses, codes(&[PlacementStatus::Valid]), "tick {tick}");
+    }
+}
+
+#[test]
+fn valve_ticks_outside_the_range_are_out_of_range_with_an_outline() {
+    // Arrange
+    let ticks = [0, 25, -1, 300];
+
+    for tick in ticks {
+        let pose = [-16, 87, 0, tick];
+
+        // Act
+        let inspection = inspect(&VALVE_TEST_SPEC, &[2], &pose).expect("lanes are well formed");
+
+        // Assert
+        assert_eq!(
+            inspection.statuses,
+            codes(&[PlacementStatus::ValveTimeOutOfRange]),
+            "tick {tick}"
+        );
+        let actual: Vec<u32> = inspection
+            .outlines
+            .iter()
+            .map(|value| value.to_bits())
+            .collect();
+        assert_eq!(actual, outline_bits(2, [-16, 87, 0, 0]), "tick {tick}");
+        assert!(inspection.outlines.iter().any(|value| *value != 0.0));
+    }
+}
+
+#[test]
+fn valve_time_out_of_range_has_wire_code_thirteen() {
+    // Arrange
+    let status = PlacementStatus::ValveTimeOutOfRange;
+
+    // Act
+    let code = status.code();
+
+    // Assert
+    assert_eq!(code, 13);
+}
+
+#[test]
+fn a_plank_with_an_open_tick_is_out_of_range() {
+    // Arrange
+    let poses = [8, 64, 23, 1];
+
+    // Act
+    let statuses = statuses_of(&FIRST_POUR, &poses);
+
+    // Assert
+    assert_eq!(statuses, codes(&[PlacementStatus::ValveTimeOutOfRange]));
+}
+
+#[test]
+fn a_valve_through_the_reservoir_floor_overlaps_a_wall() {
+    // Arrange
+    let poses = [-40, 90, 0, 4];
+
+    // Act
+    let statuses = valve_statuses(&poses);
+
+    // Assert
+    assert_eq!(statuses, codes(&[PlacementStatus::OverlapsWall]));
+}
+
+#[test]
+fn a_valve_crossing_a_plank_overlaps_a_tool_both_ways() {
+    // Arrange
+    let kinds = [1, 2];
+    let poses = [8, 64, 23, 0, 8, 64, 0, 4];
+
+    // Act
+    let inspection = inspect(&VALVE_TEST_SPEC, &kinds, &poses).expect("lanes are well formed");
+
+    // Assert
+    assert_eq!(
+        inspection.statuses,
+        codes(&[PlacementStatus::OverlapsTool, PlacementStatus::OverlapsTool])
+    );
+}
+
+#[test]
+fn a_valve_is_not_allowed_in_first_pour() {
+    // Arrange
+    let poses = REFERENCE_VALVE_POSE;
+
+    // Act
+    let inspection = inspect(&FIRST_POUR, &[2], &poses).expect("lanes are well formed");
+
+    // Assert
+    assert_eq!(
+        inspection.statuses,
+        codes(&[PlacementStatus::KindNotAllowed])
+    );
+}
+
+#[test]
+fn build_validation_rejects_an_out_of_range_valve_time() {
+    // Arrange
+    let poses = [-16, 87, 0, 25];
+
+    // Act
+    let result = validate_for_build(&VALVE_TEST_SPEC, &[2], &poses);
+
+    // Assert
+    assert_eq!(result.err(), Some(PlacementError::ValveTimeOutOfRange));
 }

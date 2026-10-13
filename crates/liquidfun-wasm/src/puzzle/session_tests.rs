@@ -176,13 +176,8 @@ fn first_pour_without_placements_loses_at_the_step_limit() {
 fn first_pour_reference_plank_wins_with_margin_and_stays_won() {
     // Arrange
     let spec = level_spec(LevelId::FirstPour);
-    let placements = Placements::parse(
-        &[ToolKind::Plank.code()],
-        &REFERENCE_PLANK_POSE,
-        spec.tool_budget,
-        spec.build_area,
-    )
-    .expect("reference plank pose parses");
+    let placements = Placements::parse(&[ToolKind::Plank.code()], &REFERENCE_PLANK_POSE, spec)
+        .expect("reference plank pose parses");
     let mut core = first_pour(placements);
     let margin_deadline = spec.step_limit - MARGIN_WIN_SLACK_STEPS;
 
@@ -264,8 +259,8 @@ fn fingerprint_after(kinds: &[u8], poses: &[i32], steps: u32) -> u64 {
 fn permuted_placements_give_identical_fingerprints() {
     // Arrange
     let kinds = [ToolKind::Plank.code(); 2];
-    let in_order = [8, 64, 23, 30, 84, 0];
-    let permuted = [30, 84, 0, 8, 64, 23];
+    let in_order = [8, 64, 23, 0, 30, 84, 0, 0];
+    let permuted = [30, 84, 0, 0, 8, 64, 23, 0];
 
     // Act
     let first = fingerprint_after(&kinds, &in_order, 120);

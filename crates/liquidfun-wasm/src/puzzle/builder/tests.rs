@@ -21,13 +21,8 @@ fn build_empty_first_pour() -> BuiltScene {
 
 fn reference_placements() -> Placements {
     let spec = first_pour();
-    Placements::parse(
-        &[ToolKind::Plank.code()],
-        &REFERENCE_PLANK_POSE,
-        spec.tool_budget,
-        spec.build_area,
-    )
-    .expect("reference plank pose parses")
+    Placements::parse(&[ToolKind::Plank.code()], &REFERENCE_PLANK_POSE, spec)
+        .expect("reference plank pose parses")
 }
 
 /// Axis-aligned rectangles `(min, max)` overlap with positive area.

@@ -51,6 +51,9 @@ pub(crate) enum PlacementStatus {
     OverlapsTool = 11,
     /// Outline overlaps an authored no-build zone.
     OverlapsNoPlace = 12,
+    /// Valve time outside `1..=step_limit/30`, or a non-zero time on another
+    /// kind (D-02, D-04). Geometric: the outline still exists.
+    ValveTimeOutOfRange = 13,
 }
 
 impl PlacementStatus {
@@ -76,6 +79,7 @@ impl PlacementStatus {
             PlacementError::OverlapsWater => Some(Self::OverlapsWater),
             PlacementError::OverlapsTool => Some(Self::OverlapsTool),
             PlacementError::OverlapsNoPlace => Some(Self::OverlapsNoPlace),
+            PlacementError::ValveTimeOutOfRange => Some(Self::ValveTimeOutOfRange),
         }
     }
 
@@ -95,6 +99,7 @@ impl PlacementStatus {
             Self::OverlapsWater => Some(PlacementError::OverlapsWater),
             Self::OverlapsTool => Some(PlacementError::OverlapsTool),
             Self::OverlapsNoPlace => Some(PlacementError::OverlapsNoPlace),
+            Self::ValveTimeOutOfRange => Some(PlacementError::ValveTimeOutOfRange),
         }
     }
 }
@@ -149,7 +154,7 @@ pub(crate) fn validate_for_build(
     kinds: &[u8],
     poses: &[i32],
 ) -> Result<Placements, PlacementError> {
-    let placements = Placements::parse(kinds, poses, spec.tool_budget, spec.build_area)?;
+    let placements = Placements::parse(kinds, poses, spec)?;
     let (statuses, _quads) = placement_statuses(spec, kinds, poses)?;
     match statuses.into_iter().find_map(PlacementStatus::error) {
         Some(error) => Err(error),
@@ -193,7 +198,7 @@ fn placement_statuses(
         let (status, maybe_quad) = match decode_pose(code, pose) {
             Err(error) => (status_for(Err(error))?, None),
             Ok(placement) => {
-                let parsed = parse_one(code, pose, spec.tool_budget, spec.build_area);
+                let parsed = parse_one(code, pose, spec);
                 (status_for(parsed)?, Some(placement.vertices()))
             }
         };

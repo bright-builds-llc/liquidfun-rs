@@ -6,6 +6,7 @@ use liquidfun::particle::ParticleColor;
 use super::LevelId;
 use super::goal::GoalRect;
 use super::tools::{GridRect, ToolAllowance};
+use super::valve::STEPS_PER_OPEN_TICK;
 
 /// One rectangular block of liquid created as its own particle group.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -67,4 +68,12 @@ pub(crate) struct LevelSpec {
     /// Extra authored no-build zones in grid cells; the cup interior and the
     /// liquid blocks are always implicit no-place zones.
     pub(crate) no_place: &'static [GridRect],
+}
+
+impl LevelSpec {
+    /// Largest valve open tick: `step_limit / STEPS_PER_OPEN_TICK`, saturated
+    /// to `u8`.
+    pub(crate) fn max_open_tick(&self) -> u8 {
+        u8::try_from(self.step_limit / STEPS_PER_OPEN_TICK).unwrap_or(u8::MAX)
+    }
 }

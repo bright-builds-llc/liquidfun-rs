@@ -3,6 +3,10 @@
 //! The grammar is shared byte-for-byte with
 //! `web/scripts/puzzle-replay/fixture.ts`: both runtimes accept and reject
 //! exactly the same text with the same `fixture line N: ...` messages.
+//!
+//! Placement lines are `placement plank <x> <y> <angle>` (5 tokens) or
+//! `placement valve <x> <y> <angle> <open_tick>` (6 tokens); the arity depends
+//! on the kind, so a plank line with an open tick is rejected (D-07, D-27).
 
 use crate::puzzle::tools::ToolKind;
 use crate::puzzle::{LevelId, parse_level_id};
@@ -41,13 +45,15 @@ impl FixtureOutcome {
     }
 }
 
-/// One `placement <kind> <x> <y> <angle>` line.
+/// One `placement <kind> <x> <y> <angle> [<open_tick>]` line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::puzzle) struct FixturePlacement {
     pub(in crate::puzzle) kind: ToolKind,
     pub(in crate::puzzle) x: i32,
     pub(in crate::puzzle) y: i32,
     pub(in crate::puzzle) angle: i32,
+    /// Valve open tick; 0 for 5-token plank lines.
+    pub(in crate::puzzle) open_tick: i32,
 }
 
 /// The recorded `outcome`, `outcome_step`, `final_count`, `peak_held` and
@@ -197,13 +203,26 @@ fn parse_level_line(number: usize, tokens: &[&str]) -> Result<LevelId, String> {
 }
 
 fn parse_placement_line(number: usize, tokens: &[&str]) -> Result<FixturePlacement, String> {
-    check_arity(number, tokens, 5)?;
-    let kind = ToolKind::from_token(tokens[1]).ok_or_else(|| line_error(number, "unknown tool"))?;
+    let Some(kind_token) = tokens.get(1) else {
+        return Err(line_error(number, "expected 5 space-separated tokens"));
+    };
+    let kind =
+        ToolKind::from_token(kind_token).ok_or_else(|| line_error(number, "unknown tool"))?;
+    let arity = match kind {
+        ToolKind::Plank => 5,
+        ToolKind::Valve => 6,
+    };
+    check_arity(number, tokens, arity)?;
+    let open_tick = match kind {
+        ToolKind::Plank => 0,
+        ToolKind::Valve => parse_i32(number, tokens[5])?,
+    };
     Ok(FixturePlacement {
         kind,
         x: parse_i32(number, tokens[2])?,
         y: parse_i32(number, tokens[3])?,
         angle: parse_i32(number, tokens[4])?,
+        open_tick,
     })
 }
 
@@ -258,7 +277,14 @@ pub(in crate::puzzle) fn lanes(fixture: &Fixture) -> (Vec<u8>, Vec<i32>) {
     let poses = fixture
         .placements
         .iter()
-        .flat_map(|placement| [placement.x, placement.y, placement.angle])
+        .flat_map(|placement| {
+            [
+                placement.x,
+                placement.y,
+                placement.angle,
+                placement.open_tick,
+            ]
+        })
         .collect();
     (kinds, poses)
 }

@@ -6,11 +6,13 @@
 use liquidfun::math::Vec2;
 
 use super::angles::TAU_24;
+use super::spec::LevelSpec;
 
 /// Most placements one puzzle run accepts.
 pub(crate) const MAX_PLACEMENTS: usize = 16;
-/// Pose values `(x_grid, y_grid, angle_index)`; a 4th (Phase 40 valve time) is rejected.
-pub(crate) const POSE_STRIDE: usize = 3;
+/// Pose values `(x_grid, y_grid, angle_index, open_tick)` (Phase 40 D-02);
+/// `open_tick` is 0 for every kind except the valve.
+pub(crate) const POSE_STRIDE: usize = 4;
 /// Angle steps per full turn: τ/24 = 15°.
 pub(crate) const ANGLE_STEPS: u8 = 24;
 /// Grid cells per meter: meters = `f32::from(cell) / 20.0`.
@@ -21,6 +23,10 @@ pub(crate) const GRID_METERS: f32 = 0.05;
 pub(crate) const PLANK_HALF_LENGTH: f32 = 1.5;
 /// Half the plank thickness: a 0.25 m plank.
 pub(crate) const PLANK_HALF_THICKNESS: f32 = 0.125;
+/// Half the valve length: a 1.2 m gate.
+pub(crate) const VALVE_HALF_LENGTH: f32 = 0.6;
+/// Half the valve thickness: a 0.25 m gate.
+pub(crate) const VALVE_HALF_THICKNESS: f32 = 0.125;
 
 /// Allowlisted tool kinds. Code 0 is never a tool, so zeroed lanes fail closed.
 #[repr(u8)]
@@ -28,6 +34,8 @@ pub(crate) const PLANK_HALF_THICKNESS: f32 = 0.125;
 pub(crate) enum ToolKind {
     /// Fixed-size static plank.
     Plank = 1,
+    /// Fixed-size static gate destroyed at its open step (D-01).
+    Valve = 2,
 }
 
 impl ToolKind {
@@ -35,6 +43,7 @@ impl ToolKind {
     pub(crate) const fn code(self) -> u8 {
         match self {
             Self::Plank => 1,
+            Self::Valve => 2,
         }
     }
 
@@ -42,6 +51,7 @@ impl ToolKind {
     pub(crate) const fn from_code(code: u8) -> Option<Self> {
         match code {
             1 => Some(Self::Plank),
+            2 => Some(Self::Valve),
             _ => None,
         }
     }
@@ -51,6 +61,7 @@ impl ToolKind {
     pub(crate) const fn token(self) -> &'static str {
         match self {
             Self::Plank => "plank",
+            Self::Valve => "valve",
         }
     }
 
@@ -59,7 +70,16 @@ impl ToolKind {
     pub(crate) fn from_token(token: &str) -> Option<Self> {
         match token {
             "plank" => Some(Self::Plank),
+            "valve" => Some(Self::Valve),
             _ => None,
+        }
+    }
+
+    /// Outline half extents `(half_length, half_thickness)` in meters.
+    const fn half_extents(self) -> (f32, f32) {
+        match self {
+            Self::Plank => (PLANK_HALF_LENGTH, PLANK_HALF_THICKNESS),
+            Self::Valve => (VALVE_HALF_LENGTH, VALVE_HALF_THICKNESS),
         }
     }
 }
@@ -125,13 +145,15 @@ pub(crate) struct ToolAllowance {
 }
 
 /// One validated tool pose. Field order is the canonical sort key
-/// `(kind, x, y, angle)`.
+/// `(kind, x, y, angle, open_tick)` (D-02), so every plank sorts before every
+/// valve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Placement {
     kind: ToolKind,
     x: i16,
     y: i16,
     angle: AngleIndex,
+    open_tick: u8,
 }
 
 impl Placement {
@@ -139,6 +161,12 @@ impl Placement {
     #[cfg(test)]
     pub(crate) const fn kind(self) -> ToolKind {
         self.kind
+    }
+
+    /// Valve open tick in half-seconds; 0 for every other kind (D-02).
+    #[cfg(test)]
+    pub(crate) const fn open_tick(self) -> u8 {
+        self.open_tick
     }
 
     /// Grid position `(x, y)` in 0.05 m cells.
@@ -161,13 +189,13 @@ impl Placement {
         )
     }
 
-    /// World-space plank corners in counter-clockwise order.
+    /// World-space tool corners in counter-clockwise order.
     ///
     /// Each corner is `(cos·lx − sin·ly + cx, sin·lx + cos·ly + cy)` in exactly
     /// this expression order. Rust never fuses these into FMA, so the order is
     /// part of the native/wasm determinism contract.
     pub(crate) fn vertices(self) -> [Vec2; 4] {
-        let (half_length, half_thickness) = (PLANK_HALF_LENGTH, PLANK_HALF_THICKNESS);
+        let (half_length, half_thickness) = self.kind.half_extents();
         // AngleIndex::new only accepts values below 24, so the index is always in range.
         let (cos, sin) = TAU_24[usize::from(self.angle.get())];
         let center = self.center();
@@ -197,20 +225,21 @@ impl Placements {
         Self(Vec::new())
     }
 
-    /// Parses copied `kinds` and stride-3 `poses` lanes, failing closed at the
-    /// first problem, then sorts into canonical `(kind, x, y, angle)` order.
+    /// Parses copied `kinds` and stride-4 `poses` lanes against `spec`'s
+    /// budget, build area and step limit, failing closed at the first
+    /// problem, then sorts into canonical `(kind, x, y, angle, open_tick)`
+    /// order.
     pub(crate) fn parse(
         kinds: &[u8],
         poses: &[i32],
-        budget: &[ToolAllowance],
-        build_area: GridRect,
+        spec: &LevelSpec,
     ) -> Result<Self, PlacementError> {
         check_lanes(kinds, poses)?;
         let mut placements = Vec::with_capacity(kinds.len());
         for (code, pose) in kinds.iter().zip(poses.chunks_exact(POSE_STRIDE)) {
-            placements.push(parse_one(*code, pose, budget, build_area)?);
+            placements.push(parse_one(*code, pose, spec)?);
         }
-        check_budget(&placements, budget)?;
+        check_budget(&placements, spec.tool_budget)?;
         placements.sort_unstable();
         Ok(Self(placements))
     }
@@ -240,11 +269,14 @@ pub(super) fn pose_placement(code: u8, pose: &[i32]) -> Option<Placement> {
     decode_pose(code, pose).ok()
 }
 
-/// Decodes the kind, angle and grid position of one stride-3 pose, in that
+/// Decodes the kind, angle and grid position of one stride-4 pose, in that
 /// order. This is the only pose decoder, so [`parse_one`] and the inspector's
 /// outline lane cannot disagree about which poses describe a tool.
+///
+/// Geometry only: the open tick is checked by [`parse_one`], so the outline
+/// exists for `ValveTimeOutOfRange` (status 13), and the decoded tick is 0.
 pub(super) fn decode_pose(code: u8, pose: &[i32]) -> Result<Placement, PlacementError> {
-    let [x, y, angle] = *pose else {
+    let [x, y, angle, _open_tick] = *pose else {
         return Err(PlacementError::LaneLengthMismatch);
     };
     let kind = ToolKind::from_code(code).ok_or(PlacementError::UnknownToolKind)?;
@@ -254,29 +286,53 @@ pub(super) fn decode_pose(code: u8, pose: &[i32]) -> Result<Placement, Placement
         .ok_or(PlacementError::AngleOutOfRange)?;
     let x = i16::try_from(x).map_err(|_error| PlacementError::PositionOutOfRange)?;
     let y = i16::try_from(y).map_err(|_error| PlacementError::PositionOutOfRange)?;
-    Ok(Placement { kind, x, y, angle })
+    Ok(Placement {
+        kind,
+        x,
+        y,
+        angle,
+        open_tick: 0,
+    })
 }
 
-/// Parses one stride-3 pose, failing at the first Phase 37 rule it breaks:
-/// kind, allowance, angle, position, build area.
+/// Parses one stride-4 pose, failing at the first rule it breaks: kind,
+/// allowance, angle, position, build area, then the open tick (D-02).
 pub(super) fn parse_one(
     code: u8,
     pose: &[i32],
-    budget: &[ToolAllowance],
-    build_area: GridRect,
+    spec: &LevelSpec,
 ) -> Result<Placement, PlacementError> {
-    if pose.len() != POSE_STRIDE {
+    let [_, _, _, raw_tick] = *pose else {
         return Err(PlacementError::LaneLengthMismatch);
-    }
+    };
     let kind = ToolKind::from_code(code).ok_or(PlacementError::UnknownToolKind)?;
-    if !budget.iter().any(|allowance| allowance.kind == kind) {
+    if !spec
+        .tool_budget
+        .iter()
+        .any(|allowance| allowance.kind == kind)
+    {
         return Err(PlacementError::ToolNotAllowed);
     }
     let placement = decode_pose(code, pose)?;
-    if !build_area.contains(placement.x, placement.y) {
+    if !spec.build_area.contains(placement.x, placement.y) {
         return Err(PlacementError::OutsideBuildArea);
     }
-    Ok(placement)
+    let open_tick = checked_open_tick(kind, raw_tick, spec.max_open_tick())
+        .ok_or(PlacementError::ValveTimeOutOfRange)?;
+    Ok(Placement {
+        open_tick,
+        ..placement
+    })
+}
+
+/// A valve needs a tick in `1..=max_open_tick`; every other kind needs 0.
+fn checked_open_tick(kind: ToolKind, raw_tick: i32, max_open_tick: u8) -> Option<u8> {
+    match kind {
+        ToolKind::Valve => u8::try_from(raw_tick)
+            .ok()
+            .filter(|tick| (1..=max_open_tick).contains(tick)),
+        ToolKind::Plank => (raw_tick == 0).then_some(0),
+    }
 }
 
 fn check_budget(placements: &[Placement], budget: &[ToolAllowance]) -> Result<(), PlacementError> {
@@ -323,6 +379,9 @@ pub(crate) enum PlacementError {
     OverlapsTool,
     /// Tool outline overlaps an authored no-build zone.
     OverlapsNoPlace,
+    /// Valve open tick outside `1..=step_limit/30`, or a non-zero tick on
+    /// another kind.
+    ValveTimeOutOfRange,
 }
 
 impl PlacementError {
@@ -343,6 +402,7 @@ impl PlacementError {
             Self::OverlapsWater => "Rust/WASM puzzle placement overlaps the water",
             Self::OverlapsTool => "Rust/WASM puzzle placement overlaps another tool",
             Self::OverlapsNoPlace => "Rust/WASM puzzle placement overlaps a no-build zone",
+            Self::ValveTimeOutOfRange => "Rust/WASM puzzle placement valve time is out of range",
         }
     }
 }

@@ -52,7 +52,8 @@ impl ProofSession {
     }
 
     /// Builds an allowlisted puzzle level from copied placement lanes (kinds,
-    /// plus poses with stride 3: x grid, y grid, τ/24 angle index).
+    /// plus four pose integers per placement: x grid, y grid, τ/24 angle
+    /// index, open tick).
     ///
     /// # Errors
     ///
