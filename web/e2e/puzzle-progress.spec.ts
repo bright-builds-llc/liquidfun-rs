@@ -1,19 +1,28 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { PROGRESS_NOTE, PUZZLE_CAPTIONS, PUZZLE_TITLES } from "../src/catalog/puzzle-levels";
 import { PUZZLE_IDS, type PuzzleId } from "../src/catalog/puzzles";
-import { PROGRESS_STORAGE_KEY } from "../src/puzzle/progress";
+import {
+  EMPTY_PROGRESS,
+  PROGRESS_STORAGE_KEY,
+  serializeProgress,
+  withPlacements,
+  withStars,
+} from "../src/puzzle/progress";
+import { LEVEL_HASH_FILE, parseLevelHashes } from "../scripts/puzzle-replay/level-hashes";
 import { DAM_BREAK_PATH, installControlledRefreshRate } from "./player-helpers";
 import {
   DESKTOP,
   PHONE_PORTRAIT,
   installSolutionPlacements,
   puzzlePath,
+  stablePuzzleCamera,
   waitForPuzzlePhase,
 } from "./puzzle-helpers";
-import { readPlacements } from "./puzzle-editor-helpers";
+import { gridToPage, readPlacements } from "./puzzle-editor-helpers";
 
 // Phase 41 D-20: level grid, soft locks, persisted progress and degraded
 // storage in a real browser. Each test gets a fresh browser context, so
@@ -32,6 +41,15 @@ const ENDED_TIMEOUT_MS = 60_000;
 const RUN_REFRESH_HZ = 15;
 const DESKTOP_COLUMNS = 3;
 const FIRST_POUR = "first-pour" satisfies PuzzleId;
+const TWO_RUN_TEST_TIMEOUT_MS = 150_000;
+// Recorded first-pour solution placed by the test seam (puzzle-helpers.ts).
+const SOLUTION_PLACEMENTS = "plank:8,64,23";
+// Tray-then-canvas placement from puzzle-hint.spec.ts.
+const REFERENCE_CELL = { x: 8, y: 64 } as const;
+const REFERENCE_PLACEMENT = "plank:8,64,0";
+const STALE_LEVEL_HASH = "0000000000000000";
+const SEEDED_PEAK_PCT = 61;
+const STAR_FIELDS = ["win", "brim", "thrifty", "bestPeakHeldPct"] as const;
 
 function viewportName(viewport: Viewport): string {
   return `${viewport.width}x${viewport.height}`;
@@ -114,6 +132,66 @@ async function seedProgress(page: Page, raw: string): Promise<void> {
 
 async function expectEveryLevelUnlocked(page: Page): Promise<void> {
   await expect(page.locator('[data-level-id][data-locked="false"]')).toHaveCount(PUZZLE_IDS.length);
+}
+
+/** The stored first-pour record, parsed; fails when there is none. */
+async function storedFirstPour(page: Page): Promise<Record<string, unknown>> {
+  const maybeRaw = await storedProgress(page);
+  if (maybeRaw === null) {
+    throw new Error("no progress is stored");
+  }
+  const document = JSON.parse(maybeRaw) as { levels?: Record<string, Record<string, unknown>> };
+  const maybeRecord = document.levels?.[FIRST_POUR];
+  if (maybeRecord === undefined) {
+    throw new Error(`no ${FIRST_POUR} record is stored`);
+  }
+  return maybeRecord;
+}
+
+function starFields(record: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(STAR_FIELDS.map((field) => [field, record[field]]));
+}
+
+/** The pinned live level hash (Phase 41 D-17). */
+function liveLevelHash(id: PuzzleId): string {
+  const pins = parseLevelHashes(readFileSync(resolve(REPO_ROOT, LEVEL_HASH_FILE), "utf8"));
+  const maybeHash = pins.get(id);
+  if (maybeHash === undefined) {
+    throw new Error(`${LEVEL_HASH_FILE} has no pin for ${id}`);
+  }
+  return maybeHash;
+}
+
+/** A won first-pour record with the solution placements saved under `levelHash`. */
+function seededFirstPour(levelHash: string): string {
+  const stars = withStars(EMPTY_PROGRESS, FIRST_POUR, {
+    win: true,
+    brim: false,
+    thrifty: false,
+    bestPeakHeldPct: SEEDED_PEAK_PCT,
+  });
+  return serializeProgress(
+    withPlacements(stars, FIRST_POUR, {
+      levelHash,
+      tools: [{ kind: "plank", x: 8, y: 64, angle: 23, openTick: 0 }],
+    }),
+  );
+}
+
+/** Opens a second page in the same context, so it shares storage but no init scripts. */
+async function secondPage(page: Page, viewport: Viewport): Promise<Page> {
+  const other = await page.context().newPage();
+  await other.setViewportSize(viewport);
+  return other;
+}
+
+/** Wins first-pour through the seam; the seam stays on this page (Research Pitfall 2). */
+async function solveFirstPour(page: Page, viewport: Viewport): Promise<void> {
+  await installControlledRefreshRate(page, RUN_REFRESH_HZ);
+  await installSolutionPlacements(page);
+  await openLevel(page, FIRST_POUR, viewport);
+  await endRun(page);
+  await expect(page.locator("main")).toHaveAttribute("data-puzzle-outcome", "won");
 }
 
 /** Top edges of every card in registry order, read in one layout pass. */
@@ -368,5 +446,160 @@ for (const viewport of [DESKTOP, PHONE_PORTRAIT]) {
     // Assert (PROG-03, T-41-25)
     await expect(progressNote(page)).toHaveText(PROGRESS_NOTE);
     expect(await storedProgress(page)).toBe(CORRUPT_RAW);
+  });
+}
+
+for (const viewport of [DESKTOP, PHONE_PORTRAIT]) {
+  const name = viewportName(viewport);
+
+  test(`persists stars and unlocks level 2 after a win at ${name}`, async ({ page }) => {
+    test.setTimeout(RUN_TEST_TIMEOUT_MS);
+    // Arrange
+    const [firstId, secondId] = PUZZLE_IDS;
+    if (firstId !== FIRST_POUR || secondId === undefined) {
+      throw new Error("first-pour must be the first of several levels");
+    }
+    await solveFirstPour(page, viewport);
+
+    // Act
+    await showGrid(page);
+
+    // Assert: stars are recorded before the grid renders (D-11).
+    await expect(levelCard(page, firstId)).toHaveAttribute("data-solved", "true");
+    await expect(levelCard(page, secondId)).toHaveAttribute("data-locked", "false");
+    await expect(levelCard(page, secondId)).toHaveAttribute("data-next-up", "true");
+
+    // Act: a page without the seam reads the stored progress.
+    const other = await secondPage(page, viewport);
+    await openGrid(other, viewport);
+
+    // Assert (PROG-01, PROG-02)
+    const first = levelCard(other, firstId);
+    for (const star of ["win", "brim", "thrifty"]) {
+      await expect(first.locator(`.puzzle-level-star[data-star="${star}"]`)).toHaveAttribute(
+        "data-earned",
+        "true",
+      );
+    }
+    await expect(first.locator(".puzzle-level-footer")).toHaveText("Best fill 90%");
+    await expect(levelCard(other, secondId)).toHaveAttribute("data-locked", "false");
+    await expect(other.locator(".puzzle-select-progress")).toHaveText("1 of 6 solved");
+  });
+
+  test(`never lowers saved stars after a worse run at ${name}`, async ({ page }) => {
+    test.setTimeout(TWO_RUN_TEST_TIMEOUT_MS);
+    // Arrange
+    await solveFirstPour(page, viewport);
+    const before = starFields(await storedFirstPour(page));
+    const other = await secondPage(page, viewport);
+    await installControlledRefreshRate(other, RUN_REFRESH_HZ);
+    await openLevel(other, FIRST_POUR, viewport);
+    expect(await readPlacements(other)).toBe(SOLUTION_PLACEMENTS);
+
+    // Act: an empty run loses.
+    await other.getByRole("button", { name: "Clear all tools", exact: true }).click();
+    await expect(other.locator("main")).toHaveAttribute("data-puzzle-placements", "");
+    await endRun(other);
+    await expect(other.locator("main")).toHaveAttribute("data-puzzle-outcome", "lost");
+
+    // Assert (PROG-01, D-09)
+    expect(starFields(await storedFirstPour(other))).toEqual(before);
+    expect(before).toEqual({ win: true, brim: true, thrifty: true, bestPeakHeldPct: 90 });
+
+    // Act
+    await other.goto(GRID_PATH);
+    await other.reload();
+    await expect(gridHeading(other)).toBeVisible();
+
+    // Assert
+    await expect(
+      levelCard(other, FIRST_POUR).locator('.puzzle-level-star[data-earned="true"]'),
+    ).toHaveCount(3);
+  });
+
+  test(`restores placements after a reload at ${name}`, async ({ page }) => {
+    test.setTimeout(RUN_TEST_TIMEOUT_MS);
+    // Arrange
+    await installControlledRefreshRate(page, 60);
+    await openLevel(page, FIRST_POUR, viewport);
+    await stablePuzzleCamera(page);
+    await page.getByRole("button", { name: "Plank, 2 left", exact: true }).click();
+    const point = await gridToPage(page, REFERENCE_CELL.x, REFERENCE_CELL.y);
+    await page.mouse.click(point.x, point.y);
+    await expect(page.locator("main")).toHaveAttribute(
+      "data-puzzle-placements",
+      REFERENCE_PLACEMENT,
+    );
+
+    // Act
+    await page.reload();
+    await waitForPuzzlePhase(page, "building");
+
+    // Assert (PROG-04, D-16, D-18)
+    expect(await readPlacements(page)).toBe(REFERENCE_PLACEMENT);
+
+    // Act: Play saves the run's placements; the seam page plays the solution.
+    const seamPage = await secondPage(page, viewport);
+    await solveFirstPour(seamPage, viewport);
+    const restorePage = await secondPage(page, viewport);
+    await openLevel(restorePage, FIRST_POUR, viewport);
+
+    // Assert
+    expect(await readPlacements(restorePage)).toBe(SOLUTION_PLACEMENTS);
+  });
+
+  test(`discards placements saved for a changed level at ${name}`, async ({ page }) => {
+    // Arrange
+    await openGrid(page, viewport);
+    await seedProgress(page, seededFirstPour(STALE_LEVEL_HASH));
+    await expect(levelCard(page, FIRST_POUR)).toHaveAttribute("data-solved", "true");
+
+    // Act
+    await levelCard(page, FIRST_POUR).click();
+    await waitForPuzzlePhase(page, "building");
+
+    // Assert (PROG-04, D-18, T-41-26): no tools, stars kept, placements dropped.
+    expect(await readPlacements(page)).toBe("");
+    await expect.poll(async () => "placements" in (await storedFirstPour(page))).toBe(false);
+    const stored = await storedFirstPour(page);
+    expect(stored["win"]).toBe(true);
+    expect(stored["bestPeakHeldPct"]).toBe(SEEDED_PEAK_PCT);
+
+    // Act: the same record under the live hash restores (the check is not vacuous).
+    await seedProgress(page, seededFirstPour(liveLevelHash(FIRST_POUR)));
+    await waitForPuzzlePhase(page, "building");
+
+    // Assert
+    await expect(page.locator("main")).toHaveAttribute(
+      "data-puzzle-placements",
+      SOLUTION_PLACEMENTS,
+    );
+  });
+
+  test(`sends Next on the last level to the grid at ${name}`, async ({ page }) => {
+    test.setTimeout(RUN_TEST_TIMEOUT_MS);
+    // Arrange
+    const lastId = PUZZLE_IDS[PUZZLE_IDS.length - 1] ?? FIRST_POUR;
+    await installControlledRefreshRate(page, RUN_REFRESH_HZ);
+    await openLevel(page, lastId, viewport);
+
+    // Act
+    await endRun(page);
+
+    // Assert (D-04, UI-D25)
+    const allLevels = page
+      .locator(".puzzle-result-actions")
+      .getByRole("link", { name: "All levels", exact: true });
+    await expect(allLevels).toHaveAttribute("href", "#/puzzles");
+    await expect(allLevels).toHaveClass(/product-control--accent/);
+    await expect(allLevels).toBeFocused();
+    await page.screenshot({ path: resolve(SCREENS_DIR_41, `last-level-ended-${name}.png`) });
+
+    // Act
+    await allLevels.click();
+
+    // Assert
+    await expect(gridHeading(page)).toBeVisible();
+    await expect(page).toHaveURL(/#\/puzzles$/);
   });
 }
