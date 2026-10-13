@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 40-06-PLAN.md
-last_updated: "2026-10-13T06:24:48.978Z"
+stopped_at: Completed 40-07-PLAN.md
+last_updated: "2026-10-13T07:32:08.787Z"
 last_activity: 2026-10-13
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 42
-  completed_plans: 37
-  percent: 88
+  completed_plans: 38
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 40 (Timed Valve and Teaching Levels) — EXECUTING
-Plan: 7 of 11
+Plan: 8 of 11
 Status: Ready to execute
 Last activity: 2026-10-13
 
@@ -134,6 +134,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 40]: 40-06 thick-syrup: viscous strength 1.5, reference planks -30/-45 deg win at 440 (Brim 501); the same planks at -15 deg peak 577 < target 610 while water wins at 207 (thick_syrup_needs_a_steep_path)
 - [Phase 40]: 40-06 jelly-pad: fixed uncounted elastic pad fills a slotted cradle at the chimney foot; a raised roofed cup is reachable only along the channel past the pad; no-pad copy loses (peak 40), pad drift 0.138 m; no D-11 tool change
 - [Phase 40]: 40-06: viscous and elastic levels replay exactly release-native vs wasm and debug (spread 0); per-level proofs live in levels_tests/level_proofs.rs (levels_tests.rs at 626/628 lines)
+- [Phase 40]: 40-07 timed-gate ships the D-26 syrup fallback (strength 1.0) as a tent: an upright valve in a one-slot build area stops a water jet into the cup and seals a syrup tank; the preferred diverter spike was monotone in every variant
+- [Phase 40]: 40-07 timed-gate window: ticks 1-2 lost, 3-21 won, 22-24 lost; reference tick 9 (only ticks 5-10 hold the raised Brim by step 600); target 502 / full 800 / Brim 582; wasm replay exact for all four fixtures
+- [Phase 40]: 40-07 FIXTURES table moved to levels_tests/fixture_table.rs; later level plans add fixtures there
 
 ### Pending Todos
 
@@ -233,9 +236,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 40 P04 | 10min | 2 tasks | 25 files |
 | Phase 40 P05 | 7min | 3 tasks | 14 files |
 | Phase 40 P06 | 57min | 3 tasks | 16 files |
+| Phase 40 P07 | 66min | 3 tasks | 16 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T06:24:48.975Z
-Stopped at: Completed 40-06-PLAN.md
+Last session: 2026-10-13T07:32:08.784Z
+Stopped at: Completed 40-07-PLAN.md
 Resume file: None
