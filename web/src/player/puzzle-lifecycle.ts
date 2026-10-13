@@ -47,8 +47,9 @@ function clearLevelSignals(host: PuzzleHost): void {
 
 /**
  * Enters a puzzle route (D-04, D-16, D-22): stops tilt, turns pan off,
- * resets the camera, reads the test seam once into the editor and builds a
- * fresh preview session. Speed starts at 1× (D-24). Every failure reaches
+ * resets the camera, reads the test seam once into the editor (or arms the
+ * one-shot restore of saved placements, D-18) and builds a fresh preview
+ * session. Speed starts at 1× (D-24). Every failure reaches
  * `host.failScene`; the promise never rejects.
  */
 export async function beginPuzzleRoute(host: PuzzleHost, id: PuzzleId): Promise<void> {
@@ -82,7 +83,11 @@ export async function beginPuzzleRoute(host: PuzzleHost, id: PuzzleId): Promise<
     host.puzzle.maybeGlass = undefined;
     clearLevelSignals(host);
     host.puzzle.setMaybeBestStars(host.puzzle.starStore.get(id));
-    const placements = maybeReadTestPlacements(window, id) ?? EMPTY_PLACEMENTS;
+    // The test seam wins over saved placements; without it the build restores once (D-18).
+    const maybeSeam = maybeReadTestPlacements(window, id);
+    host.puzzle.maybePendingRestoreId = maybeSeam === undefined ? id : undefined;
+    host.puzzle.maybeLastSavedKey = undefined;
+    const placements = maybeSeam ?? EMPTY_PLACEMENTS;
     publishState(host, dispatch(host, { kind: "reset", placements, speed: INITIAL_PUZZLE_SPEED }));
     host.setView({ kind: "loading" });
   } catch (error) {
@@ -151,6 +156,8 @@ export function leavePuzzle(host: PuzzleHost): void {
   host.puzzle.current = INITIAL_PUZZLE_STATE;
   host.puzzle.setState(INITIAL_PUZZLE_STATE);
   host.puzzle.setMaybeLevelId(undefined);
+  host.puzzle.maybePendingRestoreId = undefined;
+  host.puzzle.maybeLastSavedKey = undefined;
   clearLevelSignals(host);
   host.puzzle.setMaybeBestStars(undefined);
 }

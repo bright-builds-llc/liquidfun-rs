@@ -26,6 +26,7 @@ import {
   type PuzzleHost,
 } from "./puzzle-host";
 import { requirePuzzleStatus, schedulePuzzleFrame } from "./puzzle-loop";
+import { restorePendingPlacements } from "./puzzle-saved-placements";
 
 type RunningState = Extract<PuzzleState, { kind: "running" }>;
 type PuzzleLanes = ReturnType<typeof encodePlacementLanes>;
@@ -161,6 +162,7 @@ export async function buildPuzzle(host: PuzzleHost, id: PuzzleId): Promise<void>
 
     const owned = adoptPuzzleSession(host, generated, id);
     const info = owned.levelInfo;
+    restorePendingPlacements(host, id, info.levelHash);
     const { frame, status } = captureStepZero(owned);
     dispatch(host, { kind: "loaded", stepIndex: frame.stepIndex, status, budget: info.toolBudget });
     host.puzzle.setMaybeLevelInfo(info);

@@ -44,6 +44,10 @@ export type PuzzleRuntime = {
   maybeInspectionFrame: number | undefined;
   /** Building-only canvas editor pointer; separate from the scene pointer (Pitfall 6). */
   maybeEditorInput: PuzzleEditorInput | undefined;
+  /** Level whose saved placements are restored once by the next build (D-18). */
+  maybePendingRestoreId: PuzzleId | undefined;
+  /** Last saved `id|hash|tools` key, so unchanged commits do not rewrite (Pitfall 9). */
+  maybeLastSavedKey: string | undefined;
 };
 
 function hydratedStarStore(progress: PuzzleProgress): StarStore {
@@ -92,5 +96,7 @@ export function createPuzzleRuntime(
     maybeOwned: undefined,
     maybeInspectionFrame: undefined,
     maybeEditorInput: undefined,
+    maybePendingRestoreId: undefined,
+    maybeLastSavedKey: undefined,
   };
 }
