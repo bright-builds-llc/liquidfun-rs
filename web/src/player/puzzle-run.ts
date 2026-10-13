@@ -19,6 +19,7 @@ import {
   disposeCurrentSession,
   dispatch,
   incrementGeneration,
+  ownsLiveSession,
   presentStepZero,
   publishState,
   viewKindFor,
@@ -178,7 +179,7 @@ export function playPuzzle(host: PuzzleHost): void {
   if (current.kind !== "building" || !canPlay(current)) {
     return;
   }
-  if (context === undefined || maybeId === undefined || host.puzzle.maybeOwned === undefined) {
+  if (context === undefined || maybeId === undefined || !ownsLiveSession(host)) {
     return;
   }
 
@@ -203,6 +204,9 @@ export function stopPuzzle(host: PuzzleHost): void {
   const maybeId = host.puzzle.maybeLevelId();
   const current = host.puzzle.current;
   if (current.kind !== "running" || context === undefined || maybeId === undefined) {
+    return;
+  }
+  if (!ownsLiveSession(host)) {
     return;
   }
 

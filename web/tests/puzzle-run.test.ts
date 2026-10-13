@@ -5,8 +5,14 @@ import {
   inspectPlacementLanes,
   loadPuzzleSession,
 } from "../src/physics/puzzle-loader";
+import { applyPuzzleEdit } from "../src/player/puzzle-editing";
 import type { PuzzleHost } from "../src/player/puzzle-host";
-import { beginPuzzleRoute, leavePuzzle } from "../src/player/puzzle-lifecycle";
+import {
+  applyPuzzleCommand,
+  beginPuzzleRoute,
+  leavePuzzle,
+  releaseFailedPuzzle,
+} from "../src/player/puzzle-lifecycle";
 import {
   cycleSpeed,
   editPuzzle,
@@ -247,6 +253,82 @@ describe("Stop", () => {
     // Assert
     expect(host.puzzle.starStore.get("first-pour")).toBeUndefined();
     expect(host.puzzle.maybeBestStars()).toBeUndefined();
+  });
+});
+
+/** What the scene lifecycle's `failScene` leaves behind before the puzzle cleanup runs. */
+function showFailure(host: PuzzleHost): void {
+  host.maybeSession = undefined;
+  host.setView({ kind: "failure", maybeFrame: undefined, maybeDetails: "Error: boom" });
+}
+
+describe("failure view", () => {
+  it("ignores Play and Space in a failed building level", async () => {
+    // Arrange
+    const { host } = await enterBuilding();
+    showFailure(host);
+
+    // Act
+    playPuzzle(host);
+    const spaceHandled = applyPuzzleCommand(host, { kind: "togglePlay" });
+
+    // Assert
+    expect(spaceHandled).toBe(false);
+    expect(syncBuild).not.toHaveBeenCalled();
+    expect(host.puzzle.current.kind).toBe("building");
+    expect(host.view().kind).toBe("failure");
+  });
+
+  it("ignores Stop and Space in a failed run and records no stars", async () => {
+    // Arrange
+    const { host } = await enterBuilding();
+    syncBuild.mockReturnValueOnce(fakeGenerated("First Pour", winWithoutBrimFrom(2)));
+    playPuzzle(host);
+    frames.runNext();
+    frames.runNext();
+    showFailure(host);
+
+    // Act
+    stopPuzzle(host);
+    const spaceHandled = applyPuzzleCommand(host, { kind: "togglePlay" });
+
+    // Assert
+    expect(spaceHandled).toBe(false);
+    expect(syncBuild).toHaveBeenCalledTimes(1);
+    expect(host.puzzle.starStore.get("first-pour")).toBeUndefined();
+    expect(host.puzzle.current.kind).toBe("running");
+    expect(host.view().kind).toBe("failure");
+  });
+
+  it("ignores editor edits and key commands in the failure view", async () => {
+    // Arrange
+    const { host } = await enterBuilding();
+    const before = host.puzzle.current;
+    showFailure(host);
+
+    // Act
+    applyPuzzleEdit(host, { kind: "place", toolKind: "plank", x: 0, y: 64 }, "commit");
+    const escapeHandled = applyPuzzleCommand(host, { kind: "escape" });
+
+    // Assert
+    expect(escapeHandled).toBe(false);
+    expect(host.puzzle.current).toBe(before);
+  });
+
+  it("releaseFailedPuzzle cancels a pending live inspection and releases the owner", async () => {
+    // Arrange
+    const { host } = await enterBuilding();
+    applyPuzzleEdit(host, { kind: "place", toolKind: "plank", x: 0, y: 64 }, "live");
+    const inspectionsBefore = inspector.mock.calls.length;
+
+    // Act
+    releaseFailedPuzzle(host);
+    frames.runUntilIdle(LOOP_FRAME_LIMIT);
+
+    // Assert
+    expect(host.puzzle.maybeOwned).toBeUndefined();
+    expect(host.puzzle.maybeInspectionFrame).toBeUndefined();
+    expect(inspector.mock.calls.length).toBe(inspectionsBefore);
   });
 });
 

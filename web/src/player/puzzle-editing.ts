@@ -12,7 +12,7 @@ import { editAnnouncement } from "../puzzle/editor-announce";
 import type { PuzzleKeyCommand } from "../puzzle/keyboard";
 import type { PuzzleToolKind } from "../puzzle/placements";
 import type { PuzzleState } from "../puzzle/reduce-puzzle";
-import { dispatch, publishState, type PuzzleHost } from "./puzzle-host";
+import { dispatch, ownsLiveSession, publishState, type PuzzleHost } from "./puzzle-host";
 
 /** `commit` inspects now and announces; `live` coalesces to one inspection per animation frame (D-02). */
 export type EditMode = "commit" | "live";
@@ -81,7 +81,7 @@ function commitNow(host: PuzzleHost): PuzzleState {
 
 /** Commits an inspection now (pointer-up after a drag), then redraws and publishes. */
 export function inspectNow(host: PuzzleHost): void {
-  if (host.puzzle.current.kind !== "building") {
+  if (host.puzzle.current.kind !== "building" || !ownsLiveSession(host)) {
     return;
   }
 
@@ -95,7 +95,7 @@ export function inspectNow(host: PuzzleHost): void {
 /** Animation-frame callback: live inspection updates only the tint and outlines, never copy (UI-D14). */
 function inspectLive(host: PuzzleHost): void {
   host.puzzle.maybeInspectionFrame = undefined;
-  if (host.puzzle.current.kind !== "building") {
+  if (host.puzzle.current.kind !== "building" || !ownsLiveSession(host)) {
     return;
   }
 
@@ -129,13 +129,14 @@ function announce(
 }
 
 /**
- * Applies one edit in building (D-25); every other phase ignores it. A
+ * Applies one edit in building (D-25); every other phase and the failure
+ * view ignore it. A
  * commit inspects now, redraws, publishes and announces; a live edit
  * publishes now and coalesces its inspection to one animation frame (D-02).
  */
 export function applyPuzzleEdit(host: PuzzleHost, event: PuzzleEditEvent, mode: EditMode): void {
   const before = host.puzzle.current;
-  if (before.kind !== "building") {
+  if (before.kind !== "building" || !ownsLiveSession(host)) {
     return;
   }
 
@@ -189,7 +190,7 @@ function editSelected(host: PuzzleHost, editor: BuildingEditor, event: PuzzleEdi
  */
 export function applyKeyCommand(host: PuzzleHost, command: EditorKeyCommand): boolean {
   const current = host.puzzle.current;
-  if (current.kind !== "building") {
+  if (current.kind !== "building" || !ownsLiveSession(host)) {
     return false;
   }
 

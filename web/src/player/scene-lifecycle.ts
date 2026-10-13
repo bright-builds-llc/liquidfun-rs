@@ -27,6 +27,7 @@ import {
   beginPuzzleRoute,
   createPuzzleController,
   leavePuzzle,
+  releaseFailedPuzzle,
   startPuzzleUnlessLoading,
 } from "./puzzle-lifecycle";
 import type { SceneRuntime } from "./scene-runtime";
@@ -77,6 +78,7 @@ function abandonScene(session: SceneRuntime): void {
 function failScene(session: SceneRuntime, error: unknown): void {
   const maybeFrame = maybeObservedFrame(session.view());
   cancelPendingFrame(session.clock);
+  releaseFailedPuzzle(session);
   disposeOwnedSession(session);
   session.setView({
     kind: "failure",

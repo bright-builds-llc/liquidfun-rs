@@ -56,6 +56,18 @@ export function publishState(host: PuzzleHost, state: PuzzleState): void {
   host.puzzle.setState(state);
 }
 
+/**
+ * True while the puzzle owns the live session and no failure is shown. Every
+ * Play, Stop and editor command checks this, so a failed level is left only
+ * through Try again or a route change.
+ */
+export function ownsLiveSession(host: PuzzleHost): boolean {
+  const maybeOwned = host.puzzle.maybeOwned;
+  return (
+    host.view().kind !== "failure" && maybeOwned !== undefined && host.maybeSession === maybeOwned
+  );
+}
+
 /** Releases the live session; a throwing dispose propagates to the caller's failure path. */
 export function disposeCurrentSession(host: PuzzleHost): void {
   host.maybeWorkerInitialization?.abort();

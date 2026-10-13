@@ -6,6 +6,8 @@ import { ClearIcon, PlayIcon, StopIcon } from "./PuzzleIcons";
 
 export type PuzzleTransportProps = {
   readonly state: PuzzleState;
+  /** True while the failure view is shown; Play, Stop and Clear render disabled. */
+  readonly failed: boolean;
   readonly onPlay: () => void;
   readonly onStop: () => void;
   readonly onCycleSpeed: () => void;
@@ -23,7 +25,7 @@ const STATUS_LINE_ID = "puzzle-status-line";
  * text labels by CSS and keeps the icon-only buttons named by `aria-label`.
  */
 export function PuzzleTransport(props: PuzzleTransportProps) {
-  const model = createMemo(() => transportModel(props.state));
+  const model = createMemo(() => transportModel(props.state, props.failed));
   const playName = () => (model().mode === "play" ? "Play" : "Stop");
 
   return (

@@ -214,6 +214,7 @@ function PuzzlePanelLayout(layoutProps: {
   const transport = (): JSX.Element => (
     <PuzzleTransport
       state={props.controller.state()}
+      failed={props.status === "failed"}
       onPlay={() => props.controller.play()}
       onStop={() => props.controller.stop()}
       onCycleSpeed={() => props.controller.cycleSpeed()}

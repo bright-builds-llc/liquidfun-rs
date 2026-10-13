@@ -20,6 +20,7 @@ import {
   disposeCurrentSession,
   dispatch,
   incrementGeneration,
+  ownsLiveSession,
   publishState,
   type PuzzleHost,
 } from "./puzzle-host";
@@ -126,6 +127,16 @@ export function tryAgainPuzzle(host: PuzzleHost): void {
 }
 
 /**
+ * Failure cleanup for the puzzle shell: cancels a pending live inspection and
+ * releases the puzzle's claim on the session the scene lifecycle disposes.
+ * Try again or a route change builds the next session.
+ */
+export function releaseFailedPuzzle(host: PuzzleHost): void {
+  cancelPendingInspection(host);
+  host.puzzle.maybeOwned = undefined;
+}
+
+/**
  * Clears puzzle state on leaving a puzzle route. The session itself is
  * disposed by the scene lifecycle (`beginScene` / `abandonScene`); the star
  * store survives for the page session (D-14).
@@ -143,9 +154,15 @@ export function leavePuzzle(host: PuzzleHost): void {
   host.puzzle.setMaybeBestStars(undefined);
 }
 
-/** Space toggles Play/Stop (D-21, D-23): handled in building and running, Play only when allowed. */
+/**
+ * Space toggles Play/Stop (D-21, D-23): handled in building and running, Play
+ * only when allowed. Unhandled in the failure view, so Space keeps its default.
+ */
 function togglePlay(host: PuzzleHost): boolean {
   const current = host.puzzle.current;
+  if (!ownsLiveSession(host)) {
+    return false;
+  }
   if (current.kind === "building") {
     if (canPlay(current)) {
       playPuzzle(host);

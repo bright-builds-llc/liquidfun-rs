@@ -57,17 +57,25 @@ function playControl(state: PuzzleState): PlayControl {
   }
 }
 
-/** Transport model for every phase; running (including deciding) offers Stop. */
-export function transportModel(state: PuzzleState): TransportModel {
+/** A failed level keeps its Play or Stop face but disables it; only Try again leaves the failure. */
+function failedControl(state: PuzzleState): PlayControl {
+  return state.kind === "running" ? { ...ENABLED_STOP, playEnabled: false } : DISABLED_PLAY;
+}
+
+/**
+ * Transport model for every phase; running (including deciding) offers Stop.
+ * While `failed`, Play, Stop and Clear are disabled (the shell ignores them too).
+ */
+export function transportModel(state: PuzzleState, failed = false): TransportModel {
   const speedText = speedLabel(state.speed);
   return {
-    ...playControl(state),
+    ...(failed ? failedControl(state) : playControl(state)),
     speed: state.speed,
     speedText,
     speedAccessibleName: `Speed ${speedText}`,
     speedTitle: `Speed ${speedText}. Press to change.`,
     speedEnabled: state.kind !== "loading",
-    clearEnabled: state.kind === "building" && state.editor.tools.length > 0,
+    clearEnabled: !failed && state.kind === "building" && state.editor.tools.length > 0,
   };
 }
 

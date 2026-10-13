@@ -323,6 +323,22 @@ describe("transportModel", () => {
     expect(model).toMatchObject({ mode: "play", playEnabled: false, playAccent: false });
   });
 
+  it.each([
+    ["building", () => withTool([0]), "play"],
+    ["running", () => running(10), "stop"],
+  ] as const)("disables Play/Stop and Clear while failed in %s", (_label, makeState, mode) => {
+    // Act
+    const model = transportModel(makeState(), true);
+
+    // Assert
+    expect(model).toMatchObject({
+      mode,
+      playEnabled: false,
+      playAccent: false,
+      clearEnabled: false,
+    });
+  });
+
   it("describes the speed with text, name and title", () => {
     // Arrange
     const state = reducePuzzle(building(), { kind: "setSpeed", speed: 2 });
