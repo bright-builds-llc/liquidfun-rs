@@ -206,6 +206,20 @@ fn puzzle_frame_reports_zero_sound_at_step_zero() {
 }
 
 #[test]
+fn first_step_reports_spawn_contacts_as_a_silent_baseline() {
+    for (file, text) in FIXTURES {
+        // Arrange
+        let steps = 1;
+
+        // Act
+        let trace = sound_trace(text, steps);
+
+        // Assert
+        assert_eq!(trace, vec![SoundSignals::default()], "{file} first step");
+    }
+}
+
+#[test]
 fn scene_frames_report_no_sound_before_and_after_a_step() {
     // Arrange
     let mut core = crate::build_core("dam-break").expect("dam-break builds");

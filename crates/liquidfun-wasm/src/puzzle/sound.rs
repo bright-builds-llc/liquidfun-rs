@@ -49,6 +49,10 @@ pub(crate) struct SoundTally {
     scratch: ContactSet,
     /// Aggregates for the last observed step.
     signals: SoundSignals,
+    /// Whether a step has been observed. Nothing has moved before the first
+    /// step, so its particle contacts and rigid `Begin` transitions existed
+    /// at spawn; that step only records them as the baseline.
+    has_baseline: bool,
 }
 
 impl SoundTally {
@@ -78,6 +82,11 @@ impl SoundTally {
             self.scratch.insert(key);
         }
         std::mem::swap(&mut self.previous, &mut self.scratch);
+        if !self.has_baseline {
+            self.has_baseline = true;
+            self.signals = SoundSignals::default();
+            return Ok(());
+        }
         let (impact_count, impact_impulse) = rigid_impacts(report);
         self.signals = SoundSignals {
             splash_contacts: u32::try_from(fresh).unwrap_or(u32::MAX),
@@ -87,7 +96,7 @@ impl SoundTally {
         Ok(())
     }
 
-    /// Aggregates for the last observed step; all zero before the first step.
+    /// Aggregates for the last observed step; all zero through the first step.
     pub(crate) const fn signals(&self) -> SoundSignals {
         self.signals
     }
