@@ -90,6 +90,16 @@ Out of this phase:
   - The puzzle e2e specs pass, including the new valve browser replay and a hint dismissal check.
   - The normal local checks pass: fmt, clippy, build, tests, and the web unit tests and type check.
 
+### Post-research amendments (yolo, 2026-10-12)
+
+These amend D-09, D-13 and D-07 after 40-RESEARCH.md. They resolve its Open Questions 1–4 with the recommended answers.
+
+- **D-25 (amends D-09, powder):** The first `sand-chute` task is a time-boxed spike for a powder behavior a player can see. Candidates include coarser grains (a larger per-level particle radius), powder next to a viscous or jelly neighbor, and scatter off a plank. If the spike finds a behavior that is honestly distinct, ship the level with a caption that describes what really happens. If it finds none, **drop the powder level** and record the spike numbers in the phase summary. Never ship a caption that claims behavior the engine does not show, such as "piles up". LEVEL-01's list says levels are "drawn from" these ideas, so powder is optional. The level count must stay within 5–8. After any drops under D-09 or D-25, at least `first-pour`, viscous, jelly pad, valve and finale remain.
+- **D-26 (amends D-13, valve leak):** Keep the D-04 clearance rule unchanged, with no valve-seat exemption. Design the valve level so that the gate's clearance trickle does not decide the outcome. The preferred design has the valve divert or block a stream rather than seal a reservoir. A reservoir of moderately viscous liquid (strength ≤ 1.0) is allowed behind the valve when that is the only way to make timing decisive. The caption still teaches timing. The window sweep must show losing bands both early and late, with a winning band between them.
+- **D-27 (fixtures):** Both the Rust and Bun parsers reject a plank line with an `open_tick` field. Only `valve` lines may have 5 fields.
+- **D-28 (buoyancy):** The buoyancy mechanism is a circle float (density 0.3–0.6) in a well, which rises as water fills the well. A circle avoids the native-vs-wasm trig risk. The D-09 drop rule still applies.
+- **D-29 (materials):** Viscous strength for levels stays in 1.0–1.5. Values above about 2.0 fail the step. Elastic jelly pad groups must also carry the `SOLID` group flag. The system tuning fields are `Option`s, and `None` leaves `first-pour`'s `ParticleSystemDef` identical.
+
 ### Claude's Discretion
 
 - Exact level ids, titles, captions, geometry, materials' tuning values, and the buoyancy and jelly mechanisms within D-11 and D-12.
