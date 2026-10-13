@@ -220,6 +220,21 @@ describe("createPuzzleSound state", () => {
     expect(logError).toHaveBeenCalled();
   });
 
+  it("stays off and failed without storing on when resume throws synchronously", () => {
+    // Arrange
+    const { sound, storage, logError } = harness({ resume: "throw" });
+
+    // Act
+    sound.setEnabled(true);
+
+    // Assert
+    expect(sound.enabled()).toBe(false);
+    expect(sound.failed()).toBe(true);
+    expect(sound.available()).toBe(true);
+    expect(storage.stored()).toBeUndefined();
+    expect(logError).toHaveBeenCalled();
+  });
+
   it("stores off, stops voices and suspends when turned off", () => {
     // Arrange
     const { sound, audio, storage } = harness();

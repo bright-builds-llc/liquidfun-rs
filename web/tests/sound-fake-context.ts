@@ -84,10 +84,11 @@ export class FakeNode {
   }
 }
 
-/** How `resume()` behaves: run at once, stay pending, or reject. */
-export type ResumeBehavior = "run" | "pending" | "reject";
+/** How `resume()` behaves: run at once, stay pending, reject, or throw synchronously. */
+export type ResumeBehavior = "run" | "pending" | "reject" | "throw";
 
 export const RESUME_ERROR = new Error("resume rejected");
+export const RESUME_THROW_ERROR = new Error("resume threw");
 
 export class FakeContext {
   state: string = "suspended";
@@ -116,6 +117,9 @@ export class FakeContext {
   resume(): Promise<void> {
     this.resumeCalls += 1;
     this.log.push("resume");
+    if (this.resumeBehavior === "throw") {
+      throw RESUME_THROW_ERROR;
+    }
     if (this.resumeBehavior === "reject") {
       return Promise.reject(RESUME_ERROR);
     }

@@ -192,7 +192,8 @@ export function createPuzzleSound(deps: PuzzleSoundDeps): PuzzleSound {
     }
     setFailed(false);
     guarded((engine) => {
-      if (unlock(engine)) {
+      // A resume that throws synchronously has already turned sound off (WR-02).
+      if (unlock(engine) && !failed()) {
         deps.preference.set(true);
         setEnabledSignal(true);
       }
