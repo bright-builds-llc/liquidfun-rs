@@ -60,11 +60,21 @@ export function createFieldTarget(
   for (let index = 0; index < attachmentCount; index++) {
     const texture = gl.createTexture();
     if (texture === null) {
+      deleteFieldTarget(gl, { framebuffer, textures, width: 0, height: 0 });
       return undefined;
     }
     textures.push(texture);
   }
   return { framebuffer, textures, width: 0, height: 0 };
+}
+
+/** Frees a field target's framebuffer and attachment textures. */
+export function deleteFieldTarget(
+  gl: WebGL2RenderingContext,
+  target: FieldTarget,
+): void {
+  target.textures.forEach((texture) => gl.deleteTexture(texture));
+  gl.deleteFramebuffer(target.framebuffer);
 }
 
 /**

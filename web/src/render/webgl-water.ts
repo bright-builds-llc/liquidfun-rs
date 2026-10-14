@@ -13,6 +13,7 @@ import type { Camera } from "./camera";
 import { CANVAS_RGB } from "./canvas";
 import {
   createFieldTarget,
+  deleteFieldTarget,
   type FieldSize,
   type FieldTarget,
   particleSurfaceFor,
@@ -43,6 +44,7 @@ type WaterPass = {
   readonly pointVao: WebGLVertexArrayObject;
   readonly shadeVao: WebGLVertexArrayObject;
   readonly speedBuffer: WebGLBuffer;
+  readonly clipBuffer: WebGLBuffer;
   readonly speedLocation: number;
   readonly target: FieldTarget;
   readonly backdropTexture: WebGLTexture;
@@ -136,6 +138,40 @@ function createBackdropTexture(
   return texture;
 }
 
+/** GL objects of a Water pass; a failed creation may lack some of them. */
+type WaterObjects = {
+  readonly programs: WaterPrograms;
+  readonly buffers: readonly (WebGLBuffer | undefined)[];
+  readonly vertexArrays: readonly (WebGLVertexArrayObject | null)[];
+  readonly maybeTarget: FieldTarget | undefined;
+  readonly maybeBackdropTexture: WebGLTexture | undefined;
+};
+
+/** Frees Water GL objects, skipping any that were never created. */
+function deleteWaterObjects(
+  gl: WebGL2RenderingContext,
+  objects: WaterObjects,
+): void {
+  gl.deleteProgram(objects.programs.point);
+  gl.deleteProgram(objects.programs.shade);
+  objects.buffers.forEach((buffer) => gl.deleteBuffer(buffer ?? null));
+  objects.vertexArrays.forEach((vao) => gl.deleteVertexArray(vao));
+  if (objects.maybeTarget !== undefined) {
+    deleteFieldTarget(gl, objects.maybeTarget);
+  }
+  gl.deleteTexture(objects.maybeBackdropTexture ?? null);
+}
+
+function deleteWaterPass(gl: WebGL2RenderingContext, water: WaterPass): void {
+  deleteWaterObjects(gl, {
+    programs: water.programs,
+    buffers: [water.speedBuffer, water.clipBuffer],
+    vertexArrays: [water.pointVao, water.shadeVao],
+    maybeTarget: water.target,
+    maybeBackdropTexture: water.backdropTexture,
+  });
+}
+
 function createWaterPass(
   buffers: SharedParticleBuffers,
   createBackdropCanvas: () => WaterBackdropCanvas | undefined,
@@ -164,6 +200,13 @@ function createWaterPass(
     backdropTexture === undefined ||
     locations === undefined
   ) {
+    deleteWaterObjects(gl, {
+      programs,
+      buffers: [speedBuffer, clipBuffer],
+      vertexArrays: [pointVao, shadeVao],
+      maybeTarget: target,
+      maybeBackdropTexture: backdropTexture,
+    });
     return undefined;
   }
   configureVertexArrays(
@@ -179,6 +222,7 @@ function createWaterPass(
     pointVao,
     shadeVao,
     speedBuffer,
+    clipBuffer,
     speedLocation: locations.speed,
     target,
     backdropTexture,
@@ -334,6 +378,7 @@ export function drawWater(
   if (target.width !== size.width || target.height !== size.height) {
     // Research Pitfall 4: MRT can be incomplete where one target is not.
     if (!resizeFieldTarget(gl, target, size.width, size.height)) {
+      deleteWaterPass(gl, water);
       surface.disablePass(WATER_PASS);
       return false;
     }

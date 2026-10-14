@@ -21,8 +21,9 @@ export function compileShader(
 }
 
 /**
- * Compiles and links a vertex/fragment pair. Returns undefined when either
- * stage fails to compile or the program fails to link.
+ * Compiles and links a vertex/fragment pair. Returns undefined, after
+ * deleting every shader and program it created, when either stage fails to
+ * compile or the program fails to link.
  */
 export function linkProgram(
   gl: WebGL2RenderingContext,
@@ -31,11 +32,13 @@ export function linkProgram(
 ): WebGLProgram | undefined {
   const vertex = compileShader(gl, gl.VERTEX_SHADER, vertexSource);
   const fragment = compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
-  if (vertex === undefined || fragment === undefined) {
-    return undefined;
-  }
-  const program = gl.createProgram();
-  if (program === null) {
+  const program =
+    vertex === undefined || fragment === undefined
+      ? null
+      : gl.createProgram();
+  if (vertex === undefined || fragment === undefined || program === null) {
+    gl.deleteShader(vertex ?? null);
+    gl.deleteShader(fragment ?? null);
     return undefined;
   }
   gl.attachShader(program, vertex);

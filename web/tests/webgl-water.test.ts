@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RenderFrame } from "../src/physics/frame";
 import { createCamera } from "../src/render/camera";
+import { linkProgram } from "../src/render/gl-program";
 import { drawShadedBlob } from "../src/render/webgl-particles";
 import {
   drawWater,
@@ -224,5 +225,58 @@ describe("drawWater", () => {
     // Assert
     expect(fixture.gl.createProgram).toHaveBeenCalledTimes(2);
     expect(fixture.gl.getUniformLocation).toHaveBeenCalledTimes(8);
+  });
+});
+
+describe("water GL cleanup", () => {
+  it("frees every water GL object when the 2-attachment target is incomplete", () => {
+    // Arrange
+    const fixture = glFixture({ maybeIncompleteMrt: true });
+
+    // Act
+    const drawn = draw(fixture);
+
+    // Assert
+    const { gl } = fixture;
+    expect(drawn).toBe(false);
+    expect(gl.deleteProgram).toHaveBeenCalledTimes(2);
+    expect(gl.deleteVertexArray).toHaveBeenCalledTimes(2);
+    expect(gl.deleteBuffer).toHaveBeenCalledTimes(2);
+    expect(gl.deleteFramebuffer).toHaveBeenCalledTimes(1);
+    expect(gl.deleteTexture).toHaveBeenCalledTimes(3);
+  });
+
+  it("frees the objects it made when a vertex array cannot be created", () => {
+    // Arrange
+    const fixture = glFixture();
+    // A lost context returns null even though the DOM typings omit it.
+    const lostVao = null as unknown as WebGLVertexArrayObject;
+    vi.mocked(fixture.gl.createVertexArray).mockReturnValueOnce(lostVao);
+
+    // Act
+    const drawn = draw(fixture);
+
+    // Assert
+    const { gl } = fixture;
+    expect(drawn).toBe(false);
+    expect(gl.deleteProgram).toHaveBeenCalledTimes(2);
+    expect(gl.deleteFramebuffer).toHaveBeenCalledTimes(1);
+  });
+
+  it("deletes the compiled vertex shader when the fragment stage fails", () => {
+    // Arrange
+    const { gl } = glFixture();
+    vi.mocked(gl.getShaderParameter)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false);
+
+    // Act
+    const program = linkProgram(gl, "vertex", "fragment");
+
+    // Assert
+    const [vertexShader] = vi.mocked(gl.createShader).mock.results;
+    expect(program).toBeUndefined();
+    expect(gl.deleteShader).toHaveBeenCalledWith(vertexShader?.value);
+    expect(gl.createProgram).not.toHaveBeenCalled();
   });
 });
