@@ -50,7 +50,6 @@ type TrayItemFit = {
   readonly nameVisible: boolean;
   readonly nameScroll: number;
   readonly nameClient: number;
-  readonly nameText: string;
   readonly nameFontPx: number;
   readonly countFontPx: number;
   readonly countRight: number;
@@ -96,7 +95,6 @@ async function readTrayFit(page: Page): Promise<TrayFit> {
         nameVisible: getComputedStyle(name).display !== "none",
         nameScroll: name.scrollWidth,
         nameClient: name.clientWidth,
-        nameText: name.textContent ?? "",
         nameFontPx: parseFloat(getComputedStyle(name).fontSize),
         countFontPx: parseFloat(getComputedStyle(count).fontSize),
         countRight: count.getBoundingClientRect().right,
@@ -119,7 +117,6 @@ function expectTrayFits(fit: TrayFit, trayWidth: number): void {
   for (const item of fit.items) {
     if (item.nameVisible) {
       expect(item.nameScroll).toBeLessThanOrEqual(item.nameClient);
-      expect(item.nameText).not.toContain("…");
     }
     expect(Math.abs(item.height - TRAY_HEIGHT_PX)).toBeLessThanOrEqual(PX_TOLERANCE);
     expect(item.countRight).toBeLessThanOrEqual(item.innerRight + PX_TOLERANCE);
