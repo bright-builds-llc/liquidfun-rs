@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
-status: executing
-stopped_at: Completed 46-04-PLAN.md
-last_updated: "2026-10-14T19:31:13.269Z"
+status: verifying
+stopped_at: Completed 46-05-PLAN.md
+last_updated: "2026-10-14T19:32:37.627Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 Phase: 46 (Cartesian Diver) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-14
 
 Progress: [██░░░░░░░░] Phase 45 of 45–49 complete (50 and 51 dropped)
@@ -219,6 +219,7 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 46]: 46-03: D-14 split: Chromium drops -webkit-touch-callout from computed style, so e2e asserts user-select/-webkit-user-select/touch-action none and a prevented contextmenu; a Vitest source-text test and the built-stylesheet fetch guard the callout; real-iPhone long press is optional manual
 - [Phase 46]: 46-04: README cues kept at samples 20/110; clip reaches bottom third 1.1 s after cue 1 and top third 2.2 s after cue 2; other scenes' host WebP re-encodes restored (SVGs byte-identical)
 - [Phase 46]: 46-04: diver scene-spot 2026-10-14T19-29-18Z start 1936 / end 1936 / median 0.582 ms/step; full capture 2026-10-14T19-29-46Z at 89983a79b gate PASS 25/25 unchanged, cartesian-diver fa849f40b8c2a791 added; 15/15 local gates
+- [Phase 46]: 46-05: baseline grown in single-file commit 18c8a5e92 from reused capture 2026-10-14T19-29-46Z at 89983a79b (crates/tools/web identical to HEAD); gate rerun PASS 26/26 unchanged, added none; Phase 47 protects 26 ids incl. cartesian-diver
 
 ### Pending Todos
 
@@ -358,9 +359,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 46 P02 | 30min | 2 tasks | 19 files |
 | Phase 46 P03 | 3min | 2 tasks | 4 files |
 | Phase 46 P04 | 27min | 2 tasks | 4 files |
+| Phase 46 P05 | 3min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T19:31:13.262Z
-Stopped at: Completed 46-04-PLAN.md
+Last session: 2026-10-14T19:32:37.621Z
+Stopped at: Completed 46-05-PLAN.md
 Resume file: None

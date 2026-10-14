@@ -156,7 +156,7 @@ Plans:
 - [x] 46-02-PLAN.md — Catalog registration (Rust + web), record, preview, portrait frame, README/survey/demo plans, tests and e2e wiring
 - [x] 46-03-PLAN.md — Shared long-press callout suppression on the scene canvas with phone-viewport e2e
 - [x] 46-04-PLAN.md — README preview generation and review, full gates, scene-spot numbers, 25/25 fingerprint gate
-- [ ] 46-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 26/26 unchanged
+- [x] 46-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 26/26 unchanged
 **UI hint**: yes
 
 ### Phase 47: Archimedes Screw
@@ -272,7 +272,7 @@ Plans:
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
 | 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete    | 2026-10-14 |
 | 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 10/10 | Complete    | 2026-10-14 |
-| 46. Cartesian Diver | v1.6 | 4/5 | In Progress|  |
+| 46. Cartesian Diver | v1.6 | 5/5 | Complete   | 2026-10-14 |
 | 47. Archimedes Screw | v1.6 | 0/TBD | Not started | - |
 | 48. Fake Ferrofluid | v1.6 | 0/TBD | Not started | - |
 | 49. Rayleigh–Taylor Instability | v1.6 | 0/TBD | Not started | - |
