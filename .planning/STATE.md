@@ -1,13 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.6
-milestone_name: Physics Curiosity Scenes
-status: ready_to_plan
-current_phase: 46
-current_phase_name: "Cartesian Diver"
-current_plan: null
-stopped_at: Phase 45 complete (verified 5/5); siphon and hourglass dropped to seeds
-last_updated: "2026-10-14T17:24:19.827Z"
+milestone_name: milestone
+status: verifying
+stopped_at: Phase 46 context gathered
+last_updated: "2026-10-14T17:40:34.436Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
@@ -354,6 +351,6 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 
 ## Session Continuity
 
-Last session: 2026-10-14T17:11:10.718Z
-Stopped at: Completed 45-08-PLAN.md
-Resume file: None
+Last session: 2026-10-14T17:40:34.426Z
+Stopped at: Phase 46 context gathered
+Resume file: .planning/phases/46-cartesian-diver/46-CONTEXT.md
