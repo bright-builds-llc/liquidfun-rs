@@ -9,10 +9,12 @@ import {
   puzzleHash,
 } from "../src/catalog/puzzle-levels";
 import { PUZZLE_IDS, type PuzzleId } from "../src/catalog/puzzles";
+import { PUZZLE_TEST_PLACEMENTS_GLOBAL } from "../src/puzzle/placements";
 import { installControlledRefreshRate } from "./player-helpers";
 import {
   DESKTOP,
   PHONE_PORTRAIT,
+  installSolutionPlacements,
   overlappingLeaves,
   overlappingObstacles,
   puzzlePath,
@@ -20,7 +22,7 @@ import {
   stablePuzzleCamera,
   waitForPuzzlePhase,
 } from "./puzzle-helpers";
-import { SCREENS_DIR_40, SCREENS_DIR_44 } from "./puzzle-editor-helpers";
+import { SCREENS_DIR_40, SCREENS_DIR_44, readPlacements } from "./puzzle-editor-helpers";
 
 // Each test gets a fresh browser context, so storage starts empty and
 // first-pour shows its placement hint.
@@ -223,6 +225,41 @@ for (const id of PUZZLE_IDS) {
     );
   });
 }
+
+test(`wins first-pour and opens thick-syrup ready to build from Next at ${viewportName(DESKTOP)}`, async ({
+  page,
+}) => {
+  test.setTimeout(RUN_TEST_TIMEOUT_MS);
+  // Arrange
+  await installControlledRefreshRate(page, 15);
+  await installSolutionPlacements(page);
+  await openLevelBuilding(page, "first-pour", DESKTOP);
+  expect(maybeNextPuzzleId("first-pour")).toBe("thick-syrup");
+
+  // Act: win first-pour with the seam's reference placements.
+  await speedToFour(page);
+  await page.getByRole("button", { name: "Play", exact: true }).click();
+  await waitForPuzzlePhase(page, "ended", ENDED_TIMEOUT_MS);
+  await expect(page.locator("main")).toHaveAttribute("data-puzzle-outcome", "won");
+  // Next is a hash link, so the init script does not run again. A leftover seam
+  // would name first-pour while the route enters thick-syrup (D-07).
+  await page.evaluate((name) => {
+    Reflect.deleteProperty(window, name);
+  }, PUZZLE_TEST_PLACEMENTS_GLOBAL);
+  expect(await page.evaluate((name) => name in window, PUZZLE_TEST_PLACEMENTS_GLOBAL)).toBe(false);
+  await page.getByRole("link", { name: "Next level" }).click();
+
+  // Assert
+  await expect(page).toHaveURL(/#\/puzzle\/thick-syrup$/);
+  await expect(page.locator("main")).toHaveAttribute("data-puzzle", "thick-syrup");
+  await waitForPuzzlePhase(page, "building");
+  await expect(page.locator("main")).toHaveAttribute("data-puzzle-phase", "building");
+  expect(await readPlacements(page)).toBe("");
+  await expect(page.locator("#player-title")).toHaveText(PUZZLE_TITLES["thick-syrup"]);
+  await expect(page.locator(".puzzle-failure")).toHaveAttribute("data-failed", "false");
+  await stablePuzzleCamera(page);
+  expect((await readHudGeometry(page)).usedFallback).toBe(false);
+});
 
 for (const { viewport, trayWidth } of PORTRAIT_TRAY_CASES) {
   test(`shows every tray name in full at ${viewportName(viewport)}`, async ({ page }) => {
