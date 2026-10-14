@@ -79,15 +79,37 @@ Deferred. Tracked but not in the current roadmap.
 
 ## Traceability
 
-Filled in by the roadmap.
+SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns after every phase; each is mapped to one phase for traceability (see ROADMAP.md Shared acceptance rules). SIPHON and SAND follow the Phase 45 spike decisions.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
+| PREP-01 | Phase 45 | Pending |
+| PREP-02 | Phase 45 | Pending |
+| PREP-03 | Phase 45 | Pending |
+| SCENE-01 | Phase 46 | Pending |
+| SCENE-02 | Phase 46 | Pending |
+| SCENE-03 | Phase 46 | Pending |
+| DIVER-01 | Phase 46 | Pending |
+| DIVER-02 | Phase 46 | Pending |
+| DIVER-03 | Phase 46 | Pending |
+| SCREW-01 | Phase 47 | Pending |
+| SCREW-02 | Phase 47 | Pending |
+| FERRO-01 | Phase 48 | Pending |
+| FERRO-02 | Phase 48 | Pending |
+| FERRO-03 | Phase 48 | Pending |
+| RT-01 | Phase 49 | Pending |
+| RT-02 | Phase 49 | Pending |
+| SIPHON-01 | Phase 50 | Pending |
+| SIPHON-02 | Phase 50 | Pending |
+| SAND-01 | Phase 51 | Pending |
+| SAND-02 | Phase 51 | Pending |
 
 **Coverage:**
 
 - v1.6 requirements: 20 total
-- Mapped to phases: 0 (pending roadmap)
+- Mapped to phases: 20
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-10-14*
+*Last updated: 2026-10-14 after v1.6 roadmap creation (Phases 45–51)*

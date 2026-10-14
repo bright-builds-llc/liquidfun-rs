@@ -2,16 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Physics Curiosity Scenes
-status: defining_requirements
-stopped_at: Milestone v1.6 started (defining requirements)
-last_updated: "2026-10-14T02:48:53.417Z"
+current_phase: 45
+current_phase_name: "Curiosity Groundwork and Feasibility Spikes"
+current_plan: null
+status: ready_to_plan
+stopped_at: v1.6 roadmap created (Phases 45-51)
+last_updated: "2026-10-14T12:00:00.000Z"
 last_activity: 2026-10-14
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 64
-  completed_plans: 64
-  percent: 100
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** v1.6 Physics Curiosity Scenes — defining requirements
+**Current focus:** v1.6 Physics Curiosity Scenes — Phase 45: Curiosity Groundwork and Feasibility Spikes
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 45 of 51 (Curiosity Groundwork and Feasibility Spikes) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-14 — Milestone v1.6 started
+Status: Ready to plan
+Last activity: 2026-10-14 — v1.6 roadmap created: 7 phases (45–51), 20/20 requirements mapped
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. v1.6 Physics Curiosity Scenes started 2026-10-14 (SEED-004); phase numbering continues at 45. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
 
@@ -38,6 +41,7 @@ v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, author
 
 ### Roadmap Evolution
 
+- v1.6 (2026-10-14): Roadmap created with Phases 45–51 — groundwork and siphon/hourglass feasibility spikes (45), then one scene per phase: Cartesian diver (46), Archimedes screw (47), fake ferrofluid (48), Rayleigh–Taylor instability (49), siphon (50, shaped by the spike decision) and sand hourglass (51, conditional: returns to a seed if the spike fails). SCENE-01..03 are mapped to Phase 46 and apply to every scene phase; the PREP-01 id-join fingerprint gate reruns after every phase.
 - v1.5 (2026-10-11): Roadmap created with Phases 37–43 — puzzle core in the bridge, puzzle route and player shell, tools and stars, timed valve and teaching levels, level select and progress, opt-in sound, GPU water (closing).
 - v1.4 (2026-10-06): Simplified to Phases 34–36 — timing survey, targeted fixes for the slowest scenes, re-survey. The original Phases 34–60 plan is in commit `011e80e`.
 - Phase 30 added: Periodic hydraulic fountain
@@ -49,6 +53,9 @@ v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, author
 
 v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.md`, `v1.4-STATE.md` and `v1.5-STATE.md`, with outcomes in PROJECT.md Key Decisions. The entries below are kept for continuity.
 
+- [v1.6]: No engine change by default; scene mechanisms are bridge code on existing `World` APIs. The only allowed engine addition is an off-by-default `World::set_particle_flags`, and only if the hourglass spike needs it.
+- [v1.6]: Fingerprint gate joins on scene id against a committed, pinned baseline; new ids may appear and the protected set grows as each scene ships.
+- [v1.6]: If the PREP-03 hourglass spike cannot reach a pile slope of at least 20°, SAND-01 and SAND-02 return to a seed (owner decision, 2026-10-14).
 - [v1.3]: Archive is a planning label. No crate publication. Annotated tag `v1.3` marks the archive.
 - [v1.4]: Speed takes priority over compact memory; bounded measured increases are allowed. Preserve authored physics/settings, ordering, visuals and lifecycle; no promised percentage/FPS gain.
 - [v1.4]: Simplified 2026-10-06. Survey all scenes, fix only the slowest few with profile-backed before/after gains; keep measurement out of production scene code. The Phase 34 harness (plans 1–9, ~150k lines, ~3.8 GB evidence) is shelved on `wip/v1.4-phase34-harness`; evidence moved to `~/Archives/liquidfun-rs-v1.4-phase34-evidence/`.
@@ -320,6 +327,6 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 
 ## Session Continuity
 
-Last session: 2026-10-14T02:09:40.270Z
-Stopped at: Completed 44-03-PLAN.md
+Last session: 2026-10-14
+Stopped at: v1.6 roadmap created (Phases 45–51); next is `/gsd-plan-phase 45`
 Resume file: None
