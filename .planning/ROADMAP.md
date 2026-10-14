@@ -296,8 +296,8 @@ Plans:
 
 Plans:
 - [ ] 44-01-PLAN.md — Valve tick cap and seam open-tick default (unit), stacked portrait two-kind tray chip, valve readout as the stepper description, tray-fit e2e at 390/360 wide (wave 1)
-- [ ] 44-02-PLAN.md — Strict tsconfig.e2e.json in `bun run typecheck` and root fixes for the 16 e2e type errors (wave 1)
-- [ ] 44-03-PLAN.md — Next-from-won and timed-gate 1×/2×/4× e2e with valve ARIA hooks, then the 10 phase gates and grand-finale screenshot (wave 2)
+- [ ] 44-02-PLAN.md — Strict tsconfig.e2e.json in `bun run typecheck` and root fixes for the 16 e2e type errors (wave 2)
+- [ ] 44-03-PLAN.md — Next-from-won and timed-gate 1×/2×/4× e2e with valve ARIA hooks, then the 10 phase gates and grand-finale screenshot (wave 3)
 **UI hint**: yes
 
 ## Progress
