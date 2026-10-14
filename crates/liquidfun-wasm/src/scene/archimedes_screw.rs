@@ -275,6 +275,10 @@ impl SceneHooks for ArchimedesScrewHooks {
 }
 
 #[cfg(test)]
+mod hooks_tests;
+#[cfg(test)]
+mod spike_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod tests;

@@ -3,11 +3,14 @@
 //! grid and the clipped vane outlines.
 //!
 //! A world point is `TUBE_ORIGIN + s * AXIS + t * NORMAL`: `s` runs along the
-//! tube from the bottom housing face on the floor line and `t` is the height
-//! above that floor line. Vanes and the housing and slab ends are cut along
-//! lines of constant vane coordinate `q = s - (t - TUBE_GAP / 2) * VANE_TAN`,
-//! so every cut is parallel to the slanted vanes. All directions are literals,
-//! so building the scene needs no trigonometry on native or wasm.
+//! tube and `t` is the height above the floor line. Vanes are cut along lines
+//! of constant vane coordinate `q = s - (t - TUBE_GAP / 2) * VANE_TAN`. The
+//! top housing face and the outlet end of the floor slab are cut parallel to
+//! the vanes. The bottom housing face leans further uphill and the inlet end
+//! of the floor slab leans the other way, so a vane closing on either one
+//! meets it first at one end and squeezes the water out of an open wedge
+//! instead of trapping a film between two parallel faces. All directions are
+//! literals, so building the scene needs no trigonometry on native or wasm.
 
 use liquidfun::math::Vec2;
 
@@ -57,6 +60,13 @@ pub(super) const TRAIN_START_S: f32 = -HOUSING_LENGTH / 2.0;
 pub(super) const VANE_TAN: f32 = 0.363_970_23;
 /// Cosine of the vane slant `TAU / 18`.
 pub(super) const VANE_COS: f32 = 0.939_692_6;
+/// Lean of the bottom housing face from the tube normal: `tan(TAU / 8)`
+/// (45 degrees), steeper than the vanes. A reversing vane meets it at the
+/// roof first, so the wedge in front of the vane opens down into the inlet.
+pub(super) const BOTTOM_FACE_TAN: f32 = 1.0;
+/// Lean of the inlet end of the floor slab: the vanes' mirror image, an
+/// undercut whose wedge against a rising vane tip opens downward.
+const INLET_END_TAN: f32 = -VANE_TAN;
 /// Axial reach of a vane tip beyond its mid-height point.
 #[cfg(test)]
 pub(super) const VANE_OVERHANG: f32 = (TUBE_GAP + VANE_EMBED) * VANE_TAN;
@@ -78,7 +88,7 @@ const RESERVOIR_WALL_THICKNESS: f32 = 0.3;
 const RESERVOIR_WALL_TOP_Y: f32 = 1.6;
 /// Initial reservoir surface: high enough that each pocket seals about half
 /// full and the inlet stays covered while the basin fills (D-08).
-pub(super) const RESERVOIR_FILL_TOP_Y: f32 = 0.95;
+pub(super) const RESERVOIR_FILL_TOP_Y: f32 = 1.15;
 
 /// Basin floor top; the basin starts empty.
 pub(super) const BASIN_FLOOR_Y: f32 = 1.6;
@@ -130,9 +140,14 @@ pub(super) fn tube_point(s: f32, t: f32) -> Vec2 {
     TUBE_ORIGIN + AXIS * s + NORMAL * t
 }
 
+/// World point at height `t` on the cut through `s = offset` at mid-height that leans by `lean_tan`.
+fn cut_point(offset: f32, lean_tan: f32, t: f32) -> Vec2 {
+    tube_point(offset + (t - TUBE_GAP / 2.0) * lean_tan, t)
+}
+
 /// World point at vane coordinate `q` and height `t`.
 fn vane_point(q: f32, t: f32) -> Vec2 {
-    tube_point(q + (t - TUBE_GAP / 2.0) * VANE_TAN, t)
+    cut_point(q, VANE_TAN, t)
 }
 
 /// Tube coordinates `(s, t)` of a world point.
@@ -146,14 +161,34 @@ fn vane_coordinate(s: f32, t: f32) -> f32 {
     s - (t - TUBE_GAP / 2.0) * VANE_TAN
 }
 
+/// A straight cut across the tube: its `s` at mid-height and its lean from the normal.
+#[derive(Clone, Copy)]
+struct Cut {
+    offset: f32,
+    lean_tan: f32,
+}
+
+/// A cut parallel to the vanes at vane coordinate `q`.
+const fn vane_cut(q: f32) -> Cut {
+    Cut {
+        offset: q,
+        lean_tan: VANE_TAN,
+    }
+}
+
+/// Counter-clockwise quad between a low cut, a high cut and two heights.
+fn cut_band(low: Cut, high: Cut, t_min: f32, t_max: f32) -> [Vec2; 4] {
+    [
+        cut_point(low.offset, low.lean_tan, t_min),
+        cut_point(high.offset, high.lean_tan, t_min),
+        cut_point(high.offset, high.lean_tan, t_max),
+        cut_point(low.offset, low.lean_tan, t_max),
+    ]
+}
+
 /// Counter-clockwise parallelogram between two vane-parallel cuts and two heights.
 fn vane_band(q_min: f32, q_max: f32, t_min: f32, t_max: f32) -> [Vec2; 4] {
-    [
-        vane_point(q_min, t_min),
-        vane_point(q_max, t_min),
-        vane_point(q_max, t_max),
-        vane_point(q_min, t_max),
-    ]
+    cut_band(vane_cut(q_min), vane_cut(q_max), t_min, t_max)
 }
 
 /// Counter-clockwise corners of an axis-aligned box.
@@ -161,11 +196,15 @@ fn axis_box(min: Vec2, max: Vec2) -> [Vec2; 4] {
     [min, Vec2::new(max.x, min.y), max, Vec2::new(min.x, max.y)]
 }
 
-/// Solid bottom end of the vane track; its face is parallel to the vanes.
+/// Solid bottom end of the vane track. Its face crosses mid-height at `s = 0`
+/// and leans `BOTTOM_FACE_TAN`.
 pub(super) fn bottom_housing() -> [Vec2; 4] {
-    vane_band(
-        -HOUSING_LENGTH,
-        0.0,
+    cut_band(
+        vane_cut(-HOUSING_LENGTH),
+        Cut {
+            offset: 0.0,
+            lean_tan: BOTTOM_FACE_TAN,
+        },
         -SLAB_THICKNESS,
         TUBE_GAP + SLAB_THICKNESS,
     )
@@ -182,11 +221,16 @@ pub(super) fn top_housing() -> [Vec2; 4] {
 }
 
 /// Floor slab over the sealed run only: the inlet and outlet openings run
-/// from its ends to the housing faces (D-06).
+/// from its ends to the housing faces (D-06). Its top starts at vane
+/// coordinate `INLET_LENGTH`; the inlet end is undercut by `INLET_END_TAN`.
 pub(super) fn floor_slab() -> [Vec2; 4] {
-    vane_band(
-        INLET_LENGTH,
-        TUBE_LENGTH - OUTLET_LENGTH,
+    let inlet_end = Cut {
+        offset: INLET_LENGTH - TUBE_GAP / 2.0 * (VANE_TAN - INLET_END_TAN),
+        lean_tan: INLET_END_TAN,
+    };
+    cut_band(
+        inlet_end,
+        vane_cut(TUBE_LENGTH - OUTLET_LENGTH),
         -SLAB_THICKNESS,
         0.0,
     )
@@ -265,13 +309,51 @@ pub(super) fn vane_quads() -> [[Vec2; 4]; VANE_COUNT as usize] {
 /// Drawn outline of the vane centered at `q_center`, clipped only against
 /// the two housing faces, or `None` while it is wholly inside a housing.
 /// The embedded tips are drawn as they collide (UI-D69).
-pub(super) fn visible_vane_outline(q_center: f32) -> Option<[Vec2; 4]> {
-    let q_min = (q_center - VANE_HALF_SPAN).max(0.0);
+pub(super) fn visible_vane_outline(q_center: f32) -> Option<Vec<Vec2>> {
+    let q_min = q_center - VANE_HALF_SPAN;
     let q_max = (q_center + VANE_HALF_SPAN).min(TUBE_LENGTH);
     if q_min >= q_max {
         return None;
     }
-    Some(vane_band(q_min, q_max, -VANE_EMBED, TUBE_GAP + VANE_EMBED))
+    let band = [
+        (q_min, -VANE_EMBED),
+        (q_max, -VANE_EMBED),
+        (q_max, TUBE_GAP + VANE_EMBED),
+        (q_min, TUBE_GAP + VANE_EMBED),
+    ];
+    let visible = clip_outside_bottom_face(&band);
+    if visible.len() < 3 {
+        return None;
+    }
+    Some(visible.into_iter().map(|(q, t)| vane_point(q, t)).collect())
+}
+
+/// How far vane-coordinate point `(q, t)` lies outside the bottom housing face along `q`.
+fn bottom_face_clearance((q, t): (f32, f32)) -> f32 {
+    q - (t - TUBE_GAP / 2.0) * (BOTTOM_FACE_TAN - VANE_TAN)
+}
+
+/// Keeps the part of a convex `(q, t)` polygon outside the bottom housing face
+/// (one Sutherland-Hodgman pass).
+fn clip_outside_bottom_face(polygon: &[(f32, f32)]) -> Vec<(f32, f32)> {
+    let mut kept = Vec::with_capacity(polygon.len() + 1);
+    for index in 0..polygon.len() {
+        let current = polygon[index];
+        let next = polygon[(index + 1) % polygon.len()];
+        let current_clearance = bottom_face_clearance(current);
+        let next_clearance = bottom_face_clearance(next);
+        if current_clearance >= 0.0 {
+            kept.push(current);
+        }
+        if (current_clearance >= 0.0) != (next_clearance >= 0.0) {
+            let along = current_clearance / (current_clearance - next_clearance);
+            kept.push((
+                current.0 + (next.0 - current.0) * along,
+                current.1 + (next.1 - current.1) * along,
+            ));
+        }
+    }
+    kept
 }
 
 /// Each static wall polygon as a closed four-segment loop, in `wall_quads` order.
@@ -285,7 +367,7 @@ pub(super) fn wall_segments() -> Vec<RigidSegment> {
 }
 
 /// Appends `corners` as a closed loop of segments.
-pub(super) fn push_loop(segments: &mut Vec<RigidSegment>, corners: &[Vec2; 4]) {
+pub(super) fn push_loop(segments: &mut Vec<RigidSegment>, corners: &[Vec2]) {
     for index in 0..corners.len() {
         segments.push(RigidSegment {
             start: corners[index],
@@ -411,4 +493,11 @@ pub(super) fn in_reservoir(point: Vec2) -> bool {
         && (RESERVOIR_LEFT_X - PARTICLE_RADIUS..=CHUTE_INNER_X + PARTICLE_RADIUS).contains(&point.x)
         && point.y >= reservoir_floor_y(point.x) - PARTICLE_RADIUS
         && point.y < BASIN_FLOOR_BOTTOM_Y
+}
+
+/// Tube-frame vane coordinate `q` of a world point.
+#[cfg(test)]
+pub(super) fn vane_q(point: Vec2) -> f32 {
+    let (s, t) = tube_coordinates(point);
+    vane_coordinate(s, t)
 }
