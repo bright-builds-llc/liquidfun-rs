@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 43-02-PLAN.md
-last_updated: "2026-10-14T00:02:48.965Z"
+stopped_at: Completed 43-03-PLAN.md
+last_updated: "2026-10-14T00:11:12.975Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 57
-  percent: 93
+  completed_plans: 58
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 43 (GPU Water Render Mode) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -176,6 +176,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 43]: 43-01: baseline target/phase43/base.txt from scene-spot 2026-10-13T23-40-01Z at 2653fd987, identical to Phase 42 after-postfix; after-01 25/25 identical; wasm replay 6 LEVELHASH + 14 REPLAY pass
 - [Phase 43]: 43-02: field-pass.ts owns one WebGL2 context per particle canvas (shared buffers + metadata cache, pass slots keyed by module symbols, per-key availability); shaded blob accepts EXT_color_buffer_float or EXT_color_buffer_half_float with checkFramebufferStatus deciding (D-13) (cb9a0ad07)
 - [Phase 43]: 43-02: watchParticleSurface creates the surface before adding repaint listeners so the reset runs first; restore repaint builds fresh programs (D-14) (aabbf02e6)
+- [Phase 43]: 43-03: D-07 refined: Water refracts a water-owned stable-walls raster (water-backdrop.ts) re-rasterized only when a frame repeats and differs from the last raster, reusing static-layer sameContent/sameCameraView; procedural backdrop otherwise; texture upload gated by revision (39fd0571a, 0c6bc8c8b)
+- [Phase 43]: 43-03: drawWater (lazy WATER_PASS, 2-attachment RGBA16F, constant-0 speed attribute when the lane is absent) returns false on every unsupported state; cachedWaterSupport is a per-page probe on a detached canvas released with loseContext; only water-programs.ts imports .glsl?raw (53b89a36e)
 
 ### Pending Todos
 
@@ -295,9 +297,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 42 P05 | 20min | 2 tasks | 3 files |
 | Phase 43 P01 | 17min | 3 tasks | 9 files |
 | Phase 43 P02 | 5min | 2 tasks | 5 files |
+| Phase 43 P03 | 9min | 3 tasks | 15 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T00:02:48.962Z
-Stopped at: Completed 43-02-PLAN.md
+Last session: 2026-10-14T00:11:12.972Z
+Stopped at: Completed 43-03-PLAN.md
 Resume file: None
