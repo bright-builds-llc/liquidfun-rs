@@ -170,9 +170,12 @@ impl ProofSession {
     /// Returns a bounded JavaScript error when semantic engine state cannot be
     /// copied into the frame contract.
     #[wasm_bindgen(js_name = captureFrame)]
-    pub fn capture_frame(&self, particle_speeds: Option<bool>) -> Result<ProofFrame, JsError> {
+    pub fn capture_frame(
+        &self,
+        maybe_particle_speeds: Option<bool>,
+    ) -> Result<ProofFrame, JsError> {
         self.core
-            .capture_frame_with_speeds(particle_speeds.unwrap_or(false))
+            .capture_frame_with_speeds(maybe_particle_speeds.unwrap_or(false))
             .map(ProofFrame::from)
             .map_err(js_error)
     }
