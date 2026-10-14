@@ -6,7 +6,7 @@ v1.5 Puzzle Mode adds a small game to the playground. While a level is paused, t
 
 ## Milestones
 
-- [ ] **v1.5 Puzzle Mode** — Phases 37–43 (planned 2026-10-11). Place-then-play cup puzzles with stars, 5–8 teaching levels, per-browser progress, opt-in sound and a GPU water render mode. The 25 scenes stay unchanged. No package or tag authorization.
+- [ ] **v1.5 Puzzle Mode** — Phases 37–44 (planned 2026-10-11; Phase 44 added from the audit 2026-10-14). Place-then-play cup puzzles with stars, 5–8 teaching levels, per-browser progress, opt-in sound and a GPU water render mode. The 25 scenes stay unchanged. No package or tag authorization.
 - [x] **v1.4 Scenario Performance** — Phases 34–36 (archived 2026-10-11). Whole-catalog timing survey, seven profile-guided fixes with bit-identical behavior, and a before/after survey: 24 of 25 scenes faster and none slower, as local observations. Annotated tag `v1.4`; no crate. ([full roadmap](milestones/v1.4-ROADMAP.md))
 - [x] **v1.3 Reference Testbed Scenes** — Phases 26–33 (archived 2026-09-28). Twelve missing JS testbed scenes, then Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. No crate or tag. ([full roadmap](milestones/v1.3-ROADMAP.md))
 - [x] **v1.2 Native Performance Closing** — Phases 22–25 (archived 2026-09-21). Local Dam Break Medium recorded at ≤ 3× C++; no Phase 12 sealed matrix; no crate or tag. ([full roadmap](milestones/v1.2-ROADMAP.md))
@@ -22,6 +22,7 @@ v1.5 Puzzle Mode adds a small game to the playground. While a level is paused, t
 - [x] **Phase 41: Level Select and Progress** — `#/puzzles` grid, soft unlocks and per-browser progress that survives blocked storage.
 - [x] **Phase 42: Opt-in Sound** — Muted-by-default splashes, impacts, filling plinks and a win chime.
 - [x] **Phase 43: GPU Water Render Mode** — Closing phase: refraction, highlights and foam with safe fallbacks.
+- [ ] **Phase 44: v1.5 Polish and Test Gaps** — Audit cleanup: phone tray names, valve accessibility, Next and valve fast-forward e2e, typechecked e2e code.
 
 <details>
 <summary>✅ v1.4 Scenario Performance (Phases 34-36) — SHIPPED 2026-10-11</summary>
@@ -278,9 +279,25 @@ Plans:
 - [x] 43-06-PLAN.md — Playwright Water spec, by-eye tuning and the phase gates with 25/25 fingerprints (wave 5)
 **UI hint**: yes
 
+### Phase 44: v1.5 Polish and Test Gaps
+
+**Goal**: Close the owner-selected tech debt from the v1.5 milestone audit so the puzzle game reads well on phones, is accessible, and its e2e code and remaining flows are covered by checks.
+**Depends on**: Phase 43
+**Requirements**: None new (tech-debt cleanup; touches TOOL-01, TOOL-05, TOOL-07, PUZ-01, PROG-02 behavior without changing them)
+**Gap Closure**: Tech debt from `.planning/v1.5-MILESTONE-AUDIT.md` (no blocking gaps)
+**Success Criteria** (what must be TRUE):
+
+1. On a 390×844 phone viewport, every tool name in every level's tray (including grand-finale's planks and valve) is shown in full, not truncated, and the tray keeps its fixed HUD obstacle box and 44 px touch targets.
+1. A selected valve's opening time is announced to assistive technology (not `aria-hidden`), and the TypeScript valve tick is capped at 255 to match the Rust lane.
+1. An e2e test wins a level, clicks Next and lands on the next level ready to build; another runs the timed-gate reference at 2× and 4× and reaches the same outcome step as 1×.
+1. `web/playwright.config.ts` and the `web/e2e` helpers are inside the TypeScript typecheck and `npx tsc --noEmit` passes; puzzle outcomes and the 25 scene fingerprints are unchanged.
+
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
-**Execution order:** 37 → 38 → 39 → 40 → 41 → 42 → 43. The shelved 27-phase v1.4 plan is preserved in git history (commit `011e80e`) and on branch `wip/v1.4-phase34-harness`.
+**Execution order:** 37 → 38 → 39 → 40 → 41 → 42 → 43 → 44. The shelved 27-phase v1.4 plan is preserved in git history (commit `011e80e`) and on branch `wip/v1.4-phase34-harness`.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 | --- | --- | --- | --- | --- |
@@ -312,5 +329,6 @@ Plans:
 | 41. Level Select and Progress | v1.5 | 8/8 | Complete    | 2026-10-13 |
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
+| 44. v1.5 Polish and Test Gaps | v1.5 | 0/TBD | Not started | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).

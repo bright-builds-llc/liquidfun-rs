@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
-status: complete
-stopped_at: Phase 43 complete — verification passed (owner approved 2026-10-14)
+status: planning
+stopped_at: Phase 44 added from v1.5 audit — ready to plan
 last_updated: "2026-10-14T01:10:05.677Z"
 last_activity: 2026-10-14
 progress:
@@ -25,9 +25,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 ## Current Position
 
-Phase: 43
-Plan: 6 of 6
-Status: Phase complete — verified; v1.5 phases all complete, ready for milestone audit
+Phase: 44 (v1.5 Polish and Test Gaps)
+Plan: Not started
+Status: Ready to plan — Phase 44 added from the v1.5 milestone audit (tech-debt cleanup)
 Last activity: 2026-10-14
 
 Progress: [██████████] 100%
