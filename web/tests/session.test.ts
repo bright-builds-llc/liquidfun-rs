@@ -74,6 +74,7 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
   readonly applyActionCalls: string[] = [];
   readonly pointerActionCalls: Array<[string, number, number]> = [];
   captureCalls = 0;
+  readonly captureFlags: (boolean | undefined)[] = [];
   freeCalls = 0;
   applyControlResult = true;
   maybeAdvanceError: Error | undefined;
@@ -91,8 +92,9 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
     }
   }
 
-  captureFrame(): RawProofFrame {
+  captureFrame(maybeParticleSpeeds?: boolean): RawProofFrame {
     this.captureCalls += 1;
+    this.captureFlags.push(maybeParticleSpeeds);
     if (this.maybeCaptureError !== undefined) {
       throw this.maybeCaptureError;
     }
@@ -129,6 +131,29 @@ class FakeGeneratedProofSession implements GeneratedProofSession {
 
   free(): void {
     this.freeCalls += 1;
+  }
+}
+
+/** Raw frame that carries the speed lane only when the capture asked for it. */
+class FakeSpeedLaneRawProofFrame extends FakeRawProofFrame {
+  constructor(private readonly maybeSpeeds: Float32Array | undefined) {
+    super();
+  }
+
+  particleSpeeds(): Float32Array | undefined {
+    return this.maybeSpeeds;
+  }
+}
+
+/** Generated session whose frames attach a one-particle lane when `captureFrame(true)`. */
+class FakeSpeedLaneSession extends FakeGeneratedProofSession {
+  static readonly SPEEDS = new Float32Array([1.5]);
+
+  override captureFrame(maybeParticleSpeeds?: boolean): RawProofFrame {
+    super.captureFrame(maybeParticleSpeeds);
+    return new FakeSpeedLaneRawProofFrame(
+      maybeParticleSpeeds === true ? FakeSpeedLaneSession.SPEEDS : undefined,
+    );
   }
 }
 
@@ -440,5 +465,56 @@ describe("createSceneSession", () => {
     expect(pointerAction).toThrow("Rust/WASM session is disposed");
     expect(generatedSession.freeCalls).toBe(1);
     expect(generatedSession.pointerActionCalls).toHaveLength(1);
+  });
+});
+
+describe("createSceneSession speed lane flag", () => {
+  it("captures with false when no accessor is given", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    const session = createSceneSession(generatedSession);
+
+    // Act
+    session.nextFrame();
+
+    // Assert
+    expect(generatedSession.captureFlags).toEqual([false]);
+  });
+
+  it("reads the accessor at every capture so a mode change applies next frame", () => {
+    // Arrange
+    const generatedSession = new FakeGeneratedProofSession();
+    let wantsSpeeds = true;
+    const session = createSceneSession(generatedSession, () => wantsSpeeds);
+
+    // Act
+    session.nextFrame();
+    wantsSpeeds = false;
+    session.nextFrame();
+
+    // Assert
+    expect(generatedSession.captureFlags).toEqual([true, false]);
+  });
+
+  it("parses the lane into maybeParticleSpeeds when the accessor asks for it", () => {
+    // Arrange
+    const session = createSceneSession(new FakeSpeedLaneSession(), () => true);
+
+    // Act
+    const frame = session.nextFrame();
+
+    // Assert
+    expect(frame.maybeParticleSpeeds).toEqual(FakeSpeedLaneSession.SPEEDS);
+  });
+
+  it("omits maybeParticleSpeeds when the accessor declines the lane", () => {
+    // Arrange
+    const session = createSceneSession(new FakeSpeedLaneSession(), () => false);
+
+    // Act
+    const frame = session.nextFrame();
+
+    // Assert
+    expect("maybeParticleSpeeds" in frame).toBe(false);
   });
 });

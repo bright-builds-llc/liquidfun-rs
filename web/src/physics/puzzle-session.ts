@@ -257,10 +257,16 @@ function rejectSceneInput(): never {
   throw new Error(PUZZLE_SCENE_INPUT_MESSAGE);
 }
 
-/** Wraps one generated puzzle session; frees it and throws if its level info is invalid. */
+/**
+ * Wraps one generated puzzle session; frees it and throws if its level info is invalid.
+ *
+ * `maybeWantsParticleSpeeds` is read at every capture, so a render-mode change
+ * adds or removes the speed lane on the very next frame (D-11).
+ */
 export function createPuzzleSession(
   generated: GeneratedPuzzleSession,
   expectedId: PuzzleId,
+  maybeWantsParticleSpeeds?: () => boolean,
 ): PuzzleSession {
   let levelInfo: PuzzleLevelInfo;
   try {
@@ -293,7 +299,7 @@ export function createPuzzleSession(
   }
 
   function captureParsed(): RenderFrame {
-    const rawFrame = generated.captureFrame();
+    const rawFrame = generated.captureFrame(maybeWantsParticleSpeeds?.() ?? false);
     try {
       return parseRenderFrame(rawFrame);
     } finally {

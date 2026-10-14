@@ -17,7 +17,11 @@ const MAX_STEPS_PER_FRAME = 4;
 /** Generated session methods owned by the browser lifecycle adapter. */
 export interface GeneratedProofSession {
   advance(stepCount: number): void;
-  captureFrame(): RawProofFrame;
+  /**
+   * Pass true to attach the per-particle speed lane (Phase 43 D-10); omitted
+   * or false returns the frame unchanged.
+   */
+  captureFrame(maybeParticleSpeeds?: boolean): RawProofFrame;
   applyControl(name: string, value: string): boolean;
   applyAction(name: string): void;
   pointerAction(kind: string, worldX: number, worldY: number): void;
@@ -45,9 +49,15 @@ function isAcceptedStepCount(stepCount: number): boolean {
   );
 }
 
-/** Creates an exactly-once owner around one generated Rust session. */
+/**
+ * Creates an exactly-once owner around one generated Rust session.
+ *
+ * `maybeWantsParticleSpeeds` is read at every capture, so a render-mode change
+ * adds or removes the speed lane on the very next frame (D-11).
+ */
 export function createSceneSession(
   generatedSession: GeneratedProofSession,
+  maybeWantsParticleSpeeds?: () => boolean,
 ): SceneSession {
   let disposed = false;
 
@@ -76,7 +86,7 @@ export function createSceneSession(
 
     try {
       generatedSession.advance(stepCount);
-      const rawFrame = generatedSession.captureFrame();
+      const rawFrame = generatedSession.captureFrame(maybeWantsParticleSpeeds?.() ?? false);
       try {
         return parseRenderFrame(rawFrame);
       } finally {

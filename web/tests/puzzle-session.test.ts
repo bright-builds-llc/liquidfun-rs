@@ -202,6 +202,64 @@ describe("createPuzzleSession frames", () => {
   });
 });
 
+describe("createPuzzleSession speed lane flag", () => {
+  it("captureFrame passes false without an accessor", () => {
+    // Arrange
+    const generated = fakeGeneratedSession();
+    const session = createPuzzleSession(generated, "first-pour");
+
+    // Act
+    session.captureFrame();
+
+    // Assert
+    expect(generated.captureFrame).toHaveBeenLastCalledWith(false);
+  });
+
+  it("nextFrame passes false without an accessor", () => {
+    // Arrange
+    const generated = fakeGeneratedSession();
+    const session = createPuzzleSession(generated, "first-pour");
+
+    // Act
+    session.nextFrame(1);
+
+    // Assert
+    expect(generated.captureFrame).toHaveBeenLastCalledWith(false);
+  });
+
+  it("captureFrame passes the accessor value read at capture time", () => {
+    // Arrange
+    const generated = fakeGeneratedSession();
+    let wantsSpeeds = true;
+    const session = createPuzzleSession(generated, "first-pour", () => wantsSpeeds);
+
+    // Act
+    session.captureFrame();
+    wantsSpeeds = false;
+    session.captureFrame();
+
+    // Assert
+    expect(generated.captureFrame).toHaveBeenNthCalledWith(1, true);
+    expect(generated.captureFrame).toHaveBeenNthCalledWith(2, false);
+  });
+
+  it("nextFrame passes the accessor value read at capture time", () => {
+    // Arrange
+    const generated = fakeGeneratedSession();
+    let wantsSpeeds = true;
+    const session = createPuzzleSession(generated, "first-pour", () => wantsSpeeds);
+
+    // Act
+    session.nextFrame(1);
+    wantsSpeeds = false;
+    session.nextFrame(1);
+
+    // Assert
+    expect(generated.captureFrame).toHaveBeenNthCalledWith(1, true);
+    expect(generated.captureFrame).toHaveBeenNthCalledWith(2, false);
+  });
+});
+
 describe("createPuzzleSession scene input", () => {
   const sceneInputs: ReadonlyArray<
     [string, (session: PuzzleSession) => unknown]

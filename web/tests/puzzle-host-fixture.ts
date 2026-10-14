@@ -178,6 +178,14 @@ export function createHost(
     const canvas = { dataset: {} as DOMStringMap } as HTMLCanvasElement;
     const host: PuzzleHost = {
       generation: 0,
+      appearance: {
+        renderMode: () => "shaded-blob",
+        wireframeStrokeWidth: () => 0.3,
+        densityShading: () => false,
+        changeRenderMode: vi.fn(),
+        changeWireframeStrokeWidth: vi.fn(),
+        changeDensityShading: vi.fn(),
+      },
       clock,
       maybeCanvas: canvas,
       maybeContext: {} as CanvasRenderingContext2D,
