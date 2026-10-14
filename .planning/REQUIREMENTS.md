@@ -45,15 +45,17 @@ Research: `.planning/research/v1.6-curiosity-scenes/SUMMARY.md`.
 
 ### Siphon
 
-- [ ] **SIPHON-01**: Player sees water flow from a higher tank over a crest and down into a lower tank through a primed tube, with the levels converging. Flow stops when the levels are equal. If the spike chose a stand-in mechanism, the caption credits it.
-- [ ] **SIPHON-02**: Player can raise or lower the outlet tank, and the flow slows, stops or reverses to match.
+- [ ] **SIPHON-01**: Player sees water flow from a higher tank over a crest and down into a lower tank through a primed tube, with the levels converging. Flow stops when the levels are equal. If the spike chose a stand-in mechanism, the caption credits it. — returned to SEED-008 (Phase 45 spike: drop)
+- [ ] **SIPHON-02**: Player can raise or lower the outlet tank, and the flow slows, stops or reverses to match. — returned to SEED-008 (Phase 45 spike: drop)
 
 ### Sand hourglass (conditional on the PREP-03 spike)
 
-- [ ] **SAND-01**: Player sees sand pour through a narrow neck and build a peaked pile, with a measured slope of at least 20°, in the lower bulb.
-- [ ] **SAND-02**: Player can flip the hourglass. The glass rotates visibly, or flips instantly as a fallback, and the sand runs again.
+- [ ] **SAND-01**: Player sees sand pour through a narrow neck and build a peaked pile, with a measured slope of at least 20°, in the lower bulb. — returned to SEED-007 (Phase 45 spike: drop)
+- [ ] **SAND-02**: Player can flip the hourglass. The glass rotates visibly, or flips instantly as a fallback, and the sand runs again. — returned to SEED-007 (Phase 45 spike: drop)
 
 If the PREP-03 hourglass spike cannot reach a pile slope of at least 20°, SAND-01 and SAND-02 return to a seed instead of shipping (owner decision, 2026-10-14).
+
+Both spikes failed their pre-recorded rules, and the owner confirmed both drops on 2026-10-14 (Plan 45-08): SAND-01/02 returned to SEED-007 and SIPHON-01/02 to SEED-008.
 
 ## Future Requirements
 
@@ -79,7 +81,7 @@ Deferred. Tracked but not in the current roadmap.
 
 ## Traceability
 
-SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns after every phase; each is mapped to one phase for traceability (see ROADMAP.md Shared acceptance rules). SIPHON and SAND follow the Phase 45 spike decisions.
+SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns after every phase; each is mapped to one phase for traceability (see ROADMAP.md Shared acceptance rules). SIPHON and SAND follow the Phase 45 spike decisions: both dropped (owner confirmed 2026-10-14) and returned to seeds.
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
@@ -99,17 +101,18 @@ SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns af
 | FERRO-03 | Phase 48 | Pending |
 | RT-01 | Phase 49 | Pending |
 | RT-02 | Phase 49 | Pending |
-| SIPHON-01 | Phase 50 | Pending |
-| SIPHON-02 | Phase 50 | Pending |
-| SAND-01 | Phase 51 | Pending |
-| SAND-02 | Phase 51 | Pending |
+| SIPHON-01 | Phase 50 | Returned to SEED-008 |
+| SIPHON-02 | Phase 50 | Returned to SEED-008 |
+| SAND-01 | Phase 51 | Returned to SEED-007 |
+| SAND-02 | Phase 51 | Returned to SEED-007 |
 
 **Coverage:**
 
 - v1.6 requirements: 20 total
 - Mapped to phases: 20
 - Unmapped: 0 ✓
+- Returned to seeds by the Phase 45 spikes: 4 (SIPHON-01, SIPHON-02 to SEED-008; SAND-01, SAND-02 to SEED-007)
 
 ---
 *Requirements defined: 2026-10-14*
-*Last updated: 2026-10-14 after v1.6 roadmap creation (Phases 45–51)*
+*Last updated: 2026-10-14 after the Phase 45 spike decisions (siphon and hourglass returned to seeds)*

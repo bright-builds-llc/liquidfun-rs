@@ -27,6 +27,8 @@ The owner prioritizes a fun hobby project over production-quality certification.
 - Rayleigh–Taylor instability: heavy liquid fingers down through light liquid
 - Fake ferrofluid: dark liquid spikes toward the pointer
 
+The Phase 45 feasibility spikes dropped the siphon and the sand hourglass (owner confirmed 2026-10-14). They returned to SEED-008 and SEED-007, so v1.6 now targets the other four scenes.
+
 **Key context:** Every new scene follows the repository's catalog rules (catalog entry, portrait frame, README SVG/WebP plan, shared scale legend, HUD safe frame). The 25 existing scene fingerprints must stay identical; any new engine or bridge feature (for example per-group density for Rayleigh–Taylor or a pointer force for the ferrofluid) must leave existing scenes unchanged. The riskiest scenes go last so they can slip. Phase numbering continues at 45. No crate publication.
 
 ## Current State
@@ -119,7 +121,7 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 ## Next Milestone
 
-v1.6 Physics Curiosity Scenes is active (see Current Milestone). It promotes SEED-004. The remaining dormant seeds in `.planning/seeds/` are SEED-002 sandbox editor with shareable links and SEED-006 the v1.4 leftovers. v1.5 future ideas (HINT-01, BADGE-01, TRAIL-01, ROTATE-01, GOAL-05, VALVE-02, SPONGE-01, LEVEL-05, EDITOR-01) and owner-deferred v1.5 tech debt are recorded in `milestones/v1.5-REQUIREMENTS.md` and `milestones/v1.5-MILESTONE-AUDIT.md`.
+v1.6 Physics Curiosity Scenes is active (see Current Milestone). It promotes SEED-004. The remaining dormant seeds in `.planning/seeds/` are SEED-002 sandbox editor with shareable links, SEED-006 the v1.4 leftovers, SEED-007 sand hourglass and SEED-008 siphon (both returned by the Phase 45 feasibility spikes, owner confirmed 2026-10-14). v1.5 future ideas (HINT-01, BADGE-01, TRAIL-01, ROTATE-01, GOAL-05, VALVE-02, SPONGE-01, LEVEL-05, EDITOR-01) and owner-deferred v1.5 tech debt are recorded in `milestones/v1.5-REQUIREMENTS.md` and `milestones/v1.5-MILESTONE-AUDIT.md`.
 
 Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims and package publication. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized.
 

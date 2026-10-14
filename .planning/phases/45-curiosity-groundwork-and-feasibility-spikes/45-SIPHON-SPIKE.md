@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete. The rules below were recorded before measuring and committed together with the spike harness in commit A (`dcf7992b3`) before the first measured run, so the geometry, metrics, pass rule, sweeps and decision rule could not be tuned to a result. Results and the decision were added after the single measured run.
+Complete; owner confirmed 2026-10-14T17:09:11Z (see Owner confirmation). The rules below were recorded before measuring and committed together with the spike harness in commit A (`dcf7992b3`) before the first measured run, so the geometry, metrics, pass rule, sweeps and decision rule could not be tuned to a result. Results and the decision were added after the single measured run.
 
 ## Geometry
 
@@ -150,7 +150,7 @@ What the numbers show:
 
 **drop**: by the pre-recorded D-22 rule, no natural candidate (1-3) and no stand-in (4-6) passes. All 14 measured configurations fail.
 
-Owner sees this outcome with the hourglass result in Plan 08. Requirement and roadmap bookkeeping is deferred to the Plan 08 owner checkpoint.
+The owner was shown this outcome together with the hourglass result in Plan 08 and confirmed the drop (see Owner confirmation). Plan 08 returned SIPHON-01 and SIPHON-02 to SEED-008.
 
 Context for that checkpoint (an observation, not a decision): the dominant failure is that LiquidFun water compresses strongly over metre-scale heads at r 0.05 and gravity 10 (the 2 m source column settles to about 1.2 m), so the primed crest empties in under 0.5 s. A different experiment, such as a much shorter head with a pre-settled fill, was outside this time box (D-17) and was not run.
 
@@ -160,3 +160,11 @@ Context for that checkpoint (an observation, not a decision): the dominant failu
 - Commit B (remove spike code): `6366fe335983a23403eb0b67b51a517eac7737f5` `chore(45-06): remove the siphon spike code`
 - Restore the code with `git show dcf7992b3081d2575623930a8386f51adf03ae93 -- crates/liquidfun-wasm/src/siphon_spike.rs` (plus `crates/liquidfun-wasm/src/siphon_spike/geometry.rs` and `crates/liquidfun-wasm/src/siphon_spike/tests.rs`, and the `#[cfg(test)] mod siphon_spike;` line in `crates/liquidfun-wasm/src/lib.rs`).
 - `crates/liquidfun` is unchanged (`git diff --stat b151838be -- crates/liquidfun` is empty); no scene, session or shared builder file was edited.
+
+## Owner confirmation
+
+Owner answer (verbatim): confirm. Recorded at 2026-10-14T17:09:11Z by the executor.
+
+- Source: the owner's own selection in this session's chat, made through the GSD orchestrator's Plan 08 checkpoint on 2026-10-14. The option the owner selected was "Confirm both drops (Recommended)", described as "Confirm the edge-relative slope reading and both drop decisions. SAND-01/02 and SIPHON-01/02 go to dormant seeds; Phases 50 and 51 are marked dropped."
+- Before the question the orchestrator showed the owner the siphon results. All 14 configurations fail. The viscous rule-A passes are explained as the priming drain. Tube pull at α 1.0 ends level but fails rule A. The root cause is water compression over metre-scale heads. The untried short-head idea was mentioned, along with the D-22 drop.
+- Final decision: **drop**, confirmed by the owner. SIPHON-01 and SIPHON-02 return to the dormant seed `.planning/seeds/SEED-008-siphon.md`, and Phase 50 is marked dropped in ROADMAP.md. The section stays in place, and no backlog phase was created.

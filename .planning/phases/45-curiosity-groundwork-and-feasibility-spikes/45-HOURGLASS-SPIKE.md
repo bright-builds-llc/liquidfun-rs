@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete; owner confirmation pending (Plan 08). The rules below were recorded before measuring and committed together with the spike harness in commit A (`09ab08395`) before the first measured run, so the geometry, metrics, pass rule, sweeps and decision rule could not be tuned to a result. Results, flip cost and the decision by the pre-recorded rule were added after the single measured run; no rule, geometry or sweep changed afterwards.
+Complete; owner confirmed 2026-10-14T17:09:11Z (see Owner confirmation). The rules below were recorded before measuring and committed together with the spike harness in commit A (`09ab08395`) before the first measured run, so the geometry, metrics, pass rule, sweeps and decision rule could not be tuned to a result. Results, flip cost and the decision by the pre-recorded rule were added after the single measured run; no rule, geometry or sweep changed afterwards.
 
 ## Geometry
 
@@ -163,11 +163,11 @@ Authoring measurements (D-16), native release, 564 particles, one flip per confi
 
 ## Decision
 
-Decision by pre-recorded rule: drop; owner confirmation: pending (Plan 08).
+Decision by pre-recorded rule: drop; owner confirmation: see below.
 
 By D-27, no candidate configuration (1-3) passes the edge-relative rule: all 7 candidate configurations (4 stick-slip, 2 freeze, 1 clumps) and both controls fail, with medians of 0.24-3.85° against the 20° bar and water margins below 3.1° against the 15° guard.
 
-On confirmation (or, if the owner is unavailable, by the pre-recorded owner rule of 2026-10-14), Plan 08 returns SAND-01 and SAND-02 to a seed.
+The owner confirmed this decision in Plan 08, which returned SAND-01 and SAND-02 to SEED-007.
 
 Context for that checkpoint (observations, not decisions): the flip itself is cheap and correct (2 ms batched at 564 particles, order and count preserved), frozen `WALL` grains stay still without any engine change, and short heaps of up to about 28° appear during the pour but slump within a second or two. Rules that act within the pour, such as freezing on a shorter rest test, were outside this time box (D-17) and were not run.
 
@@ -178,3 +178,12 @@ Context for that checkpoint (observations, not decisions): the flip itself is ch
 - No D-18 commit: the trigger did not fire.
 - Restore the code with `git show 09ab08395ee8ab8ad7adc8a2460d1c1f22f34d72 -- crates/liquidfun-wasm/src/hourglass_spike.rs` (plus `crates/liquidfun-wasm/src/hourglass_spike/flip.rs`, `geometry.rs`, `hooks.rs` and `metrics.rs`, and the `#[cfg(test)] mod hourglass_spike;` line in `crates/liquidfun-wasm/src/lib.rs`).
 - `crates/liquidfun` is unchanged (`git diff --stat b151838be -- crates/liquidfun` is empty); no scene, session or shared builder file was edited.
+
+## Owner confirmation
+
+Owner answer (verbatim): confirm. Recorded at 2026-10-14T17:09:11Z by the executor.
+
+- Source: the owner's own selection in this session's chat, made through the GSD orchestrator's Plan 08 checkpoint on 2026-10-14. The option the owner selected was "Confirm both drops (Recommended)", described as "Confirm the edge-relative slope reading and both drop decisions. SAND-01/02 and SIPHON-01/02 go to dormant seeds; Phases 50 and 51 are marked dropped."
+- Before the question the orchestrator showed the owner the per-configuration table above (edge-relative median, min and max, `literal_d25_deg`, `side_fit_deg`, water margin, and both verdicts side by side). It said plainly that the literal and edge-relative verdicts disagree on every row: the literal reading passes plain water at about 26°, which is a confinement artifact. It also showed the flip cost (batched about 2.1 ms, per-particle about 0.13 ms, clumps 36.5 ms) and the drop by the pre-recorded rule of 2026-10-14.
+- Slope interpretation: **confirmed by the owner.** The verdict uses the edge-relative reading of D-25 plus the water-control guard (median at least 15° above same-geometry water).
+- Final decision: **drop**, confirmed by the owner. SAND-01 and SAND-02 return to the dormant seed `.planning/seeds/SEED-007-sand-hourglass.md`, and Phase 51 is marked dropped in ROADMAP.md. The section stays in place, and no backlog phase was created.

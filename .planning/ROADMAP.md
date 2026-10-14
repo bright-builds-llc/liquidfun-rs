@@ -2,11 +2,11 @@
 
 ## Overview
 
-v1.6 Physics Curiosity Scenes adds six small, self-contained playground scenes of physics people like to share and wonder about: a Cartesian diver, an Archimedes screw, a fake ferrofluid, a Rayleigh–Taylor instability, a siphon and a sand hourglass (SEED-004). Each scene lives in the private `liquidfun-wasm` bridge as a scene module built on existing public engine APIs, so `crates/liquidfun` and the 25 existing scene fingerprints stay unchanged. Phase 45 prepares the repository (a committed fingerprint baseline with a gate that joins on scene id, scene counts derived from the catalog, file splits) and runs time-boxed siphon and hourglass feasibility spikes. Then one scene ships per phase, lowest risk first: Diver, Screw, Ferrofluid, Rayleigh–Taylor, Siphon, Hourglass. The two spike-dependent scenes go last so they can slip; the hourglass returns to a seed if its spike fails. Phase numbering continues after 44. No crate publication.
+v1.6 Physics Curiosity Scenes adds six small, self-contained playground scenes of physics people like to share and wonder about: a Cartesian diver, an Archimedes screw, a fake ferrofluid, a Rayleigh–Taylor instability, a siphon and a sand hourglass (SEED-004). Each scene lives in the private `liquidfun-wasm` bridge as a scene module built on existing public engine APIs, so `crates/liquidfun` and the 25 existing scene fingerprints stay unchanged. Phase 45 prepares the repository (a committed fingerprint baseline with a gate that joins on scene id, scene counts derived from the catalog, file splits) and runs time-boxed siphon and hourglass feasibility spikes. Then one scene ships per phase, lowest risk first: Diver, Screw, Ferrofluid, Rayleigh–Taylor, Siphon, Hourglass. The two spike-dependent scenes go last so they can slip; the hourglass returns to a seed if its spike fails. Both spikes failed their pre-recorded rules, and the owner confirmed both drops on 2026-10-14: the siphon returned to SEED-008 and the sand hourglass to SEED-007, so Phases 50 and 51 are marked dropped and v1.6 now targets four scenes. Phase numbering continues after 44. No crate publication.
 
 ## Milestones
 
-- [ ] **v1.6 Physics Curiosity Scenes** — Phases 45–51 (planned 2026-10-14). Groundwork and siphon/hourglass feasibility spikes, then six curiosity scenes one per phase: Cartesian diver, Archimedes screw, fake ferrofluid, Rayleigh–Taylor instability, siphon and sand hourglass (conditional on its spike). The 25 existing scenes stay unchanged. No package or tag authorization.
+- [ ] **v1.6 Physics Curiosity Scenes** — Phases 45–51 (planned 2026-10-14). Groundwork and siphon/hourglass feasibility spikes, then six curiosity scenes one per phase: Cartesian diver, Archimedes screw, fake ferrofluid, Rayleigh–Taylor instability, siphon and sand hourglass (conditional on its spike). The Phase 45 spikes dropped the siphon (SEED-008) and the sand hourglass (SEED-007), owner confirmed 2026-10-14, leaving four scenes. The 25 existing scenes stay unchanged. No package or tag authorization.
 - [x] **v1.5 Puzzle Mode** — Phases 37–44 (archived 2026-10-14). Place-then-play cup puzzles with stars, six teaching levels proven by replayed fixtures, level select with per-browser progress, opt-in sound and a GPU Water render mode; Phase 44 closed audit tech debt. `crates/liquidfun` untouched and 25/25 scene fingerprints unchanged. Annotated tag `v1.5`; no crate. ([full roadmap](milestones/v1.5-ROADMAP.md))
 - [x] **v1.4 Scenario Performance** — Phases 34–36 (archived 2026-10-11). Whole-catalog timing survey, seven profile-guided fixes with bit-identical behavior, and a before/after survey: 24 of 25 scenes faster and none slower, as local observations. Annotated tag `v1.4`; no crate. ([full roadmap](milestones/v1.4-ROADMAP.md))
 - [x] **v1.3 Reference Testbed Scenes** — Phases 26–33 (archived 2026-09-28). Twelve missing JS testbed scenes, then Hydraulic Fountain, Wave Tank, Liquid Bubbler, and Stacked Drip. No crate or tag. ([full roadmap](milestones/v1.3-ROADMAP.md))
@@ -21,8 +21,8 @@ v1.6 Physics Curiosity Scenes adds six small, self-contained playground scenes o
 - [ ] **Phase 47: Archimedes Screw** — Moving slanted vanes lift pockets of water up a tilted trough, with live speed and reverse.
 - [ ] **Phase 48: Fake Ferrofluid** — A dark puddle rises into spikes toward a draggable magnet, with a safe strength range.
 - [ ] **Phase 49: Rayleigh–Taylor Instability** — A heavier liquid layer fingers down through a lighter one, with a choosable weight ratio.
-- [ ] **Phase 50: Siphon** — Water climbs over a crest into a lower tank until the levels match, using the mechanism the Phase 45 spike chose.
-- [ ] **Phase 51: Sand Hourglass** — Conditional: sand pours, piles at a measured slope and runs again after a flip, only if the Phase 45 spike passed.
+- [ ] **Phase 50: Siphon** — Dropped by the Phase 45 spike; SIPHON-01 and SIPHON-02 returned to SEED-008
+- [ ] **Phase 51: Sand Hourglass** — Dropped by the Phase 45 spike; SAND-01 and SAND-02 returned to SEED-007
 
 <details>
 <summary>✅ v1.5 Puzzle Mode (Phases 37-44) — SHIPPED 2026-10-14</summary>
@@ -199,6 +199,7 @@ Plans:
 
 ### Phase 50: Siphon
 
+**Status**: Dropped (Phase 45 siphon spike, 2026-10-14; owner confirmed); see SEED-008.
 **Goal**: Players can watch water climb over a crest from a higher tank into a lower one until the levels match, and move the outlet tank to slow, stop or reverse the flow.
 **Depends on**: Phase 45 (the siphon spike's go, reshape or drop decision); runs after Phase 49 so it can slip without blocking the other scenes
 **Requirements**: SIPHON-01, SIPHON-02
@@ -214,6 +215,7 @@ Plans:
 
 ### Phase 51: Sand Hourglass
 
+**Status**: Dropped (Phase 45 hourglass spike, 2026-10-14; owner confirmed); see SEED-007.
 **Goal**: Players can watch sand pour through an hourglass neck and pile up at a measured slope, then flip the glass and watch it run again. Conditional: ships only if the Phase 45 hourglass spike passed.
 **Depends on**: Phase 45 (the hourglass spike's go or drop decision); runs last so it can slip or be dropped
 **Requirements**: SAND-01, SAND-02
@@ -267,7 +269,7 @@ Plans:
 | 47. Archimedes Screw | v1.6 | 0/TBD | Not started | - |
 | 48. Fake Ferrofluid | v1.6 | 0/TBD | Not started | - |
 | 49. Rayleigh–Taylor Instability | v1.6 | 0/TBD | Not started | - |
-| 50. Siphon | v1.6 | 0/TBD | Not started | - |
-| 51. Sand Hourglass | v1.6 | 0/TBD | Not started | - |
+| 50. Siphon | v1.6 | 0/TBD | Dropped (SEED-008) | - |
+| 51. Sand Hourglass | v1.6 | 0/TBD | Dropped (SEED-007) | - |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
