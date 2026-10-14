@@ -254,6 +254,7 @@ test("plays the timed-gate reference at 2× and 4× with the 1× outcome", async
   await button(page, "Play").click();
   await waitForPuzzlePhase(page, "ended", HELD_TIMEOUT_MS);
   await waitForHeld(page, HELD_TIMEOUT_MS);
+  await expect(main(page)).toHaveAttribute("data-puzzle-outcome", maybeExpectation.outcome);
   runs.push(await readRunFingerprint(page));
 
   // Act: 2× and 4× retries of the same build.
@@ -263,6 +264,7 @@ test("plays the timed-gate reference at 2× and 4× with the 1× outcome", async
     await button(page, "Retry").click();
     await expect(page.locator('main[data-puzzle-held="false"]')).toBeVisible();
     await waitForHeld(page, HELD_TIMEOUT_MS);
+    await expect(main(page)).toHaveAttribute("data-puzzle-outcome", maybeExpectation.outcome);
     runs.push(await readRunFingerprint(page));
   }
 
