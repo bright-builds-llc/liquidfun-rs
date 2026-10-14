@@ -372,6 +372,9 @@ test("shows Water (unavailable) in both pickers and draws Shaded blob", async ({
   await expect(puzzleSelect.getByRole("option", { name: WATER, exact: true })).toHaveCount(0);
   await expect(puzzleSelect).toHaveValue("water");
   await expectDrawn(page, "webgl");
+  // The drawer slides in; capture it once the transition ends.
+  await expect(dialog).not.toHaveAttribute("data-transitioning");
+  await expect(puzzleSelect).toBeInViewport();
   await screenshot(page, "water-unavailable-drawer");
 });
 
