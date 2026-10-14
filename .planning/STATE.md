@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
-status: executing
-stopped_at: Completed 43-05-PLAN.md
-last_updated: "2026-10-14T00:20:06.823Z"
+status: verifying
+stopped_at: Completed 43-06-PLAN.md
+last_updated: "2026-10-14T00:39:19.958Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 61
-  completed_plans: 60
-  percent: 98
+  completed_plans: 61
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 Phase: 43 (GPU Water Render Mode) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-14
 
 Progress: [██████████] 100%
@@ -181,6 +181,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 43]: 43-04: presentSceneFrame returns DrawnSurface from one chain (Water, shaded blob, canvas soft blob); scene canvas carries data-drawn-surface and data-speed-lane after every draw; data-particle-surface stays the requested surface (6d0856d57, f3adfdbd8)
 - [Phase 43]: 43-04: assignParticleSurface detaches the previous watchParticleSurface and repaints only while the canvas is current; Water availability read once in App.tsx via cachedWaterSupport() and shared through RenderModeOptions (857603bcd)
 - [Phase 43]: 43-05: D-11 capture option is a stateless per-capture flag: direct scene, puzzle and Tesla Valve worker owners read wantsParticleSpeeds(appearance.renderMode()) at capture time; worker advance/capture carry a validated boolean speeds and transfer the lane (948a5bcc0, dc81856c6)
+- [Phase 43]: 43-06: 13 Chromium Water proofs (no shader pixel diff); Water/Shaded blob RunFingerprint equal (201/262/811/0cf8c2703dcd8fac); 1 s Dam Break SVG sha256 ff92a2ad equal in both modes (d0987eae8)
+- [Phase 43]: 43-06: tuned water look: foam 3.5/9.0 m/s, shininess 64, specular 0.4; normal 6.0, refraction 10 px, absorption 0.9, foam max 0.85 unchanged (4f68a6aab)
+- [Phase 43]: 43-06: 27/27 phase gates exit=0 on first run at 4f68a6aab; scene-spot 2026-10-14T00-27-52Z 25/25 fingerprints identical; D-20 iPhone view stays non-blocking UAT
 
 ### Pending Todos
 
@@ -303,9 +306,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 43 P03 | 9min | 3 tasks | 15 files |
 | Phase 43 P04 | 4min | 3 tasks | 14 files |
 | Phase 43 P05 | 5min | 2 tasks | 12 files |
+| Phase 43 P06 | 19min | 3 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T00:20:06.820Z
-Stopped at: Completed 43-05-PLAN.md
+Last session: 2026-10-14T00:39:19.954Z
+Stopped at: Completed 43-06-PLAN.md
 Resume file: None

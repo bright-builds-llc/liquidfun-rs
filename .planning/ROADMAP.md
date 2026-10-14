@@ -275,7 +275,7 @@ Plans:
 - [x] 43-03-PLAN.md — Stable-walls refraction backdrop, highp water shaders, capability probe and drawWater (wave 2)
 - [x] 43-04-PLAN.md — Water mode, fallback chain with data-drawn-surface, transparent overlays, shared pickers with "Water (unavailable)" (wave 3)
 - [x] 43-05-PLAN.md — Speed lane only in Water for scene, puzzle and worker owners (wave 4)
-- [ ] 43-06-PLAN.md — Playwright Water spec, by-eye tuning and the phase gates with 25/25 fingerprints (wave 5)
+- [x] 43-06-PLAN.md — Playwright Water spec, by-eye tuning and the phase gates with 25/25 fingerprints (wave 5)
 **UI hint**: yes
 
 ## Progress
@@ -311,6 +311,6 @@ Plans:
 | 40. Timed Valve and Teaching Levels | v1.5 | 11/11 | Complete    | 2026-10-13 |
 | 41. Level Select and Progress | v1.5 | 8/8 | Complete    | 2026-10-13 |
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
-| 43. GPU Water Render Mode | v1.5 | 5/6 | In Progress|  |
+| 43. GPU Water Render Mode | v1.5 | 6/6 | Complete   | 2026-10-14 |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
