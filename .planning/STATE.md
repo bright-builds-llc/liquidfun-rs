@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Physics Curiosity Scenes
 status: executing
-stopped_at: Completed 47-03-PLAN.md
-last_updated: "2026-10-14T22:18:27.526Z"
+stopped_at: Completed 47-04-PLAN.md
+last_updated: "2026-10-14T22:43:52.537Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 20
-  completed_plans: 18
-  percent: 90
+  completed_plans: 19
+  percent: 95
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 47 (Archimedes Screw) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -226,6 +226,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 47]: 47-02: top housing face square to the axis, floor runs under the ramp start, and a hood caps the chute (fixes for g 2 vane pinch, g 80 seam escape, g 2 splash escape)
 - [Phase 47]: Archimedes Screw portrait MIN_HEIGHT_FRACTION 0.3 (measured fit 0.313; frame is width-bound)
 - [Phase 47]: Rust TS-sync tests parse the web screw speed constants and view bounds and compare f32 bits against FRAME_*
+- [Phase 47]: 47-04: default rpm stays 30 (max 60); reviewed README clip shows pockets reaching the basin and overflow before 10 s
+- [Phase 47]: 47-04: screw scene-spot 1729/1729 particles, median 0.688 ms/step; gate PASS 26/26 with archimedes-screw 86a28d366447bbeb added (capture 2026-10-14T22-42-42Z at 23541975c)
 
 ### Pending Todos
 
@@ -369,9 +371,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 47 P01 | 26min | 3 tasks | 9 files |
 | Phase 47 P02 | 22min | 2 tasks | 7 files |
 | Phase 47 P03 | 19min | 2 tasks | 20 files |
+| Phase 47 P04 | 24min | 2 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T22:18:27.522Z
-Stopped at: Completed 47-03-PLAN.md
+Last session: 2026-10-14T22:43:52.534Z
+Stopped at: Completed 47-04-PLAN.md
 Resume file: None
