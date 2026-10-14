@@ -48,7 +48,8 @@ canvas.scene-canvas {
   position: relative;
   z-index: 1;
 }
-canvas.scene-canvas[data-particle-surface="webgl"] {
+canvas.scene-canvas[data-particle-surface="webgl"],
+canvas.scene-canvas[data-particle-surface="webgl-water"] {
   background: transparent;
 }
 canvas.particle-surface {

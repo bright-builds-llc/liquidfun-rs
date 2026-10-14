@@ -22,6 +22,7 @@ import { maybeReadySceneId } from "./runtime";
 import { maybeObservedFrame } from "./view";
 import { isUsableViewport } from "./viewport";
 import { presentSceneFrame } from "../render/present-frame";
+import { watchParticleSurface } from "../render/field-pass";
 import { drawGlassCup } from "../render/glass-cup";
 import { drawPuzzleTools, drawToolLabels, toolOverlay } from "../render/puzzle-tools";
 import { applyPuzzleEdit, inspectNow } from "./puzzle-editing";
@@ -61,7 +62,7 @@ function drawSceneFrame(
   frame: RenderFrame,
   camera: Camera,
 ): void {
-  presentSceneFrame(
+  const drawn = presentSceneFrame(
     context,
     frame,
     camera,
@@ -72,6 +73,13 @@ function drawSceneFrame(
     window.devicePixelRatio,
     session.appearance.densityShading(),
   );
+  // Test-facing truth about this draw (D-15); fake test contexts have no canvas.
+  const maybeDataset = (context.canvas as HTMLCanvasElement | undefined)?.dataset;
+  if (maybeDataset !== undefined) {
+    maybeDataset.drawnSurface = drawn;
+    maybeDataset.speedLane =
+      frame.maybeParticleSpeeds === undefined ? "absent" : "present";
+  }
   // Route check first: scene routes never read puzzle state (D-12, Pitfall 6).
   // D-22 order: particles, then tools, then the glass cup.
   if (session.route().kind === "puzzle") {
@@ -426,8 +434,14 @@ export function bindSurface(session: SceneRuntime): void {
   session.changePanEnabled = (enabled) => changePanEnabled(session, enabled);
   session.assignCanvas = (canvas) => assignCanvas(session, canvas);
   session.assignPuzzleCanvas = (canvas) => assignPuzzleCanvas(session, canvas);
+  let maybeDetachSurfaceWatch: (() => void) | undefined;
   session.assignParticleSurface = (canvas) => {
+    maybeDetachSurfaceWatch?.();
     session.maybeParticleCanvas = canvas;
+    // Repaint after the GL reset so a paused view falls back on loss and rebuilds on restore (D-14).
+    maybeDetachSurfaceWatch = watchParticleSurface(canvas, () => {
+      if (session.maybeParticleCanvas === canvas) paintHeldFrame(session);
+    });
   };
   session.applySceneControl = (name, value) => {
     applySceneControl(session, name, value);
