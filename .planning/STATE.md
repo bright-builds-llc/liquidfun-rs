@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Polish and Test Gaps
 status: executing
-stopped_at: Phase 44 context gathered
-last_updated: "2026-10-14T01:57:30.019Z"
-last_activity: 2026-10-14 -- Phase 44 planning complete
+stopped_at: Completed 44-01-PLAN.md
+last_updated: "2026-10-14T02:00:51.926Z"
+last_activity: 2026-10-14
 progress:
   total_phases: 8
   completed_phases: 7
   total_plans: 64
-  completed_plans: 61
-  percent: 95
+  completed_plans: 62
+  percent: 97
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 43 — GPU Water Render Mode
+**Current focus:** Phase 44 — v1.5 Polish and Test Gaps
 
 ## Current Position
 
-Phase: 44 (v1.5 Polish and Test Gaps)
-Plan: Not started
+Phase: 44 (v1.5 Polish and Test Gaps) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-10-14 -- Phase 44 planning complete
+Last activity: 2026-10-14
 
 Progress: [██████████] 100%
 
@@ -184,6 +184,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 43]: 43-06: 13 Chromium Water proofs (no shader pixel diff); Water/Shaded blob RunFingerprint equal (201/262/811/0cf8c2703dcd8fac); 1 s Dam Break SVG sha256 ff92a2ad equal in both modes (d0987eae8)
 - [Phase 43]: 43-06: tuned water look: foam 3.5/9.0 m/s, shininess 64, specular 0.4; normal 6.0, refraction 10 px, absorption 0.9, foam max 0.85 unchanged (4f68a6aab)
 - [Phase 43]: 43-06: 27/27 phase gates exit=0 on first run at 4f68a6aab; scene-spot 2026-10-14T00-27-52Z 25/25 fingerprints identical; D-20 iPhone view stays non-blocking UAT
+- [Phase 44]: 44-01: maxOpenTick saturates at MAX_OPEN_TICK 255 like Rust; seam valves without openTick read DEFAULT_VALVE_OPEN_TICK (kind checked first, so unknown kind + bad openTick now throws 'Invalid puzzle placement') (f57c59b9a)
+- [Phase 44]: 44-01: portrait two-kind tray chip is a CSS-only 22px + max-content grid (name 14/20 over count 12/16); tray stays 218/188 x 44; names 37/37 and 36/36 at both phone widths (877aba559)
+- [Phase 44]: 44-01: #puzzle-valve-time is no longer aria-hidden and describes the valve stepper group only while a valve is selected; no live region
 
 ### Pending Todos
 
@@ -307,9 +310,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 43 P04 | 4min | 3 tasks | 14 files |
 | Phase 43 P05 | 5min | 2 tasks | 12 files |
 | Phase 43 P06 | 19min | 3 tasks | 4 files |
+| Phase 44 P01 | 3min | 2 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T01:38:43.212Z
-Stopped at: Phase 44 context gathered
-Resume file: .planning/phases/44-v1-5-polish-and-test-gaps/44-CONTEXT.md
+Last session: 2026-10-14T02:00:51.922Z
+Stopped at: Completed 44-01-PLAN.md
+Resume file: None
