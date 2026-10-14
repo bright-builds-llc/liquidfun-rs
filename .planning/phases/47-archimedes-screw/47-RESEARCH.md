@@ -484,10 +484,12 @@ Execute sequentially on the main tree.
 | A5 | Wording of the screw honesty guard list | Pitfall 8 | Copy review only |
 | A6 | The Candidate B sketch is feasible | Geometry Sketch | Used only if A fails |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Reservoir surface metric.** Known: the diver uses a p95 surface. Unclear: which particles count as "reservoir" while the inlet section of the tube is flooded. Recommendation: define the reservoir region as the trough polygon minus the tube band, and measure p95 there.
+   RESOLVED: adopted in 47-01-PLAN.md `<facts>` "Regions" (reservoir = trough interior minus the tube interior) and Task 3 `test_support.rs` `reservoir_surface_y` (p95 of reservoir-region y); 47-02 asserts it against `INLET_COVER_Y`.
 2. **Exact basin and weir placement relative to the top housing underside.** The lip must be above the outlet floor's low point and below the housing underside. Recommendation: assert both in a geometry unit test.
+   RESOLVED: adopted in 47-01-PLAN.md Task 1 `<behavior>`: the weir lip y is above the floor-line y at `q = L - b` and below the top housing's lowest vertex y (geometry unit test in `archimedes_screw/tests.rs`).
 
 ## Environment Availability
 
