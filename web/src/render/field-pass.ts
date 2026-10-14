@@ -358,3 +358,23 @@ export function particleSurfaceFor(
   surfaces.set(canvas, surface);
   return surface;
 }
+
+/**
+ * Repaints after the surface reset, so a paused view falls back on loss and
+ * rebuilds on restore (D-14). Never draws with dead GL objects: the surface,
+ * and so its reset listeners, exist before these listeners are added, and DOM
+ * listeners run in registration order. Returns a function that detaches.
+ */
+export function watchParticleSurface(
+  canvas: HTMLCanvasElement,
+  repaint: () => void,
+): () => void {
+  particleSurfaceFor(canvas);
+  const listener = () => repaint();
+  canvas.addEventListener("webglcontextlost", listener);
+  canvas.addEventListener("webglcontextrestored", listener);
+  return () => {
+    canvas.removeEventListener("webglcontextlost", listener);
+    canvas.removeEventListener("webglcontextrestored", listener);
+  };
+}
