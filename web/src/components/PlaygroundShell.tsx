@@ -70,7 +70,7 @@ function PlaygroundFrame(props: PlaygroundShellProps) {
           </DrawerDescription>
         </Show>
         <SidebarContent class="demo-sidebar-content">
-          {/* Text only: no preview or icon, so the 25-preview scene list counts hold (D-03). */}
+          {/* Text only: no preview or icon, so the scene list preview counts hold (D-03). */}
           <nav class="puzzles-navigation" aria-label="Puzzles">
             <a
               class="puzzles-nav-link"

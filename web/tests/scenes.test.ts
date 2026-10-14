@@ -137,7 +137,7 @@ const LOCKED_ACTION_LABELS = [
 ] as const;
 
 describe("SCENES", () => {
-  it("lists twenty-five locked scenes in the approved order", () => {
+  it("lists the locked scenes in the approved order", () => {
     // Arrange
     const expectedIds = [
       "wave-machine",
@@ -171,7 +171,7 @@ describe("SCENES", () => {
     const ids = SCENES.map((scene) => scene.id);
 
     // Assert
-    expect(SCENES).toHaveLength(25);
+    expect(SCENES).toHaveLength(SCENE_IDS.length);
     expect(ids).toEqual([...SCENE_IDS]);
     expect(ids).toEqual([...expectedIds]);
   });
@@ -236,7 +236,7 @@ describe("SCENES", () => {
     const descriptions = SCENES.map((scene) => scene.description);
 
     // Assert
-    expect(readyCount).toBe(25);
+    expect(readyCount).toBe(SCENE_IDS.length);
     expect(descriptions).toEqual(
       SCENE_IDS.map((id) => UI_SPEC_DESCRIPTIONS[id]),
     );
@@ -430,7 +430,7 @@ describe("maybeSceneById", () => {
 });
 
 describe("isReadySceneId", () => {
-  it("is true for all twenty-five approved ids", () => {
+  it("is true for every approved id", () => {
     // Arrange
     const ids = SCENE_IDS;
 
@@ -438,7 +438,9 @@ describe("isReadySceneId", () => {
     const readyFlags = ids.map((id) => isReadySceneId(id));
 
     // Assert
-    expect(readyFlags).toEqual(Array.from({ length: 25 }, () => true));
+    expect(readyFlags).toEqual(
+      Array.from({ length: SCENE_IDS.length }, () => true),
+    );
   });
 });
 
