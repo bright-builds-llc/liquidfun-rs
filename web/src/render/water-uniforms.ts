@@ -1,8 +1,10 @@
 /**
  * Water look constants and the uniform setter for the Water programs.
  *
- * The constants are the UI-SPEC starting values; tune them by eye and record
- * the final values in the phase summary.
+ * The constants were tuned by eye from the UI-SPEC starting values on Dam
+ * Break, Fountain and First Pour (43-06): higher foam speeds keep spreading
+ * floor sheets blue while jets stay white, and a narrower, weaker highlight
+ * turns per-particle glitter into small glints.
  */
 import { PARTICLE_KERNEL_REACH } from "./contour";
 import {
@@ -15,9 +17,9 @@ import type { WaterPrograms } from "./water-programs";
 type Vec3 = readonly [number, number, number];
 
 /** World speed (m/s) where foam starts: the smoothstep lower edge. */
-export const WATER_FOAM_SPEED_LOW = 3.0;
+export const WATER_FOAM_SPEED_LOW = 3.5;
 /** World speed (m/s) where foam saturates: the smoothstep upper edge. */
-export const WATER_FOAM_SPEED_HIGH = 7.5;
+export const WATER_FOAM_SPEED_HIGH = 9.0;
 /** Strongest blend toward the foam color, kept below flat white. */
 export const WATER_FOAM_MAX = 0.85;
 /** Largest backdrop offset in CSS px at the steepest field gradient. */
@@ -27,9 +29,9 @@ export const WATER_NORMAL_SCALE = 6.0;
 /** Beer-Lambert absorption per kernel-sum unit of thickness. */
 export const WATER_ABSORPTION = 0.9;
 /** Blinn-Phong exponent of the highlight. */
-export const WATER_SHININESS = 48;
+export const WATER_SHININESS = 64;
 /** Highlight intensity added on top of the body color. */
-export const WATER_SPECULAR_STRENGTH = 0.55;
+export const WATER_SPECULAR_STRENGTH = 0.4;
 
 const LIGHT: Vec3 = [-0.35, 0.55, 0.76];
 const LIGHT_LENGTH = Math.hypot(...LIGHT);
@@ -123,7 +125,7 @@ export function createWaterUniforms(
       maybePointKey = key;
     },
     shade(state: WaterShadeState) {
-        if (maybeShadeSizeKey === undefined) setStaticShade();
+      if (maybeShadeSizeKey === undefined) setStaticShade();
       const { width, height, pixelRatio } = state;
       const sizeKey = [width, height, pixelRatio].join(";");
       if (sizeKey !== maybeShadeSizeKey) {
