@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 43-06-PLAN.md
-last_updated: "2026-10-14T00:39:19.958Z"
+status: complete
+stopped_at: Phase 43 complete — verification passed (owner approved 2026-10-14)
+last_updated: "2026-10-14T01:10:05.677Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
@@ -25,9 +25,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 ## Current Position
 
-Phase: 43 (GPU Water Render Mode) — EXECUTING
+Phase: 43
 Plan: 6 of 6
-Status: Phase complete — ready for verification
+Status: Phase complete — verified; v1.5 phases all complete, ready for milestone audit
 Last activity: 2026-10-14
 
 Progress: [██████████] 100%
