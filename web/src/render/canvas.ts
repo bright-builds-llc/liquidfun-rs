@@ -351,7 +351,8 @@ function drawParticleSurface(
     );
     return;
   }
-  if (renderMode === "shaded-blob" && webglCovered) {
+  // Callers pass a covered surface only for the WebGL surface modes.
+  if (webglCovered) {
     return;
   }
 

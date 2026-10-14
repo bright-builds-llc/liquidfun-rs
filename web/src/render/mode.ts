@@ -5,7 +5,8 @@ export type RenderMode =
   | "solid"
   | "soft-blob"
   | "contour"
-  | "shaded-blob";
+  | "shaded-blob"
+  | "water";
 
 /** Circle presentation used for rigid bodies. */
 export type CircleRenderMode = "wireframe" | "solid";
@@ -19,7 +20,13 @@ export type CircleRenderMode = "wireframe" | "solid";
 export type SvgRenderMode = CircleRenderMode | "triangle-wireframe";
 
 /** How a particle mode is drawn. */
-export type ParticleSurface = "disc" | "triangle" | "metaball" | "contour" | "webgl";
+export type ParticleSurface =
+  | "disc"
+  | "triangle"
+  | "metaball"
+  | "contour"
+  | "webgl"
+  | "webgl-water";
 
 export type RenderModeOption = {
   readonly value: RenderMode;
@@ -34,6 +41,9 @@ export type RenderModeGroup = {
 /** First visit, before a particle preference is stored. */
 export const DEFAULT_RENDER_MODE: RenderMode = "shaded-blob";
 export const RENDER_MODE_STORAGE_KEY = "liquidfun.render-mode.v1";
+
+/** Water option text when the capability probe fails (D-05). */
+export const WATER_UNAVAILABLE_LABEL = "Water (unavailable)";
 
 /** Controls-sheet groups. Both wireframes share the stroke-width slider. */
 export const RENDER_MODE_GROUPS: readonly RenderModeGroup[] = [
@@ -54,6 +64,7 @@ export const RENDER_MODE_GROUPS: readonly RenderModeGroup[] = [
       { value: "soft-blob", label: "Soft blob" },
       { value: "contour", label: "Contour" },
       { value: "shaded-blob", label: "Shaded blob" },
+      { value: "water", label: "Water" },
     ],
   },
 ];
@@ -75,7 +86,8 @@ export function maybeParseRenderMode(
     maybeValue === "solid" ||
     maybeValue === "soft-blob" ||
     maybeValue === "contour" ||
-    maybeValue === "shaded-blob"
+    maybeValue === "shaded-blob" ||
+    maybeValue === "water"
   ) {
     return maybeValue;
   }
@@ -149,7 +161,7 @@ export function rigidRenderMode(mode: RenderMode): CircleRenderMode {
 /**
  * Maps a playground mode onto the animated SVG particle vocabulary.
  *
- * Surface modes export as filled circles. Triangle wireframes keep a polygon
+ * Surface modes, including Water, export as filled circles. Triangle wireframes keep a polygon
  * outline; every other wireframe stays a stroked circle.
  */
 export function svgRenderMode(mode: RenderMode): SvgRenderMode {
@@ -194,10 +206,45 @@ export function particleSurface(mode: RenderMode): ParticleSurface {
       return "contour";
     case "shaded-blob":
       return "webgl";
+    case "water":
+      return "webgl-water";
   }
 }
 
-/** Shaded blob is the only mode that needs a second canvas. */
+/**
+ * Shaded blob and Water draw on the particle canvas. Both WebGL modes share
+ * that one canvas and its context (D-04).
+ */
 export function needsWebglSurface(mode: RenderMode): boolean {
-  return particleSurface(mode) === "webgl";
+  const surface = particleSurface(mode);
+  return surface === "webgl" || surface === "webgl-water";
+}
+
+/**
+ * The particle speed lane is requested only while Water is the requested
+ * mode (D-11). It follows the requested mode, not the surface that drew.
+ */
+export function wantsParticleSpeeds(mode: RenderMode): boolean {
+  return particleSurface(mode) === "webgl-water";
+}
+
+/** How a picker option reads and whether it can be chosen. */
+export type RenderModeOptionView = {
+  readonly label: string;
+  readonly disabled: boolean;
+};
+
+/**
+ * Picker presentation for one option. Only Water depends on the capability
+ * probe; it reads "Water (unavailable)" and is disabled when the probe fails.
+ */
+export function renderModeOptionView(
+  option: RenderModeOption,
+  waterAvailable: boolean,
+): RenderModeOptionView {
+  if (option.value !== "water" || waterAvailable) {
+    return { label: option.label, disabled: false };
+  }
+
+  return { label: WATER_UNAVAILABLE_LABEL, disabled: true };
 }

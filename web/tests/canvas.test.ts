@@ -477,6 +477,44 @@ describe("drawRenderFrame", () => {
     expect(canvas.operations[0]).toMatchObject({ fillStyle: "#071018" });
   });
 
+  it("leaves Water particle painting to the WebGL canvas when that surface is covered", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    let painted = false;
+    const painters = {
+      paintMetaball: () => {
+        painted = true;
+      },
+      paintContour: () => undefined,
+    };
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "water", 0.3, 1, true, true, painters);
+
+    // Assert
+    expect(painted).toBe(false);
+  });
+
+  it("falls back to the soft blob when no WebGL surface draws Water", () => {
+    // Arrange
+    const canvas = createRecordingContext();
+    const camera = createCamera(960, 540);
+    let painted = false;
+    const painters = {
+      paintMetaball: () => {
+        painted = true;
+      },
+      paintContour: () => undefined,
+    };
+
+    // Act
+    drawRenderFrame(canvas.context, FRAME, camera, "water", 0.3, 1, false, true, painters);
+
+    // Assert
+    expect(painted).toBe(true);
+  });
+
   it("forwards a disabled density shade to the surface painter", () => {
     // Arrange
     const canvas = createRecordingContext();

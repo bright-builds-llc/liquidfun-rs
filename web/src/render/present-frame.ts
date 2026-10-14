@@ -1,10 +1,19 @@
 import type { RenderFrame } from "../physics/frame";
 import { drawRenderFrame } from "./canvas";
 import type { Camera } from "./camera";
-import { needsWebglSurface, type RenderMode } from "./mode";
+import { particleSurface, type RenderMode } from "./mode";
 import { drawShadedBlob } from "./webgl-particles";
+import { drawWater } from "./webgl-water";
 
-/** Draws one frame, using the WebGL canvas when the shaded blob is available. */
+/** The particle surface that actually drew a frame (D-15). */
+export type DrawnSurface = "webgl-water" | "webgl" | "canvas";
+
+/**
+ * Draws one frame and reports which surface drew its particles.
+ *
+ * One fallback chain per frame: Water, then shaded blob, then the canvas soft
+ * blob (D-12). Never presents a blank frame.
+ */
 export function presentSceneFrame(
   context: CanvasRenderingContext2D,
   frame: RenderFrame,
@@ -15,9 +24,14 @@ export function presentSceneFrame(
   maybeParticleCanvas: HTMLCanvasElement | undefined,
   devicePixelRatio: number,
   densityShading = true,
-): void {
-  const webglCovered =
-    needsWebglSurface(mode) &&
+): DrawnSurface {
+  const surface = particleSurface(mode);
+  const water =
+    surface === "webgl-water" &&
+    drawWater(maybeParticleCanvas, frame, camera, devicePixelRatio, densityShading);
+  const blob =
+    !water &&
+    (surface === "webgl" || surface === "webgl-water") &&
     drawShadedBlob(
       maybeParticleCanvas,
       frame,
@@ -32,9 +46,14 @@ export function presentSceneFrame(
     mode,
     wireframeStrokeWidth,
     maxRenderedParticles,
-    webglCovered,
+    water || blob,
     densityShading,
     undefined,
     devicePixelRatio,
   );
+  if (water) {
+    return "webgl-water";
+  }
+
+  return blob ? "webgl" : "canvas";
 }
