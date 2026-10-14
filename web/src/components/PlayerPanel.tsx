@@ -108,6 +108,11 @@ function failureCopy(sceneTitle: string): string {
   return `${sceneTitle} could not start or continue. Use Retry scene to recreate it, or Reset scene to return to the documented initial state.`;
 }
 
+// A phone long press or a right-click must not open a menu over the canvas.
+function preventCanvasContextMenu(event: Event): void {
+  event.preventDefault();
+}
+
 /** Presentational player chrome for any ready scene. */
 export function PlayerPanel(props: PlayerPanelProps) {
   const [controlsOpen, setControlsOpen] = createSignal(false);
@@ -198,6 +203,7 @@ function PlayerPanelLayout(layoutProps: {
             data-particle-surface={particleSurface(props.renderMode)}
             ref={(canvas) => {
               maybeSceneCanvas = canvas;
+              canvas.addEventListener("contextmenu", preventCanvasContextMenu);
               props.assignCanvas(canvas);
             }}
             width="960"

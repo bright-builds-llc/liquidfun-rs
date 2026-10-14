@@ -47,6 +47,9 @@ canvas {
 canvas.scene-canvas {
   position: relative;
   z-index: 1;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 canvas.scene-canvas[data-particle-surface="webgl"],
 canvas.scene-canvas[data-particle-surface="webgl-water"] {
