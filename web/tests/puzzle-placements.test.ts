@@ -179,6 +179,22 @@ describe("maybeReadTestPlacements", () => {
     expect(maybePlacements).toEqual([SOLUTION_PLANK]);
   });
 
+  it("reads a valve seam entry without an open tick as the valve default", () => {
+    // Arrange
+    const source = seam({
+      level: "first-pour",
+      placements: [{ kind: "valve", x: -16, y: 87, angle: 0 }],
+    });
+
+    // Act
+    const maybePlacements = maybeReadTestPlacements(source, "first-pour");
+
+    // Assert
+    expect(maybePlacements).toEqual([
+      { kind: "valve", x: -16, y: 87, angle: 0, openTick: DEFAULT_VALVE_OPEN_TICK },
+    ]);
+  });
+
   it("rejects placements that name another level", () => {
     // Arrange
     const source = seam({ level: "second-pour", placements: [] });

@@ -58,6 +58,14 @@ describe("valve time arithmetic", () => {
   it("opens at thirty steps per tick", () => {
     expect(openStepFor(4)).toBe(120);
   });
+
+  it("caps the open tick at the u8 maximum above 7,650 steps", () => {
+    expect(maxOpenTick(9_000)).toBe(255);
+  });
+
+  it("keeps 255 at exactly 7,650 steps", () => {
+    expect(maxOpenTick(7_650)).toBe(255);
+  });
 });
 
 describe("valveSecondsText", () => {
