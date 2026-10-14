@@ -35,7 +35,11 @@ type Layer = {
 const layers = new WeakMap<CanvasRenderingContext2D, Layer>();
 const watchedContexts = new WeakSet<CanvasRenderingContext2D>();
 
-function sameContent(first: Uint32Array, second: Uint32Array): boolean {
+/**
+ * Compares segment content bit for bit. One definition of static content,
+ * shared with the water backdrop.
+ */
+export function sameContent(first: Uint32Array, second: Uint32Array): boolean {
   if (first.length !== second.length) return false;
   for (let index = 0; index < first.length; index++)
     if (first[index] !== second[index]) return false;
@@ -50,7 +54,6 @@ function sameView(
   strokeWidth: number,
   pixelRatio: number,
 ): boolean {
-  const before = key.camera;
   // Native paths apply current Canvas transforms/dashes when stroked, not when cached.
   return (
     key.mode === mode &&
@@ -58,6 +61,16 @@ function sameView(
     key.pixelRatio === pixelRatio &&
     key.backingWidth === context.canvas.width &&
     key.backingHeight === context.canvas.height &&
+    sameCameraView(key.camera, camera)
+  );
+}
+
+/**
+ * Compares the viewport, bounds, scale and offset of two cameras. One
+ * definition of a static view, shared with the water backdrop.
+ */
+export function sameCameraView(before: Camera, camera: Camera): boolean {
+  return (
     before.viewport.width === camera.viewport.width &&
     before.viewport.height === camera.viewport.height &&
     before.bounds.minX === camera.bounds.minX &&

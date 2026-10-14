@@ -26,8 +26,10 @@ import {
   maybeParseWireframeStrokeWidth,
 } from "./stroke-width";
 
-const CANVAS_COLOR = "#071018";
-const BASIN_STROKE_COLOR = "#94A3B8";
+/** Canvas background, shared with the water backdrop and shade pass. */
+export const CANVAS_COLOR = "#071018";
+/** Static segment stroke color, shared with the water backdrop. */
+export const BASIN_STROKE_COLOR = "#94A3B8";
 const RIGID_FILL_COLOR = "#334155";
 const RIGID_STROKE_COLOR = "#CBD5E1";
 const RIGID_STROKE_WIDTH = 2;
@@ -110,7 +112,8 @@ function resolvedWireframeStrokeWidth(width: number): number {
   );
 }
 
-function outlineWidth(
+/** Rigid outline width for a mode, shared with the water backdrop. */
+export function outlineWidth(
   renderMode: CircleRenderMode,
   wireframeStrokeWidth: number,
 ): number {

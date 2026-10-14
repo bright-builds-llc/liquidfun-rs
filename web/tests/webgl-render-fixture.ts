@@ -144,3 +144,44 @@ export function glFixture(options: GlFixtureOptions = {}) {
   }
   return { gl, canvas, uploads, contextRequests, lose, restore };
 }
+
+/** One recorded call on the fake backdrop 2D context. */
+export type BackdropCall = {
+  readonly name: string;
+  readonly args: readonly unknown[];
+  readonly fillStyle: unknown;
+  readonly strokeStyle: unknown;
+};
+
+/**
+ * A backdrop canvas factory with a recording 2D context, so water tests run
+ * in node without a DOM canvas.
+ */
+export function backdropCanvasFactory() {
+  const calls: BackdropCall[] = [];
+  const state: Record<string, unknown> = {};
+  const record =
+    (name: string) =>
+    (...args: unknown[]) => {
+      calls.push({
+        name,
+        args,
+        fillStyle: state.fillStyle,
+        strokeStyle: state.strokeStyle,
+      });
+    };
+  const context = Object.assign(state, {
+    fillRect: record("fillRect"),
+    stroke: record("stroke"),
+    setTransform: record("setTransform"),
+    beginPath: record("beginPath"),
+    moveTo: record("moveTo"),
+    lineTo: record("lineTo"),
+  }) as unknown as CanvasRenderingContext2D;
+  const create = vi.fn(() => ({
+    width: 0,
+    height: 0,
+    getContext: () => context,
+  }));
+  return { create, calls, context };
+}
