@@ -1,0 +1,121 @@
+{
+  "kind": "scene_fingerprint_baseline",
+  "schema_version": 1,
+  "growth_rule": "Protected ids only grow. After a new scene ships, a later commit appends its id and fingerprint here on its own, never in the same commit as a scene or shared-code change. Compare with `just scene-fingerprint-gate`. See docs/adding-a-scene.md.",
+  "provenance": {
+    "git_commit": "04650ff5ade210a0cbaf9770f38ef6fbfebad54a",
+    "milestone_base": "b151838be180262eba58245b8e5b376b22de6276",
+    "scene_spot_stamp": "target/dam-break-perf/2026-10-14T15-53-11Z",
+    "captured_at": "2026-10-14T15-53-11Z",
+    "os": "macos",
+    "arch": "aarch64",
+    "cpu_brand": "Apple M4 Max",
+    "compiler": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "build_profile": "release",
+    "warmup_steps": 60,
+    "measured_steps": 120,
+    "runs": 3
+  },
+  "scenes": [
+    {
+      "id": "wave-machine",
+      "fingerprint": "ac22aea195c85cf0"
+    },
+    {
+      "id": "dam-break",
+      "fingerprint": "4fa65d209b7e782f"
+    },
+    {
+      "id": "fountain",
+      "fingerprint": "34f6bded79a5df08"
+    },
+    {
+      "id": "float-or-sink",
+      "fingerprint": "8037c9b1dbe97fbd"
+    },
+    {
+      "id": "color-mixer",
+      "fingerprint": "3231c14625c0e213"
+    },
+    {
+      "id": "jelly-drop",
+      "fingerprint": "e38828993cdf3f6c"
+    },
+    {
+      "id": "water-wheel",
+      "fingerprint": "f80c9a620e51fe2e"
+    },
+    {
+      "id": "particles",
+      "fingerprint": "6d3e96f312d14408"
+    },
+    {
+      "id": "liquid-timer",
+      "fingerprint": "705be2a1a0d4e4d4"
+    },
+    {
+      "id": "surface-tension",
+      "fingerprint": "0131dc4886aff960"
+    },
+    {
+      "id": "elastic-particles",
+      "fingerprint": "d8303cb7def524eb"
+    },
+    {
+      "id": "rigid-particles",
+      "fingerprint": "9dc7520b2771f7fc"
+    },
+    {
+      "id": "soup",
+      "fingerprint": "3e413d5a6ee64a59"
+    },
+    {
+      "id": "soup-stirrer",
+      "fingerprint": "38661d5bf1e5f405"
+    },
+    {
+      "id": "impulse",
+      "fingerprint": "8b02cdf816e25ab3"
+    },
+    {
+      "id": "theo-jansen",
+      "fingerprint": "2fae3a044142fab3"
+    },
+    {
+      "id": "liquid-tumbler",
+      "fingerprint": "a6c5bd97664706d5"
+    },
+    {
+      "id": "drawing-particles",
+      "fingerprint": "10e5b0afea0512d6"
+    },
+    {
+      "id": "sparky",
+      "fingerprint": "731c2b32c0a76400"
+    },
+    {
+      "id": "hydraulic-fountain",
+      "fingerprint": "c9c1aa23e854c29e"
+    },
+    {
+      "id": "wave-tank",
+      "fingerprint": "653ca1fc8eb83325"
+    },
+    {
+      "id": "liquid-bubbler",
+      "fingerprint": "a6d759013dcce046"
+    },
+    {
+      "id": "stacked-drip",
+      "fingerprint": "f2cf7c52ea222dc4"
+    },
+    {
+      "id": "washing-machine",
+      "fingerprint": "d4d0d0663303a1af"
+    },
+    {
+      "id": "tesla-valve",
+      "fingerprint": "23f7e49044ac5cb7"
+    }
+  ]
+}
