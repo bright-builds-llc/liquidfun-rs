@@ -176,7 +176,7 @@ Plans:
 Plans:
 - [x] 47-01-PLAN.md — Scene core: geometry, one-pitch vane-train snap inside end housings, and the release wrap and leak spike
 - [x] 47-02-PLAN.md — Live `screw-speed` and `screw-direction` controls, 60 s release flow tests, reverse, gravity 2/80 smoke, rpm tuning
-- [ ] 47-03-PLAN.md — Catalog and web wiring: record, speed spinner file, preview, view and portrait bounds, README/survey/demo plans, tests and e2e
+- [x] 47-03-PLAN.md — Catalog and web wiring: record, speed spinner file, preview, view and portrait bounds, README/survey/demo plans, tests and e2e
 - [ ] 47-04-PLAN.md — README preview generation and review, full gates, scene-spot numbers, 26/26 fingerprint gate
 - [ ] 47-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 27/27 unchanged
 **UI hint**: yes
@@ -280,7 +280,7 @@ Plans:
 | 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete    | 2026-10-14 |
 | 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 10/10 | Complete    | 2026-10-14 |
 | 46. Cartesian Diver | v1.6 | 5/5 | Complete    | 2026-10-14 |
-| 47. Archimedes Screw | v1.6 | 2/5 | In Progress|  |
+| 47. Archimedes Screw | v1.6 | 3/5 | In Progress|  |
 | 48. Fake Ferrofluid | v1.6 | 0/TBD | Not started | - |
 | 49. Rayleigh–Taylor Instability | v1.6 | 0/TBD | Not started | - |
 | 50. Siphon | v1.6 | 0/TBD | Dropped (SEED-008) | - |
