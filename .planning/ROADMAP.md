@@ -22,7 +22,7 @@ v1.5 Puzzle Mode adds a small game to the playground. While a level is paused, t
 - [x] **Phase 41: Level Select and Progress** — `#/puzzles` grid, soft unlocks and per-browser progress that survives blocked storage.
 - [x] **Phase 42: Opt-in Sound** — Muted-by-default splashes, impacts, filling plinks and a win chime.
 - [x] **Phase 43: GPU Water Render Mode** — Closing phase: refraction, highlights and foam with safe fallbacks.
-- [ ] **Phase 44: v1.5 Polish and Test Gaps** — Audit cleanup: phone tray names, valve accessibility, Next and valve fast-forward e2e, typechecked e2e code.
+- [x] **Phase 44: v1.5 Polish and Test Gaps** — Audit cleanup: phone tray names, valve accessibility, Next and valve fast-forward e2e, typechecked e2e code.
 
 <details>
 <summary>✅ v1.4 Scenario Performance (Phases 34-36) — SHIPPED 2026-10-11</summary>
@@ -334,6 +334,6 @@ Plans:
 | 41. Level Select and Progress | v1.5 | 8/8 | Complete    | 2026-10-13 |
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
-| 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete   | 2026-10-14 |
+| 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete    | 2026-10-14 |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
