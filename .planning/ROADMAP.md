@@ -16,7 +16,7 @@ v1.6 Physics Curiosity Scenes adds six small, self-contained playground scenes o
 
 ## Phases
 
-- [ ] **Phase 45: Curiosity Groundwork and Feasibility Spikes** — Pin the 25 fingerprints behind an id-join gate, derive scene counts from the catalog, split near-limit files, and decide go, reshape or drop for the siphon and hourglass.
+- [x] **Phase 45: Curiosity Groundwork and Feasibility Spikes** — Pin the 25 fingerprints behind an id-join gate, derive scene counts from the catalog, split near-limit files, and decide go, reshape or drop for the siphon and hourglass. (completed 2026-10-14)
 - [ ] **Phase 46: Cartesian Diver** — Press and hold the bottle to sink the diver, release to let it rise; first scene through the shared checklist.
 - [ ] **Phase 47: Archimedes Screw** — Moving slanted vanes lift pockets of water up a tilted trough, with live speed and reverse.
 - [ ] **Phase 48: Fake Ferrofluid** — A dark puddle rises into spikes toward a draggable magnet, with a safe strength range.
