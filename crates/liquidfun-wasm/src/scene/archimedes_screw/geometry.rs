@@ -5,12 +5,14 @@
 //! A world point is `TUBE_ORIGIN + s * AXIS + t * NORMAL`: `s` runs along the
 //! tube and `t` is the height above the floor line. Vanes are cut along lines
 //! of constant vane coordinate `q = s - (t - TUBE_GAP / 2) * VANE_TAN`. The
-//! top housing face and the outlet end of the floor slab are cut parallel to
-//! the vanes. The bottom housing face leans further uphill and the inlet end
-//! of the floor slab leans the other way, so a vane closing on either one
-//! meets it first at one end and squeezes the water out of an open wedge
-//! instead of trapping a film between two parallel faces. All directions are
-//! literals, so building the scene needs no trigonometry on native or wasm.
+//! outlet end of the floor slab is cut parallel to the vanes. Every face a
+//! vane closes on in water leans away from the vanes instead: the bottom
+//! housing face leans further uphill, the top housing face stands square to
+//! the axis and the inlet end of the floor slab is undercut. A closing vane
+//! meets each one first at one end and squeezes the water out of an open
+//! wedge instead of trapping a film between two parallel faces. All
+//! directions are literals, so building the scene needs no trigonometry on
+//! native or wasm.
 
 use liquidfun::math::Vec2;
 
@@ -64,6 +66,10 @@ pub(super) const VANE_COS: f32 = 0.939_692_6;
 /// (45 degrees), steeper than the vanes. A reversing vane meets it at the
 /// roof first, so the wedge in front of the vane opens down into the inlet.
 pub(super) const BOTTOM_FACE_TAN: f32 = 1.0;
+/// Lean of the top housing face: square to the tube axis, less than the
+/// vanes. A rising vane meets it at the roof first, so the wedge in front of
+/// the vane opens down through the outlet into the basin.
+pub(super) const TOP_FACE_TAN: f32 = 0.0;
 /// Lean of the inlet end of the floor slab: the vanes' mirror image, an
 /// undercut whose wedge against a rising vane tip opens downward.
 const INLET_END_TAN: f32 = -VANE_TAN;
@@ -84,6 +90,10 @@ pub(super) const RAMP_START_X: f32 = -4.0;
 pub(super) const RAMP_END: Vec2 = Vec2::new(2.45, 0.85);
 /// Thickness of the reservoir wall, floor and ramp.
 const RESERVOIR_WALL_THICKNESS: f32 = 0.3;
+/// How far the flat floor runs on under the ramp. Buries the ramp's start
+/// edge, so no seam between the two quads reaches the wet corner: under
+/// high pressure a particle slid down such a seam and out of the floor.
+const FLOOR_UNDER_RAMP: f32 = 0.5;
 /// Top of the reservoir's left wall.
 const RESERVOIR_WALL_TOP_Y: f32 = 1.6;
 /// Initial reservoir surface: high enough that each pocket seals about half
@@ -111,10 +121,19 @@ pub(super) const CHUTE_OUTER_X: f32 = 2.45;
 pub(super) const CHUTE_TOP_Y: f32 = 2.8;
 /// Bottom of the chute's outer wall, buried in the return ramp.
 const CHUTE_WALL_BOTTOM_Y: f32 = 0.5;
+/// Left end of the hood over the chute, buried in the top housing's underside.
+pub(super) const HOOD_LEFT_X: f32 = 1.9;
+/// Hood underside: above the chute wall's inner top corner, so the hood
+/// buries it, and below the top housing's lower back corner.
+pub(super) const HOOD_BOTTOM_Y: f32 = 2.72;
+/// Hood top.
+const HOOD_TOP_Y: f32 = 3.0;
 
 /// Static wall polygons: housings, roof, floor slab, reservoir wall, floor
-/// and ramp, basin floor, weir and chute wall.
-pub(super) const WALL_QUAD_COUNT: usize = 10;
+/// and ramp, basin floor, weir, chute wall and the hood that closes the gap
+/// between the top housing and the chute wall. Splashes off the weir cannot
+/// leave the scene over the chute, even at low gravity (D-20).
+pub(super) const WALL_QUAD_COUNT: usize = 11;
 
 /// Landscape frame: the bounding box of every static wall vertex plus about
 /// 0.2 m, mirrored by the web `ARCHIMEDES_SCREW_VIEW_BOUNDS` (UI-D71).
@@ -134,6 +153,12 @@ pub(super) const FRAME_MAX_Y: f32 = 4.45;
 #[cfg(test)]
 pub(super) const INLET_SEAL_Y: f32 =
     TUBE_ORIGIN.y + (INLET_LENGTH - TUBE_GAP / 2.0 * VANE_TAN) * AXIS.y;
+
+/// World y of the floor line at `q = INLET_LENGTH / 2`: a reservoir surface
+/// at or above it still floods the inlet's lower half (D-08).
+#[cfg(test)]
+pub(super) const INLET_COVER_Y: f32 =
+    TUBE_ORIGIN.y + (INLET_LENGTH / 2.0 - TUBE_GAP / 2.0 * VANE_TAN) * AXIS.y;
 
 /// World point at tube coordinates `s` (along the axis) and `t` (above the floor line).
 pub(super) fn tube_point(s: f32, t: f32) -> Vec2 {
@@ -201,20 +226,29 @@ fn axis_box(min: Vec2, max: Vec2) -> [Vec2; 4] {
 pub(super) fn bottom_housing() -> [Vec2; 4] {
     cut_band(
         vane_cut(-HOUSING_LENGTH),
-        Cut {
-            offset: 0.0,
-            lean_tan: BOTTOM_FACE_TAN,
-        },
+        BOTTOM_FACE,
         -SLAB_THICKNESS,
         TUBE_GAP + SLAB_THICKNESS,
     )
 }
 
-/// Solid top end of the vane track; its face is parallel to the vanes.
+/// The bottom housing face: crosses mid-height at `s = 0`, leaning `BOTTOM_FACE_TAN`.
+const BOTTOM_FACE: Cut = Cut {
+    offset: 0.0,
+    lean_tan: BOTTOM_FACE_TAN,
+};
+/// The top housing face: crosses mid-height at `s = TUBE_LENGTH`, leaning `TOP_FACE_TAN`.
+const TOP_FACE: Cut = Cut {
+    offset: TUBE_LENGTH,
+    lean_tan: TOP_FACE_TAN,
+};
+
+/// Solid top end of the vane track. Its face crosses mid-height at
+/// `s = TUBE_LENGTH` and leans `TOP_FACE_TAN`.
 pub(super) fn top_housing() -> [Vec2; 4] {
-    vane_band(
-        TUBE_LENGTH,
-        TUBE_LENGTH + HOUSING_LENGTH,
+    cut_band(
+        TOP_FACE,
+        vane_cut(TUBE_LENGTH + HOUSING_LENGTH),
         -SLAB_THICKNESS,
         TUBE_GAP + SLAB_THICKNESS,
     )
@@ -267,7 +301,7 @@ pub(super) fn wall_quads() -> [[Vec2; 4]; WALL_QUAD_COUNT] {
         ),
         axis_box(
             Vec2::new(wall_outer_x, wall_bottom_y),
-            Vec2::new(RAMP_START_X, RESERVOIR_FLOOR_Y),
+            Vec2::new(RAMP_START_X + FLOOR_UNDER_RAMP, RESERVOIR_FLOOR_Y),
         ),
         [ramp_start - below, RAMP_END - below, RAMP_END, ramp_start],
         axis_box(
@@ -281,6 +315,10 @@ pub(super) fn wall_quads() -> [[Vec2; 4]; WALL_QUAD_COUNT] {
         axis_box(
             Vec2::new(CHUTE_INNER_X, CHUTE_WALL_BOTTOM_Y),
             Vec2::new(CHUTE_OUTER_X, CHUTE_TOP_Y),
+        ),
+        axis_box(
+            Vec2::new(HOOD_LEFT_X, HOOD_BOTTOM_Y),
+            Vec2::new(CHUTE_OUTER_X, HOOD_TOP_Y),
         ),
     ]
 }
@@ -311,37 +349,35 @@ pub(super) fn vane_quads() -> [[Vec2; 4]; VANE_COUNT as usize] {
 /// The embedded tips are drawn as they collide (UI-D69).
 pub(super) fn visible_vane_outline(q_center: f32) -> Option<Vec<Vec2>> {
     let q_min = q_center - VANE_HALF_SPAN;
-    let q_max = (q_center + VANE_HALF_SPAN).min(TUBE_LENGTH);
-    if q_min >= q_max {
-        return None;
-    }
+    let q_max = q_center + VANE_HALF_SPAN;
     let band = [
         (q_min, -VANE_EMBED),
         (q_max, -VANE_EMBED),
         (q_max, TUBE_GAP + VANE_EMBED),
         (q_min, TUBE_GAP + VANE_EMBED),
     ];
-    let visible = clip_outside_bottom_face(&band);
+    let above_bottom = clip_by_face(&band, |point| uphill_of(BOTTOM_FACE, point));
+    let visible = clip_by_face(&above_bottom, |point| -uphill_of(TOP_FACE, point));
     if visible.len() < 3 {
         return None;
     }
     Some(visible.into_iter().map(|(q, t)| vane_point(q, t)).collect())
 }
 
-/// How far vane-coordinate point `(q, t)` lies outside the bottom housing face along `q`.
-fn bottom_face_clearance((q, t): (f32, f32)) -> f32 {
-    q - (t - TUBE_GAP / 2.0) * (BOTTOM_FACE_TAN - VANE_TAN)
+/// How far vane-coordinate point `(q, t)` lies uphill of `face` along the axis.
+fn uphill_of(face: Cut, (q, t): (f32, f32)) -> f32 {
+    q - face.offset + (t - TUBE_GAP / 2.0) * (VANE_TAN - face.lean_tan)
 }
 
-/// Keeps the part of a convex `(q, t)` polygon outside the bottom housing face
-/// (one Sutherland-Hodgman pass).
-fn clip_outside_bottom_face(polygon: &[(f32, f32)]) -> Vec<(f32, f32)> {
+/// Keeps the part of a convex `(q, t)` polygon where `clearance` is not
+/// negative (one Sutherland-Hodgman pass).
+fn clip_by_face(polygon: &[(f32, f32)], clearance: impl Fn((f32, f32)) -> f32) -> Vec<(f32, f32)> {
     let mut kept = Vec::with_capacity(polygon.len() + 1);
     for index in 0..polygon.len() {
         let current = polygon[index];
         let next = polygon[(index + 1) % polygon.len()];
-        let current_clearance = bottom_face_clearance(current);
-        let next_clearance = bottom_face_clearance(next);
+        let current_clearance = clearance(current);
+        let next_clearance = clearance(next);
         if current_clearance >= 0.0 {
             kept.push(current);
         }
@@ -493,6 +529,13 @@ pub(super) fn in_reservoir(point: Vec2) -> bool {
         && (RESERVOIR_LEFT_X - PARTICLE_RADIUS..=CHUTE_INNER_X + PARTICLE_RADIUS).contains(&point.x)
         && point.y >= reservoir_floor_y(point.x) - PARTICLE_RADIUS
         && point.y < BASIN_FLOOR_BOTTOM_Y
+}
+
+/// Inside the return chute between the weir and the chute wall, above the reservoir.
+#[cfg(test)]
+pub(super) fn in_chute(point: Vec2) -> bool {
+    (WEIR_OUTER_X - PARTICLE_RADIUS..=CHUTE_INNER_X + PARTICLE_RADIUS).contains(&point.x)
+        && (BASIN_FLOOR_BOTTOM_Y..=CHUTE_TOP_Y).contains(&point.y)
 }
 
 /// Tube-frame vane coordinate `q` of a world point.

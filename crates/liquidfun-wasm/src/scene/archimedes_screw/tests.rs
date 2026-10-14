@@ -6,12 +6,13 @@ use liquidfun::collision::PolygonShape;
 use liquidfun::math::{Transform, Vec2};
 
 use super::geometry::{
-    AXIS, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y, HOUSING_LENGTH, INLET_LENGTH,
-    INLET_SEAL_Y, NORMAL, OUTLET_LENGTH, PARTICLE_DIAMETER, PARTICLE_RADIUS, PITCH, SLAB_THICKNESS,
-    TUBE_GAP, TUBE_LENGTH, TUBE_ORIGIN, VANE_COS, VANE_COUNT, VANE_EMBED, VANE_HALF_SPAN,
-    VANE_OVERHANG, VANE_TAN, VANE_THICKNESS, WEIR_LIP_Y, bottom_housing, distance_to_boundary,
-    floor_slab, in_basin, in_reservoir, quad_contains, top_housing, tube_point, vane_quads,
-    visible_vane_outline, wall_quads, water_positions,
+    AXIS, CHUTE_INNER_X, CHUTE_TOP_Y, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y,
+    HOOD_BOTTOM_Y, HOOD_LEFT_X, HOUSING_LENGTH, INLET_LENGTH, INLET_SEAL_Y, NORMAL, OUTLET_LENGTH,
+    PARTICLE_DIAMETER, PARTICLE_RADIUS, PITCH, SLAB_THICKNESS, TUBE_GAP, TUBE_LENGTH, TUBE_ORIGIN,
+    VANE_COS, VANE_COUNT, VANE_EMBED, VANE_HALF_SPAN, VANE_OVERHANG, VANE_TAN, VANE_THICKNESS,
+    WEIR_LIP_Y, bottom_housing, distance_to_boundary, floor_slab, in_basin, in_reservoir,
+    quad_contains, top_housing, tube_point, vane_quads, visible_vane_outline, wall_quads,
+    water_positions,
 };
 
 const LITERAL_TOLERANCE: f32 = 1e-6;
@@ -191,6 +192,23 @@ fn weir_lip_submerges_the_outlet_below_the_top_housing() {
 }
 
 #[test]
+fn the_hood_closes_the_gap_between_the_top_housing_and_the_chute() {
+    // Arrange
+    let walls = wall_quads();
+    let hood = walls[walls.len() - 1];
+    let hood_inner_corner = Vec2::new(HOOD_LEFT_X, HOOD_BOTTOM_Y);
+    let chute_inner_top = Vec2::new(CHUTE_INNER_X, CHUTE_TOP_Y);
+
+    // Act
+    let buried_in_housing = quad_contains(&top_housing(), hood_inner_corner);
+    let chute_top_buried = quad_contains(&hood, chute_inner_top);
+
+    // Assert
+    assert!(buried_in_housing, "{hood_inner_corner:?}");
+    assert!(chute_top_buried, "{chute_inner_top:?}");
+}
+
+#[test]
 fn every_wall_vertex_lies_inside_the_frame() {
     // Arrange
     let quads = wall_quads();
@@ -282,17 +300,22 @@ fn a_vane_inside_a_housing_has_no_outline() {
 }
 
 #[test]
-fn a_vane_cut_by_the_top_housing_face_draws_a_narrower_outline() {
+fn a_vane_cut_by_the_top_housing_face_draws_only_its_outside_part() {
     // Arrange
-    let q_center = TUBE_LENGTH;
+    let housing = top_housing();
 
     // Act
-    let outline = visible_vane_outline(q_center).expect("half the vane is in the tube");
+    let outline = visible_vane_outline(TUBE_LENGTH).expect("part of the vane is in the tube");
 
     // Assert
-    assert_eq!(outline.len(), 4);
-    let drawn_width = (outline[1] - outline[0]).length();
-    assert!((drawn_width - VANE_HALF_SPAN).abs() < 1e-4, "{drawn_width}");
+    assert!(outline.len() >= 3, "{outline:?}");
+    let inside: Vec<&Vec2> = outline
+        .iter()
+        .filter(|corner| {
+            quad_contains(&housing, **corner) && distance_to_boundary(&housing, **corner) > 1e-4
+        })
+        .collect();
+    assert!(inside.is_empty(), "{inside:?}");
 }
 
 #[test]
