@@ -154,21 +154,4 @@ describe("water backdrop (D-07 refinement)", () => {
     expect([backdrop.matchesView, backdrop.revision]).toEqual([false, 0]);
     expect(backdrop.maybeRaster).toBeUndefined();
   });
-
-  it("redraws after a reset once the walls are stable again", () => {
-    // Arrange
-    const factory = backdropCanvasFactory();
-    const backdrop = createWaterBackdrop(factory.create);
-    backdrop.update(wallFrame(WALLS), camera, size);
-    backdrop.update(wallFrame(WALLS), camera, size);
-
-    // Act
-    backdrop.reset();
-    backdrop.update(wallFrame(WALLS), camera, size);
-    backdrop.update(wallFrame(WALLS), camera, size);
-
-    // Assert
-    expect([backdrop.matchesView, backdrop.revision]).toEqual([true, 2]);
-    expect(factory.create).toHaveBeenCalledTimes(1);
-  });
 });

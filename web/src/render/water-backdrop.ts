@@ -37,8 +37,6 @@ export type WaterBackdrop<C extends BackdropCanvas = BackdropCanvas> = {
   readonly matchesView: boolean;
   /** The raster canvas, once one has been drawn. */
   readonly maybeRaster: C | undefined;
-  /** Forgets every key so the next stable frame rasterizes again. */
-  reset(): void;
 };
 
 type FrameKey = {
@@ -201,11 +199,6 @@ export function createWaterBackdrop<C extends BackdropCanvas>(
     },
     get maybeRaster() {
       return maybeRasterized === undefined ? undefined : maybeCanvas;
-    },
-    reset() {
-      maybePrevious = undefined;
-      maybeRasterized = undefined;
-      matchesView = false;
     },
   };
 }
