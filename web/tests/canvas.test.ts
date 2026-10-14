@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { RenderFrame } from "../src/physics/frame";
-import { drawRenderFrame } from "../src/render/canvas";
+import {
+  CANVAS_COLOR,
+  CANVAS_RGB,
+  drawRenderFrame,
+} from "../src/render/canvas";
+import { WATER_BACKGROUND } from "../src/render/water-uniforms";
 import { triangleWireVertices } from "../src/render/triangle-wire";
 import {
   createCamera,
@@ -548,5 +553,23 @@ describe("drawRenderFrame", () => {
 
     // Assert
     expect(maybeShading).toBe(false);
+  });
+});
+
+describe("canvas background color", () => {
+  it("derives the WebGL water background from the 2D canvas color", () => {
+    // Arrange
+    const hex = `#${CANVAS_RGB.map((channel) =>
+      channel.toString(16).padStart(2, "0"),
+    ).join("")}`;
+
+    // Act
+    const waterChannels = WATER_BACKGROUND.map((channel) =>
+      Math.round(channel * 255),
+    );
+
+    // Assert
+    expect(hex).toBe(CANVAS_COLOR.toLowerCase());
+    expect(waterChannels).toEqual([...CANVAS_RGB]);
   });
 });

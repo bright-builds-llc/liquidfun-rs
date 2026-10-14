@@ -6,6 +6,7 @@
  * floor sheets blue while jets stay white, and a narrower, weaker highlight
  * turns per-particle glitter into small glints.
  */
+import { CANVAS_RGB } from "./canvas";
 import { PARTICLE_KERNEL_REACH } from "./contour";
 import {
   DENSITY_SHADE_END,
@@ -43,8 +44,12 @@ export const WATER_LIGHT_DIR: Vec3 = [
 ];
 /** Foam color `#F4F7FA` (theme foreground) as 0..1 RGB. */
 export const WATER_FOAM_COLOR: Vec3 = [0xf4 / 255, 0xf7 / 255, 0xfa / 255];
-/** Canvas background `#071018` as 0..1 RGB, shared with shaded blob. */
-export const WATER_BACKGROUND: Vec3 = [7 / 255, 16 / 255, 24 / 255];
+/** Canvas background as 0..1 RGB, derived from the shared `CANVAS_COLOR`. */
+export const WATER_BACKGROUND: Vec3 = [
+  CANVAS_RGB[0] / 255,
+  CANVAS_RGB[1] / 255,
+  CANVAS_RGB[2] / 255,
+];
 
 /** Per-frame inputs of the shade pass. */
 export type WaterShadeState = {

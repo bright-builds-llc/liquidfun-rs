@@ -28,12 +28,19 @@ import {
 
 /** Canvas background, shared with the water backdrop and shade pass. */
 export const CANVAS_COLOR = "#071018";
+/** `CANVAS_COLOR` as 0..255 RGB channels, for WebGL uniforms and texels. */
+export const CANVAS_RGB = hexRgb(CANVAS_COLOR);
 /** Static segment stroke color, shared with the water backdrop. */
 export const BASIN_STROKE_COLOR = "#94A3B8";
 const RIGID_FILL_COLOR = "#334155";
 const RIGID_STROKE_COLOR = "#CBD5E1";
 const RIGID_STROKE_WIDTH = 2;
 const MAX_DEVICE_PIXEL_RATIO = 2;
+
+function hexRgb(hex: string): readonly [number, number, number] {
+  const value = Number.parseInt(hex.slice(1), 16);
+  return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
+}
 
 /** Caps the backing-store scale shared by the 2D and shaded-blob canvases. */
 export function cappedDevicePixelRatio(devicePixelRatio: number): number {

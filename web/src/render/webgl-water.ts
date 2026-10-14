@@ -10,6 +10,7 @@
  */
 import type { RenderFrame } from "../physics/frame";
 import type { Camera } from "./camera";
+import { CANVAS_RGB } from "./canvas";
 import {
   createFieldTarget,
   type FieldSize,
@@ -33,7 +34,7 @@ export type WaterBackdropCanvas = BackdropCanvas & TexImageSource;
 
 const CLIP_QUAD = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
 // Shown until the first walls raster uploads; avoids sampling an empty texture.
-const PLACEHOLDER_TEXEL = new Uint8Array([7, 16, 24, 255]);
+const PLACEHOLDER_TEXEL = new Uint8Array([...CANVAS_RGB, 255]);
 
 const WATER_PASS = Symbol("water");
 
