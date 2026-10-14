@@ -1,10 +1,21 @@
 import { expect, test, type Locator } from "@playwright/test";
 
 import { formatBuiltAtDisplay } from "../src/build-info";
+import { SCENE_IDS, SCENES } from "../src/catalog/scenes";
+import { PAGE_SUMMARY } from "../src/player/runtime";
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+// Dismiss + the Puzzles link + one link per catalog scene.
+const FOCUSABLE_COUNT = SCENE_IDS.length + 2;
+
+const maybeLastScene = SCENES.at(-1);
+if (maybeLastScene === undefined) {
+  throw new Error("SCENES must not be empty");
+}
+const LAST_SCENE_TITLE = maybeLastScene.title;
 
 function expectedBuiltAtPattern(iso: string): RegExp {
   const nowMs = Date.now();
@@ -54,11 +65,9 @@ test("renders the desktop shell and navigates from the sidebar", async ({
 
   // Assert
   await expect(page.locator(".site-header")).toBeVisible();
-  await expect(page.locator(".site-header")).not.toContainText(
-    "All twenty-five demos",
-  );
+  await expect(page.locator(".site-header")).not.toContainText(PAGE_SUMMARY);
   await expect(page.locator(".site-footer-summary")).toContainText(
-    "All twenty-five demos",
+    PAGE_SUMMARY,
   );
   await expect(page.locator(".demo-sidebar")).toBeVisible();
   await expect(page.locator(".player-panel")).toBeVisible();
@@ -232,8 +241,8 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
     .toBe(true);
 
   // Act / Assert
-  // Dismiss + the Puzzles link + twenty-five scene links = 27 focusables; exercise wrap past one full cycle.
-  for (let tabIndex = 0; tabIndex < 28; tabIndex += 1) {
+  // Exercise wrap past one full cycle of FOCUSABLE_COUNT focusables.
+  for (let tabIndex = 0; tabIndex < FOCUSABLE_COUNT + 1; tabIndex += 1) {
     await page.keyboard.press("Tab");
     await expect
       .poll(() =>
@@ -244,13 +253,19 @@ test("traps repeated forward and reverse Tab navigation inside the mobile drawer
 
   // Arrange
   const closeButton = dialog.getByRole("button", { name: "Dismiss" });
-  const lastLink = dialog.getByRole("link", { name: /Tesla Valve\b/ });
+  const lastLink = dialog.getByRole("link", {
+    name: new RegExp(`${escapeRegExp(LAST_SCENE_TITLE)}\\b`),
+  });
   await closeButton.focus();
   await expect(closeButton).toBeFocused();
 
   // Act / Assert
-  // Dismiss + the Puzzles link + twenty-five scene links = 27 focusables; 28 reverse tabs ≡ 1 (mod 27) lands on last.
-  for (let reverseTabIndex = 0; reverseTabIndex < 28; reverseTabIndex += 1) {
+  // FOCUSABLE_COUNT + 1 reverse tabs ≡ 1 (mod FOCUSABLE_COUNT) lands on the last link.
+  for (
+    let reverseTabIndex = 0;
+    reverseTabIndex < FOCUSABLE_COUNT + 1;
+    reverseTabIndex += 1
+  ) {
     await page.keyboard.press("Shift+Tab");
     await expect
       .poll(() =>
@@ -320,7 +335,9 @@ test("closes the drawer for an authoritative external hash route", async ({
   ).toBe(true);
 });
 
-test("shows twenty-five static previews in the desktop sidebar", async ({ page }) => {
+test("shows one static preview per scene in the desktop sidebar", async ({
+  page,
+}) => {
   // Arrange
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(withFormFactorShell(DAM_BREAK_PATH));
@@ -329,10 +346,10 @@ test("shows twenty-five static previews in the desktop sidebar", async ({ page }
   await expect(page.locator(".catalog-card")).toHaveCount(0);
   await expect(
     page.locator(".demo-sidebar").getByText("Static preview", { exact: true }),
-  ).toHaveCount(25);
+  ).toHaveCount(SCENE_IDS.length);
   await expect(
     page.locator(".demo-sidebar").locator("svg[aria-hidden='true']"),
-  ).toHaveCount(25);
+  ).toHaveCount(SCENE_IDS.length);
 });
 
 test("shows a static preview inside the mobile demos dialog", async ({
