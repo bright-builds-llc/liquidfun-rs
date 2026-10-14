@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
-status: executing
-stopped_at: Completed 45-10-PLAN.md
-last_updated: "2026-10-14T17:07:50.010Z"
+status: verifying
+stopped_at: Completed 45-08-PLAN.md
+last_updated: "2026-10-14T17:11:10.721Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 10
-  completed_plans: 9
-  percent: 90
+  completed_plans: 10
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-14
 
 Progress: [░░░░░░░░░░] 0%
@@ -39,6 +39,7 @@ v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, author
 ### Roadmap Evolution
 
 - v1.6 (2026-10-14): Roadmap created with Phases 45–51 — groundwork and siphon/hourglass feasibility spikes (45), then one scene per phase: Cartesian diver (46), Archimedes screw (47), fake ferrofluid (48), Rayleigh–Taylor instability (49), siphon (50, shaped by the spike decision) and sand hourglass (51, conditional: returns to a seed if the spike fails). SCENE-01..03 are mapped to Phase 46 and apply to every scene phase; the PREP-01 id-join fingerprint gate reruns after every phase.
+- v1.6 (2026-10-14, Plan 45-08): Both feasibility spikes failed their pre-recorded rules and the owner confirmed both drops. The siphon (SIPHON-01/02) returned to SEED-008 and the sand hourglass (SAND-01/02) to SEED-007. Phases 50 and 51 are marked dropped in place (no 999.x phase), and v1.6 continues with Phases 46-49.
 - v1.5 (2026-10-11): Roadmap created with Phases 37–43 — puzzle core in the bridge, puzzle route and player shell, tools and stars, timed valve and teaching levels, level select and progress, opt-in sound, GPU water (closing).
 - v1.4 (2026-10-06): Simplified to Phases 34–36 — timing survey, targeted fixes for the slowest scenes, re-survey. The original Phases 34–60 plan is in commit `011e80e`.
 - Phase 30 added: Periodic hydraulic fountain
@@ -210,6 +211,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 45]: 45-09: per-scene ms/step uses cargo xtask playground scene-spot --scene <id> (the just recipe takes no args); PREP-02 left unticked for Plan 10
 - [Phase 45]: 45-10: final tree (HEAD 75b4b4303) passes the id-join gate with 25/25 protected fingerprints unchanged and all 25 local gates; no fix commits needed
 - [Phase 45]: 45-10: the final gate's build-app step uses just web-build (VITE_BUILT_AT provenance for shell e2e)
+- [Phase 45]: 45-08: owner confirmed (verbatim 'confirm', 2026-10-14) the edge-relative slope reading with water guard and both spike drops
+- [Phase 45]: 45-08: SAND-01/02 returned to SEED-007 and SIPHON-01/02 to SEED-008; Phases 50 and 51 marked dropped in place; v1.6 targets four scenes (46-49)
 
 ### Pending Todos
 
@@ -344,9 +347,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 45 P07 | 12min | 2 tasks | 1 files |
 | Phase 45 P09 | 3min | 2 tasks | 2 files |
 | Phase 45 P10 | 11min | 2 tasks | 0 files |
+| Phase 45 P08 | 3min | 2 tasks | 7 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T17:07:50.007Z
-Stopped at: Completed 45-10-PLAN.md
+Last session: 2026-10-14T17:11:10.718Z
+Stopped at: Completed 45-08-PLAN.md
 Resume file: None
