@@ -191,6 +191,58 @@ Twelve missing JavaScript LiquidFun testbed scenes in the existing playground, t
 
 - Most of the elapsed time was launch-check waits, not work. After the fix, a workspace test run dropped from about 7.8 hours to about 20 minutes.
 
+## Milestone: v1.5 — Puzzle Mode
+
+**Shipped:** 2026-10-14
+**Phases:** 8 | **Plans:** 64 | **Tasks:** 112
+
+### What Was Built
+
+- A deterministic puzzle core in the private wasm bridge. Fill, win, timeout and stars are decided per fixed step in Rust, and recorded fixtures replay identically in native release, wasm and the browser.
+- A place-then-play puzzle player:
+  - a tool tray for placing tools with mouse, touch or keyboard;
+  - one Rust validator for placements;
+  - fast-forward at 2× and 4× that gives the same outcome as 1×;
+  - Win, Brim and Thrifty stars.
+- A timed valve and six teaching levels, each proven by a reference solution, an empty run, a nudge sweep and controls that show the level's idea matters.
+- A `#/puzzles` level grid with per-browser progress, saved placements tied to a level hash, and a degraded mode for blocked storage.
+- Opt-in synthesized sound.
+- A GPU Water render mode with a per-frame fallback chain and recovery after context loss.
+- A small cleanup phase, added from the milestone audit, that closed tech debt chosen by the owner.
+
+### What Worked
+
+- Keeping all puzzle logic in the bridge meant `crates/liquidfun` was never touched. Each phase that changed the bridge proved 25/25 identical scene fingerprints against its own base, so the scenes stayed provably unchanged across the whole milestone.
+- Recorded fixtures made determinism concrete. The same files backed the Rust tests, the wasm replay and the Playwright expectations.
+- Optional frame lanes (puzzle status, sound tallies, the Water speed lane) followed one pattern: produced only when requested and parsed fail closed. Proofs that turning a lane on leaves physics unchanged were cheap to write.
+- The yolo chain worked on main: discuss, plan, execute one plan at a time, review, fix, verify, then push. A human gate was kept for subjective checks: listening, glass look, iPhone and real-GPU Water.
+- The milestone audit found real loose ends: a stale GOAL-04 checkbox, a puzzle suite that had not been rerun since the last fixes, and untested Next and valve fast-forward flows. Each was closed with evidence, not wording.
+
+### What Was Inefficient
+
+- `phase complete` sometimes skipped the roadmap checkbox, left STATE on "ready for verification" or skipped requirement ticks, so these needed manual fixes after almost every phase.
+- `gsd-tools commit` drops the Co-Authored-By trailer, so code and docs commits used plain `git commit`.
+- Key-link checks in the plans used over-escaped regexes, which gave false negatives that each had to be checked by hand.
+- The summary extractor picked deviation notes ("Rule 3 - Blocking") as milestone accomplishments, so the MILESTONES entry was written by hand.
+- Code review fixes sometimes landed after a phase's gate run, so the affected browser suites had to be rerun before verification could be trusted.
+
+### Patterns Established
+
+- Optional frame lanes: off by default and requested per capture. TS parses them fail closed, and on/off proofs show bit-identical physics.
+- Test the observable attribute, not the pixels. Tests read `data-drawn-surface`, `data-speed-lane` and `data-puzzle-*` attributes instead of screenshot-diffing shader output.
+- Run a cleanup phase from the audit for the tech debt the owner selects, then re-audit before archiving.
+- Keep a separate strict `tsconfig.e2e.json`, so e2e code meets the same typecheck bar as the app.
+
+### Key Lessons
+
+- After any review-fix commit, rerun the browser suites for the code it touched before trusting an earlier gate record.
+- A requirement whose evidence is spread across phases (GOAL-04: native in 37, browser in 40) needs its checkbox closed by whichever phase finishes it. Otherwise it stays "Pending" despite full evidence.
+- Hash-only navigation in Playwright can measure the previous level unless the test waits for the new route's identity attribute.
+
+### Cost Observations
+
+- Phases 43 and 44 ran end to end in one session: discuss, UI-SPEC, plan with checker revision, sequential execution, review and fix, verification, audit, cleanup phase, re-audit and archive. Executor plans typically took 3–20 minutes, and gate runs about 10–20 minutes.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Archive date | Package/tag |
@@ -200,5 +252,6 @@ Twelve missing JavaScript LiquidFun testbed scenes in the existing playground, t
 | v1.2 Native Performance Closing | 4 | 23 | 2026-09-21 | No |
 | v1.3 Reference Testbed Scenes | 8 | 38 | 2026-09-28 | Tag `v1.3` only |
 | v1.4 Scenario Performance | 3 | 13 | 2026-10-11 | Tag `v1.4` only |
+| v1.5 Puzzle Mode | 8 | 64 | 2026-10-14 | Tag `v1.5` only |
 
-Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. v1.3 filled the missing testbed catalog and added four original scenes. v1.4 made the catalog faster with bit-identical fixes and local before/after evidence. v1.0 through v1.2 withhold release tags. The owner authorized annotated tags `v1.3` and `v1.4` as milestone markers, not crate publication.
+Hobby scope and independent AI review continued. v1.1 was a concrete browser playground. v1.2 was a local Dam Break close with no public benchmark claim. v1.3 filled the missing testbed catalog and added four original scenes. v1.4 made the catalog faster with bit-identical fixes and local before/after evidence. v1.5 added a deterministic place-then-play puzzle game, sound and a GPU Water mode without touching the engine. v1.0 through v1.2 withhold release tags. The owner authorized annotated tags `v1.3`, `v1.4` and `v1.5` as milestone markers, not crate publication.
