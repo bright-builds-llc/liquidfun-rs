@@ -585,15 +585,18 @@ macOS note (project memory): each newly linked binary stalls about 2 minutes at 
 | A4 | The edge-relative slope formula is an acceptable reading of D-25's "p95 height against base width" | §6.4 | If the owner reads D-25 literally, a confined flat fill could pass. Record both numbers and the water control |
 | A5 | e2e shell.spec plus vitest are sufficient regression cover for the splits (no SSR render test of previews exists) | §4 | A moved preview with a typo renders differently. Mitigation: `git diff --color-moved` review |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What happens to SIPHON-01/02 if the siphon spike's decision is drop?**
    - D-22 defines go/reshape/drop but not the requirement bookkeeping. D-27's seed rule covers only the hourglass.
    - Recommendation: the siphon plan records the decision. On drop it also mirrors the hourglass handling (seed + REQUIREMENTS/ROADMAP note), so Phase 50 is not planned blindly. The planner should flag this to the orchestrator.
+   - RESOLVED: 45-06 records the siphon decision only. 45-08 shows it to the owner with the hourglass result; siphon seed, REQUIREMENTS and ROADMAP updates happen in 45-08 only if the owner explicitly confirms a drop; otherwise Phase 50 records the seed return (ROADMAP Phase 50 criterion 1).
 1. **Should `scene-records-curiosity.ts` / `previews-curiosity.tsx` exist as empty targets now?**
    - Either works. Creating them in Phase 46 avoids empty modules.
+   - RESOLVED: 45-05 creates no empty curiosity modules; Phase 46 creates `scene-records-curiosity.ts` and `previews-curiosity.tsx` when it needs them.
 1. **Should `controls.test.ts` be split now?**
    - Not required for the first scene (§4). Leave it to Phase 47 or 48 unless the planner wants a margin.
+   - RESOLVED: 45-05 records the D-12 line counts and defers the `controls.test.ts` split to a later scene phase.
 
 ## Environment Availability
 
