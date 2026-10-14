@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.5
-milestone_name: Polish and Test Gaps
-status: complete
-stopped_at: Phase 44 complete — verification passed (2026-10-14)
-last_updated: "2026-10-14T02:21:53.135Z"
+milestone_name: Puzzle Mode
+status: completed
+stopped_at: v1.5 milestone archived (2026-10-14)
+last_updated: "2026-10-14T02:48:53.417Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 8
@@ -18,21 +18,21 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-10-11)
+See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 44 — v1.5 Polish and Test Gaps
+**Current focus:** Planning the next milestone (v1.5 archived 2026-10-14)
 
 ## Current Position
 
-Phase: 44
+Phase: 44 (v1.5 Polish and Test Gaps) — COMPLETE
 Plan: 3 of 3
-Status: Phase complete — verified; v1.5 phases 37–44 all complete, ready for milestone re-audit
+**Status:** v1.5 milestone complete
 Last activity: 2026-10-14
 
 Progress: [██████████] 100%
 
-v1.4 is archived, and annotated tag `v1.4` marks the archive, authorized by the owner on 2026-10-11. v1.3 also remains archived. Package publication remains separately authorized.
+v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. Next: `/gsd-new-milestone`, phase numbering continues after 44. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
 
 ## Accumulated Context
 
@@ -47,7 +47,7 @@ v1.4 is archived, and annotated tag `v1.4` marks the archive, authorized by the 
 
 ### Decisions
 
-v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key Decisions.
+v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.md`, `v1.4-STATE.md` and `v1.5-STATE.md`, with outcomes in PROJECT.md Key Decisions. The entries below are kept for continuity.
 
 - [v1.3]: Archive is a planning label. No crate publication. Annotated tag `v1.3` marks the archive.
 - [v1.4]: Speed takes priority over compact memory; bounded measured increases are allowed. Preserve authored physics/settings, ordering, visuals and lifecycle; no promised percentage/FPS gain.
@@ -195,11 +195,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 
 ### Pending Todos
 
-- Half-float render targets: implemented in 43-02 (`field-pass.ts` `supportsHalfFloatTargets`, cb9a0ad07). The iPhone check remains a non-blocking D-20 UAT item.
+None. (Half-float render targets shipped in 43-02; the owner approved the iPhone check on 2026-10-14.)
 
 ### Blockers/Concerns
 
-- Phase 37 opens with the native-vs-wasm determinism spike; its result sets the angle-snapping and fill-margin policy for every level.
 - A fresh unprofiled pair is still required before claiming the ≤ 3× Dam Break ratio for any HEAD after `89d34564`.
 
 ## Retained Context

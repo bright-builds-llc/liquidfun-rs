@@ -1,5 +1,65 @@
 # Project Milestones: liquidfun-rs
 
+## v1.5 Puzzle Mode (Archived: 2026-10-14)
+
+**Delivered:** A small place-then-play puzzle game inside the playground. The player places a few fixed-size tools while a level is paused, presses Play, and tries to hold enough water in a glass cup before a simulation-time limit. Fill, win, timeout and stars are decided per fixed step in Rust, in the private `liquidfun-wasm` bridge. Six teaching levels each have recorded solutions, which replay identically in native release, in wasm and in the browser. The milestone also adds level select with per-browser progress, opt-in synthesized sound and a GPU "Water" render mode. `crates/liquidfun` was never modified, and all 25 scene fingerprints are unchanged across the milestone. The crate was not published. Annotated tag `v1.5` marks this archive.
+
+**Completed:** 8 phases (37–44), 64 plans, 112 tasks. Phase 44 was added from the milestone audit to close tech debt chosen by the owner.
+
+### Accomplishments
+
+- **Deterministic puzzle core (Phase 37):** levels are built from a level id and integer tool placements. A step-latched goal tracker decides win (fill held for about 0.5 s) and timeout. Recorded fixtures replay to the same outcome step in native release and in wasm.
+- **Puzzle player (Phases 38–39):**
+  - `#/puzzle/<id>` opens in the shared player with a glass cup, fill meter, simulation timer and a result card offering Next, Retry and Edit.
+  - Building uses a per-level tool tray. Players place, drag, rotate in 15° steps and remove tools with mouse, touch or keyboard. A single Rust validator marks invalid placements and disables Play.
+  - Fast-forward at 2× and 4× leaves the outcome unchanged. Three independent stars (Win, Brim, Thrifty) keep the best result for each star.
+- **Teaching levels (Phase 40):** a timed valve tool, set while building, plus six levels: first-pour, thick-syrup, jelly-pad, float-up, timed-gate and grand-finale. Each level is proven by a three-star reference that wins with margin, an empty run that loses, a nudge sweep, and controls showing its idea matters.
+- **Level select and progress (Phase 41):**
+  - A `#/puzzles` grid shows soft linear unlocks, while deep links always open.
+  - Stars and last placements are saved in one versioned localStorage document. Saved placements are discarded when the level's Rust `levelHash` changes.
+  - A degraded mode keeps the game fully playable when storage is blocked.
+- **Opt-in sound (Phase 42):** synthesized Web Audio splashes, impacts, rising plinks and a win chime. It is off by default, capped at 6 voices, and starts only after a user gesture. The bridge reports read-only per-step sound tallies, and puzzle outcomes are identical with sound on or off.
+- **GPU Water render mode (Phase 43):** a WebGL2 high-precision mode with refraction, highlights, a tint that keeps each particle's colour, and speed-driven foam. It works in scenes and puzzles. Each frame falls back from Water to shaded blob to canvas, and the view recovers after WebGL context loss. Shaded blob also gains half-float render targets. The per-particle speed lane is produced only while Water is active.
+- **Audit cleanup (Phase 44):**
+  - Full tool names show in phone trays, and the valve time is exposed to assistive technology.
+  - The TypeScript valve tick is capped at 255 to match Rust.
+  - New e2e tests cover Next navigation and timed-gate at 1×, 2× and 4×.
+  - A strict e2e typecheck runs as part of `bun run typecheck`.
+
+### Scope and known gaps
+
+- All 33 v1.5 requirements are satisfied: GOAL, TOOL, STAR, LEVEL, PUZ, PROG, SOUND and WATER. The milestone audit passed: 33/33 requirements, 8/8 phases, 23/23 cross-phase links and 6/6 flows. The audit is archived as `milestones/v1.5-MILESTONE-AUDIT.md`.
+- Powder was dropped as a teaching idea (D-25) after a spike found no behavior distinct enough to teach. Buoyancy shipped in its place.
+- Human checks approved by the owner: the Phase 38 glass and layout look, Phase 42 listening and iPhone sound, and Phase 43 Water on an iPhone and on a desktop GPU.
+- The owner reviewed and deferred the remaining tech debt, which the audit lists by phase:
+  - info-level review notes from phases 37–41;
+  - the first-pour portrait frame, which fills about 34% of the height;
+  - the Water probe, which caches a transient failure until reload;
+  - slight speckle in dense pooled water;
+  - two flakes, each seen once.
+- Future ideas are recorded in the archived requirements: HINT-01, BADGE-01, TRAIL-01, ROTATE-01, GOAL-05, VALVE-02, SPONGE-01, LEVEL-05 and EDITOR-01.
+- Strict native qualification and crate publication remain separately authorized.
+
+### Statistics and provenance
+
+- **Timeline:** 2026-10-11 (milestone start) to 2026-10-14. Archived 2026-10-14 UTC.
+- **Git range:** `153669d` (start milestone v1.5) through the archive commit, 374 commits before archival.
+  - Whole repository: 487 paths, +89557/−660.
+  - Outside `.planning`: 283 paths, +48974/−631.
+  - `web/src` and `crates/liquidfun-wasm/src`: 177 paths, +24739/−527.
+- **Evidence:** per-phase gate evidence is local and gitignored under `target/phase37/` through `target/phase44/`. The committed records are each phase's VERIFICATION, REVIEW and REVIEW-FIX files.
+
+### Archives
+
+- [Roadmap](milestones/v1.5-ROADMAP.md)
+- [Requirements and outcomes](milestones/v1.5-REQUIREMENTS.md)
+- [Milestone audit](milestones/v1.5-MILESTONE-AUDIT.md)
+- [Completion state](milestones/v1.5-STATE.md)
+
+**Next:** No new milestone scope has been chosen. Use `/gsd-new-milestone` when ready, and continue phase numbering after 44. The owner authorized annotated tag `v1.5` on 2026-10-14. The tag marks this planning archive and is not a crate publication.
+
+---
+
 ## v1.4 Scenario Performance (Archived: 2026-10-11)
 
 **Delivered:** Faster playground scenes with no change in behavior. A native timing survey of all 25 catalog scenes found the slowest ones. Phase 35 kept only profile-guided engine fixes with a gain beyond noise and bit-identical end-state fingerprints. A back-to-back before/after survey shows 24 scenes faster, 1 within noise and none slower, as local observations on one machine. The crate was not published. Annotated tag `v1.4` marks this archive.
@@ -19,6 +79,7 @@
   - A9: lifetime eviction index
 
   Reverted attempts and their reasons are recorded in `35-PROFILES.md`.
+
 - The whole-catalog before/after survey, run back to back with the gate and the same binaries, is published in `docs/benchmarks/scene-survey.md`. Largest changes:
   - fountain −44%
   - water-wheel −43%
