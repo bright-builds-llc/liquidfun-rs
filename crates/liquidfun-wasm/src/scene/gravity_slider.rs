@@ -185,6 +185,7 @@ mod tests {
             SceneId::StackedDrip => 22,
             SceneId::WashingMachine => 23,
             SceneId::TeslaValve => 24,
+            SceneId::CartesianDiver => 25,
         }
     }
 }

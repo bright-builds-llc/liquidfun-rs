@@ -7,6 +7,7 @@
 //! `0.75`, particle cap 10240, timestep `1/60`.
 
 mod basin_family;
+mod cartesian_diver;
 mod color_mixer;
 mod dam_break;
 mod drawing_particles;
@@ -68,6 +69,7 @@ pub(crate) enum SceneId {
     StackedDrip,
     WashingMachine,
     TeslaValve,
+    CartesianDiver,
 }
 
 /// Every playground catalog scene, in `web/src/catalog/scenes.ts` `SCENE_IDS` order.
@@ -129,6 +131,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "stacked-drip" => Ok(SceneId::StackedDrip),
         "washing-machine" => Ok(SceneId::WashingMachine),
         "tesla-valve" => Ok(SceneId::TeslaValve),
+        "cartesian-diver" => Ok(SceneId::CartesianDiver),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -277,6 +280,7 @@ pub(crate) fn build_scene(
         SceneId::StackedDrip => stacked_drip::build(&scene_presets),
         SceneId::WashingMachine => washing_machine::build(&scene_presets),
         SceneId::TeslaValve => tesla_valve::build(&scene_presets),
+        SceneId::CartesianDiver => cartesian_diver::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)

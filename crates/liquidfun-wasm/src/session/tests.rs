@@ -39,6 +39,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("stacked-drip", SceneId::StackedDrip),
         ("washing-machine", SceneId::WashingMachine),
         ("tesla-valve", SceneId::TeslaValve),
+        ("cartesian-diver", SceneId::CartesianDiver),
     ];
 
     for (raw, expected) in tokens {
