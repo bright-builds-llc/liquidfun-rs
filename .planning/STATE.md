@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 43-03-PLAN.md
-last_updated: "2026-10-14T00:11:12.975Z"
+stopped_at: Completed 43-04-PLAN.md
+last_updated: "2026-10-14T00:15:38.621Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 58
-  percent: 95
+  completed_plans: 59
+  percent: 97
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 43 (GPU Water Render Mode) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -178,6 +178,8 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 43]: 43-02: watchParticleSurface creates the surface before adding repaint listeners so the reset runs first; restore repaint builds fresh programs (D-14) (aabbf02e6)
 - [Phase 43]: 43-03: D-07 refined: Water refracts a water-owned stable-walls raster (water-backdrop.ts) re-rasterized only when a frame repeats and differs from the last raster, reusing static-layer sameContent/sameCameraView; procedural backdrop otherwise; texture upload gated by revision (39fd0571a, 0c6bc8c8b)
 - [Phase 43]: 43-03: drawWater (lazy WATER_PASS, 2-attachment RGBA16F, constant-0 speed attribute when the lane is absent) returns false on every unsupported state; cachedWaterSupport is a per-page probe on a detached canvas released with loseContext; only water-programs.ts imports .glsl?raw (53b89a36e)
+- [Phase 43]: 43-04: presentSceneFrame returns DrawnSurface from one chain (Water, shaded blob, canvas soft blob); scene canvas carries data-drawn-surface and data-speed-lane after every draw; data-particle-surface stays the requested surface (6d0856d57, f3adfdbd8)
+- [Phase 43]: 43-04: assignParticleSurface detaches the previous watchParticleSurface and repaints only while the canvas is current; Water availability read once in App.tsx via cachedWaterSupport() and shared through RenderModeOptions (857603bcd)
 
 ### Pending Todos
 
@@ -298,9 +300,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 43 P01 | 17min | 3 tasks | 9 files |
 | Phase 43 P02 | 5min | 2 tasks | 5 files |
 | Phase 43 P03 | 9min | 3 tasks | 15 files |
+| Phase 43 P04 | 4min | 3 tasks | 14 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T00:11:12.972Z
-Stopped at: Completed 43-03-PLAN.md
+Last session: 2026-10-14T00:15:38.618Z
+Stopped at: Completed 43-04-PLAN.md
 Resume file: None

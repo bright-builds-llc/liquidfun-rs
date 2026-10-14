@@ -62,9 +62,9 @@ Research: `.planning/research/v1.5-puzzle-mode/SUMMARY.md`.
 
 ### GPU water
 
-- [ ] **WATER-01**: Player can choose a "Water" render mode with refraction, highlights and foam on fast-moving water.
-- [ ] **WATER-02**: When the device cannot run it or the WebGL context is lost, the view falls back to shaded blob and then canvas, and recovers when the context is restored.
-- [ ] **WATER-03**: Water mode works in scenes and puzzles, and exports keep their existing styles.
+- [x] **WATER-01**: Player can choose a "Water" render mode with refraction, highlights and foam on fast-moving water.
+- [x] **WATER-02**: When the device cannot run it or the WebGL context is lost, the view falls back to shaded blob and then canvas, and recovers when the context is restored.
+- [x] **WATER-03**: Water mode works in scenes and puzzles, and exports keep their existing styles.
 
 ## Future Requirements
 
@@ -129,9 +129,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SOUND-01 | Phase 42 | Complete |
 | SOUND-02 | Phase 42 | Complete |
 | SOUND-03 | Phase 42 | Complete |
-| WATER-01 | Phase 43 | Pending |
-| WATER-02 | Phase 43 | Pending |
-| WATER-03 | Phase 43 | Pending |
+| WATER-01 | Phase 43 | Complete |
+| WATER-02 | Phase 43 | Complete |
+| WATER-03 | Phase 43 | Complete |
 
 **Coverage:**
 
