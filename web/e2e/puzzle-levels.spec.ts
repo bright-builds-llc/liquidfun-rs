@@ -20,7 +20,7 @@ import {
   stablePuzzleCamera,
   waitForPuzzlePhase,
 } from "./puzzle-helpers";
-import { SCREENS_DIR_40 } from "./puzzle-editor-helpers";
+import { SCREENS_DIR_40, SCREENS_DIR_44 } from "./puzzle-editor-helpers";
 
 // Each test gets a fresh browser context, so storage starts empty and
 // first-pour shows its placement hint.
@@ -32,6 +32,35 @@ const RUN_TEST_TIMEOUT_MS = 90_000;
 const ENDED_TIMEOUT_MS = 60_000;
 // The last level's Next slot links back to the grid (Phase 41 D-04).
 const ALL_LEVELS = "All levels";
+const PHONE_SMALL = { width: 360, height: 780 } as const;
+// Portrait tray leaf widths at each phone width (39-UI-SPEC, Phase 44 D-02).
+const PORTRAIT_TRAY_CASES: readonly { readonly viewport: Viewport; readonly trayWidth: number }[] = [
+  { viewport: PHONE_PORTRAIT, trayWidth: 218 },
+  { viewport: PHONE_SMALL, trayWidth: 188 },
+];
+const PX_TOLERANCE = 0.5;
+const TRAY_HEIGHT_PX = 44;
+const GRAND_FINALE_TRAY_NAMES = ["Plank, 2 left", "Valve, 1 left"] as const;
+
+type TrayItemFit = {
+  readonly height: number;
+  readonly width: number;
+  readonly nameVisible: boolean;
+  readonly nameScroll: number;
+  readonly nameClient: number;
+  readonly nameText: string;
+  readonly nameFontPx: number;
+  readonly countFontPx: number;
+  readonly countRight: number;
+  readonly innerRight: number;
+};
+
+type TrayFit = {
+  readonly kindCount: number;
+  readonly trayWidth: number;
+  readonly trayHeight: number;
+  readonly items: readonly TrayItemFit[];
+};
 
 function viewportName(viewport: Viewport): string {
   return `${viewport.width}x${viewport.height}`;
@@ -46,6 +75,72 @@ async function openLevelBuilding(page: Page, id: PuzzleId, viewport: Viewport): 
   await page.setViewportSize(viewport);
   await page.goto(puzzlePath(id));
   await waitForPuzzlePhase(page, "building");
+}
+
+/** Tray box, item boxes and name/count fit, read in one evaluate (Phase 44 D-01, D-02). */
+async function readTrayFit(page: Page): Promise<TrayFit> {
+  return page.locator(".puzzle-tray").evaluate((tray): TrayFit => {
+    const trayRect = tray.getBoundingClientRect();
+    const items = Array.from(tray.querySelectorAll(".puzzle-tray-item"), (item) => {
+      const name = item.querySelector(".puzzle-tray-name");
+      const count = item.querySelector(".puzzle-tray-count");
+      if (!(name instanceof HTMLElement) || !(count instanceof HTMLElement)) {
+        throw new Error("Tray item is missing its name or count");
+      }
+      const itemRect = item.getBoundingClientRect();
+      return {
+        height: itemRect.height,
+        width: itemRect.width,
+        nameVisible: getComputedStyle(name).display !== "none",
+        nameScroll: name.scrollWidth,
+        nameClient: name.clientWidth,
+        nameText: name.textContent ?? "",
+        nameFontPx: parseFloat(getComputedStyle(name).fontSize),
+        countFontPx: parseFloat(getComputedStyle(count).fontSize),
+        countRight: count.getBoundingClientRect().right,
+        // 1 px border and 8 px padding inside the item's right edge.
+        innerRight: itemRect.right - 1 - 8,
+      };
+    });
+    return {
+      kindCount: Number(tray.getAttribute("data-kind-count")),
+      trayWidth: trayRect.width,
+      trayHeight: trayRect.height,
+      items,
+    };
+  });
+}
+
+function expectTrayFits(fit: TrayFit, trayWidth: number): void {
+  const maybeFirst = fit.items[0];
+  expect(maybeFirst).toBeDefined();
+  for (const item of fit.items) {
+    if (item.nameVisible) {
+      expect(item.nameScroll).toBeLessThanOrEqual(item.nameClient);
+      expect(item.nameText).not.toContain("…");
+    }
+    expect(Math.abs(item.height - TRAY_HEIGHT_PX)).toBeLessThanOrEqual(PX_TOLERANCE);
+    expect(item.countRight).toBeLessThanOrEqual(item.innerRight + PX_TOLERANCE);
+    expect(Math.abs(item.width - (maybeFirst?.width ?? 0))).toBeLessThanOrEqual(PX_TOLERANCE);
+  }
+  expect(Math.abs(fit.trayWidth - trayWidth)).toBeLessThanOrEqual(PX_TOLERANCE);
+  expect(Math.abs(fit.trayHeight - TRAY_HEIGHT_PX)).toBeLessThanOrEqual(PX_TOLERANCE);
+  if (fit.kindCount !== 2) {
+    return;
+  }
+  for (const item of fit.items) {
+    expect(item.nameVisible).toBe(true);
+    expect(item.nameFontPx).toBe(14);
+    expect(item.countFontPx).toBe(12);
+  }
+}
+
+async function expectGrandFinaleTrayNames(page: Page): Promise<void> {
+  const buttons = page.getByRole("group", { name: "Tools" }).getByRole("button");
+  await expect(buttons).toHaveCount(GRAND_FINALE_TRAY_NAMES.length);
+  for (const [index, name] of GRAND_FINALE_TRAY_NAMES.entries()) {
+    await expect(buttons.nth(index)).toHaveAccessibleName(name);
+  }
 }
 
 async function speedToFour(page: Page): Promise<void> {
@@ -128,3 +223,50 @@ for (const id of PUZZLE_IDS) {
     );
   });
 }
+
+for (const { viewport, trayWidth } of PORTRAIT_TRAY_CASES) {
+  test(`shows every tray name in full at ${viewportName(viewport)}`, async ({ page }) => {
+    test.setTimeout(RUN_TEST_TIMEOUT_MS);
+    // Arrange
+    await installControlledRefreshRate(page, 60);
+    await page.setViewportSize(viewport);
+
+    for (const id of PUZZLE_IDS) {
+      // Act
+      await page.goto(puzzlePath(id));
+      // A hash-only goto keeps the page, so wait for this level before reading it.
+      await expect(page.locator("main")).toHaveAttribute("data-puzzle", id);
+      await waitForPuzzlePhase(page, "building");
+      await stablePuzzleCamera(page);
+      const fit = await readTrayFit(page);
+
+      // Assert
+      expectTrayFits(fit, trayWidth);
+    }
+
+    // Assert (grand-finale is the last level loaded)
+    await expectGrandFinaleTrayNames(page);
+    await expect(page.locator(".puzzle-tray-name")).toHaveText(["Plank", "Valve"]);
+    await expect(page.locator(".puzzle-tray-count")).toHaveText(["×2", "×1"]);
+    if (viewport === PHONE_PORTRAIT) {
+      await page.screenshot({ path: resolve(SCREENS_DIR_44, "level-grand-finale-390x844.png") });
+    }
+  });
+}
+
+test(`keeps grand-finale's landscape tray as icon and count at ${viewportName(DESKTOP)}`, async ({
+  page,
+}) => {
+  // Arrange
+  await installControlledRefreshRate(page, 60);
+
+  // Act
+  await openLevelBuilding(page, "grand-finale", DESKTOP);
+  const nameDisplays = await page
+    .locator(".puzzle-tray-name")
+    .evaluateAll((names) => names.map((name) => getComputedStyle(name).display));
+
+  // Assert
+  expect(nameDisplays).toEqual(["none", "none"]);
+  await expectGrandFinaleTrayNames(page);
+});

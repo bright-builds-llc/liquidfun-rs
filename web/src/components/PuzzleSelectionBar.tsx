@@ -10,6 +10,13 @@ import {
   RotateCounterclockwiseIcon,
 } from "./PuzzleIcons";
 
+/**
+ * Id of the valve readout that describes the stepper group (Phase 44 D-04).
+ * A fixed id is safe because the bar mounts once per puzzle route, like
+ * `#puzzle-editor-status`.
+ */
+const VALVE_TIME_ID = "puzzle-valve-time";
+
 export type PuzzleSelectionBarProps = {
   readonly state: PuzzleState;
   /** +1 rotates counterclockwise 15°, −1 clockwise (D-19). */
@@ -61,7 +68,12 @@ export function PuzzleSelectionBar(props: PuzzleSelectionBarProps) {
       aria-label="Selected tool"
       aria-orientation="horizontal"
     >
-      <div class="puzzle-valve-stepper" role="group" aria-label="Valve opening time">
+      <div
+        class="puzzle-valve-stepper"
+        role="group"
+        aria-label="Valve opening time"
+        aria-describedby={valve().enabled ? VALVE_TIME_ID : undefined}
+      >
         <SelectionButton
           name="Open the valve 0.5 s earlier"
           enabled={valve().earlierEnabled}
@@ -70,9 +82,9 @@ export function PuzzleSelectionBar(props: PuzzleSelectionBarProps) {
           <MinusIcon />
         </SelectionButton>
         <span
+          id={VALVE_TIME_ID}
           class="puzzle-valve-time"
           data-enabled={valve().enabled ? "true" : "false"}
-          aria-hidden="true"
         >
           {valve().text}
         </span>

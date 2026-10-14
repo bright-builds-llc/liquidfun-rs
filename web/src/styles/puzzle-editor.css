@@ -337,6 +337,39 @@
   height: 44px;
 }
 
+/* Portrait, two kinds: icon beside the name, count under it, so names never ellipsize (Phase 44 D-01). */
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray[data-kind-count="2"] .puzzle-tray-item {
+  display: inline-grid;
+  grid-template-columns: 22px minmax(0, max-content);
+  grid-template-rows: 20px 16px;
+  column-gap: 4px;
+  row-gap: 0;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  justify-items: start;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray[data-kind-count="2"] .puzzle-tray-item .puzzle-icon {
+  grid-column: 1;
+  grid-row: 1 / 3;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray[data-kind-count="2"] .puzzle-tray-name {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray[data-kind-count="2"] .puzzle-tray-count {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 12px;
+  line-height: 16px;
+}
+
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-selection-bar {
   right: var(--puzzle-inset-right);
   bottom: calc(var(--puzzle-inset-bottom) + 52px);

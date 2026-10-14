@@ -13,6 +13,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 /** Verifier screenshots for Phase 39. */
 export const SCREENS_DIR_39 = resolve(REPO_ROOT, "target/phase39/screens");
 export const SCREENS_DIR_40 = resolve(REPO_ROOT, "target/phase40/screens");
+export const SCREENS_DIR_44 = resolve(REPO_ROOT, "target/phase44/screens");
 
 /** Placement grid pitch in meters. */
 const GRID_METERS = 0.05;
