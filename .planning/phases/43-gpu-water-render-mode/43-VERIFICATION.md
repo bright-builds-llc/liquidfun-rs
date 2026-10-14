@@ -1,7 +1,9 @@
 ---
 phase: 43-gpu-water-render-mode
 verified: 2026-10-14T01:08:06Z
-status: human_needed
+status: passed
+human_approved_at: "2026-10-14T01:09:57Z"
+human_approved_by: "user (repository owner) via chat: approved, please push it"
 score: 4/4 roadmap success criteria verified (31/31 plan must-have truths verified)
 generated_by: gsd-verifier
 lifecycle_mode: yolo
@@ -22,7 +24,7 @@ human_verification:
 
 **Phase Goal:** Players can view water with refraction, highlights and foam in scenes and puzzles. Fallbacks never leave a blank canvas.
 **Verified:** 2026-10-14T01:08:06Z
-**Status:** human_needed. Every automated check passes. Two subjective or device-only items remain, and neither blocks completion.
+**Status:** passed. Every automated check passes. The two device and look items were approved by the repository owner in chat ("approved, please push it", 2026-10-14T01:09:57Z).
 **Re-verification:** No. This is the initial verification, run against the final tree at HEAD `66181d36e`, after the code review fixes `60ada549b..95576cf7d`.
 
 ## Goal Achievement
@@ -136,7 +138,7 @@ There are no TODO or FIXME markers, and production Rust has no `unwrap()`.
 
 ### Gaps Summary
 
-No gaps were found. All four roadmap success criteria and all plan must-haves are verified against the final tree, including after the review fixes. The verifier independently re-ran tsc, vitest, the wasm crate tests, the 25/25 scene fingerprint gate, the wasm and release puzzle replays, the app build and the 13-test Water Playwright suite. The only remaining items are the D-20 device check and the subjective look review. Both are non-blocking under the hobby profile, so the status is `human_needed`.
+No gaps were found. All four roadmap success criteria and all plan must-haves are verified against the final tree, including after the review fixes. The verifier independently re-ran tsc, vitest, the wasm crate tests, the 25/25 scene fingerprint gate, the wasm and release puzzle replays, the app build and the 13-test Water Playwright suite. The only remaining items are the D-20 device check and the subjective look review. Both are non-blocking under the hobby profile, the verifier recorded `human_needed`; the repository owner approved both items in chat on 2026-10-14T01:09:57Z, so the status is `passed`.
 
 Lifecycle provenance is consistent. CONTEXT, all 6 PLANs and all 6 SUMMARYs carry `lifecycle_mode: yolo` and `phase_lifecycle_id: 43-2026-10-13T22-55-49`, and no artifact is marked `direct-fallback`.
 
