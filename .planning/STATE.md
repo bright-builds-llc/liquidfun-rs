@@ -1,10 +1,13 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.6
-milestone_name: milestone
-status: verifying
-stopped_at: Completed 46-05-PLAN.md
-last_updated: "2026-10-14T19:32:37.627Z"
+milestone_name: Physics Curiosity Scenes
+status: ready_to_plan
+current_phase: 47
+current_phase_name: "Archimedes Screw"
+current_plan: null
+stopped_at: Phase 46 complete (verified 5/5); 26/26 fingerprints protected
+last_updated: "2026-10-14T19:47:41.507Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
@@ -21,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 46 — Cartesian Diver
+**Current focus:** Phase 47 — Archimedes Screw
 
 ## Current Position
 
-Phase: 46 (Cartesian Diver) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
+Phase: 47
+Plan: Not started
+Status: Phase 46 complete and verified — ready to discuss Phase 47
 Last activity: 2026-10-14
 
-Progress: [██░░░░░░░░] Phase 45 of 45–49 complete (50 and 51 dropped)
+Progress: [████░░░░░░] Phases 45–46 of 45–49 complete (50 and 51 dropped)
 
 v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. v1.6 Physics Curiosity Scenes started 2026-10-14 (SEED-004); phase numbering continues at 45. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
 
