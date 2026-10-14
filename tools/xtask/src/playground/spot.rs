@@ -201,7 +201,7 @@ fn validate_scene_sample(scene: &serde_json::Value) -> Result<(), PlaygroundErro
     Ok(())
 }
 
-fn is_fingerprint(value: &str) -> bool {
+pub(super) fn is_fingerprint(value: &str) -> bool {
     value.len() == FINGERPRINT_DIGITS
         && value
             .bytes()

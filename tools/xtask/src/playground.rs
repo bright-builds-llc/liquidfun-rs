@@ -3,6 +3,7 @@
 mod bundle;
 mod counts;
 mod error;
+mod fingerprint_gate;
 mod heap;
 mod identity;
 mod pair;
