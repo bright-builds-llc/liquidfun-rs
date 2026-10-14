@@ -19,6 +19,8 @@ import {
   expectPlayEnabled,
   gridToPage,
   readPlacements,
+  readRunFingerprint,
+  type RunFingerprint,
 } from "./puzzle-editor-helpers";
 
 const LEVEL_ID = "timed-gate" as const;
@@ -42,6 +44,10 @@ function main(page: Page) {
 
 function valveReadout(page: Page) {
   return page.locator(".puzzle-valve-time");
+}
+
+function valveStepper(page: Page) {
+  return page.getByRole("group", { name: "Valve opening time", exact: true });
 }
 
 /** `kind:x,y,angle` or `valve:x,y,angle,openTick`, as `data-puzzle-placements` writes it. */
@@ -134,6 +140,15 @@ async function openTimedGate(page: Page): Promise<void> {
   await stablePuzzleCamera(page);
 }
 
+/** Opens timed-gate and builds the fixture's placements through the player controls. */
+async function buildReference(page: Page): Promise<void> {
+  await openTimedGate(page);
+  for (const placement of SOLUTION.placements) {
+    await placeFixtureTool(page, placement);
+  }
+  expect(await readPlacements(page)).toBe(SOLUTION.placements.map(placementToken).join(";"));
+}
+
 test("replays the timed-gate reference through the tray, canvas and valve stepper", async ({
   page,
 }) => {
@@ -148,16 +163,10 @@ test("replays the timed-gate reference through the tray, canvas and valve steppe
     throw new Error("timed-gate-solution.txt must place a valve");
   }
 
-  // Arrange
-  await openTimedGate(page);
-
-  // Act: build the fixture's placements through the player controls.
-  for (const placement of SOLUTION.placements) {
-    await placeFixtureTool(page, placement);
-  }
+  // Arrange and Act: open timed-gate and build the fixture's placements.
+  await buildReference(page);
 
   // Assert
-  expect(await readPlacements(page)).toBe(expected);
   await expectPlayEnabled(page, true);
 
   // Act: deselect, then reselect the valve and step its time with the keys.
@@ -211,4 +220,59 @@ test("replays the timed-gate reference through the tray, canvas and valve steppe
       .locator('li[data-criterion="brim"][data-glyph="earned"]'),
   ).toHaveCount(1);
   await page.screenshot({ path: resolve(SCREENS_DIR_40, "valve-won.png") });
+});
+
+test("plays the timed-gate reference at 2× and 4× with the 1× outcome", async ({ page }) => {
+  test.setTimeout(RUN_TEST_TIMEOUT_MS * 2);
+  // Arrange: one build is shared by all three runs (D-08).
+  const maybeExpectation = SOLUTION.maybeExpectation;
+  if (maybeExpectation === undefined || maybeExpectation.outcome !== "won") {
+    throw new Error("timed-gate-solution.txt must record a won run");
+  }
+  const [valve] = SOLUTION.placements.filter((placement) => placement.kind === "valve");
+  if (valve === undefined) {
+    throw new Error("timed-gate-solution.txt must place a valve");
+  }
+  await buildReference(page);
+
+  // Assert: the selected valve's readout describes the stepper group (D-04, UI-D55).
+  await expect(main(page)).toHaveAttribute("data-puzzle-selected", "0");
+  await expect(valveReadout(page)).toHaveAttribute("id", "puzzle-valve-time");
+  await expect(valveReadout(page)).not.toHaveAttribute("aria-hidden");
+  await expect(valveStepper(page)).toHaveAttribute("aria-describedby", "puzzle-valve-time");
+  await expect(valveStepper(page)).toHaveAccessibleDescription(valveSecondsText(valve.openTick));
+
+  // Act
+  await page.keyboard.press("Escape");
+
+  // Assert: without a selected valve the group has no description (UI-D56).
+  await expect(main(page)).toHaveAttribute("data-puzzle-selected", "");
+  await expect(valveStepper(page)).not.toHaveAttribute("aria-describedby");
+
+  // Act: 1×
+  const runs: RunFingerprint[] = [];
+  await button(page, "Play").click();
+  await waitForPuzzlePhase(page, "ended", HELD_TIMEOUT_MS);
+  await waitForHeld(page, HELD_TIMEOUT_MS);
+  runs.push(await readRunFingerprint(page));
+
+  // Act: 2× and 4× retries of the same build.
+  for (const nextSpeed of ["Speed 2×", "Speed 4×"]) {
+    await page.getByRole("button", { name: /^Speed \d×$/ }).click();
+    await expect(button(page, nextSpeed)).toBeVisible();
+    await button(page, "Retry").click();
+    await expect(page.locator('main[data-puzzle-held="false"]')).toBeVisible();
+    await waitForHeld(page, HELD_TIMEOUT_MS);
+    runs.push(await readRunFingerprint(page));
+  }
+
+  // Assert: every speed reaches the fixture's outcome with the same fingerprint.
+  await expect(main(page)).toHaveAttribute("data-puzzle-speed", "4");
+  expect(runs).toHaveLength(3);
+  const [normal] = runs;
+  for (const run of runs) {
+    expect(run.outcomeStep).toBe(String(maybeExpectation.outcomeStep));
+    expect(run.peakHeld).toBe(String(maybeExpectation.peakHeld));
+    expect(run).toEqual(normal);
+  }
 });
