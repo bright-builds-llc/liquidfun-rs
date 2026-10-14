@@ -11,7 +11,7 @@ Research: `.planning/research/v1.6-curiosity-scenes/SUMMARY.md`.
 
 ### Groundwork and scene gates
 
-- [ ] **PREP-01**: The 25 existing scenes behave exactly as before. A committed, pinned list of their end-state fingerprints is compared by scene id after every phase, and new scene ids may be added.
+- [x] **PREP-01**: The 25 existing scenes behave exactly as before. A committed, pinned list of their end-state fingerprints is compared by scene id after every phase, and new scene ids may be added.
 - [ ] **PREP-02**: Adding a scene needs no edits to hard-coded scene counts or "twenty-five" copy. Counts and copy derive from the scene catalog.
 - [ ] **PREP-03**: Time-boxed siphon and hourglass feasibility spikes record measured results against written pass rules, and each ends with a recorded go, reshape or drop decision before its scene phase.
 
@@ -83,7 +83,7 @@ SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns af
 
 | Requirement | Phase | Status |
 | --- | --- | --- |
-| PREP-01 | Phase 45 | Pending |
+| PREP-01 | Phase 45 | Complete |
 | PREP-02 | Phase 45 | Pending |
 | PREP-03 | Phase 45 | Pending |
 | SCENE-01 | Phase 46 | Pending |

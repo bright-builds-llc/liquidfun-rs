@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Completed 45-01-PLAN.md
-last_updated: "2026-10-14T15:54:12.731Z"
+stopped_at: Completed 45-02-PLAN.md
+last_updated: "2026-10-14T16:01:31.499Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 1
-  percent: 10
+  completed_plans: 2
+  percent: 20
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -197,6 +197,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 44]: 44-03: timed-gate 1x/2x/4x share one build and give identical fingerprints (429/519/582/e405de2194871266); stepper described only with a valve selected (813516547)
 - [Phase 44]: 44-03: 10/10 phase gates exit=0 on first run at 813516547; crates/ untouched since 9e6efcc23; puzzle e2e 104, water 13, HUD 64; no fix commit
 - [Phase 45]: 45-01: baseline docs/benchmarks/scene-fingerprints.json pinned (f31ac087a) from scene-spot 2026-10-14T15-53-11Z at 04650ff5a (code = b151838be); 25/25 equal to target/phase43/after-final.txt; scene_spot_stamp stored repo-relative
+- [Phase 45]: 45-02: scene-fingerprint-gate (ec0dd960e) joins on scene id; changed/missing protected ids fail, unknown observed ids pass as additions; fresh capture by default, --spot/--stamp read a saved one; os/arch/compiler mismatch warns only
+- [Phase 45]: 45-02: Plan 01 capture 2026-10-14T15-53-11Z and fresh capture 2026-10-14T16-00-20Z both report 25/25 unchanged; tampered dam-break baseline fails naming dam-break
 
 ### Pending Todos
 
@@ -323,9 +325,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 44 P02 | 3min | 2 tasks | 9 files |
 | Phase 44 P03 | 5min | 3 tasks | 2 files |
 | Phase 45 P01 | 2min | 2 tasks | 1 files |
+| Phase 45 P02 | 7min | 2 tasks | 7 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T15:54:12.727Z
-Stopped at: Completed 45-01-PLAN.md
+Last session: 2026-10-14T16:01:31.496Z
+Stopped at: Completed 45-02-PLAN.md
 Resume file: None
