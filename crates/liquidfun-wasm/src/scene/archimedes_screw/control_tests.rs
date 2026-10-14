@@ -1,0 +1,221 @@
+//! Debug-safe Archimedes Screw control tests: the `screw-speed` and
+//! `screw-direction` allowlists, intent-only live effects and the reverse
+//! motion they drive (D-09, D-10, D-11).
+
+use liquidfun::math::Vec2;
+use liquidfun::{BodySnapshot, NoDecisionHook, StepLimits};
+
+use super::geometry::{AXIS, PITCH, TUBE_ORIGIN};
+use super::test_support::step_configuration;
+use super::{
+    DEFAULT_SCREW_RPM, MAX_SCREW_RPM, SCREW_DIRECTION_CONTROL, SCREW_SPEED_CONTROL, SIM_DT,
+    ScrewParts, axial_speed, build_parts, parse_screw_rpm,
+};
+use crate::scene::{ControlEffect, SceneHooks, SceneId};
+use crate::session::{SessionCore, SessionError};
+
+const POSITION_TOLERANCE: f32 = 1e-4;
+
+fn train_snapshot(parts: &ScrewParts) -> BodySnapshot {
+    parts
+        .world
+        .body_snapshot(parts.hooks.train)
+        .expect("live train")
+}
+
+fn same_bits(left: Vec2, right: Vec2) -> bool {
+    left.x.to_bits() == right.x.to_bits() && left.y.to_bits() == right.y.to_bits()
+}
+
+fn control(parts: &mut ScrewParts, name: &str, value: &str) -> Result<ControlEffect, SessionError> {
+    let system = parts.particle_system;
+    parts
+        .hooks
+        .apply_control(&mut parts.world, system, name, value)
+}
+
+#[test]
+fn parse_screw_rpm_accepts_canonical_whole_numbers_up_to_the_maximum() {
+    // Arrange
+    let default_token = DEFAULT_SCREW_RPM.to_string();
+    let max_token = MAX_SCREW_RPM.to_string();
+
+    // Act
+    let parsed = [
+        parse_screw_rpm("0"),
+        parse_screw_rpm("1"),
+        parse_screw_rpm(&default_token),
+        parse_screw_rpm(&max_token),
+    ];
+
+    // Assert
+    assert_eq!(
+        parsed,
+        [
+            Some(0),
+            Some(1),
+            Some(DEFAULT_SCREW_RPM),
+            Some(MAX_SCREW_RPM)
+        ]
+    );
+}
+
+#[test]
+fn parse_screw_rpm_rejects_malformed_and_out_of_range_tokens() {
+    // Arrange
+    let above_max = (MAX_SCREW_RPM + 1).to_string();
+    let tokens = [
+        "", "01", "-5", "+5", "1.0", " 30", "30 ", "abc", &above_max, "99999",
+    ];
+
+    // Act
+    let accepted: Vec<&str> = tokens
+        .iter()
+        .copied()
+        .filter(|token| parse_screw_rpm(token).is_some())
+        .collect();
+
+    // Assert
+    assert!(accepted.is_empty(), "{accepted:?}");
+}
+
+#[test]
+fn screw_speed_stores_intent_without_touching_the_world() {
+    // Arrange
+    let mut parts = build_parts().expect("screw parts");
+    let before = train_snapshot(&parts);
+    let token = (MAX_SCREW_RPM - 1).to_string();
+
+    // Act
+    let effect = control(&mut parts, SCREW_SPEED_CONTROL, &token);
+
+    // Assert
+    assert!(matches!(effect, Ok(ControlEffect::Live)));
+    assert_eq!(parts.hooks.rpm, MAX_SCREW_RPM - 1);
+    let after = train_snapshot(&parts);
+    assert!(same_bits(after.position(), before.position()));
+    assert!(same_bits(after.linear_velocity(), before.linear_velocity()));
+}
+
+#[test]
+fn screw_speed_rejects_a_bad_value_and_keeps_the_speed() {
+    // Arrange
+    let mut parts = build_parts().expect("screw parts");
+    let above_max = (MAX_SCREW_RPM + 1).to_string();
+
+    // Act
+    let results = [
+        control(&mut parts, SCREW_SPEED_CONTROL, &above_max),
+        control(&mut parts, SCREW_SPEED_CONTROL, "01"),
+    ];
+
+    // Assert
+    assert!(
+        results
+            .iter()
+            .all(|result| matches!(result, Err(SessionError::UnknownControl)))
+    );
+    assert_eq!(parts.hooks.rpm, DEFAULT_SCREW_RPM);
+}
+
+#[test]
+fn screw_direction_reverse_sets_and_forward_clears_the_flag() {
+    // Arrange
+    let mut parts = build_parts().expect("screw parts");
+
+    // Act
+    let reverse = control(&mut parts, SCREW_DIRECTION_CONTROL, "reverse");
+    let reversed = parts.hooks.reverse;
+    let forward = control(&mut parts, SCREW_DIRECTION_CONTROL, "forward");
+
+    // Assert
+    assert!(matches!(reverse, Ok(ControlEffect::Live)));
+    assert!(matches!(forward, Ok(ControlEffect::Live)));
+    assert!(reversed);
+    assert!(!parts.hooks.reverse);
+}
+
+#[test]
+fn screw_direction_rejects_other_values_and_keeps_the_direction() {
+    // Arrange
+    let mut parts = build_parts().expect("screw parts");
+    control(&mut parts, SCREW_DIRECTION_CONTROL, "reverse").expect("reverse is allowed");
+
+    // Act
+    let results = ["Reverse", "back", "", "forward "]
+        .map(|value| control(&mut parts, SCREW_DIRECTION_CONTROL, value));
+
+    // Assert
+    assert!(
+        results
+            .iter()
+            .all(|result| matches!(result, Err(SessionError::UnknownControl)))
+    );
+    assert!(parts.hooks.reverse);
+}
+
+#[test]
+fn other_scene_controls_and_actions_fail_closed() {
+    // Arrange
+    let mut parts = build_parts().expect("screw parts");
+    let system = parts.particle_system;
+
+    // Act
+    let drum = control(&mut parts, "drum-speed", "30");
+    let motor = control(&mut parts, "motor-direction", "reverse");
+    let action = parts
+        .hooks
+        .apply_action(&mut parts.world, system, "anything");
+
+    // Assert
+    assert!(matches!(drum, Err(SessionError::UnknownControl)));
+    assert!(matches!(motor, Err(SessionError::UnknownControl)));
+    assert!(matches!(action, Err(SessionError::UnknownControl)));
+    assert_eq!(parts.hooks.rpm, DEFAULT_SCREW_RPM);
+    assert!(!parts.hooks.reverse);
+}
+
+#[test]
+fn the_session_applies_speed_and_direction_live_and_rebuilds_for_gravity() {
+    // Arrange
+    let mut session = SessionCore::create(SceneId::ArchimedesScrew).expect("screw scene");
+
+    // Act
+    let speed = session.apply_control(SCREW_SPEED_CONTROL, "0");
+    let direction = session.apply_control(SCREW_DIRECTION_CONTROL, "reverse");
+    let gravity = session.apply_control("gravity", "80");
+
+    // Assert
+    assert!(matches!(speed, Ok(false)), "{speed:?}");
+    assert!(matches!(direction, Ok(false)), "{direction:?}");
+    assert!(matches!(gravity, Ok(true)), "{gravity:?}");
+}
+
+#[test]
+fn reverse_moves_the_train_down_the_axis_at_the_current_speed() {
+    // Arrange
+    let mut parts = build_parts().expect("screw parts");
+    control(&mut parts, SCREW_DIRECTION_CONTROL, "reverse").expect("reverse is allowed");
+    let expected = -axial_speed(DEFAULT_SCREW_RPM, false) * SIM_DT;
+    let system = parts.particle_system;
+
+    // Act
+    parts
+        .hooks
+        .on_advance(&mut parts.world, system)
+        .expect("the vane train advances");
+    parts
+        .world
+        .step(
+            step_configuration(),
+            &mut NoDecisionHook,
+            StepLimits::default(),
+        )
+        .expect("the screw world steps");
+
+    // Assert
+    let travelled = (train_snapshot(&parts).position() - TUBE_ORIGIN).dot(AXIS);
+    let error = (travelled - expected).rem_euclid(PITCH);
+    let error = error.min(PITCH - error);
+    assert!(error < POSITION_TOLERANCE, "{travelled} vs {expected}");
+}

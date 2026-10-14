@@ -226,25 +226,6 @@ fn the_train_stays_within_one_pitch_across_snaps() {
 }
 
 #[test]
-fn controls_and_actions_fail_closed() {
-    // Arrange
-    let mut parts = build_parts().expect("screw parts");
-    let system = parts.particle_system;
-
-    // Act
-    let control = parts
-        .hooks
-        .apply_control(&mut parts.world, system, "screw-speed", "30");
-    let action = parts
-        .hooks
-        .apply_action(&mut parts.world, system, "anything");
-
-    // Assert
-    assert!(matches!(control, Err(SessionError::UnknownControl)));
-    assert!(matches!(action, Err(SessionError::UnknownControl)));
-}
-
-#[test]
 fn pointer_input_is_accepted_and_changes_nothing() {
     // Arrange
     let mut parts = build_parts().expect("screw parts");

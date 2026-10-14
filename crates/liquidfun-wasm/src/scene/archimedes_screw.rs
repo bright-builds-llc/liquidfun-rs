@@ -8,6 +8,10 @@
 //! unchanged; the vane that appears or disappears at a snap is always inside
 //! a solid end housing, out of the water's reach (D-02, D-03). Only the vanes
 //! move the water: there are no forces, emitters or teleports.
+//!
+//! Two live controls set the screw's intent: `screw-speed` (whole-number rpm
+//! from 0 through `MAX_SCREW_RPM`) and `screw-direction` (`forward` or
+//! `reverse`). Both are applied together in `on_advance` (D-09, D-10).
 
 mod geometry;
 
@@ -28,7 +32,11 @@ use super::{
 };
 use crate::session::SessionError;
 
-/// Starting screw speed in revolutions per minute (D-09; Plan 02 tunes it).
+/// Live control: screw speed in whole revolutions per minute (D-09).
+const SCREW_SPEED_CONTROL: &str = "screw-speed";
+/// Live control: `forward` lifts water, `reverse` carries it back down (D-10).
+const SCREW_DIRECTION_CONTROL: &str = "screw-direction";
+/// Starting screw speed in revolutions per minute (D-09).
 const DEFAULT_SCREW_RPM: u16 = 30;
 /// Fastest screw speed; about twice the default (D-09).
 const MAX_SCREW_RPM: u16 = 60;
@@ -47,6 +55,21 @@ const PRESSURE_STRENGTH: f32 = 0.25;
 const VANE_FRICTION: f32 = 0.2;
 /// The shared playground water color.
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
+
+/// Whole-number rpm tokens from `0` through [`MAX_SCREW_RPM`].
+fn parse_screw_rpm(value: &str) -> Option<u16> {
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if value.len() > 1 && value.starts_with('0') {
+        return None;
+    }
+    let rpm = value.parse::<u16>().ok()?;
+    if rpm > MAX_SCREW_RPM {
+        return None;
+    }
+    Some(rpm)
+}
 
 /// Signed axial vane speed in m/s: one pitch per revolution, negative in reverse.
 fn axial_speed(rpm: u16, reverse: bool) -> f32 {
@@ -232,10 +255,22 @@ impl SceneHooks for ArchimedesScrewHooks {
         &mut self,
         _world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
-        _value: &str,
+        name: &str,
+        value: &str,
     ) -> Result<ControlEffect, SessionError> {
-        Err(SessionError::UnknownControl)
+        // Intent only: `on_advance` turns it into vane motion on the next step.
+        match (name, value) {
+            (SCREW_SPEED_CONTROL, _) => {
+                let Some(rpm) = parse_screw_rpm(value) else {
+                    return Err(SessionError::UnknownControl);
+                };
+                self.rpm = rpm;
+            }
+            (SCREW_DIRECTION_CONTROL, "forward") => self.reverse = false,
+            (SCREW_DIRECTION_CONTROL, "reverse") => self.reverse = true,
+            _ => return Err(SessionError::UnknownControl),
+        }
+        Ok(ControlEffect::Live)
     }
 
     fn apply_action(
@@ -274,6 +309,8 @@ impl SceneHooks for ArchimedesScrewHooks {
     }
 }
 
+#[cfg(test)]
+mod control_tests;
 #[cfg(test)]
 mod hooks_tests;
 #[cfg(test)]
