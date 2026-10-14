@@ -6,6 +6,7 @@
 //! `x=-5.5..5.5` with walls to `y=8`, dynamic circle `(2.5, 5.5)` radius
 //! `0.75`, particle cap 10240, timestep `1/60`.
 
+mod archimedes_screw;
 mod basin_family;
 mod cartesian_diver;
 mod color_mixer;
@@ -70,6 +71,7 @@ pub(crate) enum SceneId {
     WashingMachine,
     TeslaValve,
     CartesianDiver,
+    ArchimedesScrew,
 }
 
 /// Every playground catalog scene, in `web/src/catalog/scenes.ts` `SCENE_IDS` order.
@@ -133,6 +135,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "washing-machine" => Ok(SceneId::WashingMachine),
         "tesla-valve" => Ok(SceneId::TeslaValve),
         "cartesian-diver" => Ok(SceneId::CartesianDiver),
+        "archimedes-screw" => Ok(SceneId::ArchimedesScrew),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -282,6 +285,7 @@ pub(crate) fn build_scene(
         SceneId::WashingMachine => washing_machine::build(&scene_presets),
         SceneId::TeslaValve => tesla_valve::build(&scene_presets),
         SceneId::CartesianDiver => cartesian_diver::build(&scene_presets),
+        SceneId::ArchimedesScrew => archimedes_screw::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)

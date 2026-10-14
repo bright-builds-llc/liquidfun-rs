@@ -40,6 +40,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("washing-machine", SceneId::WashingMachine),
         ("tesla-valve", SceneId::TeslaValve),
         ("cartesian-diver", SceneId::CartesianDiver),
+        ("archimedes-screw", SceneId::ArchimedesScrew),
     ];
 
     for (raw, expected) in tokens {
