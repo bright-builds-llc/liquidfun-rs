@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Polish and Test Gaps
-status: executing
-stopped_at: Completed 44-02-PLAN.md
-last_updated: "2026-10-14T02:04:22.013Z"
+status: verifying
+stopped_at: Completed 44-03-PLAN.md
+last_updated: "2026-10-14T02:09:40.273Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 8
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 64
-  completed_plans: 63
-  percent: 98
+  completed_plans: 64
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 
 Phase: 44 (v1.5 Polish and Test Gaps) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-14
 
 Progress: [██████████] 100%
@@ -189,6 +189,9 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 44]: 44-01: #puzzle-valve-time is no longer aria-hidden and describes the valve stepper group only while a valve is selected; no live region
 - [Phase 44]: 44-02: web/tsconfig.e2e.json extends the strict base (overrides only types node+vite/client and include e2e/**/*.ts + playwright.config.ts); bun run typecheck runs both projects (42af8afef)
 - [Phase 44]: 44-02: all 16 e2e type errors fixed at the root without any/ts-ignore; e2e/tesla-benchmark.d.ts types window.teslaBenchmark as typeof compareWorkerDirect; touched specs 30/30 (d15e553f5)
+- [Phase 44]: 44-03: Next e2e deletes the seam global with Reflect.deleteProperty before the hash-link click; without it the route never reaches building (29b792625)
+- [Phase 44]: 44-03: timed-gate 1x/2x/4x share one build and give identical fingerprints (429/519/582/e405de2194871266); stepper described only with a valve selected (813516547)
+- [Phase 44]: 44-03: 10/10 phase gates exit=0 on first run at 813516547; crates/ untouched since 9e6efcc23; puzzle e2e 104, water 13, HUD 64; no fix commit
 
 ### Pending Todos
 
@@ -314,9 +317,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 43 P06 | 19min | 3 tasks | 4 files |
 | Phase 44 P01 | 3min | 2 tasks | 8 files |
 | Phase 44 P02 | 3min | 2 tasks | 9 files |
+| Phase 44 P03 | 5min | 3 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T02:04:22.009Z
-Stopped at: Completed 44-02-PLAN.md
+Last session: 2026-10-14T02:09:40.270Z
+Stopped at: Completed 44-03-PLAN.md
 Resume file: None
