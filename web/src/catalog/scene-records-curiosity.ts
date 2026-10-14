@@ -1,7 +1,17 @@
 /** Catalog records for the curiosity scenes, in catalog order. */
+import { SCREW_SPEED_CONTROL } from "./archimedes-screw-speed";
 import { withGravitySlider } from "./gravity-slider";
-import { SHOWCASE, action, sceneSource } from "./scene-record-shared";
-import { CARTESIAN_DIVER_VIEW_BOUNDS } from "./scene-view-bounds";
+import {
+  SHOWCASE,
+  action,
+  option,
+  runtimePreset,
+  sceneSource,
+} from "./scene-record-shared";
+import {
+  ARCHIMEDES_SCREW_VIEW_BOUNDS,
+  CARTESIAN_DIVER_VIEW_BOUNDS,
+} from "./scene-view-bounds";
 import type { SceneRecord } from "./scenes";
 
 export const CURIOSITY_SCENE_RECORDS: readonly SceneRecord[] = [
@@ -17,6 +27,27 @@ export const CURIOSITY_SCENE_RECORDS: readonly SceneRecord[] = [
     viewBounds: CARTESIAN_DIVER_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("cartesian_diver.rs"),
+      inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "archimedes-screw",
+    title: "Archimedes Screw",
+    ready: true,
+    description:
+      "Slanted vanes slide up a tilted tube and carry pockets of water from the low reservoir into the upper basin, which overflows back down a chute. Flat vanes stand in for a turning helix in this 2D side view. This is an original experimental scene.",
+    interactionHint:
+      "Use Screw speed to speed up or stop the screw, and Direction to run it in reverse. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([
+      SCREW_SPEED_CONTROL,
+      runtimePreset("screw-direction", "Direction", [
+        option("forward", "Forward"),
+        option("reverse", "Reverse"),
+      ]),
+    ]),
+    viewBounds: ARCHIMEDES_SCREW_VIEW_BOUNDS,
+    credits: {
+      implementationPath: sceneSource("archimedes_screw.rs"),
       inspiration: [SHOWCASE],
     },
   },

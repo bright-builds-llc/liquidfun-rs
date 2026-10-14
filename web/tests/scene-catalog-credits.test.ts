@@ -95,6 +95,7 @@ describe("scene catalog credits", () => {
       "washing-machine": "crates/liquidfun-wasm/src/scene/washing_machine.rs",
       "tesla-valve": "crates/liquidfun-wasm/src/scene/tesla_valve.rs",
       "cartesian-diver": "crates/liquidfun-wasm/src/scene/cartesian_diver.rs",
+      "archimedes-screw": "crates/liquidfun-wasm/src/scene/archimedes_screw.rs",
     };
     const pinnedBasinInspiration = {
       particles: [

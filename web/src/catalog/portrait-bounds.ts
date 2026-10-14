@@ -1,4 +1,5 @@
 import {
+  ARCHIMEDES_SCREW_VIEW_BOUNDS,
   CARTESIAN_DIVER_VIEW_BOUNDS,
   THEO_JANSEN_VIEW_BOUNDS,
   WASHING_MACHINE_VIEW_BOUNDS,
@@ -95,6 +96,8 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   "tesla-valve": TESLA_VALVE_PORTRAIT,
   // The tall bottle is already a portrait frame.
   "cartesian-diver": CARTESIAN_DIVER_VIEW_BOUNDS,
+  // The tube plus both water bodies is the whole scene; a tighter frame would clip a wall.
+  "archimedes-screw": ARCHIMEDES_SCREW_VIEW_BOUNDS,
 };
 
 /** World rectangle fitted for one scene at the canvas's current aspect. */

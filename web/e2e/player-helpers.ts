@@ -54,6 +54,7 @@ export const SCENE_HASH_PATHS: Readonly<Record<SceneId, string>> = {
   "washing-machine": "/liquidfun-rs/#/scene/washing-machine",
   "tesla-valve": "/liquidfun-rs/#/scene/tesla-valve",
   "cartesian-diver": "/liquidfun-rs/#/scene/cartesian-diver",
+  "archimedes-screw": "/liquidfun-rs/#/scene/archimedes-screw",
 };
 
 const SELECT_NEXT_VALUE: Readonly<Record<string, string>> = {

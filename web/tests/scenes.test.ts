@@ -66,6 +66,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Watch water pass through a Tesla Valve whose outer loop walls continue into the next pipe section around solid splitter islands. The straight runs and circular bends share a 6 cm channel width. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
   "cartesian-diver":
     "A diver floats in a closed bottle of particle water. Squeeze the bottle and it sinks, then let go and it rises. Switching the diver to a heavier density stands in for its squeezed air bubble. The bottle dent and the bubble are drawn, not simulated. This is an original experimental scene.",
+  "archimedes-screw":
+    "Slanted vanes slide up a tilted tube and carry pockets of water from the low reservoir into the upper basin, which overflows back down a chute. Flat vanes stand in for a turning helix in this 2D side view. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -111,6 +113,8 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
   "cartesian-diver":
     "Press and hold the bottle, or use Squeeze, to sink the diver. Let go, or use Squeeze again, and it rises. Presses outside the bottle do nothing. Labeled controls also work from the keyboard.",
+  "archimedes-screw":
+    "Use Screw speed to speed up or stop the screw, and Direction to run it in reverse. Labeled controls also work from the keyboard.",
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -182,6 +186,7 @@ describe("SCENES", () => {
       "washing-machine",
       "tesla-valve",
       "cartesian-diver",
+      "archimedes-screw",
     ] as const;
 
     // Act
@@ -222,6 +227,7 @@ describe("SCENES", () => {
       "Washing Machine",
       "Tesla Valve",
       "Cartesian Diver",
+      "Archimedes Screw",
     ];
 
     // Act

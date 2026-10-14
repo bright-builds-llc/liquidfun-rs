@@ -106,6 +106,11 @@ const SURVEY_SCENES: [(&str, SceneId, SurveyCue); ALL_SCENE_IDS.len()] = [
         SceneId::CartesianDiver,
         SurveyCue::Action("squeeze"),
     ),
+    (
+        "archimedes-screw",
+        SceneId::ArchimedesScrew,
+        SurveyCue::Default,
+    ),
 ];
 
 /// Closed error for the native all-catalog scene survey timer.

@@ -6,6 +6,7 @@ import { TESTBED_SCENE_RECORDS } from "./scene-records-testbed";
 import type { SceneRecord } from "./scenes";
 
 export {
+  ARCHIMEDES_SCREW_VIEW_BOUNDS,
   CARTESIAN_DIVER_VIEW_BOUNDS,
   LIQUID_TUMBLER_VIEW_BOUNDS,
   TESLA_VALVE_VIEW_BOUNDS,

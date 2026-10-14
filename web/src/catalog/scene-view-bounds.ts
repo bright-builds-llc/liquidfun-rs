@@ -1,6 +1,21 @@
 /** Camera frames for catalog scenes whose action needs a custom world rectangle. */
 
 /**
+ * Camera frame for Archimedes Screw, in meters.
+ *
+ * Keep in sync with `FRAME_*` in
+ * `crates/liquidfun-wasm/src/scene/archimedes_screw/geometry.rs`. This is the
+ * bounding box of every static wall (reservoir, tube housings, basin, weir,
+ * chute and hood) plus about 0.2 m, so every wall stays in view.
+ */
+export const ARCHIMEDES_SCREW_VIEW_BOUNDS = {
+  minX: -6.1,
+  minY: -2.0,
+  maxX: 2.65,
+  maxY: 4.45,
+} as const;
+
+/**
  * Camera frame for Cartesian Diver, in meters.
  *
  * Keep in sync with `crates/liquidfun-wasm/src/scene/cartesian_diver/geometry.rs`.

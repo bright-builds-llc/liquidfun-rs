@@ -71,6 +71,8 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   // fill on a phone (quick 261010-wkd).
   "tesla-valve": 0.9,
   "cartesian-diver": 0.75,
+  // The wide screw frame is width-bound on a phone and fits 0.31 of its height.
+  "archimedes-screw": 0.3,
 };
 
 /** Smallest share of the iPhone width the fitted frame should cover. */

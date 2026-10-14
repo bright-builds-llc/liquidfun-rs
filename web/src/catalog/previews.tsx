@@ -7,7 +7,10 @@ import {
   WaterWheelPreview,
   WaveMachinePreview,
 } from "./previews-classic";
-import { CartesianDiverPreview } from "./previews-curiosity";
+import {
+  ArchimedesScrewPreview,
+  CartesianDiverPreview,
+} from "./previews-curiosity";
 import {
   HydraulicFountainPreview,
   LiquidBubblerPreview,
@@ -91,6 +94,8 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <TeslaValvePreview />;
     case "cartesian-diver":
       return <CartesianDiverPreview />;
+    case "archimedes-screw":
+      return <ArchimedesScrewPreview />;
   }
   // A catalog id without a case narrows to a non-never type here and fails to compile.
   const unreachable: never = props.sceneId;

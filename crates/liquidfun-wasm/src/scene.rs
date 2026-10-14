@@ -105,6 +105,7 @@ pub(crate) const ALL_SCENE_IDS: &[SceneId] = &[
     SceneId::WashingMachine,
     SceneId::TeslaValve,
     SceneId::CartesianDiver,
+    SceneId::ArchimedesScrew,
 ];
 
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
