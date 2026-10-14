@@ -9,9 +9,15 @@ export const STEPS_PER_OPEN_TICK = 30;
 /** Fixed steps per tenth of a second at 60 Hz. */
 const STEPS_PER_TENTH = 6;
 
-/** Latest open tick a level allows: the whole half-seconds within its step limit. */
+/** Largest open tick the Rust `u8` lane can hold; mirrors `u8::MAX` in `spec.rs` `max_open_tick`. */
+export const MAX_OPEN_TICK = 255;
+
+/**
+ * Latest open tick a level allows: the whole half-seconds within its step
+ * limit, saturating at 255 like the Rust `u8` lane (Phase 44 D-05).
+ */
 export function maxOpenTick(stepLimit: number): number {
-  return Math.floor(stepLimit / STEPS_PER_OPEN_TICK);
+  return Math.min(Math.floor(stepLimit / STEPS_PER_OPEN_TICK), MAX_OPEN_TICK);
 }
 
 /** Simulation step at which a valve with this open tick is destroyed. */

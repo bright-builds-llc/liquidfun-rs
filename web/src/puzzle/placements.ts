@@ -92,9 +92,12 @@ function readSeamNumber(entry: Record<string, unknown>, key: string): number {
   return typeof value === "number" ? value : invalidSeam();
 }
 
-/** An absent `openTick` reads 0 so Phase 39 plank seams stay valid. */
-function readSeamOpenTick(entry: Record<string, unknown>): number {
-  return entry["openTick"] === undefined ? 0 : readSeamNumber(entry, "openTick");
+/**
+ * An absent `openTick` reads the kind's default (valve 4, plank 0), matching
+ * a newly placed tool (40-REVIEW IN-06).
+ */
+function readSeamOpenTick(entry: Record<string, unknown>, kind: PuzzleToolKind): number {
+  return entry["openTick"] === undefined ? defaultOpenTick(kind) : readSeamNumber(entry, "openTick");
 }
 
 /** Builds a fresh placement from untrusted seam data; never returns the input object. */
@@ -107,10 +110,11 @@ function parseSeamPlacement(entry: unknown): PuzzlePlacement {
   const x = readSeamNumber(entry, "x");
   const y = readSeamNumber(entry, "y");
   const angle = readSeamNumber(entry, "angle");
-  const openTick = readSeamOpenTick(entry);
   if (!isToolKind(kind)) {
     throw new Error(INVALID_PLACEMENT_MESSAGE);
   }
+
+  const openTick = readSeamOpenTick(entry, kind);
 
   const placement: PuzzlePlacement = { kind, x, y, angle, openTick };
   checkPlacement(placement);
