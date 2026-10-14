@@ -296,7 +296,7 @@ Plans:
 
 Plans:
 - [x] 44-01-PLAN.md — Valve tick cap and seam open-tick default (unit), stacked portrait two-kind tray chip, valve readout as the stepper description, tray-fit e2e at 390/360 wide (wave 1)
-- [ ] 44-02-PLAN.md — Strict tsconfig.e2e.json in `bun run typecheck` and root fixes for the 16 e2e type errors (wave 2)
+- [x] 44-02-PLAN.md — Strict tsconfig.e2e.json in `bun run typecheck` and root fixes for the 16 e2e type errors (wave 2)
 - [ ] 44-03-PLAN.md — Next-from-won and timed-gate 1×/2×/4× e2e with valve ARIA hooks, then the 10 phase gates and grand-finale screenshot (wave 3)
 **UI hint**: yes
 
@@ -334,6 +334,6 @@ Plans:
 | 41. Level Select and Progress | v1.5 | 8/8 | Complete    | 2026-10-13 |
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
-| 44. v1.5 Polish and Test Gaps | v1.5 | 1/3 | In Progress|  |
+| 44. v1.5 Polish and Test Gaps | v1.5 | 2/3 | In Progress|  |
 
 v1.0 phases 1–15 remain in the [v1.0 roadmap archive](milestones/v1.0-ROADMAP.md).
