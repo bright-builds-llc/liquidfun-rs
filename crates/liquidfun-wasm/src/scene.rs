@@ -284,8 +284,44 @@ pub(crate) fn attach_basin_fixture(
 
 #[cfg(test)]
 mod tests {
-    use super::{PointerKind, parse_pointer_kind};
+    use super::{ALL_SCENE_IDS, PointerKind, parse_pointer_kind, parse_scene_id};
     use crate::session::SessionError;
+
+    const CATALOG_SCENES_TS: &str = include_str!("../../../web/src/catalog/scenes.ts");
+
+    /// Test-only copy of the xtask `SCENE_IDS` bracket/comma split.
+    fn catalog_scene_ids(source: &str) -> Vec<&str> {
+        let marker = "export const SCENE_IDS = [";
+        let start = source
+            .find(marker)
+            .expect("scenes.ts should declare SCENE_IDS");
+        let body = &source[start + marker.len()..];
+        let close = body.find(']').expect("SCENE_IDS should close its array");
+        body[..close]
+            .split(',')
+            .map(|item| item.trim().trim_matches('"'))
+            .filter(|item| !item.is_empty())
+            .collect()
+    }
+
+    #[test]
+    fn all_scene_ids_match_the_web_catalog_order() {
+        // Arrange
+        let catalog = catalog_scene_ids(CATALOG_SCENES_TS);
+
+        // Act
+        let parsed = catalog
+            .iter()
+            .map(|id| {
+                parse_scene_id(id).unwrap_or_else(|_| {
+                    panic!("catalog scene {id} should have a parse_scene_id arm")
+                })
+            })
+            .collect::<Vec<_>>();
+
+        // Assert
+        assert_eq!(parsed, ALL_SCENE_IDS);
+    }
 
     #[test]
     fn parse_pointer_kind_maps_lowercase_tokens() {
