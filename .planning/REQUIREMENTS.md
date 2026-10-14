@@ -18,14 +18,14 @@ Research: `.planning/research/v1.6-curiosity-scenes/SUMMARY.md`.
 ### Every new scene
 
 - [ ] **SCENE-01**: Each new scene appears in the catalog with honest credits, a preview, a portrait phone frame, a README animated preview, the shared scale legend in meters, the gravity slider and the HUD safe frame.
-- [ ] **SCENE-02**: Each new scene starts visibly doing its thing on its default settings, with no input, except where the scene invites a press. It stays at or below about 3,000 particles and runs smoothly on phones.
+- [x] **SCENE-02**: Each new scene starts visibly doing its thing on its default settings, with no input, except where the scene invites a press. It stays at or below about 3,000 particles and runs smoothly on phones.
 - [ ] **SCENE-03**: Each scene's caption describes what the simulation actually does. Any faked mechanism is named plainly, for example "a scripted magnetic pull" or "extra weight on the heavy layer".
 
 ### Cartesian diver
 
-- [ ] **DIVER-01**: Player sees a diver floating near the top of a closed bottle. Pressing and holding on the bottle (or toggling Squeeze from the keyboard) makes it sink, and releasing makes it rise again.
-- [ ] **DIVER-02**: Player sees the squeeze: the bottle visibly dents and an air bubble inside the diver shrinks while squeezed.
-- [ ] **DIVER-03**: Diver sinking and rising stay reliable across the gravity slider range. A phone long press does not open a system callout.
+- [x] **DIVER-01**: Player sees a diver floating near the top of a closed bottle. Pressing and holding on the bottle (or toggling Squeeze from the keyboard) makes it sink, and releasing makes it rise again.
+- [x] **DIVER-02**: Player sees the squeeze: the bottle visibly dents and an air bubble inside the diver shrinks while squeezed.
+- [x] **DIVER-03**: Diver sinking and rising stay reliable across the gravity slider range. A phone long press does not open a system callout.
 
 ### Archimedes screw
 
@@ -89,11 +89,11 @@ SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns af
 | PREP-02 | Phase 45 | Complete |
 | PREP-03 | Phase 45 | Complete |
 | SCENE-01 | Phase 46 | Pending |
-| SCENE-02 | Phase 46 | Pending |
+| SCENE-02 | Phase 46 | Complete |
 | SCENE-03 | Phase 46 | Pending |
-| DIVER-01 | Phase 46 | Pending |
-| DIVER-02 | Phase 46 | Pending |
-| DIVER-03 | Phase 46 | Pending |
+| DIVER-01 | Phase 46 | Complete |
+| DIVER-02 | Phase 46 | Complete |
+| DIVER-03 | Phase 46 | Complete |
 | SCREW-01 | Phase 47 | Pending |
 | SCREW-02 | Phase 47 | Pending |
 | FERRO-01 | Phase 48 | Pending |
