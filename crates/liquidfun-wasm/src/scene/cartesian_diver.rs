@@ -51,8 +51,11 @@ const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
 struct CartesianDiverHooks {
     diver: BodyId,
     diver_fixture: FixtureId,
-    /// Latest input wins: pointer down in the bottle, up, cancel or the action.
+    /// Latest input wins: pointer down in the bottle, its release, or the action.
     squeezed: bool,
+    /// True while a press that began inside the bottle is held, so only that
+    /// press's release clears the squeeze and stray taps leave a latch alone.
+    pointer_held: bool,
     /// Ramp position in whole fixed steps, `0..=RAMP_STEPS`, so the squeeze value is exact.
     squeeze_steps: u8,
 }
@@ -106,6 +109,7 @@ fn build_parts() -> Result<DiverParts, SceneError> {
             diver,
             diver_fixture,
             squeezed: false,
+            pointer_held: false,
             squeeze_steps: 0,
         },
     })
@@ -227,11 +231,15 @@ impl SceneHooks for CartesianDiverHooks {
     ) -> Result<(), SessionError> {
         match kind {
             PointerKind::Down if geometry::in_squeeze_region(Vec2::new(world_x, world_y)) => {
+                self.pointer_held = true;
                 self.squeezed = true;
             }
-            PointerKind::Up | PointerKind::Cancel => self.squeezed = false,
+            PointerKind::Up | PointerKind::Cancel if self.pointer_held => {
+                self.pointer_held = false;
+                self.squeezed = false;
+            }
             // An ignored pointer must stay Ok: an error would fail the scene in the browser.
-            PointerKind::Down | PointerKind::Move => {}
+            PointerKind::Down | PointerKind::Up | PointerKind::Cancel | PointerKind::Move => {}
         }
         Ok(())
     }

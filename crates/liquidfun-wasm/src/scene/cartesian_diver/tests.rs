@@ -239,6 +239,23 @@ fn pointer_cancel_anywhere_releases() {
 }
 
 #[test]
+fn tap_outside_the_bottle_keeps_a_latched_squeeze() {
+    // Arrange
+    let mut parts = parts();
+    parts
+        .hooks
+        .apply_action(&mut parts.world, parts.particle_system, SQUEEZE_ACTION)
+        .expect("squeeze is the scene action");
+
+    // Act
+    pointer(&mut parts, PointerKind::Down, 2.5, 3.0);
+    pointer(&mut parts, PointerKind::Up, 2.5, 3.0);
+
+    // Assert
+    assert!(parts.hooks.squeezed);
+}
+
+#[test]
 fn squeeze_action_alone_leaves_the_mass_unchanged() {
     // Arrange
     let mut parts = parts();
