@@ -122,7 +122,19 @@ These rules apply to every v1.6 phase. For traceability, PREP-01 is mapped to Ph
 1. The hourglass spike records the measured deposit slope against its written pass rule (at least 20°, stable within ±5° over 5 s, with no jam) and the measured flip cost, and ends with a recorded go or drop decision that the owner confirms.
 1. The id-join gate reports 25/25 protected fingerprints unchanged on the final tree, and normal local checks pass.
 
-**Plans**: TBD
+**Plans**: 10 plans
+
+Plans:
+- [ ] 45-01-PLAN.md — Capture and commit the pinned 25-scene fingerprint baseline before any code edit (PREP-01)
+- [ ] 45-02-PLAN.md — Tested xtask id-join gate and `just scene-fingerprint-gate` (PREP-01)
+- [ ] 45-03-PLAN.md — `ALL_SCENE_IDS` in catalog order; Rust counts derived from it (PREP-02)
+- [ ] 45-04-PLAN.md — Number-free copy; web unit and e2e counts derived from the catalog (PREP-02)
+- [ ] 45-05-PLAN.md — Split scene-records.ts and previews.tsx into family modules (PREP-02)
+- [ ] 45-06-PLAN.md — Siphon feasibility spike with a go, reshape or drop decision (PREP-03)
+- [ ] 45-07-PLAN.md — Hourglass feasibility spike, flip cost and decision by the pre-recorded rule (PREP-03)
+- [ ] 45-08-PLAN.md — Owner checkpoint for both spike decisions, then seed and roadmap bookkeeping (PREP-03)
+- [ ] 45-09-PLAN.md — Per-scene checklist docs/adding-a-scene.md and AGENTS.md pointer (PREP-01, PREP-02)
+- [ ] 45-10-PLAN.md — Final gate: 25/25 fingerprints and normal local checks (PREP-01..03)
 
 ### Phase 46: Cartesian Diver
 
