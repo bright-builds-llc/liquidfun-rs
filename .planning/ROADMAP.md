@@ -125,7 +125,7 @@ These rules apply to every v1.6 phase. For traceability, PREP-01 is mapped to Ph
 **Plans**: 10 plans
 
 Plans:
-- [ ] 45-01-PLAN.md — Capture and commit the pinned 25-scene fingerprint baseline before any code edit (PREP-01)
+- [x] 45-01-PLAN.md — Capture and commit the pinned 25-scene fingerprint baseline before any code edit (PREP-01)
 - [ ] 45-02-PLAN.md — Tested xtask id-join gate and `just scene-fingerprint-gate` (PREP-01)
 - [ ] 45-03-PLAN.md — `ALL_SCENE_IDS` in catalog order; Rust counts derived from it (PREP-02)
 - [ ] 45-04-PLAN.md — Number-free copy; web unit and e2e counts derived from the catalog (PREP-02)
@@ -262,7 +262,7 @@ Plans:
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
 | 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete    | 2026-10-14 |
-| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 0/TBD | Not started | - |
+| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 1/10 | In Progress|  |
 | 46. Cartesian Diver | v1.6 | 0/TBD | Not started | - |
 | 47. Archimedes Screw | v1.6 | 0/TBD | Not started | - |
 | 48. Fake Ferrofluid | v1.6 | 0/TBD | Not started | - |

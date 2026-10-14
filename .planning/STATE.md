@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Phase 45 context gathered
-last_updated: "2026-10-14T15:52:14.174Z"
-last_activity: 2026-10-14 -- Phase 45 planning complete
+stopped_at: Completed 45-01-PLAN.md
+last_updated: "2026-10-14T15:54:12.731Z"
+last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 10
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** v1.6 Physics Curiosity Scenes — Phase 45: Curiosity Groundwork and Feasibility Spikes
+**Current focus:** Phase 45 — Curiosity Groundwork and Feasibility Spikes
 
 ## Current Position
 
-Phase: 45 of 51 (Curiosity Groundwork and Feasibility Spikes) — not started
-Plan: —
+Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
+Plan: 2 of 10
 Status: Ready to execute
-Last activity: 2026-10-14 -- Phase 45 planning complete
+Last activity: 2026-10-14
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -196,6 +196,7 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 44]: 44-03: Next e2e deletes the seam global with Reflect.deleteProperty before the hash-link click; without it the route never reaches building (29b792625)
 - [Phase 44]: 44-03: timed-gate 1x/2x/4x share one build and give identical fingerprints (429/519/582/e405de2194871266); stepper described only with a valve selected (813516547)
 - [Phase 44]: 44-03: 10/10 phase gates exit=0 on first run at 813516547; crates/ untouched since 9e6efcc23; puzzle e2e 104, water 13, HUD 64; no fix commit
+- [Phase 45]: 45-01: baseline docs/benchmarks/scene-fingerprints.json pinned (f31ac087a) from scene-spot 2026-10-14T15-53-11Z at 04650ff5a (code = b151838be); 25/25 equal to target/phase43/after-final.txt; scene_spot_stamp stored repo-relative
 
 ### Pending Todos
 
@@ -321,9 +322,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 44 P01 | 3min | 2 tasks | 8 files |
 | Phase 44 P02 | 3min | 2 tasks | 9 files |
 | Phase 44 P03 | 5min | 3 tasks | 2 files |
+| Phase 45 P01 | 2min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T15:10:55.778Z
-Stopped at: Phase 45 context gathered
-Resume file: .planning/phases/45-curiosity-groundwork-and-feasibility-spikes/45-CONTEXT.md
+Last session: 2026-10-14T15:54:12.727Z
+Stopped at: Completed 45-01-PLAN.md
+Resume file: None
