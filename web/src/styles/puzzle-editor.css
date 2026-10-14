@@ -337,10 +337,10 @@
   height: 44px;
 }
 
-/* Portrait, two kinds: icon beside the name, count under it, so names never ellipsize (Phase 44 D-01). */
+/* Portrait, two kinds: icon beside the name, count under it, so names fit in full at 360 px wide and up (Phase 44 D-01). */
 
 .puzzle-panel--canvas-stage[data-puzzle-layout="portrait"] .puzzle-tray[data-kind-count="2"] .puzzle-tray-item {
-  display: inline-grid;
+  display: grid;
   grid-template-columns: 22px minmax(0, max-content);
   grid-template-rows: 20px 16px;
   column-gap: 4px;
