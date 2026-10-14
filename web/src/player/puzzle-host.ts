@@ -10,6 +10,7 @@ import { goalTicks } from "../puzzle/format";
 import { reducePuzzle, type PuzzleEvent, type PuzzleState } from "../puzzle/reduce-puzzle";
 import { glassCup } from "../render/glass-cup";
 import { wantsParticleSpeeds } from "../render/mode";
+import { cachedWaterSupport } from "../render/water-capability";
 import { nextGeneration } from "./generation";
 import { observeFrame } from "./observe";
 import type { PuzzleRuntime } from "./puzzle-runtime";
@@ -107,7 +108,7 @@ export function adoptPuzzleSession(
   }
 
   const owned = createPuzzleSession(generated, id, () =>
-    wantsParticleSpeeds(host.appearance.renderMode()),
+    wantsParticleSpeeds(host.appearance.renderMode(), cachedWaterSupport()),
   );
   const info = owned.levelInfo;
   const expectedTitle = puzzleTitleForId(id);

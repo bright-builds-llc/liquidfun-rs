@@ -222,10 +222,15 @@ export function needsWebglSurface(mode: RenderMode): boolean {
 
 /**
  * The particle speed lane is requested only while Water is the requested
- * mode (D-11). It follows the requested mode, not the surface that drew.
+ * mode (D-11) on a device whose page probe found Water available. It follows
+ * the requested mode, not the surface that drew; an incapable device always
+ * draws a fallback that ignores the lane, so it skips the capture cost.
  */
-export function wantsParticleSpeeds(mode: RenderMode): boolean {
-  return particleSurface(mode) === "webgl-water";
+export function wantsParticleSpeeds(
+  mode: RenderMode,
+  waterAvailable: boolean,
+): boolean {
+  return waterAvailable && particleSurface(mode) === "webgl-water";
 }
 
 /** How a picker option reads and whether it can be chosen. */

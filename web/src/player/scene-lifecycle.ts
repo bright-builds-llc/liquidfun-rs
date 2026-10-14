@@ -22,6 +22,7 @@ import { reapplyStoredTiltGravity } from "../input/tilt-binding";
 import { DEFAULT_RENDERED_PARTICLE_LIMIT } from "../render/particle-limit";
 import { IDENTITY_CAMERA_VIEW } from "../render/camera";
 import { wantsParticleSpeeds } from "../render/mode";
+import { cachedWaterSupport } from "../render/water-capability";
 import { normalizePlayableRoute } from "../routing/playable-route";
 import { maybePlayableTarget, samePlayableTarget } from "./playable-target";
 import {
@@ -143,7 +144,8 @@ async function beginScene(session: SceneRuntime, id: SceneId): Promise<void> {
     id === "tesla-valve" && !deterministic ? new AbortController() : undefined;
   if (maybeInitialization !== undefined)
     session.maybeWorkerInitialization = maybeInitialization;
-  const wantsSpeeds = () => wantsParticleSpeeds(session.appearance.renderMode());
+  const wantsSpeeds = () =>
+    wantsParticleSpeeds(session.appearance.renderMode(), cachedWaterSupport());
   try {
     const ownedSession: PlayerSession =
       maybeInitialization === undefined

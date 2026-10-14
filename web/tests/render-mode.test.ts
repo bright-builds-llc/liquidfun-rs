@@ -182,10 +182,23 @@ describe("render mode", () => {
     );
 
     // Act
-    const speedModes = modes.filter(wantsParticleSpeeds);
+    const speedModes = modes.filter((mode) => wantsParticleSpeeds(mode, true));
 
     // Assert
     expect(speedModes).toEqual<RenderMode[]>(["water"]);
+  });
+
+  it("skips the particle speed lane when Water is unavailable", () => {
+    // Arrange
+    const modes = RENDER_MODE_GROUPS.flatMap((group) =>
+      group.options.map((option) => option.value),
+    );
+
+    // Act
+    const speedModes = modes.filter((mode) => wantsParticleSpeeds(mode, false));
+
+    // Assert
+    expect(speedModes).toEqual<RenderMode[]>([]);
   });
 
   it("labels and disables Water when the device cannot run it", () => {
