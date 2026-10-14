@@ -16,6 +16,9 @@ export const UNKNOWN_PUZZLE_PATH = "/liquidfun-rs/#/puzzle/nope";
 export const DESKTOP = { width: 1280, height: 800 } as const;
 export const PHONE_PORTRAIT = { width: 390, height: 844 } as const;
 
+/** A Playwright viewport size shared by the puzzle and water specs. */
+export type Viewport = { readonly width: number; readonly height: number };
+
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 /** Absolute path of a recorded puzzle fixture file. */

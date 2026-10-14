@@ -20,6 +20,7 @@ import {
   readHudGeometry,
   waitForHeld,
   waitForPuzzlePhase,
+  type Viewport,
 } from "./puzzle-helpers";
 import { readRunFingerprint, type RunFingerprint } from "./puzzle-editor-helpers";
 import {
@@ -37,8 +38,6 @@ import {
 // AudioContext, plus the UI-SPEC naming and fixed-box rules. Each test gets a
 // fresh browser context, so storage starts empty.
 test.describe.configure({ mode: "parallel" });
-
-type Viewport = { readonly width: number; readonly height: number };
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SCREENS_DIR_42 = resolve(REPO_ROOT, "target/phase42/screens");

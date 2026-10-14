@@ -21,6 +21,7 @@ import {
   puzzlePath,
   stablePuzzleCamera,
   waitForPuzzlePhase,
+  type Viewport,
 } from "./puzzle-helpers";
 import { gridToPage, readPlacements } from "./puzzle-editor-helpers";
 
@@ -29,8 +30,6 @@ import { gridToPage, readPlacements } from "./puzzle-editor-helpers";
 // storage starts empty; `localStorage` is shared by every page of one
 // context, while init scripts are per page and re-run on every reload.
 test.describe.configure({ mode: "parallel" });
-
-type Viewport = { readonly width: number; readonly height: number };
 
 const GRID_PATH = "/liquidfun-rs/#/puzzles";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");

@@ -13,13 +13,12 @@ import {
   readHudGeometry,
   stablePuzzleCamera,
   waitForPuzzlePhase,
+  type Viewport,
 } from "./puzzle-helpers";
 import { SCREENS_DIR_40, gridToPage } from "./puzzle-editor-helpers";
 
 // Each test gets a fresh browser context, so storage starts empty.
 test.describe.configure({ mode: "parallel" });
-
-type Viewport = { readonly width: number; readonly height: number };
 
 const PHONE_LANDSCAPE = { width: 844, height: 390 } as const;
 const MIN_TARGET_PX = 44;

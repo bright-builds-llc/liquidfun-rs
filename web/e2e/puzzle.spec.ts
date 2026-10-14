@@ -27,12 +27,11 @@ import {
   waitForHeld,
   waitForPuzzlePhase,
   type PuzzleCamera,
+  type Viewport,
 } from "./puzzle-helpers";
 import { solutionExpectation } from "./puzzle-editor-helpers";
 
 test.describe.configure({ mode: "parallel" });
-
-type Viewport = { readonly width: number; readonly height: number };
 
 const RUN_TEST_TIMEOUT_MS = 90_000;
 const ENDED_TIMEOUT_MS = 60_000;

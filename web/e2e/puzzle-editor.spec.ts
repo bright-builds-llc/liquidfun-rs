@@ -14,6 +14,7 @@ import {
   waitForHeld,
   waitForPuzzlePhase,
   type PuzzleCamera,
+  type Viewport,
 } from "./puzzle-helpers";
 import {
   SCREENS_DIR_39,
@@ -26,8 +27,6 @@ import {
 } from "./puzzle-editor-helpers";
 
 test.describe.configure({ mode: "parallel" });
-
-type Viewport = { readonly width: number; readonly height: number };
 
 const PHONE_LANDSCAPE = { width: 844, height: 390 } as const;
 const RUN_TEST_TIMEOUT_MS = 120_000;

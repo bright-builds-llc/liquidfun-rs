@@ -21,14 +21,13 @@ import {
   readHudGeometry,
   stablePuzzleCamera,
   waitForPuzzlePhase,
+  type Viewport,
 } from "./puzzle-helpers";
 import { SCREENS_DIR_40, SCREENS_DIR_44, readPlacements } from "./puzzle-editor-helpers";
 
 // Each test gets a fresh browser context, so storage starts empty and
 // first-pour shows its placement hint.
 test.describe.configure({ mode: "parallel" });
-
-type Viewport = { readonly width: number; readonly height: number };
 
 const RUN_TEST_TIMEOUT_MS = 90_000;
 const ENDED_TIMEOUT_MS = 60_000;

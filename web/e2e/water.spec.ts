@@ -26,6 +26,7 @@ import {
   installSolutionPlacements,
   waitForHeld,
   waitForPuzzlePhase,
+  type Viewport,
 } from "./puzzle-helpers";
 import { readRunFingerprint, type RunFingerprint } from "./puzzle-editor-helpers";
 import {
@@ -71,8 +72,6 @@ async function openScene(page: Page, path: string, title: string): Promise<void>
   await page.goto(path);
   await expectReadySceneChrome(page, title);
 }
-
-type Viewport = { readonly width: number; readonly height: number };
 
 async function openPuzzle(page: Page, viewport: Viewport = DESKTOP): Promise<void> {
   await page.setViewportSize(viewport);

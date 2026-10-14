@@ -66,6 +66,10 @@ describe("valve time arithmetic", () => {
   it("keeps 255 at exactly 7,650 steps", () => {
     expect(maxOpenTick(7_650)).toBe(255);
   });
+
+  it("caps 7,680 steps, the first floor above 255, at 255", () => {
+    expect(maxOpenTick(7_680)).toBe(255);
+  });
 });
 
 describe("valveSecondsText", () => {
