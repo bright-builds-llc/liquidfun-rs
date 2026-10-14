@@ -1,6 +1,7 @@
 use super::{
-    ChangedScene, GateReport, SceneFingerprint, compare_fingerprints, parse_baseline,
-    parse_observed, provenance_warnings, render_report,
+    ChangedScene, GateReport, PlaygroundError, SceneFingerprint, compare_fingerprints,
+    ensure_same_capture_parameters, parse_baseline, parse_observed, provenance_warnings,
+    render_report,
 };
 
 const FP_A: &str = "0123456789abcdef";
@@ -23,7 +24,12 @@ fn baseline_json(scenes: &[(&str, &str)]) -> serde_json::Value {
     serde_json::json!({
         "kind": "scene_fingerprint_baseline",
         "schema_version": 1,
-        "provenance": { "git_commit": "abc", "captured_at": "2026-10-14T15-53-11Z" },
+        "provenance": {
+            "git_commit": "abc",
+            "captured_at": "2026-10-14T15-53-11Z",
+            "warmup_steps": 60,
+            "measured_steps": 120,
+        },
         "scenes": records,
     })
 }
@@ -39,6 +45,8 @@ fn observed_json(scenes: &[(&str, &str)]) -> serde_json::Value {
         "kind": "native_scene_spot",
         "git_head": "def",
         "full_catalog": true,
+        "warmup_steps": 60,
+        "measured_steps": 120,
         "scenes": records,
     })
 }
@@ -328,5 +336,58 @@ fn provenance_mismatch_warns_with_both_values() {
         vec![String::from(
             "observed arch `x86_64` differs from baseline arch `aarch64`; fingerprints may differ across hosts or toolchains"
         )]
+    );
+}
+
+#[test]
+fn matching_step_counts_are_accepted() {
+    // Arrange
+    let baseline = baseline_json(&[("a", FP_A)]);
+    let observed = observed_json(&[("a", FP_A)]);
+
+    // Act
+    let result = ensure_same_capture_parameters(&baseline, &observed);
+
+    // Assert
+    assert_eq!(result, Ok(()));
+}
+
+#[test]
+fn mismatched_measured_steps_is_a_hard_error_naming_both_values() {
+    // Arrange
+    let baseline = baseline_json(&[("a", FP_A)]);
+    let mut observed = observed_json(&[("a", FP_A)]);
+    observed["measured_steps"] = serde_json::json!(10);
+
+    // Act
+    let result = ensure_same_capture_parameters(&baseline, &observed);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(PlaygroundError::new(
+            "gate",
+            "observed measured_steps 10 differs from baseline measured_steps 120; recapture with the baseline step counts before comparing fingerprints"
+        ))
+    );
+}
+
+#[test]
+fn missing_observed_warmup_steps_is_a_hard_error() {
+    // Arrange
+    let baseline = baseline_json(&[("a", FP_A)]);
+    let mut observed = observed_json(&[("a", FP_A)]);
+    observed["warmup_steps"] = serde_json::Value::Null;
+
+    // Act
+    let result = ensure_same_capture_parameters(&baseline, &observed);
+
+    // Assert
+    assert_eq!(
+        result,
+        Err(PlaygroundError::new(
+            "gate",
+            "observed warmup_steps missing differs from baseline warmup_steps 60; recapture with the baseline step counts before comparing fingerprints"
+        ))
     );
 }

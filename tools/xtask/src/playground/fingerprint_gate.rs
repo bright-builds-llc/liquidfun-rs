@@ -25,6 +25,8 @@ const OBSERVED_KIND: &str = "native_scene_spot";
 const DEFAULT_BASELINE: &str = "docs/benchmarks/scene-fingerprints.json";
 /// Observed top-level fields compared with the same-named baseline provenance fields.
 const PROVENANCE_FIELDS: [&str; 3] = ["os", "arch", "compiler"];
+/// Capture parameters that determine the end-state fingerprint; a mismatch makes the comparison meaningless.
+const DETERMINING_FIELDS: [&str; 2] = ["warmup_steps", "measured_steps"];
 
 /// Runs the gate against a fresh capture (default) or a saved `--spot` / `--stamp` capture.
 ///
@@ -54,6 +56,7 @@ pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     for warning in provenance_warnings(&baseline_json, &observed_json) {
         eprintln!("warning: {warning}");
     }
+    ensure_same_capture_parameters(&baseline_json, &observed_json)?;
     let report = compare_fingerprints(&protected, &observed)?;
     let baseline_label = format!(
         "{} (captured at {}, {})",
@@ -100,6 +103,42 @@ pub(super) fn provenance_warnings(
             })
         })
         .collect()
+}
+
+/// Requires the observed step counts to equal the baseline provenance step counts.
+///
+/// The fingerprint is taken after warmup plus measured steps, so a capture with
+/// other counts would report every protected scene as changed for a reason
+/// unrelated to the code.
+///
+/// # Errors
+///
+/// Returns a `gate` error when the baseline provenance lacks a step count or the
+/// observed capture's count is missing or different; the message names both values.
+pub(super) fn ensure_same_capture_parameters(
+    baseline: &serde_json::Value,
+    observed: &serde_json::Value,
+) -> Result<(), PlaygroundError> {
+    for field in DETERMINING_FIELDS {
+        let Some(baseline_count) = baseline
+            .pointer(&format!("/provenance/{field}"))
+            .and_then(serde_json::Value::as_u64)
+        else {
+            return Err(gate_error(format!(
+                "baseline provenance requires an unsigned integer `{field}`"
+            )));
+        };
+        let maybe_observed_count = observed.get(field).and_then(serde_json::Value::as_u64);
+        if maybe_observed_count == Some(baseline_count) {
+            continue;
+        }
+        let observed_text =
+            maybe_observed_count.map_or_else(|| String::from("missing"), |count| count.to_string());
+        return Err(gate_error(format!(
+            "observed {field} {observed_text} differs from baseline {field} {baseline_count}; recapture with the baseline step counts before comparing fingerprints"
+        )));
+    }
+    Ok(())
 }
 
 fn text_at<'a>(json: &'a serde_json::Value, pointer: &str) -> &'a str {
