@@ -1,13 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.6
-milestone_name: Physics Curiosity Scenes
-status: ready_to_plan
-current_phase: 47
-current_phase_name: "Archimedes Screw"
-current_plan: null
-stopped_at: Phase 46 complete (verified 5/5); 26/26 fingerprints protected
-last_updated: "2026-10-14T19:47:41.507Z"
+milestone_name: milestone
+status: verifying
+stopped_at: Phase 47 context gathered
+last_updated: "2026-10-14T20:04:24.820Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
@@ -366,6 +363,6 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 
 ## Session Continuity
 
-Last session: 2026-10-14T19:32:37.621Z
-Stopped at: Completed 46-05-PLAN.md
-Resume file: None
+Last session: 2026-10-14T20:04:24.815Z
+Stopped at: Phase 47 context gathered
+Resume file: .planning/phases/47-archimedes-screw/47-CONTEXT.md
