@@ -112,6 +112,20 @@ describe("readmeSvgRequest", () => {
       worldY: 2,
     });
   });
+
+  it("cues Squeeze twice so the diver clip shows a sink and a rise", () => {
+    // Arrange
+    const diver = README_SVG_PLANS.find((plan) => plan.id === "cartesian-diver");
+
+    // Act
+    const cues = diver?.cues;
+
+    // Assert
+    expect(cues).toEqual([
+      { atSample: 20, kind: "action", name: "squeeze" },
+      { atSample: 110, kind: "action", name: "squeeze" },
+    ]);
+  });
 });
 
 describe("upsertReadmeSvgGallery", () => {

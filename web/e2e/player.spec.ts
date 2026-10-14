@@ -53,6 +53,7 @@ const POINTER_CONTROL: Readonly<
   "drawing-particles": { gesture: "drag", control: "Material" },
   "washing-machine": { gesture: "click", control: "Drum speed" },
   "tesla-valve": { gesture: "click", control: "Flow rate" },
+  "cartesian-diver": { gesture: "click", control: "Squeeze" },
 };
 
 const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter(

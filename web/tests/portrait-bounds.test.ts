@@ -391,6 +391,15 @@ describe("portrait scene frames", () => {
         { x: -0.45, y: 2.741 },
         { x: 0.45, y: 3.591 },
       ],
+      // Drawn bottle outline corners and mid-height sides.
+      "cartesian-diver": [
+        { x: -1.45, y: -0.25 },
+        { x: 1.45, y: -0.25 },
+        { x: -1.45, y: 5.85 },
+        { x: 1.45, y: 5.85 },
+        { x: -1.45, y: 2.8 },
+        { x: 1.45, y: 2.8 },
+      ],
     } as const;
 
     // Act

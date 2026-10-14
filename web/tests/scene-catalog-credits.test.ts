@@ -212,6 +212,7 @@ describe("scene catalog credits", () => {
     expect(inspirationById["stacked-drip"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["washing-machine"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["tesla-valve"]).toEqual([SHOWCASE_HREF]);
+    expect(inspirationById["cartesian-diver"]).toEqual([SHOWCASE_HREF]);
     expect(maybeSceneById("drawing-particles")?.credits.inspiration).toEqual([
       { label: "Pinned DrawingParticles.js", href: DRAWING_PARTICLES_JS_HREF },
       { label: "Pinned DrawingParticles.h", href: DRAWING_PARTICLES_H_HREF },

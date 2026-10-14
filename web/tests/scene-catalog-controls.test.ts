@@ -6,6 +6,7 @@ import {
   GRAVITY_SLIDER_MAX,
 } from "../src/catalog/gravity-slider";
 import { GAP_CONTROL } from "../src/catalog/hydraulic-fountain-gap";
+import { action } from "../src/catalog/scene-record-shared";
 import { DRUM_SPEED_CONTROL } from "../src/catalog/washing-machine-speed";
 import {
   FLOW_DIRECTION_CONTROL,
@@ -387,5 +388,17 @@ describe("scene catalog controls", () => {
     });
     expect(FLOW_DIRECTION_CONTROL.recreates).toBe(false);
     expect(recreatingIds).toEqual([...RECREATING_CONTROL_IDS]);
+  });
+
+  it("gives Cartesian Diver a non-recreating Squeeze action before gravity", () => {
+    // Arrange
+    const expected = [action("squeeze", "Squeeze"), GRAVITY_CONTROL];
+
+    // Act
+    const controls = maybeSceneById("cartesian-diver")?.controls ?? [];
+
+    // Assert
+    expect(controls).toEqual(expected);
+    expect(controls[0]?.recreates).toBe(false);
   });
 });

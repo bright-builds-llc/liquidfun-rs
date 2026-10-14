@@ -138,6 +138,18 @@ const LOCKED_ACTION_LABELS = [
   "Stir speed",
   "Poke jelly",
   "Jet strength",
+  "Squeeze",
+] as const;
+const DIVER_FORBIDDEN_CLAIMS = [
+  "pressure",
+  "compress",
+  "compressed air",
+  "gas",
+  "suction",
+  "simulated density",
+  "boyle",
+  "the dent pushes",
+  "real physics",
 ] as const;
 
 describe("SCENES", () => {
@@ -304,6 +316,22 @@ describe("SCENES", () => {
 
     // Assert
     expect(missingLabels).toEqual([]);
+  });
+
+  it("keeps the Cartesian Diver caption honest about its density stand-in", () => {
+    // Arrange
+    const diver = maybeSceneById("cartesian-diver");
+    const description = (diver?.description ?? "").toLowerCase();
+    const hint = (diver?.interactionHint ?? "").toLowerCase();
+
+    // Act
+    const claims = DIVER_FORBIDDEN_CLAIMS.filter(
+      (claim) => description.includes(claim) || hint.includes(claim),
+    );
+
+    // Assert
+    expect(claims).toEqual([]);
+    expect(description).toContain("stands in for its squeezed air bubble");
   });
 });
 
