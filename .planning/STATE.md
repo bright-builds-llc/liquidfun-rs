@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Completed 45-04-PLAN.md
-last_updated: "2026-10-14T16:15:40.554Z"
+stopped_at: Completed 45-05-PLAN.md
+last_updated: "2026-10-14T16:19:09.844Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 4
-  percent: 40
+  completed_plans: 5
+  percent: 50
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -201,6 +201,7 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 45]: 45-02: Plan 01 capture 2026-10-14T15-53-11Z and fresh capture 2026-10-14T16-00-20Z both report 25/25 unchanged; tampered dam-break baseline fails naming dam-break
 - [Phase 45]: 45-03: ALL_SCENE_IDS (scene.rs) is the single Rust scene list in web SCENE_IDS order; SURVEY_SCENES length, gravity-slider seen arrays and the puzzle catalog-length check derive from it; variant_index stays an exhaustive match
 - [Phase 45]: 45-04: PAGE_SUMMARY is number-free ('Every demo runs ...') and shell e2e imports it; web unit/e2e counts derive from SCENE_IDS.length, drawer focus cycle is SCENE_IDS.length + 2, last link title from SCENES.at(-1); D-10 grep leaves only the animated-svg percent false positive
+- [Phase 45]: 45-05: scene-records.ts and previews.tsx split by family (classic 7, testbed 12, machines 6); SCENES sha256 d6411950... unchanged; ScenePreview has a never guard; v1.6 scenes go into Phase 46's *-curiosity modules; D-12 no other split (controls.test.ts 529 left for Phase 47/48)
 
 ### Pending Todos
 
@@ -330,9 +331,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 45 P02 | 7min | 2 tasks | 7 files |
 | Phase 45 P03 | 10min | 2 tasks | 4 files |
 | Phase 45 P04 | 3min | 2 tasks | 5 files |
+| Phase 45 P05 | 5min | 2 tasks | 10 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T16:15:40.551Z
-Stopped at: Completed 45-04-PLAN.md
+Last session: 2026-10-14T16:19:09.840Z
+Stopped at: Completed 45-05-PLAN.md
 Resume file: None

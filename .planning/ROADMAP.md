@@ -129,7 +129,7 @@ Plans:
 - [x] 45-02-PLAN.md — Tested xtask id-join gate and `just scene-fingerprint-gate` (PREP-01)
 - [x] 45-03-PLAN.md — `ALL_SCENE_IDS` in catalog order; Rust counts derived from it (PREP-02)
 - [x] 45-04-PLAN.md — Number-free copy; web unit and e2e counts derived from the catalog (PREP-02)
-- [ ] 45-05-PLAN.md — Split scene-records.ts and previews.tsx into family modules (PREP-02)
+- [x] 45-05-PLAN.md — Split scene-records.ts and previews.tsx into family modules (PREP-02)
 - [ ] 45-06-PLAN.md — Siphon feasibility spike with a go, reshape or drop decision (PREP-03)
 - [ ] 45-07-PLAN.md — Hourglass feasibility spike, flip cost and decision by the pre-recorded rule (PREP-03)
 - [ ] 45-08-PLAN.md — Owner checkpoint for both spike decisions, then seed and roadmap bookkeeping (PREP-03)
@@ -262,7 +262,7 @@ Plans:
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
 | 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete    | 2026-10-14 |
-| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 4/10 | In Progress|  |
+| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 5/10 | In Progress|  |
 | 46. Cartesian Diver | v1.6 | 0/TBD | Not started | - |
 | 47. Archimedes Screw | v1.6 | 0/TBD | Not started | - |
 | 48. Fake Ferrofluid | v1.6 | 0/TBD | Not started | - |
