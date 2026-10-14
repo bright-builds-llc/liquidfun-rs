@@ -239,12 +239,16 @@ async function measureFixed(
   }
 }
 
+/** The page API this module installs as `window.teslaBenchmark`. */
+export type TeslaBenchmarkApi = {
+  readonly runCase: typeof runCase;
+  readonly compareWorkerDirect: typeof compareWorkerDirect;
+};
+
 declare global {
   interface Window {
-    teslaBenchmark: {
-      runCase: typeof runCase;
-      compareWorkerDirect: typeof compareWorkerDirect;
-    };
+    /** Absent until this module loads, and on every other page. */
+    teslaBenchmark?: TeslaBenchmarkApi;
   }
 }
 

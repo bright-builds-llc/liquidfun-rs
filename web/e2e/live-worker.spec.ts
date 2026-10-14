@@ -1,4 +1,19 @@
+import type { Page } from "@playwright/test";
+
+import type { TeslaBenchmarkApi } from "../benchmarks/tesla-valve/benchmark";
 import { expect, test } from "./worker-quality-fixture";
+
+type CompareArgs = Parameters<TeslaBenchmarkApi["compareWorkerDirect"]>;
+
+/** Waits for the fixture page's benchmark API, then runs one worker/direct comparison. */
+async function compareWorkerDirectInPage(page: Page, args: CompareArgs) {
+  await page.waitForFunction(() => window.teslaBenchmark !== undefined);
+  return page.evaluate((args) => {
+    const maybeApi = window.teslaBenchmark;
+    if (maybeApi === undefined) throw new Error("window.teslaBenchmark is not installed");
+    return maybeApi.compareWorkerDirect(...args);
+  }, args);
+}
 
 const TESLA = "/liquidfun-rs/#/scene/tesla-valve";
 const DAM = "/liquidfun-rs/#/scene/dam-break";
@@ -35,12 +50,7 @@ for (const rate of [1440, 2880])
     }) => {
       test.setTimeout(120_000);
       await page.goto(workerQualityUrl);
-      await page.waitForFunction(() => window.teslaBenchmark !== undefined);
-      const result = await page.evaluate(
-        ({ rate, direction }) =>
-          window.teslaBenchmark.compareWorkerDirect(rate, direction, 240),
-        { rate, direction },
-      );
+      const result = await compareWorkerDirectInPage(page, [rate, direction, 240]);
       expect(result.worker).toEqual(result.direct);
       expect(result.worker.stepIndex).toBe(240);
       expect(result.worker.particleCount).toBeLessThan(16384);
@@ -52,10 +62,7 @@ test("an overflowing gravity sample stays recoverable in the actual worker like 
   workerQualityUrl,
 }) => {
   await page.goto(workerQualityUrl);
-  await page.waitForFunction(() => window.teslaBenchmark !== undefined);
-  const result = await page.evaluate(() =>
-    window.teslaBenchmark.compareWorkerDirect(1440, "1", 8, true),
-  );
+  const result = await compareWorkerDirectInPage(page, [1440, "1", 8, true]);
   expect(result.worker).toEqual(result.direct);
   expect(result.worker.stepIndex).toBe(8);
 });
@@ -70,12 +77,7 @@ for (const [direction, steps] of [
   }) => {
     test.setTimeout(120_000);
     await page.goto(workerQualityUrl);
-    await page.waitForFunction(() => window.teslaBenchmark !== undefined);
-    const result = await page.evaluate(
-      ({ direction, steps }) =>
-        window.teslaBenchmark.compareWorkerDirect(1440, direction, steps),
-      { direction, steps },
-    );
+    const result = await compareWorkerDirectInPage(page, [1440, direction, steps]);
     expect(result.worker).toEqual(result.direct);
     expect(result.worker.stepIndex).toBe(steps);
   });

@@ -128,13 +128,12 @@ export async function openBenchmarkBrowser(
       chromiumExecutableSha256,
       runCase: async (settings, caseId, repetition, liveBackend) =>
         await page.evaluate(
-          ({ settings, caseId, repetition, liveBackend }) =>
-            window.teslaBenchmark.runCase(
-              settings,
-              caseId,
-              repetition,
-              liveBackend,
-            ),
+          ({ settings, caseId, repetition, liveBackend }) => {
+            const maybeApi = window.teslaBenchmark;
+            if (maybeApi === undefined)
+              throw new Error("window.teslaBenchmark is not installed");
+            return maybeApi.runCase(settings, caseId, repetition, liveBackend);
+          },
           { settings, caseId, repetition, liveBackend },
         ),
       close: async () => {
