@@ -1,10 +1,13 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.6
-milestone_name: milestone
-status: verifying
-stopped_at: Completed 45-08-PLAN.md
-last_updated: "2026-10-14T17:11:10.721Z"
+milestone_name: Physics Curiosity Scenes
+status: ready_to_plan
+current_phase: 46
+current_phase_name: "Cartesian Diver"
+current_plan: null
+stopped_at: Phase 45 complete (verified 5/5); siphon and hourglass dropped to seeds
+last_updated: "2026-10-14T17:24:19.827Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
@@ -25,12 +28,12 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 ## Current Position
 
-Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
-Plan: 10 of 10
-Status: Phase complete — ready for verification
+Phase: 46 (Cartesian Diver) — not started
+Plan: Not started
+Status: Phase 45 complete and verified — ready to discuss Phase 46
 Last activity: 2026-10-14
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] Phase 45 of 45–49 complete (50 and 51 dropped)
 
 v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. v1.6 Physics Curiosity Scenes started 2026-10-14 (SEED-004); phase numbering continues at 45. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
 

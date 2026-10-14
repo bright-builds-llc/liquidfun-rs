@@ -264,7 +264,7 @@ Plans:
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
 | 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete    | 2026-10-14 |
-| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 10/10 | Complete   | 2026-10-14 |
+| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 10/10 | Complete    | 2026-10-14 |
 | 46. Cartesian Diver | v1.6 | 0/TBD | Not started | - |
 | 47. Archimedes Screw | v1.6 | 0/TBD | Not started | - |
 | 48. Fake Ferrofluid | v1.6 | 0/TBD | Not started | - |
