@@ -191,6 +191,12 @@ change.
 
 [Animated SVG](docs/assets/readme/tesla-valve-10s.svg)
 
+#### [Cartesian Diver](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/cartesian-diver)
+
+[![Cartesian Diver simulation preview](docs/assets/readme/cartesian-diver-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/cartesian-diver)
+
+[Animated SVG](docs/assets/readme/cartesian-diver-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
