@@ -41,6 +41,7 @@ Use this routing map when deciding what to load next:
 - `.planning/**` is parser-owned GSD content and must never be formatted with mdformat.
 - Use repeated `1.` markers for ordered task and lesson fields.
 - For implementation, recovery, verification, and publication, apply the standing authorization below before approval language from older plans or skills.
+- Before adding a playground scene, follow [docs/adding-a-scene.md](docs/adding-a-scene.md): every Rust and web site a new scene touches, the gates, and the rule that the scene fingerprint baseline grows only in its own commit.
 
 ### Hobby-project scope
 
