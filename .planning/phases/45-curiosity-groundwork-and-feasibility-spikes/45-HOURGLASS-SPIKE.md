@@ -2,7 +2,7 @@
 
 ## Status
 
-Rules recorded before measuring; results not yet measured. This document is committed together with the spike harness in commit A, before the first measured run, so the geometry, metrics, pass rule, sweeps and decision rule cannot be tuned to a result.
+Complete; owner confirmation pending (Plan 08). The rules below were recorded before measuring and committed together with the spike harness in commit A (`09ab08395`) before the first measured run, so the geometry, metrics, pass rule, sweeps and decision rule could not be tuned to a result. Results, flip cost and the decision by the pre-recorded rule were added after the single measured run; no rule, geometry or sweep changed afterwards.
 
 ## Geometry
 
@@ -107,8 +107,74 @@ Output lines (the log is gitignored):
 
 ## Results
 
+One release run on 2026-10-14 from commit A (`09ab08395`), log `target/phase45/hourglass-spike.log` (1,241 lines, gitignored): 5 ignored tests passed (harness), 9 `RESULT hourglass` and 9 `FLIP hourglass` lines, no harness error, no fix commit, no rerun. Every configuration was tried; none is "not tried". Configuration `2b` was not tried because the D-18 trigger did not fire (below).
+
+These are authoring measurements for the go or drop decision, not evidence for any shipped claim (D-16).
+
+Window = 25-30 s (21 samples). Slopes in degrees. Water margin = edge-relative median − water median (0.76°). Every configuration has 564 particles and ends with `upper` 0 / `lower` 564 at 30 s.
+
+| # | Label | Particles | ms/step | Median slope | Min | Max | literal_d25_deg median (min-max) | side_fit_deg median | Water margin | Jam | Frozen (end / total freezes / per step / max per step / max speed m/s) | Edge-relative verdict | Literal-D-25 verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| W | w-water | 564 | 0.128 | 0.76 | 0.75 | 0.77 | 25.88 (25.88-25.91) | 0.48 | 0.00 | no | n/a | FAIL | PASS |
+| P | p-powder | 564 | 0.127 | 2.87 | 2.82 | 3.03 | 25.92 (25.87-25.96) | 8.49 | 2.11 | no | n/a | FAIL | PASS |
+| 1 | c1-stick-slip-v0.2-k0.5 | 564 | 0.141 | 3.85 | 3.83 | 3.87 | 26.00 (25.98-26.01) | 11.92 | 3.09 | no | n/a | FAIL | PASS |
+| 1 | c1-stick-slip-v0.2-k1.0 | 564 | 0.138 | 3.23 | 3.22 | 3.25 | 26.06 (26.04-26.06) | 2.93 | 2.47 | no | n/a | FAIL | PASS |
+| 1 | c1-stick-slip-v0.5-k0.5 | 564 | 0.145 | 0.24 | 0.21 | 0.26 | 26.09 (26.07-26.11) | 0.48 | -0.52 | no | n/a | FAIL | PASS |
+| 1 | c1-stick-slip-v0.5-k1.0 | 564 | 0.140 | 2.97 | 2.97 | 2.98 | 25.97 (25.95-25.98) | 4.05 | 2.21 | no | n/a | FAIL | PASS |
+| 2 | c2-freeze-k8 | 564 | 0.136 | 0.34 | 0.34 | 0.34 | 26.13 (26.13-26.13) | 1.53 | -0.42 | no | 448 / 448 / 0.249 / 8 / 0.000000 | FAIL | PASS |
+| 2 | c2-freeze-k32 | 564 | 0.137 | 0.33 | 0.33 | 0.33 | 26.15 (26.15-26.15) | 1.51 | -0.43 | no | 463 / 463 / 0.257 / 13 / 0.000000 | FAIL | PASS |
+| 3 | c3-rigid-clumps | 564 | 0.480 | 2.73 | 2.69 | 2.83 | 26.46 (26.38-26.50) | 5.99 | 1.97 | no | n/a | FAIL | PASS |
+
+Candidate 3 builds 152 rigid groups: 130 full 2 × 2 clumps and 22 partial clumps where the funnel clips a block.
+
+Informational, from the `SPIKE` lines (not part of the rule): the largest edge-relative slope at any sample of the 30 s run was W 11.22° at 3.75 s, P 19.19° at 1.50 s, `c1-stick-slip-v0.2-k0.5` 27.98° at 1.50 s, `-v0.2-k1.0` 11.42° at 2.00 s, `-v0.5-k0.5` 16.03° at 1.50 s, `-v0.5-k1.0` 28.50° at 1.00 s, both `c2-freeze` 19.19° at 1.50 s (identical to P until the first freeze), `c3-rigid-clumps` 12.99° at 1.50 s. These peaks fall during the pour, when only a few bins are occupied, and they slump within a second or two.
+
+What the numbers show:
+
+1. **No configuration piles.** Every edge-relative median over 25-30 s is between 0.24° and 3.85°, far below 20°, and every water margin is below 3.1°, far below the 15° guard. All nine rows fail by the pre-recorded rule.
+1. **The literal D-25 reading is a confinement artifact, as research Pitfall 3 predicted.** The water control itself reads 25.9° on `literal_d25_deg`, and every configuration reads 25.9-26.5°. A flat layer whose p95 particle height is about 0.73 m above the floor in the 3 m bulb gives atan(0.73 / 1.5) ≈ 25.9°, whatever the material. The literal verdict would PASS plain water, so it cannot distinguish sand from water; the decision uses only the edge-relative verdict, as recorded before measuring.
+1. **The glass drains fast and never jams.** The 0.5 m neck passes all 564 grains in about 3 s for every configuration (`upper` 0 by 3.0 s; for the clumps, 2 grains left at 3.0 s and 0 at 4.0 s); no jam anywhere.
+1. **Stick-slip (1):** velocity damping before `world.step` does not hold a slope. The edits happen before the step, and the in-step pressure solve moves the grains again, so short heaps formed during the pour (up to 28.5°) slump to 0.2-3.9°.
+1. **Freeze to `WALL` (2):** frozen grains stay perfectly still (max frozen speed 0.000000 m/s, no path error), but the 30-step rest test (speed < 0.05 m/s) is met only after the powder deposit has already flattened (38 frozen at 5 s, about 420 at 10 s), so the rule freezes a flat layer (0.33-0.34°). K = 8 and K = 32 give the same picture (at most 8 and 13 freezes per step). The release proof passed in both: the gravity change to 10.5 released 448 and 463 grains, 0 stayed frozen, and restoring gravity 10 released 0 more.
+1. **Rigid clumps (3):** 2 × 2 rigid clumps flow through the 5-diameter neck without jamming and settle at 2.7°, with ms/step about 3.8 times the powder control (0.480 against 0.127).
+1. **D-18 trigger did not fire:** the re-created `WALL` grains did not move and destroy-and-recreate raised no error, so no `World::set_particle_flags` was added and `crates/liquidfun` is unchanged (configuration `2b` not tried).
+1. Native release cost is 0.13-0.15 ms/step for configurations W, P, 1 and 2, and 0.48 ms/step for the rigid clumps, at 564 particles.
+
 ## Flip cost
+
+Authoring measurements (D-16), native release, 564 particles, one flip per configuration after its 30 s run (after the release proof for candidate 2). `batched` times the whole sequence (read all, mark all, one compaction, group rebuild at −p, per-member −v). `per-particle` times `set_particle_position(id, −p)` then `set_particle_velocity(id, −v)` over every non-`WALL` particle, on the state at the end of the 10 s rerun.
+
+| Label | batched ms | per-particle ms | count_ok | order_ok | Groups rebuilt | Frozen rebuilt | lower at 10 s post-flip | ≥ 90% passed again | per-particle moved | WALL edit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| w-water | 2.172 | 0.130 | true | true | 1 | 0 | 564/564 | yes | 564 | none |
+| p-powder | 2.172 | 0.130 | true | true | 1 | 0 | 564/564 | yes | 564 | none |
+| c1-stick-slip-v0.2-k0.5 | 2.165 | 0.130 | true | true | 1 | 0 | 564/564 | yes | 564 | none |
+| c1-stick-slip-v0.2-k1.0 | 2.280 | 0.141 | true | true | 1 | 0 | 564/564 | yes | 564 | none |
+| c1-stick-slip-v0.5-k0.5 | 2.062 | 0.133 | true | true | 1 | 0 | 564/564 | yes | 564 | none |
+| c1-stick-slip-v0.5-k1.0 | 1.958 | 0.130 | true | true | 1 | 0 | 564/564 | yes | 564 | none |
+| c2-freeze-k8 | 2.095 | 0.044 | true | true | 1 | 0 | 564/564 | yes | 174 | ok |
+| c2-freeze-k32 | 2.019 | 0.036 | true | true | 1 | 0 | 564/564 | yes | 173 | ok |
+| c3-rigid-clumps (one group per clump) | 36.451 | 0.185 | true | true | 152 | 0 | 564/564 | yes | 564 | none |
+
+- Assumption A1 holds: rebuilt group members come back in source order in every configuration (`order_ok true`), and the particle count is unchanged (`count_ok true`). No duplicate sand (Pitfall 1 avoided).
+- After the flip the sand runs through the neck again in about 3 s (`upper` 0 by 3.0 s post-flip for W, P, 1 and 2; 4.0 s for the clumps), so 100% has passed again at 10 s.
+- Candidate 2's batched flip rebuilt 0 frozen grains because the release proof ran first (by the recorded order). During the 10 s rerun the freeze hook froze 390 and 391 grains again, so the per-particle comparison moved only the 174 and 173 non-`WALL` grains, and one untimed `set_particle_position` on a `WALL` grain succeeded (`wall_edit ok`).
+- At this size the per-particle path is cheaper than the batched one (about 0.13 ms against 2.1 ms). Each `set_particle_position` rebuilds the proxy list and clears contacts, pairs and triads, which is O(n) per call with a small constant, while the batched path pays for a system clone in the compaction plus group planning. The per-particle path is still O(n²) overall and drops pairs and triads; the batched path keeps O(n) and, for the clumps, scales with the group count (36.5 ms for 152 groups).
 
 ## Decision
 
+Decision by pre-recorded rule: drop; owner confirmation: pending (Plan 08).
+
+By D-27, no candidate configuration (1-3) passes the edge-relative rule: all 7 candidate configurations (4 stick-slip, 2 freeze, 1 clumps) and both controls fail, with medians of 0.24-3.85° against the 20° bar and water margins below 3.1° against the 15° guard.
+
+On confirmation (or, if the owner is unavailable, by the pre-recorded owner rule of 2026-10-14), Plan 08 returns SAND-01 and SAND-02 to a seed.
+
+Context for that checkpoint (observations, not decisions): the flip itself is cheap and correct (2 ms batched at 564 particles, order and count preserved), frozen `WALL` grains stay still without any engine change, and short heaps of up to about 28° appear during the pour but slump within a second or two. Rules that act within the pour, such as freezing on a shorter rest test, were outside this time box (D-17) and were not run.
+
 ## Commits
+
+- Commit A (add spike and rules): `09ab08395ee8ab8ad7adc8a2460d1c1f22f34d72` `test(45-07): add the hourglass feasibility spike (D-24)`
+- Commit B (remove spike code): `effc9c98f60062a98eebb38ed65587ede7b34f36` `chore(45-07): remove the hourglass spike code`
+- No D-18 commit: the trigger did not fire.
+- Restore the code with `git show 09ab08395ee8ab8ad7adc8a2460d1c1f22f34d72 -- crates/liquidfun-wasm/src/hourglass_spike.rs` (plus `crates/liquidfun-wasm/src/hourglass_spike/flip.rs`, `geometry.rs`, `hooks.rs` and `metrics.rs`, and the `#[cfg(test)] mod hourglass_spike;` line in `crates/liquidfun-wasm/src/lib.rs`).
+- `crates/liquidfun` is unchanged (`git diff --stat b151838be -- crates/liquidfun` is empty); no scene, session or shared builder file was edited.
