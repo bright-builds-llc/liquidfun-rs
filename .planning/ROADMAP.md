@@ -292,7 +292,12 @@ Plans:
 1. An e2e test wins a level, clicks Next and lands on the next level ready to build; another runs the timed-gate reference at 2× and 4× and reaches the same outcome step as 1×.
 1. `web/playwright.config.ts` and the `web/e2e` helpers are inside the TypeScript typecheck and `npx tsc --noEmit` passes; puzzle outcomes and the 25 scene fingerprints are unchanged.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 44-01-PLAN.md — Valve tick cap and seam open-tick default (unit), stacked portrait two-kind tray chip, valve readout as the stepper description, tray-fit e2e at 390/360 wide (wave 1)
+- [ ] 44-02-PLAN.md — Strict tsconfig.e2e.json in `bun run typecheck` and root fixes for the 16 e2e type errors (wave 1)
+- [ ] 44-03-PLAN.md — Next-from-won and timed-gate 1×/2×/4× e2e with valve ARIA hooks, then the 10 phase gates and grand-finale screenshot (wave 2)
 **UI hint**: yes
 
 ## Progress
