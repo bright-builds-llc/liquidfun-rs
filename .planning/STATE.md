@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Completed 46-03-PLAN.md
-last_updated: "2026-10-14T19:03:59.146Z"
+stopped_at: Completed 46-04-PLAN.md
+last_updated: "2026-10-14T19:31:13.269Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_plans: 14
+  percent: 93
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 46 (Cartesian Diver) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -217,6 +217,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 46]: 46-01: README cues stay at samples 20 and 110 (steps 60/330); geometry unchanged from UI-D60
 - [Phase 46]: 46-02: demo-media capture for cartesian-diver uses a center canvas click (brief squeeze); README plan and survey keep the named squeeze action (D-17 deviation)
 - [Phase 46]: 46-03: D-14 split: Chromium drops -webkit-touch-callout from computed style, so e2e asserts user-select/-webkit-user-select/touch-action none and a prevented contextmenu; a Vitest source-text test and the built-stylesheet fetch guard the callout; real-iPhone long press is optional manual
+- [Phase 46]: 46-04: README cues kept at samples 20/110; clip reaches bottom third 1.1 s after cue 1 and top third 2.2 s after cue 2; other scenes' host WebP re-encodes restored (SVGs byte-identical)
+- [Phase 46]: 46-04: diver scene-spot 2026-10-14T19-29-18Z start 1936 / end 1936 / median 0.582 ms/step; full capture 2026-10-14T19-29-46Z at 89983a79b gate PASS 25/25 unchanged, cartesian-diver fa849f40b8c2a791 added; 15/15 local gates
 
 ### Pending Todos
 
@@ -355,9 +357,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 46 P01 | 35min | 2 tasks | 7 files |
 | Phase 46 P02 | 30min | 2 tasks | 19 files |
 | Phase 46 P03 | 3min | 2 tasks | 4 files |
+| Phase 46 P04 | 27min | 2 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T19:03:59.142Z
-Stopped at: Completed 46-03-PLAN.md
+Last session: 2026-10-14T19:31:13.262Z
+Stopped at: Completed 46-04-PLAN.md
 Resume file: None
