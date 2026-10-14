@@ -9,6 +9,9 @@ mod puzzle;
 mod scene;
 mod session;
 
+#[cfg(test)]
+mod hourglass_spike;
+
 pub use frame::ProofFrame;
 pub use puzzle::{PlacementInspection, PuzzleLevelInfo, inspect_puzzle_placements};
 
