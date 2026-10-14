@@ -54,7 +54,10 @@ export async function forceNoFloatTargets(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const blocked = new Set(["EXT_color_buffer_float", "EXT_color_buffer_half_float"]);
     const prototype = WebGL2RenderingContext.prototype;
-    const nativeGetExtension = prototype.getExtension;
+    const nativeGetExtension: (
+      this: WebGL2RenderingContext,
+      name: string,
+    ) => unknown = prototype.getExtension;
     prototype.getExtension = function getExtension(
       this: WebGL2RenderingContext,
       name: string,

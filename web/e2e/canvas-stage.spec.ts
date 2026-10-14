@@ -234,7 +234,11 @@ test("toggles phone accelerometer from the upper-right canvas HUD", async ({
     };
     motion.requestPermission = () => Promise.resolve("granted");
     const nativeAdd = window.addEventListener.bind(window);
-    window.addEventListener = (type, listener, options) => {
+    window.addEventListener = (
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ): void => {
       if (type !== "devicemotion" || typeof listener !== "function") {
         nativeAdd(type, listener, options);
         return;

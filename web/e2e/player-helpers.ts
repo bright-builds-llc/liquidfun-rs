@@ -156,8 +156,11 @@ export async function installControlledRefreshRate(
 }
 
 export async function canvasPixelSha256(page: Page): Promise<string> {
-  return page.locator("canvas.scene-canvas").evaluate(async (canvas) => {
-    const context = canvas.getContext("2d");
+  return page.locator("canvas.scene-canvas").evaluate(async (element) => {
+    if (!(element instanceof HTMLCanvasElement)) {
+      throw new Error("scene canvas is not a canvas element");
+    }
+    const context = element.getContext("2d");
     if (context === null) {
       throw new Error("Canvas 2D is unavailable");
     }
@@ -165,8 +168,8 @@ export async function canvasPixelSha256(page: Page): Promise<string> {
     const pixels = context.getImageData(
       0,
       0,
-      canvas.width,
-      canvas.height,
+      element.width,
+      element.height,
     ).data;
     const digest = await crypto.subtle.digest("SHA-256", pixels);
     return Array.from(new Uint8Array(digest))

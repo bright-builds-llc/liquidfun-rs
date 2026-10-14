@@ -72,7 +72,9 @@ async function openScene(page: Page, path: string, title: string): Promise<void>
   await expectReadySceneChrome(page, title);
 }
 
-async function openPuzzle(page: Page, viewport = DESKTOP): Promise<void> {
+type Viewport = { readonly width: number; readonly height: number };
+
+async function openPuzzle(page: Page, viewport: Viewport = DESKTOP): Promise<void> {
   await page.setViewportSize(viewport);
   await page.goto(PUZZLE_PATH);
   await waitForPuzzlePhase(page, "building");

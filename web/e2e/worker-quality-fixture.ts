@@ -40,11 +40,14 @@ export const test = base.extend<{}, { workerQualityUrl: string }>({
           `http://127.0.0.1:${address.port}/benchmarks/tesla-valve/index.html`,
         );
       } finally {
+        const { httpServer } = server;
         await new Promise<void>((resolveClose, reject) => {
-          server.httpServer.close((error) =>
+          httpServer.close((error) =>
             error === undefined ? resolveClose() : reject(error),
           );
-          server.httpServer.closeAllConnections();
+          if ("closeAllConnections" in httpServer) {
+            httpServer.closeAllConnections();
+          }
         });
       }
     },
