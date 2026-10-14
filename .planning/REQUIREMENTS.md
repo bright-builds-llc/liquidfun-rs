@@ -17,9 +17,9 @@ Research: `.planning/research/v1.6-curiosity-scenes/SUMMARY.md`.
 
 ### Every new scene
 
-- [ ] **SCENE-01**: Each new scene appears in the catalog with honest credits, a preview, a portrait phone frame, a README animated preview, the shared scale legend in meters, the gravity slider and the HUD safe frame.
+- [x] **SCENE-01**: Each new scene appears in the catalog with honest credits, a preview, a portrait phone frame, a README animated preview, the shared scale legend in meters, the gravity slider and the HUD safe frame.
 - [x] **SCENE-02**: Each new scene starts visibly doing its thing on its default settings, with no input, except where the scene invites a press. It stays at or below about 3,000 particles and runs smoothly on phones.
-- [ ] **SCENE-03**: Each scene's caption describes what the simulation actually does. Any faked mechanism is named plainly, for example "a scripted magnetic pull" or "extra weight on the heavy layer".
+- [x] **SCENE-03**: Each scene's caption describes what the simulation actually does. Any faked mechanism is named plainly, for example "a scripted magnetic pull" or "extra weight on the heavy layer".
 
 ### Cartesian diver
 
@@ -88,9 +88,9 @@ SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns af
 | PREP-01 | Phase 45 | Complete |
 | PREP-02 | Phase 45 | Complete |
 | PREP-03 | Phase 45 | Complete |
-| SCENE-01 | Phase 46 | Pending |
+| SCENE-01 | Phase 46 | Complete |
 | SCENE-02 | Phase 46 | Complete |
-| SCENE-03 | Phase 46 | Pending |
+| SCENE-03 | Phase 46 | Complete |
 | DIVER-01 | Phase 46 | Complete |
 | DIVER-02 | Phase 46 | Complete |
 | DIVER-03 | Phase 46 | Complete |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Completed 46-01-PLAN.md
-last_updated: "2026-10-14T18:46:06.537Z"
+stopped_at: Completed 46-02-PLAN.md
+last_updated: "2026-10-14T19:00:29.800Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 15
-  completed_plans: 11
-  percent: 73
+  completed_plans: 12
+  percent: 80
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 46 (Cartesian Diver) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -215,6 +215,7 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 45]: 45-08: SAND-01/02 returned to SEED-007 and SIPHON-01/02 to SEED-008; Phases 50 and 51 marked dropped in place; v1.6 targets four scenes (46-49)
 - [Phase 46]: 46-01: diver tuning locked at P6 (D-07a): radius 0.05, 2 particle iterations, particle damping 0.2, pressure 0.25, density 0.3/8.0, body damping 0.5; g80 rise judged against measured water-column top third
 - [Phase 46]: 46-01: README cues stay at samples 20 and 110 (steps 60/330); geometry unchanged from UI-D60
+- [Phase 46]: 46-02: demo-media capture for cartesian-diver uses a center canvas click (brief squeeze); README plan and survey keep the named squeeze action (D-17 deviation)
 
 ### Pending Todos
 
@@ -351,9 +352,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 45 P10 | 11min | 2 tasks | 0 files |
 | Phase 45 P08 | 3min | 2 tasks | 7 files |
 | Phase 46 P01 | 35min | 2 tasks | 7 files |
+| Phase 46 P02 | 30min | 2 tasks | 19 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T18:46:06.534Z
-Stopped at: Completed 46-01-PLAN.md
+Last session: 2026-10-14T19:00:29.667Z
+Stopped at: Completed 46-02-PLAN.md
 Resume file: None
