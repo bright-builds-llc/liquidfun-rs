@@ -112,6 +112,8 @@ async function readTrayFit(page: Page): Promise<TrayFit> {
 }
 
 function expectTrayFits(fit: TrayFit, trayWidth: number): void {
+  // A missing attribute reads as 0 and would silently skip the two-kind checks.
+  expect([1, 2]).toContain(fit.kindCount);
   const maybeFirst = fit.items[0];
   expect(maybeFirst).toBeDefined();
   for (const item of fit.items) {
@@ -264,6 +266,7 @@ for (const { viewport, trayWidth } of PORTRAIT_TRAY_CASES) {
     // Arrange
     await installControlledRefreshRate(page, 60);
     await page.setViewportSize(viewport);
+    let twoKindLevels = 0;
 
     for (const id of PUZZLE_IDS) {
       // Act
@@ -276,7 +279,13 @@ for (const { viewport, trayWidth } of PORTRAIT_TRAY_CASES) {
 
       // Assert
       expectTrayFits(fit, trayWidth);
+      if (fit.kindCount === 2) {
+        twoKindLevels += 1;
+      }
     }
+
+    // Assert (the two-kind name and font checks ran at least once)
+    expect(twoKindLevels).toBeGreaterThan(0);
 
     // Assert (grand-finale is the last level loaded)
     await expectGrandFinaleTrayNames(page);
