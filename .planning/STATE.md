@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Completed 45-05-PLAN.md
-last_updated: "2026-10-14T16:19:09.844Z"
+stopped_at: Completed 45-06-PLAN.md
+last_updated: "2026-10-14T16:34:01.517Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 5
-  percent: 50
+  completed_plans: 6
+  percent: 60
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
-Plan: 6 of 10
+Plan: 7 of 10
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -202,6 +202,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 45]: 45-03: ALL_SCENE_IDS (scene.rs) is the single Rust scene list in web SCENE_IDS order; SURVEY_SCENES length, gravity-slider seen arrays and the puzzle catalog-length check derive from it; variant_index stays an exhaustive match
 - [Phase 45]: 45-04: PAGE_SUMMARY is number-free ('Every demo runs ...') and shell e2e imports it; web unit/e2e counts derive from SCENE_IDS.length, drawer focus cycle is SCENE_IDS.length + 2, last link title from SCENES.at(-1); D-10 grep leaves only the animated-svg percent false positive
 - [Phase 45]: 45-05: scene-records.ts and previews.tsx split by family (classic 7, testbed 12, machines 6); SCENES sha256 d6411950... unchanged; ScenePreview has a never guard; v1.6 scenes go into Phase 46's *-curiosity modules; D-12 no other split (controls.test.ts 529 left for Phase 47/48)
+- [Phase 45]: 45-06: siphon spike decision drop by pre-recorded D-22: 14/14 configs FAIL (plain, viscous 0.5-1.5, tensile+viscous, fake atmosphere, weighted lids, tube pull); primed 2 m column compresses to ~1.2 m in 0.5 s so the crest empties; 0 leaks/lost, 0.39-0.49 ms/step at 1,543 particles; spike code dcf7992b3, removed 6366fe335
+- [Phase 45]: 45-06: rules fixed before commit A: surface = median of 0.2 m bin tops (p95 reads 0.95H), t* floor 2 s (priming drain), mouth gaps interior; Plan 08 shows the drop to the owner, no REQUIREMENTS/ROADMAP/seed edits in 45-06
 
 ### Pending Todos
 
@@ -332,9 +334,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 45 P03 | 10min | 2 tasks | 4 files |
 | Phase 45 P04 | 3min | 2 tasks | 5 files |
 | Phase 45 P05 | 5min | 2 tasks | 10 files |
+| Phase 45 P06 | 11min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T16:19:09.840Z
-Stopped at: Completed 45-05-PLAN.md
+Last session: 2026-10-14T16:34:01.514Z
+Stopped at: Completed 45-06-PLAN.md
 Resume file: None
