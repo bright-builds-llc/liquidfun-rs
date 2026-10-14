@@ -37,6 +37,8 @@ export type PlaygroundStageProps = {
   readonly lastPointerKind: () => PointerKind | undefined;
   readonly pointerAccepted: () => number;
   readonly renderMode: () => RenderMode;
+  /** Per-page Water capability probe result (UI-D48). */
+  readonly waterAvailable: boolean;
   readonly wireframeStrokeWidth: () => number;
   readonly densityShading: () => boolean;
   readonly renderedParticleDraft: () => string;
@@ -186,6 +188,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
                 onRetry={props.onReset}
                 renderMode={props.renderMode()}
                 onRenderModeChange={props.onRenderModeChange}
+                waterAvailable={props.waterAvailable}
                 wireframeStrokeWidth={props.wireframeStrokeWidth()}
                 onWireframeStrokeWidthChange={props.onWireframeStrokeWidthChange}
                 densityShading={props.densityShading()}
@@ -239,6 +242,7 @@ export function PlaygroundStage(props: PlaygroundStageProps) {
                 maybeFailureDetails={maybeFailureDetails()}
                 renderMode={props.renderMode()}
                 onRenderModeChange={props.onRenderModeChange}
+                waterAvailable={props.waterAvailable}
                 maybePixelsPerMeter={props.maybePixelsPerMeter()}
                 assignCanvas={props.assignPuzzleCanvas}
                 assignParticleSurface={props.assignParticleSurface}

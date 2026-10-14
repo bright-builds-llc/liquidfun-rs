@@ -1,7 +1,8 @@
 import type { JSX } from "solid-js";
 
-import { RENDER_MODE_GROUPS, maybeParseRenderMode, type RenderMode } from "../render/mode";
+import { maybeParseRenderMode, type RenderMode } from "../render/mode";
 import { PuzzleLevelLinks } from "./PuzzleLevelLinks";
+import { RenderModeOptions } from "./RenderModeOptions";
 import { GitHubSourceLink } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import {
@@ -55,6 +56,7 @@ export function PuzzleOptionsSheet(props: {
 export function PuzzleRenderModeSelect(props: {
   readonly renderMode: RenderMode;
   readonly onRenderModeChange: (mode: RenderMode) => void;
+  readonly waterAvailable: boolean;
 }) {
   return (
     <label class="render-mode-control">
@@ -68,13 +70,7 @@ export function PuzzleRenderModeSelect(props: {
           }
         }}
       >
-        {RENDER_MODE_GROUPS.map((group) => (
-          <optgroup label={group.label}>
-            {group.options.map((option) => (
-              <option value={option.value}>{option.label}</option>
-            ))}
-          </optgroup>
-        ))}
+        <RenderModeOptions waterAvailable={props.waterAvailable} />
       </select>
     </label>
   );

@@ -1,9 +1,12 @@
 import { PlaygroundStage } from "./components/PlaygroundStage";
 import { createPlaygroundSession } from "./player/playground-session";
+import { cachedWaterSupport } from "./render/water-capability";
 
 /** One-session playground shell with hash routing and bounded playback. */
 export function App() {
   const session = createPlaygroundSession();
+  // Probed once per page on a detached canvas (UI-D48).
+  const waterAvailable = cachedWaterSupport();
 
   return (
     <PlaygroundStage
@@ -13,6 +16,7 @@ export function App() {
       lastPointerKind={session.lastPointerKind}
       pointerAccepted={session.pointerAccepted}
       renderMode={session.appearance.renderMode}
+      waterAvailable={waterAvailable}
       wireframeStrokeWidth={session.appearance.wireframeStrokeWidth}
       densityShading={session.appearance.densityShading}
       renderedParticleDraft={session.renderedParticleDraft}

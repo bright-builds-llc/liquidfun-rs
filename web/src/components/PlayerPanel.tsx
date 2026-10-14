@@ -12,7 +12,6 @@ import type { PlayerStatus } from "../player/view";
 import type { RenderFrame } from "../physics/frame";
 import type { ScreenRect } from "../render/safe-frame";
 import {
-  RENDER_MODE_GROUPS,
   isWireframeRenderMode,
   maybeParseRenderMode,
   needsWebglSurface,
@@ -38,6 +37,7 @@ import {
   HudControlSlider,
   type HudControlSliderProps,
 } from "./SceneControls";
+import { RenderModeOptions } from "./RenderModeOptions";
 import { SiteFooter } from "./SiteFooter";
 import { Drawer } from "./ui/drawer";
 
@@ -55,6 +55,8 @@ export type PlayerPanelProps = {
   readonly onRetry: () => void;
   readonly renderMode: RenderMode;
   readonly onRenderModeChange: (mode: RenderMode) => void;
+  /** Capability probe result; false shows "Water (unavailable)". */
+  readonly waterAvailable: boolean;
   readonly wireframeStrokeWidth: number;
   readonly onWireframeStrokeWidthChange: (width: number) => void;
   readonly densityShading: boolean;
@@ -388,13 +390,7 @@ function PlayerOptions(props: { readonly panel: PlayerPanelProps }) {
             }
           }}
         >
-          {RENDER_MODE_GROUPS.map((group) => (
-            <optgroup label={group.label}>
-              {group.options.map((option) => (
-                <option value={option.value}>{option.label}</option>
-              ))}
-            </optgroup>
-          ))}
+          <RenderModeOptions waterAvailable={panel.waterAvailable} />
         </select>
       </label>
       <Show when={isWireframeRenderMode(panel.renderMode)}>

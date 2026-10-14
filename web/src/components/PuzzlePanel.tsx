@@ -54,6 +54,7 @@ export type PuzzlePanelProps = {
   readonly maybeFailureDetails: string | undefined;
   readonly renderMode: RenderMode;
   readonly onRenderModeChange: (mode: RenderMode) => void;
+  readonly waterAvailable: boolean;
   readonly maybePixelsPerMeter: number | undefined;
   readonly assignCanvas: (canvas: HTMLCanvasElement) => void;
   readonly assignParticleSurface: (canvas: HTMLCanvasElement) => void;
@@ -390,6 +391,7 @@ function PuzzlePanelLayout(layoutProps: {
               <PuzzleRenderModeSelect
                 renderMode={props.renderMode}
                 onRenderModeChange={props.onRenderModeChange}
+                waterAvailable={props.waterAvailable}
               />
               <PuzzleSoundSection controller={props.controller} />
             </div>
@@ -400,6 +402,7 @@ function PuzzlePanelLayout(layoutProps: {
           <PuzzleRenderModeSelect
             renderMode={props.renderMode}
             onRenderModeChange={props.onRenderModeChange}
+            waterAvailable={props.waterAvailable}
           />
           <PuzzleSoundSection controller={props.controller} />
         </PuzzleOptionsSheet>
