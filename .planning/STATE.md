@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Physics Curiosity Scenes
-status: executing
-stopped_at: Completed 47-04-PLAN.md
-last_updated: "2026-10-14T22:43:52.537Z"
+status: verifying
+stopped_at: Completed 47-05-PLAN.md
+last_updated: "2026-10-14T22:45:21.647Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 20
-  completed_plans: 19
-  percent: 95
+  completed_plans: 20
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 Phase: 47 (Archimedes Screw) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-14
 
 Progress: [████░░░░░░] Phases 45–46 of 45–49 complete (50 and 51 dropped)
@@ -228,6 +228,7 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 47]: Rust TS-sync tests parse the web screw speed constants and view bounds and compare f32 bits against FRAME_*
 - [Phase 47]: 47-04: default rpm stays 30 (max 60); reviewed README clip shows pockets reaching the basin and overflow before 10 s
 - [Phase 47]: 47-04: screw scene-spot 1729/1729 particles, median 0.688 ms/step; gate PASS 26/26 with archimedes-screw 86a28d366447bbeb added (capture 2026-10-14T22-42-42Z at 23541975c)
+- [Phase 47]: 47-05: baseline grown in single-file commit 4be8ffdab from reused 47-04 capture 2026-10-14T22-42-42Z at 23541975c; gate rerun PASS 27/27 unchanged, Phase 48 protects archimedes-screw
 
 ### Pending Todos
 
@@ -372,9 +373,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 47 P02 | 22min | 2 tasks | 7 files |
 | Phase 47 P03 | 19min | 2 tasks | 20 files |
 | Phase 47 P04 | 24min | 2 tasks | 4 files |
+| Phase 47 P05 | 2 min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T22:43:52.534Z
-Stopped at: Completed 47-04-PLAN.md
+Last session: 2026-10-14T22:45:21.643Z
+Stopped at: Completed 47-05-PLAN.md
 Resume file: None
