@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: Puzzle Mode
-status: completed
-stopped_at: v1.5 milestone archived (2026-10-14)
+milestone: v1.6
+milestone_name: Physics Curiosity Scenes
+status: defining_requirements
+stopped_at: Milestone v1.6 started (defining requirements)
 last_updated: "2026-10-14T02:48:53.417Z"
 last_activity: 2026-10-14
 progress:
@@ -21,18 +21,18 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Planning the next milestone (v1.5 archived 2026-10-14)
+**Current focus:** v1.6 Physics Curiosity Scenes — defining requirements
 
 ## Current Position
 
-Phase: 44 (v1.5 Polish and Test Gaps) — COMPLETE
-Plan: 3 of 3
-**Status:** v1.5 milestone complete
-Last activity: 2026-10-14
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-10-14 — Milestone v1.6 started
 
 Progress: [██████████] 100%
 
-v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. Next: `/gsd-new-milestone`, phase numbering continues after 44. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
+v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. v1.6 Physics Curiosity Scenes started 2026-10-14 (SEED-004); phase numbering continues at 45. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
 
 ## Accumulated Context
 

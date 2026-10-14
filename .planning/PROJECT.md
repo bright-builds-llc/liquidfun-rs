@@ -14,6 +14,21 @@ Deliver a useful, independent Rust physics library for enjoyable experimentation
 
 The owner prioritizes a fun hobby project over production-quality certification. Apply `PROJECT-SCOPE.md`: mandatory Linux x64 qualification and the dedicated performance-host completion gate are removed. Historical evidence remains truthful and source-bound; strict qualification is opt-in. The owner selected local checks plus one macOS CI job and optional manual expensive suites. The accepted experimental preparation checklist is in RELEASE.md. APIs may evolve with incompatible changes documented before release; durable API/MSRV guarantees are deferred. Preserve Rust 1.97.0 and the declared minimum 1.92, verifying that minimum before publication or deliberately revising manifest and docs together.
 
+## Current Milestone: v1.6 Physics Curiosity Scenes
+
+**Goal:** Add six small, self-contained playground scenes of physics people like to share and wonder about, each recognizable at a glance on desktop and phone (SEED-004).
+
+**Target features:**
+
+- Siphon: water climbs over a crest and drains to the lower tank until the levels equalize
+- Archimedes screw: a rotating helix lifts material up a slope
+- Sand hourglass: powder pours through a neck and piles at an angle of repose; flip to restart
+- Cartesian diver: pressing the bottle sinks the diver, releasing lets it rise
+- Rayleigh–Taylor instability: heavy liquid fingers down through light liquid
+- Fake ferrofluid: dark liquid spikes toward the pointer
+
+**Key context:** Every new scene follows the repository's catalog rules (catalog entry, portrait frame, README SVG/WebP plan, shared scale legend, HUD safe frame). The 25 existing scene fingerprints must stay identical; any new engine or bridge feature (for example per-group density for Rayleigh–Taylor or a pointer force for the ferrofluid) must leave existing scenes unchanged. The riskiest scenes go last so they can slip. Phase numbering continues at 45. No crate publication.
+
 ## Current State
 
 v1.5 Puzzle Mode is archived (2026-10-14): 8 phases (37–44), 64 plans and 112 tasks. Annotated tag `v1.5` marks the archive; no crate was published. The playground gained a place-then-play puzzle game: six teaching levels at `#/puzzle/<id>` with a tool tray, a timed valve, Win/Brim/Thrifty stars, a `#/puzzles` level grid with per-browser progress, opt-in synthesized sound and a GPU Water render mode. Fill, win, timeout and stars are decided per fixed step in the private `liquidfun-wasm` bridge, and every level's recorded solutions replay identically in native release, wasm and the browser. `crates/liquidfun` was never modified and all 25 scene fingerprints are unchanged. The milestone audit passed (33/33 requirements, 23/23 cross-phase links, 6/6 flows); owner-deferred tech debt is listed in `milestones/v1.5-MILESTONE-AUDIT.md`. No new milestone is active.
@@ -104,7 +119,7 @@ Phase 21: removed unused `loadProofSession`, unknown-only `FallbackPanel`, named
 
 ## Next Milestone
 
-No scope has been chosen. Start with `/gsd-new-milestone`, and continue phase numbering after 44. Dormant seeds in `.planning/seeds/` are SEED-002 sandbox editor with shareable links, SEED-004 physics-curiosity scenes and SEED-006 the v1.4 leftovers. v1.5 future ideas (HINT-01, BADGE-01, TRAIL-01, ROTATE-01, GOAL-05, VALVE-02, SPONGE-01, LEVEL-05, EDITOR-01) and owner-deferred v1.5 tech debt are recorded in `milestones/v1.5-REQUIREMENTS.md` and `milestones/v1.5-MILESTONE-AUDIT.md`.
+v1.6 Physics Curiosity Scenes is active (see Current Milestone). It promotes SEED-004. The remaining dormant seeds in `.planning/seeds/` are SEED-002 sandbox editor with shareable links and SEED-006 the v1.4 leftovers. v1.5 future ideas (HINT-01, BADGE-01, TRAIL-01, ROTATE-01, GOAL-05, VALVE-02, SPONGE-01, LEVEL-05, EDITOR-01) and owner-deferred v1.5 tech debt are recorded in `milestones/v1.5-REQUIREMENTS.md` and `milestones/v1.5-MILESTONE-AUDIT.md`.
 
 Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product preset additions, PARITY-01 sealed per-scene differential certification, BOX2D-01 upstream-only suites, public universal speed claims and package publication. Default unsafe, nondeterministic parallel or approximate fast modes are not authorized.
 
@@ -112,7 +127,7 @@ Still deferred: DRAW-02's unrelated material-matrix expansion, PRESET-01 product
 
 ### Active
 
-None. The next milestone defines fresh requirements.
+v1.6 Physics Curiosity Scenes requirements are defined in `.planning/REQUIREMENTS.md`.
 
 ### Validated
 
@@ -367,4 +382,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ______________________________________________________________________
 
-*Last updated: 2026-10-14 after the v1.5 milestone. Strict native certification remains optional. Package publication remains separately authorized.*
+*Last updated: 2026-10-14 after starting milestone v1.6 Physics Curiosity Scenes. Strict native certification remains optional. Package publication remains separately authorized.*
