@@ -1,18 +1,22 @@
-import { defineConfig, devices } from "@playwright/test";
+import {
+  defineConfig,
+  devices,
+  type PlaywrightTestConfig,
+} from "@playwright/test";
 import { resolve } from "node:path";
 
 const maybeAttemptDirectory = process.env.PHASE16_CLOSURE_ATTEMPT_DIR;
-const forensicConfig =
+const forensicConfig: Pick<PlaywrightTestConfig, "outputDir" | "reporter"> =
   maybeAttemptDirectory === undefined
     ? {
-        reporter: [["line" as const]],
+        reporter: [["line"]],
       }
     : {
         outputDir: resolve(maybeAttemptDirectory, "playwright-output"),
         reporter: [
-          ["line" as const],
+          ["line"],
           [
-            "json" as const,
+            "json",
             {
               outputFile: resolve(
                 maybeAttemptDirectory,
