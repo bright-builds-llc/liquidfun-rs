@@ -171,7 +171,14 @@ Plans:
 1. A native 60 s run at default and maximum speed shows water gained in the upper basin, no particles leaking through walls or evicted, and a reservoir that never runs dry.
 1. The scene meets every shared scene rule, with a caption saying flat vanes stand in for a turning helix in a 2D side view, and the id-join gate reports every protected fingerprint unchanged, including the diver's.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 47-01-PLAN.md — Scene core: geometry, one-pitch vane-train snap inside end housings, and the release wrap and leak spike
+- [ ] 47-02-PLAN.md — Live `screw-speed` and `screw-direction` controls, 60 s release flow tests, reverse, gravity 2/80 smoke, rpm tuning
+- [ ] 47-03-PLAN.md — Catalog and web wiring: record, speed spinner file, preview, view and portrait bounds, README/survey/demo plans, tests and e2e
+- [ ] 47-04-PLAN.md — README preview generation and review, full gates, scene-spot numbers, 26/26 fingerprint gate
+- [ ] 47-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 27/27 unchanged
 **UI hint**: yes
 
 ### Phase 48: Fake Ferrofluid
