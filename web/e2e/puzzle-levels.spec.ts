@@ -89,6 +89,7 @@ async function readTrayFit(page: Page): Promise<TrayFit> {
         throw new Error("Tray item is missing its name or count");
       }
       const itemRect = item.getBoundingClientRect();
+      const itemStyle = getComputedStyle(item);
       return {
         height: itemRect.height,
         width: itemRect.width,
@@ -98,8 +99,11 @@ async function readTrayFit(page: Page): Promise<TrayFit> {
         nameFontPx: parseFloat(getComputedStyle(name).fontSize),
         countFontPx: parseFloat(getComputedStyle(count).fontSize),
         countRight: count.getBoundingClientRect().right,
-        // 1 px border and 8 px padding inside the item's right edge.
-        innerRight: itemRect.right - 1 - 8,
+        // The item's content edge: inside its right border and padding.
+        innerRight:
+          itemRect.right -
+          parseFloat(itemStyle.borderRightWidth) -
+          parseFloat(itemStyle.paddingRight),
       };
     });
     return {
