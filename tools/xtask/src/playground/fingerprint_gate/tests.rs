@@ -1,6 +1,6 @@
 use super::{
     ChangedScene, GateReport, SceneFingerprint, compare_fingerprints, parse_baseline,
-    parse_observed, render_report,
+    parse_observed, provenance_warnings, render_report,
 };
 
 const FP_A: &str = "0123456789abcdef";
@@ -307,5 +307,26 @@ fn failing_report_lists_items_in_baseline_then_observed_order() {
              - baseline: base.json\n\
              - observed: spot.json"
         )
+    );
+}
+
+#[test]
+fn provenance_mismatch_warns_with_both_values() {
+    // Arrange
+    let baseline = serde_json::json!({
+        "provenance": { "os": "macos", "arch": "aarch64", "compiler": "rustc 1.97.0" },
+    });
+    let observed =
+        serde_json::json!({ "os": "macos", "arch": "x86_64", "compiler": "rustc 1.97.0" });
+
+    // Act
+    let warnings = provenance_warnings(&baseline, &observed);
+
+    // Assert
+    assert_eq!(
+        warnings,
+        vec![String::from(
+            "observed arch `x86_64` differs from baseline arch `aarch64`; fingerprints may differ across hosts or toolchains"
+        )]
     );
 }

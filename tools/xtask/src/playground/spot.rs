@@ -18,7 +18,7 @@ mod survey_table;
 use args::{SpotArgs, parse_spot_args};
 use survey_table::{RankedScene, catalog_scene_ids, rank_scene_samples, render_ranked_table};
 
-const SPOT_FILE_NAME: &str = "scene-spot.json";
+pub(super) const SPOT_FILE_NAME: &str = "scene-spot.json";
 const REQUIRED_KIND: &str = "native_scene_spot";
 /// Compile-time catalog copy; the CLI fixture repository has no `web/` tree.
 const CATALOG_SCENES_TS: &str = include_str!("../../../../web/src/catalog/scenes.ts");
@@ -29,6 +29,11 @@ const SPREAD_FIELDS: [&str; 3] = ["median_ms_per_step", "min_ms_per_step", "max_
 const FINGERPRINT_DIGITS: usize = 16;
 
 pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
+    capture(args).map(|_path| ())
+}
+
+/// Runs `scene-spot` and returns the path of the new `scene-spot.json`.
+pub(super) fn capture(args: &[String]) -> Result<PathBuf, PlaygroundError> {
     let catalog = catalog_scene_ids(CATALOG_SCENES_TS)?;
     let spot_args = parse_spot_args(args, &catalog)?;
     let expected: Vec<&str> = if spot_args.scenes.is_empty() {
@@ -48,8 +53,9 @@ pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     write_spot_json(&stamp_dir, &report)?;
     let summary = render_summary(&stamp_dir, &report, disclaimer, &ranked);
     print!("{summary}");
-    eprintln!("wrote {}", stamp_dir.join(SPOT_FILE_NAME).display());
-    Ok(())
+    let spot_path = stamp_dir.join(SPOT_FILE_NAME);
+    eprintln!("wrote {}", spot_path.display());
+    Ok(spot_path)
 }
 
 fn cargo_program() -> OsString {

@@ -15,7 +15,7 @@ mod timers;
 
 pub(crate) use error::PlaygroundError;
 
-const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-profile|dam-break-timers|dam-break-audit-bundle|dam-break-heap|scene-spot> [--warmup <n>] [--steps <n>] [--runs <n>] [--scene <id>]... [--pair-stamp <utc>] [--profile-stamp <utc>] [--stamp <utc>]";
+const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-profile|dam-break-timers|dam-break-audit-bundle|dam-break-heap|scene-spot|scene-fingerprint-gate> [--warmup <n>] [--steps <n>] [--runs <n>] [--scene <id>]... [--pair-stamp <utc>] [--profile-stamp <utc>] [--stamp <utc>] [--baseline <path>] [--spot <path>]";
 
 /// Runs exploratory playground Dam Break pair, CPU-profile, or timer commands.
 ///
@@ -26,7 +26,7 @@ const USAGE: &str = "Usage: cargo xtask playground <dam-break-bench|dam-break-pr
 pub(crate) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     let (command, command_args) = args.split_first().ok_or_else(|| {
         PlaygroundError::usage(
-            "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, `dam-break-heap`, or `scene-spot`",
+            "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, `dam-break-heap`, `scene-spot`, or `scene-fingerprint-gate`",
         )
     })?;
     match command.as_str() {
@@ -36,6 +36,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), PlaygroundError> {
         "dam-break-audit-bundle" => bundle::run(command_args),
         "dam-break-heap" => heap::run(command_args),
         "scene-spot" => spot::run(command_args),
+        "scene-fingerprint-gate" => fingerprint_gate::run(command_args),
         _ => Err(PlaygroundError::usage(format!(
             "unknown playground command `{command}`"
         ))),
@@ -55,7 +56,7 @@ mod tests {
         assert_eq!(
             result,
             Err(PlaygroundError::usage(
-                "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, `dam-break-heap`, or `scene-spot`"
+                "expected `dam-break-bench`, `dam-break-profile`, `dam-break-timers`, `dam-break-audit-bundle`, `dam-break-heap`, `scene-spot`, or `scene-fingerprint-gate`"
             ))
         );
     }
@@ -76,5 +77,17 @@ mod tests {
     fn usage_lists_scene_spot() {
         // Arrange / Act / Assert
         assert!(USAGE.contains("scene-spot"));
+    }
+
+    #[test]
+    fn usage_lists_scene_fingerprint_gate() {
+        // Arrange
+        let subcommand = "scene-fingerprint-gate";
+
+        // Act
+        let listed = USAGE.contains(subcommand);
+
+        // Assert
+        assert!(listed);
     }
 }

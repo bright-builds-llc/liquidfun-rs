@@ -5,17 +5,129 @@
 //! catalog can grow without editing the baseline in the same change.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
+use std::path::Path;
 
 use super::PlaygroundError;
-use super::spot;
+use super::identity::repository_root;
+use super::{spot, stamp};
 
+mod args;
 #[cfg(test)]
 mod tests;
+
+use args::{ObservedSource, parse_gate_args};
 
 const ERROR_KIND: &str = "gate";
 const BASELINE_KIND: &str = "scene_fingerprint_baseline";
 const BASELINE_SCHEMA_VERSION: u64 = 1;
 const OBSERVED_KIND: &str = "native_scene_spot";
+const DEFAULT_BASELINE: &str = "docs/benchmarks/scene-fingerprints.json";
+/// Observed top-level fields compared with the same-named baseline provenance fields.
+const PROVENANCE_FIELDS: [&str; 3] = ["os", "arch", "compiler"];
+
+/// Runs the gate against a fresh capture (default) or a saved `--spot` / `--stamp` capture.
+///
+/// Prints the report, then fails when any protected id changed or is missing.
+///
+/// # Errors
+///
+/// Returns a usage error for bad flags, a `gate` error for unreadable or
+/// invalid inputs and for a failing report, and any `scene-spot` error in fresh mode.
+pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
+    let gate_args = parse_gate_args(args)?;
+    let root = repository_root()?;
+    let baseline_path = gate_args
+        .maybe_baseline
+        .unwrap_or_else(|| root.join(DEFAULT_BASELINE));
+    let baseline_json = read_json(&baseline_path)?;
+    let protected = parse_baseline(&baseline_json)?;
+    let observed_path = match gate_args.source {
+        ObservedSource::Fresh => spot::capture(&[])?,
+        ObservedSource::Spot(path) => path,
+        ObservedSource::Stamp(stamp_name) => stamp::evidence_dir(&root)
+            .join(stamp_name)
+            .join(spot::SPOT_FILE_NAME),
+    };
+    let observed_json = read_json(&observed_path)?;
+    let observed = parse_observed(&observed_json)?;
+    for warning in provenance_warnings(&baseline_json, &observed_json) {
+        eprintln!("warning: {warning}");
+    }
+    let report = compare_fingerprints(&protected, &observed)?;
+    let baseline_label = format!(
+        "{} (captured at {}, {})",
+        display_path(&baseline_path, &root),
+        text_at(&baseline_json, "/provenance/git_commit"),
+        text_at(&baseline_json, "/provenance/captured_at"),
+    );
+    let observed_label = format!(
+        "{} (git {}, full_catalog {})",
+        display_path(&observed_path, &root),
+        text_at(&observed_json, "/git_head"),
+        observed_json
+            .get("full_catalog")
+            .map_or_else(|| String::from("unknown"), ToString::to_string),
+    );
+    println!(
+        "{}",
+        render_report(&report, &baseline_label, &observed_label)
+    );
+    if report.passes() {
+        return Ok(());
+    }
+    Err(gate_error(format!(
+        "scene fingerprint gate failed: {} changed, {} missing",
+        report.changed.len(),
+        report.missing.len()
+    )))
+}
+
+/// Warnings for observed host or toolchain fields that differ from the baseline provenance.
+pub(super) fn provenance_warnings(
+    baseline: &serde_json::Value,
+    observed: &serde_json::Value,
+) -> Vec<String> {
+    PROVENANCE_FIELDS
+        .iter()
+        .filter_map(|field| {
+            let baseline_value = text_at(baseline, &format!("/provenance/{field}"));
+            let observed_value = text_at(observed, &format!("/{field}"));
+            (baseline_value != observed_value).then(|| {
+                format!(
+                    "observed {field} `{observed_value}` differs from baseline {field} `{baseline_value}`; fingerprints may differ across hosts or toolchains"
+                )
+            })
+        })
+        .collect()
+}
+
+fn text_at<'a>(json: &'a serde_json::Value, pointer: &str) -> &'a str {
+    json.pointer(pointer)
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("unknown")
+}
+
+/// Shows paths under the repository root relative to it so pasted reports carry no home path.
+fn display_path(path: &Path, root: &Path) -> String {
+    path.strip_prefix(root)
+        .unwrap_or(path)
+        .display()
+        .to_string()
+}
+
+fn read_json(path: &Path) -> Result<serde_json::Value, PlaygroundError> {
+    if !path.is_file() {
+        return Err(gate_error(format!(
+            "`{}` is not an existing file",
+            path.display()
+        )));
+    }
+    let text = fs::read_to_string(path)
+        .map_err(|error| gate_error(format!("failed to read `{}`: {error}", path.display())))?;
+    serde_json::from_str(&text)
+        .map_err(|error| gate_error(format!("`{}` is not valid JSON: {error}", path.display())))
+}
 
 /// One scene id with its 16-digit lowercase hex end-state fingerprint.
 #[derive(Debug, Clone, PartialEq, Eq)]
