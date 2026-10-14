@@ -68,7 +68,15 @@ fn only_idle_scenes_are_scripted() {
         .map(|(_, _, cue)| cue.label());
 
     // Assert
-    assert_eq!(scripted, ["float-or-sink", "impulse", "drawing-particles"]);
+    assert_eq!(
+        scripted,
+        [
+            "float-or-sink",
+            "impulse",
+            "drawing-particles",
+            "cartesian-diver"
+        ]
+    );
     assert_eq!(maybe_sparky_label, Some("default"));
 }
 

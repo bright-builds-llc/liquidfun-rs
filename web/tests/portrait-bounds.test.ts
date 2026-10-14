@@ -70,6 +70,7 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   // The valve frame hugs its walls on every side, so height is the binding
   // fill on a phone (quick 261010-wkd).
   "tesla-valve": 0.9,
+  "cartesian-diver": 0.75,
 };
 
 /** Smallest share of the iPhone width the fitted frame should cover. */

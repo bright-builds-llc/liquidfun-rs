@@ -101,6 +101,11 @@ const SURVEY_SCENES: [(&str, SceneId, SurveyCue); ALL_SCENE_IDS.len()] = [
         SurveyCue::Default,
     ),
     ("tesla-valve", SceneId::TeslaValve, SurveyCue::Default),
+    (
+        "cartesian-diver",
+        SceneId::CartesianDiver,
+        SurveyCue::Action("squeeze"),
+    ),
 ];
 
 /// Closed error for the native all-catalog scene survey timer.

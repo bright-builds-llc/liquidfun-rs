@@ -1,5 +1,6 @@
 import { WORLD_BOUNDS, type WorldBounds } from "../render/camera";
 import {
+  CARTESIAN_DIVER_VIEW_BOUNDS,
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
   TESLA_VALVE_VIEW_BOUNDS,
@@ -34,6 +35,7 @@ export const SCENE_IDS = [
   "stacked-drip",
   "washing-machine",
   "tesla-valve",
+  "cartesian-diver",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -93,6 +95,7 @@ export type SceneRecord = {
 };
 
 export {
+  CARTESIAN_DIVER_VIEW_BOUNDS,
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
   TESLA_VALVE_VIEW_BOUNDS,

@@ -1,6 +1,20 @@
 /** Camera frames for catalog scenes whose action needs a custom world rectangle. */
 
 /**
+ * Camera frame for Cartesian Diver, in meters.
+ *
+ * Keep in sync with `crates/liquidfun-wasm/src/scene/cartesian_diver/geometry.rs`.
+ * This is the physical outer wall rectangle, which is the drawn bottle outline
+ * (x = ±1.45, y = -0.25..5.85) plus 0.15 m, so every wall stays in view.
+ */
+export const CARTESIAN_DIVER_VIEW_BOUNDS = {
+  minX: -1.6,
+  minY: -0.4,
+  maxX: 1.6,
+  maxY: 6.0,
+} as const;
+
+/**
  * Camera frame for Liquid Tumbler, in meters.
  *
  * Keep in sync with the glass comments in

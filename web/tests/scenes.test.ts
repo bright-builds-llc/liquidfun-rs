@@ -64,6 +64,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Watch ribs on a spinning drum tumble water and a few elastic socks. This is an original experimental scene.",
   "tesla-valve":
     "Watch water pass through a Tesla Valve whose outer loop walls continue into the next pipe section around solid splitter islands. The straight runs and circular bends share a 6 cm channel width. Reverse flips the valve so the branches redirect water against the incoming stream. A source at the top keeps pouring, and a drain at the bottom removes what gets through. This is an original experimental scene.",
+  "cartesian-diver":
+    "A diver floats in a closed bottle of particle water. Squeeze the bottle and it sinks, then let go and it rises. Switching the diver to a heavier density stands in for its squeezed air bubble. The bottle dent and the bubble are drawn, not simulated. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -107,6 +109,8 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Use Drum speed to change how fast the drum turns. It starts at 20 rpm. Labeled controls also work from the keyboard.",
   "tesla-valve":
     "Use Flow rate to change how fast water pours in at the top, and Flow direction to flip the valve. It starts forward. Particles that reach the bottom drain are removed. Labeled controls also work from the keyboard.",
+  "cartesian-diver":
+    "Press and hold the bottle, or use Squeeze, to sink the diver. Let go, or use Squeeze again, and it rises. Presses outside the bottle do nothing. Labeled controls also work from the keyboard.",
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -165,6 +169,7 @@ describe("SCENES", () => {
       "stacked-drip",
       "washing-machine",
       "tesla-valve",
+      "cartesian-diver",
     ] as const;
 
     // Act
@@ -204,6 +209,7 @@ describe("SCENES", () => {
       "Stacked Drip",
       "Washing Machine",
       "Tesla Valve",
+      "Cartesian Diver",
     ];
 
     // Act
