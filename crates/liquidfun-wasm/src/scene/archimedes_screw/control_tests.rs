@@ -5,7 +5,9 @@
 use liquidfun::math::Vec2;
 use liquidfun::{BodySnapshot, NoDecisionHook, StepLimits};
 
-use super::geometry::{AXIS, PITCH, TUBE_ORIGIN};
+use super::geometry::{
+    AXIS, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y, PITCH, TUBE_ORIGIN,
+};
 use super::test_support::step_configuration;
 use super::{
     DEFAULT_SCREW_RPM, MAX_SCREW_RPM, SCREW_DIRECTION_CONTROL, SCREW_SPEED_CONTROL, SIM_DT,
@@ -15,6 +17,26 @@ use crate::scene::{ControlEffect, SceneHooks, SceneId};
 use crate::session::{SessionCore, SessionError};
 
 const POSITION_TOLERANCE: f32 = 1e-4;
+
+/// The web speed control, which must mirror `DEFAULT_SCREW_RPM` and `MAX_SCREW_RPM`.
+const SPEED_TS: &str = include_str!("../../../../../web/src/catalog/archimedes-screw-speed.ts");
+/// The web view bounds, which must mirror the landscape `FRAME_*` rectangle.
+const VIEW_BOUNDS_TS: &str = include_str!("../../../../../web/src/catalog/scene-view-bounds.ts");
+
+/// Number literal after `key:` in a TypeScript object literal body.
+fn ts_field(body: &str, key: &str) -> f32 {
+    let marker = format!("{key}:");
+    let (_, rest) = body
+        .split_once(&marker)
+        .unwrap_or_else(|| panic!("`{marker}` in the web view bounds"));
+    let (value, _) = rest
+        .split_once(',')
+        .unwrap_or_else(|| panic!("`,` after `{marker}`"));
+    value
+        .trim()
+        .parse()
+        .unwrap_or_else(|error| panic!("`{marker}` value {value:?}: {error}"))
+}
 
 fn train_snapshot(parts: &ScrewParts) -> BodySnapshot {
     parts
@@ -218,4 +240,44 @@ fn reverse_moves_the_train_down_the_axis_at_the_current_speed() {
     let error = (travelled - expected).rem_euclid(PITCH);
     let error = error.min(PITCH - error);
     assert!(error < POSITION_TOLERANCE, "{travelled} vs {expected}");
+}
+
+#[test]
+fn web_speed_constants_match_rust() {
+    // Arrange
+    let default_line = format!("SCREW_SPEED_DEFAULT = {DEFAULT_SCREW_RPM};");
+    let max_line = format!("SCREW_SPEED_MAX = {MAX_SCREW_RPM};");
+
+    // Act
+    let has_default = SPEED_TS.contains(&default_line);
+    let has_max = SPEED_TS.contains(&max_line);
+
+    // Assert
+    assert!(has_default, "web speed file lacks `{default_line}`");
+    assert!(has_max, "web speed file lacks `{max_line}`");
+}
+
+#[test]
+fn web_view_bounds_match_the_frame() {
+    // Arrange
+    let (_, after) = VIEW_BOUNDS_TS
+        .split_once("ARCHIMEDES_SCREW_VIEW_BOUNDS = {")
+        .expect("ARCHIMEDES_SCREW_VIEW_BOUNDS in the web view bounds");
+    let (body, _) = after.split_once('}').expect("closing brace");
+
+    // Act
+    let bounds = [
+        ts_field(body, "minX"),
+        ts_field(body, "minY"),
+        ts_field(body, "maxX"),
+        ts_field(body, "maxY"),
+    ];
+
+    // Assert
+    let frame = [FRAME_MIN_X, FRAME_MIN_Y, FRAME_MAX_X, FRAME_MAX_Y];
+    assert_eq!(
+        bounds.map(f32::to_bits),
+        frame.map(f32::to_bits),
+        "{bounds:?} vs {frame:?}"
+    );
 }

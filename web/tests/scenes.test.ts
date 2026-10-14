@@ -156,6 +156,18 @@ const DIVER_FORBIDDEN_CLAIMS = [
   "real physics",
 ] as const;
 
+/** Claims the Archimedes Screw copy must not make about its flat vanes (UI-D66). */
+const SCREW_FORBIDDEN_CLAIMS = [
+  "torque",
+  "motor",
+  "rotating",
+  "rotates",
+  "3d",
+  "suction",
+  "lift force",
+  "pump",
+] as const;
+
 describe("SCENES", () => {
   it("lists the locked scenes in the approved order", () => {
     // Arrange
@@ -338,6 +350,22 @@ describe("SCENES", () => {
     // Assert
     expect(claims).toEqual([]);
     expect(description).toContain("stands in for its squeezed air bubble");
+  });
+
+  it("keeps the Archimedes Screw caption honest about its flat vanes", () => {
+    // Arrange
+    const screw = maybeSceneById("archimedes-screw");
+    const description = (screw?.description ?? "").toLowerCase();
+    const hint = (screw?.interactionHint ?? "").toLowerCase();
+
+    // Act
+    const claims = SCREW_FORBIDDEN_CLAIMS.filter(
+      (claim) => description.includes(claim) || hint.includes(claim),
+    );
+
+    // Assert
+    expect(claims).toEqual([]);
+    expect(description).toContain("flat vanes stand in for a turning helix");
   });
 });
 

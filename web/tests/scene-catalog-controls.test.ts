@@ -6,7 +6,12 @@ import {
   GRAVITY_SLIDER_MAX,
 } from "../src/catalog/gravity-slider";
 import { GAP_CONTROL } from "../src/catalog/hydraulic-fountain-gap";
-import { action } from "../src/catalog/scene-record-shared";
+import { SCREW_SPEED_CONTROL } from "../src/catalog/archimedes-screw-speed";
+import {
+  action,
+  option,
+  runtimePreset,
+} from "../src/catalog/scene-record-shared";
 import { DRUM_SPEED_CONTROL } from "../src/catalog/washing-machine-speed";
 import {
   FLOW_DIRECTION_CONTROL,
@@ -401,5 +406,25 @@ describe("scene catalog controls", () => {
     // Assert
     expect(controls).toEqual(expected);
     expect(controls[0]?.recreates).toBe(false);
+  });
+
+  it("gives Archimedes Screw live Screw speed and Direction before gravity", () => {
+    // Arrange
+    const expected = [
+      SCREW_SPEED_CONTROL,
+      runtimePreset("screw-direction", "Direction", [
+        option("forward", "Forward"),
+        option("reverse", "Reverse"),
+      ]),
+      GRAVITY_CONTROL,
+    ];
+
+    // Act
+    const controls = maybeSceneById("archimedes-screw")?.controls ?? [];
+
+    // Assert
+    expect(controls).toEqual(expected);
+    expect(controls[0]?.recreates).toBe(false);
+    expect(controls[1]?.recreates).toBe(false);
   });
 });

@@ -402,6 +402,18 @@ describe("portrait scene frames", () => {
         { x: -1.45, y: 2.8 },
         { x: 1.45, y: 2.8 },
       ],
+      // Reservoir, housings, weir lip and chute corners.
+      "archimedes-screw": [
+        { x: -5.9, y: 1.6 },
+        { x: -5.9, y: -1.8 },
+        { x: 2.45, y: 0.55 },
+        { x: -4.9117, y: -1.2305 },
+        { x: -5.1704, y: 0.2367 },
+        { x: 2.0165, y: 2.7695 },
+        { x: 1.7578, y: 4.2367 },
+        { x: 1.7, y: 2.05 },
+        { x: 2.45, y: 2.8 },
+      ],
     } as const;
 
     // Act

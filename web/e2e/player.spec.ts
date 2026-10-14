@@ -54,6 +54,7 @@ const POINTER_CONTROL: Readonly<
   "washing-machine": { gesture: "click", control: "Drum speed" },
   "tesla-valve": { gesture: "click", control: "Flow rate" },
   "cartesian-diver": { gesture: "click", control: "Squeeze" },
+  "archimedes-screw": { gesture: "click", control: "Screw speed" },
 };
 
 const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter(

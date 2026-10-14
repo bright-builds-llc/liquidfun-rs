@@ -498,6 +498,36 @@ describe("sceneControlsForSurface", () => {
     expect(slower).toBe("0");
   });
 
+  it("keeps Screw speed on the HUD and steps it by one rpm", () => {
+    // Arrange
+    const maybeScene = maybeSceneById("archimedes-screw");
+    expect(maybeScene).toBeDefined();
+    if (maybeScene === undefined) {
+      return;
+    }
+    const maybeScrew = maybeScene.controls.find(
+      (control) => control.id === "screw-speed",
+    );
+    expect(maybeScrew?.kind).toBe("range");
+    if (maybeScrew === undefined || maybeScrew.kind !== "range") {
+      return;
+    }
+
+    // Act
+    const hud = sceneControlsForSurface(maybeScene.controls, "hud");
+    const panel = sceneControlsForSurface(maybeScene.controls, "panel");
+    const faster = maybeStepRangeValue(maybeScrew, "30", 1);
+    const slower = maybeStepRangeValue(maybeScrew, "0", -1);
+
+    // Assert
+    expect(hud.map((control) => control.id)).toEqual(["screw-speed"]);
+    const panelIds = panel.map((control) => control.id);
+    expect(panelIds).toEqual(["screw-direction", "gravity"]);
+    expect(maybeScrew.widget).toBe("spinner");
+    expect(faster).toBe("31");
+    expect(slower).toBe("0");
+  });
+
   it("keeps Tesla Valve flow controls on the HUD", () => {
     // Arrange
     const maybeScene = maybeSceneById("tesla-valve");
