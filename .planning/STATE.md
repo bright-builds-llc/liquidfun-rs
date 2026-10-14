@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Completed 45-09-PLAN.md
-last_updated: "2026-10-14T16:56:10.596Z"
+stopped_at: Completed 45-10-PLAN.md
+last_updated: "2026-10-14T17:07:50.010Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -208,6 +208,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 45]: 45-07: D-18 not fired (re-created WALL grains 0 m/s, no path error), crates/liquidfun unchanged; flip at 564 particles: batched ~2 ms (36.5 ms for 152 rigid clumps), per-particle ~0.13 ms, member order = source order (A1 holds)
 - [Phase 45]: 45-09: docs/adding-a-scene.md is the per-scene checklist (R1-R12, W1-W6, S1-S3, T1-T6, E1-E5; each row compile/test/convention/optional) with every gate and the own-commit baseline growth procedure; AGENTS.md Repo-Local Guidance points to it (437a130da, 60007dc8d)
 - [Phase 45]: 45-09: per-scene ms/step uses cargo xtask playground scene-spot --scene <id> (the just recipe takes no args); PREP-02 left unticked for Plan 10
+- [Phase 45]: 45-10: final tree (HEAD 75b4b4303) passes the id-join gate with 25/25 protected fingerprints unchanged and all 25 local gates; no fix commits needed
+- [Phase 45]: 45-10: the final gate's build-app step uses just web-build (VITE_BUILT_AT provenance for shell e2e)
 
 ### Pending Todos
 
@@ -341,9 +343,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 45 P06 | 11min | 2 tasks | 1 files |
 | Phase 45 P07 | 12min | 2 tasks | 1 files |
 | Phase 45 P09 | 3min | 2 tasks | 2 files |
+| Phase 45 P10 | 11min | 2 tasks | 0 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T16:56:10.593Z
-Stopped at: Completed 45-09-PLAN.md
+Last session: 2026-10-14T17:07:50.007Z
+Stopped at: Completed 45-10-PLAN.md
 Resume file: None
