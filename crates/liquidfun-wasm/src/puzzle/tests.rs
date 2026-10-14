@@ -1,5 +1,5 @@
 use super::{LEVEL_IDS, parse_level_id};
-use crate::scene::parse_scene_id;
+use crate::scene::{ALL_SCENE_IDS, parse_scene_id};
 use crate::session::SessionError;
 
 const CATALOG_SCENES_TS: &str = include_str!("../../../../web/src/catalog/scenes.ts");
@@ -74,7 +74,7 @@ fn no_scene_id_parses_as_a_level_id() {
         .collect();
 
     // Assert
-    assert_eq!(scene_ids.len(), 25);
+    assert_eq!(scene_ids.len(), ALL_SCENE_IDS.len());
     assert!(crossovers.is_empty(), "unexpected ids: {crossovers:?}");
 }
 

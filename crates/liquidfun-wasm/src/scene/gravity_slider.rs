@@ -90,7 +90,7 @@ mod tests {
         FORMER_HIGH_GRAVITY_MAGNITUDE, MAX_GRAVITY_MAGNITUDE, MIN_GRAVITY_MAGNITUDE,
         parse_gravity_magnitude,
     };
-    use crate::scene::{SceneId, build_scene};
+    use crate::scene::{ALL_SCENE_IDS, SceneId, build_scene};
 
     #[test]
     fn parse_accepts_whole_magnitudes_from_two_through_the_cap() {
@@ -116,11 +116,10 @@ mod tests {
     #[test]
     fn every_scene_builds_downward_gravity_from_the_slider() {
         // Arrange
-        let ids = all_scene_ids();
+        let mut seen = [false; ALL_SCENE_IDS.len()];
 
         // Act / Assert
-        let mut seen = [false; 25];
-        for id in ids {
+        for &id in ALL_SCENE_IDS {
             seen[variant_index(id)] = true;
             let low = build_scene(id, &[("gravity".to_owned(), "2".to_owned())])
                 .unwrap_or_else(|_| panic!("{id:?} should accept gravity 2"));
@@ -142,7 +141,8 @@ mod tests {
             assert!(rejected.is_err(), "{id:?} must reject gravity 1");
         }
         assert_eq!(
-            seen, [true; 25],
+            seen,
+            [true; ALL_SCENE_IDS.len()],
             "every SceneId variant must be built with the gravity slider"
         );
     }
@@ -186,35 +186,5 @@ mod tests {
             SceneId::WashingMachine => 23,
             SceneId::TeslaValve => 24,
         }
-    }
-
-    fn all_scene_ids() -> [SceneId; 25] {
-        [
-            SceneId::DamBreak,
-            SceneId::Fountain,
-            SceneId::FloatOrSink,
-            SceneId::ColorMixer,
-            SceneId::JellyDrop,
-            SceneId::WaterWheel,
-            SceneId::Particles,
-            SceneId::LiquidTimer,
-            SceneId::SurfaceTension,
-            SceneId::ElasticParticles,
-            SceneId::RigidParticles,
-            SceneId::Soup,
-            SceneId::SoupStirrer,
-            SceneId::Impulse,
-            SceneId::WaveMachine,
-            SceneId::TheoJansen,
-            SceneId::LiquidTumbler,
-            SceneId::DrawingParticles,
-            SceneId::Sparky,
-            SceneId::HydraulicFountain,
-            SceneId::WaveTank,
-            SceneId::LiquidBubbler,
-            SceneId::StackedDrip,
-            SceneId::WashingMachine,
-            SceneId::TeslaValve,
-        ]
     }
 }
