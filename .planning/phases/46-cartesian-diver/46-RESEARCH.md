@@ -399,14 +399,16 @@ fn squeezed_diver_sinks_to_the_bottom_third_at_gravity_ten() {
 | A5 | D-04 "6 particle diameters" interpretation (radius vs diameter) | Geometry budget | Visual size only; both readings fit the budget at r = 0.05 |
 | A6 | The Tailwind/Vite build keeps `-webkit-touch-callout` in the bundled CSS | Pitfall 5 | If stripped, the e2e stylesheet-text check catches it |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does g = 80 need an R6 `particle_iterations` arm?**
    - Known: the stiffness formula and three scene-local levers (radius, pressure strength, squeezed density).
    - Unclear: whether those three are enough without the substep cost.
    - Recommendation: the first plan runs a release-mode sweep test at g = 80 (it may be an `#[ignore]` spike removed after, Phase 40-08/45 style). Add R6 only if needed, and record ms/step.
+   - RESOLVED: conditional R6 lever in 46-01 Task 2. The release-mode g = 80 tuning sweep tries particle radius, pressure strength and squeezed density first; the `SceneId::CartesianDiver => cartesian_diver::PARTICLE_ITERATIONS` arm (value 3) is added only if those three fail (D-13), and 46-01-SUMMARY records ms/step.
 2. **Exact e2e assertion for the callout (D-14 wording vs Chromium reality)**
    - Recommendation: computed `user-select`/`touch-action` + `contextmenu.defaultPrevented` in e2e, plus a built-CSS text check for `-webkit-touch-callout:none`. Note the deviation in the plan.
+   - RESOLVED: computed-style e2e + CSS source-text test per UI-D64 (46-03). `web/e2e/canvas-callout.spec.ts` asserts computed `user-select: none`, `touch-action: none` and a default-prevented cancelable `contextmenu` at 390x844; `web/tests/canvas-callout.test.ts` checks the CSS source for `-webkit-touch-callout: none`, which Chromium drops from computed style.
 
 ## Environment Availability
 

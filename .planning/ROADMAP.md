@@ -149,7 +149,14 @@ Plans:
 1. The scene meets every shared scene rule: catalog record with credits, preview, phone-filling portrait frame, README animated preview driven by the Squeeze toggle, scale legend, gravity slider and HUD safe frame, at most about 3,000 particles, and a caption saying that switching the diver's density stands in for the squeezed air bubble.
 1. The id-join gate reports every protected fingerprint unchanged with the new diver id present, and the phase records the diver's particle count and ms/step.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 46-01-PLAN.md — Rust bridge scene, hooks, draw-only dent and bubble, release sink/rise tuning at gravity 2/10/80
+- [ ] 46-02-PLAN.md — Catalog registration (Rust + web), record, preview, portrait frame, README/survey/demo plans, tests and e2e wiring
+- [ ] 46-03-PLAN.md — Shared long-press callout suppression on the scene canvas with phone-viewport e2e
+- [ ] 46-04-PLAN.md — README preview generation and review, full gates, scene-spot numbers, 25/25 fingerprint gate
+- [ ] 46-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 26/26 unchanged
 **UI hint**: yes
 
 ### Phase 47: Archimedes Screw
