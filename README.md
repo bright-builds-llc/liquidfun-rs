@@ -197,6 +197,12 @@ change.
 
 [Animated SVG](docs/assets/readme/cartesian-diver-10s.svg)
 
+#### [Archimedes Screw](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/archimedes-screw)
+
+[![Archimedes Screw simulation preview](docs/assets/readme/archimedes-screw-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/archimedes-screw)
+
+[Animated SVG](docs/assets/readme/archimedes-screw-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
