@@ -29,8 +29,8 @@ Research: `.planning/research/v1.6-curiosity-scenes/SUMMARY.md`.
 
 ### Archimedes screw
 
-- [ ] **SCREW-01**: Player sees moving slanted vanes in a tilted trough carry separate pockets of water from a low reservoir up to a higher basin, with the water returning so the scene keeps running.
-- [ ] **SCREW-02**: Player can change the screw's speed live and run it in reverse so it carries water back down.
+- [x] **SCREW-01**: Player sees moving slanted vanes in a tilted trough carry separate pockets of water from a low reservoir up to a higher basin, with the water returning so the scene keeps running.
+- [x] **SCREW-02**: Player can change the screw's speed live and run it in reverse so it carries water back down.
 
 ### Fake ferrofluid
 
@@ -94,8 +94,8 @@ SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns af
 | DIVER-01 | Phase 46 | Complete |
 | DIVER-02 | Phase 46 | Complete |
 | DIVER-03 | Phase 46 | Complete |
-| SCREW-01 | Phase 47 | Pending |
-| SCREW-02 | Phase 47 | Pending |
+| SCREW-01 | Phase 47 | Complete |
+| SCREW-02 | Phase 47 | Complete |
 | FERRO-01 | Phase 48 | Pending |
 | FERRO-02 | Phase 48 | Pending |
 | FERRO-03 | Phase 48 | Pending |
