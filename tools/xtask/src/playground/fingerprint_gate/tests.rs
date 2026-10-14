@@ -1,7 +1,7 @@
 use super::{
     ChangedScene, GateReport, PlaygroundError, SceneFingerprint, compare_fingerprints,
-    ensure_same_capture_parameters, parse_baseline, parse_observed, provenance_warnings,
-    render_report,
+    ensure_same_capture_parameters, gate_failure, parse_baseline, parse_observed,
+    provenance_warnings, render_report,
 };
 
 const FP_A: &str = "0123456789abcdef";
@@ -389,5 +389,46 @@ fn missing_observed_warmup_steps_is_a_hard_error() {
             "gate",
             "observed warmup_steps missing differs from baseline warmup_steps 60; recapture with the baseline step counts before comparing fingerprints"
         ))
+    );
+}
+
+#[test]
+fn filtered_capture_with_missing_ids_names_the_filter() {
+    // Arrange
+    let report = compare_fingerprints(&[scene("a", FP_A), scene("b", FP_B)], &[scene("a", FP_A)])
+        .expect("valid inputs compare");
+    let mut observed = observed_json(&[("a", FP_A)]);
+    observed["full_catalog"] = serde_json::json!(false);
+
+    // Act
+    let error = gate_failure(&report, &observed);
+
+    // Assert
+    assert_eq!(
+        error,
+        PlaygroundError::new(
+            "gate",
+            "scene fingerprint gate failed: 0 changed, 1 missing; the observed capture is filtered (full_catalog false), so rerun `cargo xtask playground scene-spot` without --scene"
+        )
+    );
+}
+
+#[test]
+fn full_catalog_capture_with_missing_ids_has_no_filter_hint() {
+    // Arrange
+    let report = compare_fingerprints(&[scene("a", FP_A), scene("b", FP_B)], &[scene("a", FP_A)])
+        .expect("valid inputs compare");
+    let observed = observed_json(&[("a", FP_A)]);
+
+    // Act
+    let error = gate_failure(&report, &observed);
+
+    // Assert
+    assert_eq!(
+        error,
+        PlaygroundError::new(
+            "gate",
+            "scene fingerprint gate failed: 0 changed, 1 missing"
+        )
     );
 }

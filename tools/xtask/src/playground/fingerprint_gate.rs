@@ -79,11 +79,26 @@ pub(super) fn run(args: &[String]) -> Result<(), PlaygroundError> {
     if report.passes() {
         return Ok(());
     }
-    Err(gate_error(format!(
+    Err(gate_failure(&report, &observed_json))
+}
+
+/// The error for a failing report, with a rerun hint when a filtered capture explains missing ids.
+pub(super) fn gate_failure(report: &GateReport, observed: &serde_json::Value) -> PlaygroundError {
+    let summary = format!(
         "scene fingerprint gate failed: {} changed, {} missing",
         report.changed.len(),
         report.missing.len()
-    )))
+    );
+    let filtered = observed
+        .get("full_catalog")
+        .and_then(serde_json::Value::as_bool)
+        == Some(false);
+    if !filtered || report.missing.is_empty() {
+        return gate_error(summary);
+    }
+    gate_error(format!(
+        "{summary}; the observed capture is filtered (full_catalog false), so rerun `cargo xtask playground scene-spot` without --scene"
+    ))
 }
 
 /// Warnings for observed host or toolchain fields that differ from the baseline provenance.
