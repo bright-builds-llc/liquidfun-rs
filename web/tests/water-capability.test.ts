@@ -27,24 +27,6 @@ function probeFixture(options: GlFixtureOptions = {}) {
   return { ...fixture, loseContext, createCanvas: () => fixture.canvas };
 }
 
-/** Reports any framebuffer whose last attachment is COLOR_ATTACHMENT1 as incomplete. */
-function twoAttachmentIncompleteFixture() {
-  const holder: { gl?: WebGL2RenderingContext } = {};
-  const fixture = probeFixture({
-    maybeFramebufferStatus: () => {
-      const gl = holder.gl;
-      if (gl === undefined) throw new Error("fixture not ready");
-      const calls = vi.mocked(gl.framebufferTexture2D).mock.calls;
-      const lastAttachment = calls.at(-1)?.[1];
-      return lastAttachment === gl.COLOR_ATTACHMENT1
-        ? 0
-        : gl.FRAMEBUFFER_COMPLETE;
-    },
-  });
-  holder.gl = fixture.gl;
-  return fixture;
-}
-
 beforeEach(() => {
   resetWaterSupportCacheForTests();
 });
@@ -136,7 +118,7 @@ describe("probeWaterSupport", () => {
 
   it("reports no support when the 2-attachment framebuffer is incomplete", () => {
     // Arrange
-    const fixture = twoAttachmentIncompleteFixture();
+    const fixture = probeFixture({ maybeIncompleteMrt: true });
 
     // Act
     const supported = probeWaterSupport(fixture.createCanvas);

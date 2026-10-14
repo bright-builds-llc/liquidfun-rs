@@ -24,12 +24,15 @@ export type GlFixtureOptions = {
   readonly maybeFramebufferStatus?: () => number;
   readonly maybeMaxDrawBuffers?: number;
   readonly maybeHighpPrecision?: number;
+  /** Reports a framebuffer whose last attachment is COLOR_ATTACHMENT1 incomplete. */
+  readonly maybeIncompleteMrt?: boolean;
 };
 
 export function glFixture(options: GlFixtureOptions = {}) {
   let nextId = 0,
     lost = false;
   let bound: object | undefined;
+  let lastAttachment: number | undefined;
   const uploads: { buffer: object | undefined; values: number[] }[] = [];
   const constants = Object.fromEntries(
     [
@@ -94,8 +97,16 @@ export function glFixture(options: GlFixtureOptions = {}) {
     }),
     getAttribLocation: vi.fn(() => 0),
     getUniformLocation: vi.fn((_program, name) => ({ name })),
+    framebufferTexture2D: vi.fn((_target, attachment: number) => {
+      lastAttachment = attachment;
+    }),
     checkFramebufferStatus: vi.fn(
-      options.maybeFramebufferStatus ?? (() => constants.FRAMEBUFFER_COMPLETE),
+      options.maybeFramebufferStatus ??
+        (() =>
+          options.maybeIncompleteMrt === true &&
+          lastAttachment === constants.COLOR_ATTACHMENT1
+            ? 0
+            : constants.FRAMEBUFFER_COMPLETE),
     ),
     getParameter: vi.fn((name: number) => {
       if (name === constants.MAX_DRAW_BUFFERS)

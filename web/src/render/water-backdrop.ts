@@ -28,7 +28,7 @@ export type BackdropCanvas = {
 };
 
 /** A walls-only raster that changes only when the static state settles. */
-export type WaterBackdrop = {
+export type WaterBackdrop<C extends BackdropCanvas = BackdropCanvas> = {
   /** Compares the frame with the last one and rasterizes once it is stable. */
   update(frame: RenderFrame, camera: Camera, size: FieldSize): void;
   /** Increments on every raster, so the GL texture uploads only on change. */
@@ -36,7 +36,7 @@ export type WaterBackdrop = {
   /** True when the raster shows exactly the current frame's walls and view. */
   readonly matchesView: boolean;
   /** The raster canvas, once one has been drawn. */
-  readonly maybeRaster: BackdropCanvas | undefined;
+  readonly maybeRaster: C | undefined;
   /** Forgets every key so the next stable frame rasterizes again. */
   reset(): void;
 };
@@ -124,10 +124,10 @@ function paintWalls(
  * frame; a factory returning undefined (no DOM) leaves the procedural
  * backdrop in place without an error.
  */
-export function createWaterBackdrop(
-  createCanvas: () => BackdropCanvas | undefined,
-): WaterBackdrop {
-  let maybeCanvas: BackdropCanvas | undefined;
+export function createWaterBackdrop<C extends BackdropCanvas>(
+  createCanvas: () => C | undefined,
+): WaterBackdrop<C> {
+  let maybeCanvas: C | undefined;
   let maybeContext: CanvasRenderingContext2D | undefined;
   let canvasUnavailable = false;
   let maybePrevious: FrameKey | undefined;
