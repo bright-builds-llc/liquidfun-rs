@@ -133,7 +133,7 @@ Plans:
 - [x] 45-06-PLAN.md — Siphon feasibility spike with a go, reshape or drop decision (PREP-03)
 - [x] 45-07-PLAN.md — Hourglass feasibility spike, flip cost and decision by the pre-recorded rule (PREP-03)
 - [ ] 45-08-PLAN.md — Owner checkpoint for both spike decisions, then seed and roadmap bookkeeping (PREP-03)
-- [ ] 45-09-PLAN.md — Per-scene checklist docs/adding-a-scene.md and AGENTS.md pointer (PREP-01, PREP-02)
+- [x] 45-09-PLAN.md — Per-scene checklist docs/adding-a-scene.md and AGENTS.md pointer (PREP-01, PREP-02)
 - [ ] 45-10-PLAN.md — Final gate: 25/25 fingerprints and normal local checks (PREP-01..03)
 
 ### Phase 46: Cartesian Diver
@@ -262,7 +262,7 @@ Plans:
 | 42. Opt-in Sound | v1.5 | 5/5 | Complete    | 2026-10-13 |
 | 43. GPU Water Render Mode | v1.5 | 6/6 | Complete    | 2026-10-14 |
 | 44. v1.5 Polish and Test Gaps | v1.5 | 3/3 | Complete    | 2026-10-14 |
-| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 7/10 | In Progress|  |
+| 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 8/10 | In Progress|  |
 | 46. Cartesian Diver | v1.6 | 0/TBD | Not started | - |
 | 47. Archimedes Screw | v1.6 | 0/TBD | Not started | - |
 | 48. Fake Ferrofluid | v1.6 | 0/TBD | Not started | - |

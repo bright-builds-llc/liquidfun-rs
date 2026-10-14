@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: milestone
 status: executing
-stopped_at: Completed 45-07-PLAN.md
-last_updated: "2026-10-14T16:52:27.091Z"
+stopped_at: Completed 45-09-PLAN.md
+last_updated: "2026-10-14T16:56:10.596Z"
 last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 10
-  completed_plans: 7
-  percent: 70
+  completed_plans: 8
+  percent: 80
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 45 (Curiosity Groundwork and Feasibility Spikes) — EXECUTING
-Plan: 8 of 10
+Plan: 9 of 10
 Status: Ready to execute
 Last activity: 2026-10-14
 
@@ -206,6 +206,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 45]: 45-06: rules fixed before commit A: surface = median of 0.2 m bin tops (p95 reads 0.95H), t* floor 2 s (priming drain), mouth gaps interior; Plan 08 shows the drop to the owner, no REQUIREMENTS/ROADMAP/seed edits in 45-06
 - [Phase 45]: 45-07: hourglass spike decision by pre-recorded D-27: drop (owner confirmation pending, Plan 08); 9/9 configs FAIL edge-relative rule (25-30 s medians 0.24-3.85 deg, water margin < 3.1 deg vs 15); literal D-25 reads plain water 25.9 deg (confinement artifact); spike code 09ab08395, removed effc9c98f
 - [Phase 45]: 45-07: D-18 not fired (re-created WALL grains 0 m/s, no path error), crates/liquidfun unchanged; flip at 564 particles: batched ~2 ms (36.5 ms for 152 rigid clumps), per-particle ~0.13 ms, member order = source order (A1 holds)
+- [Phase 45]: 45-09: docs/adding-a-scene.md is the per-scene checklist (R1-R12, W1-W6, S1-S3, T1-T6, E1-E5; each row compile/test/convention/optional) with every gate and the own-commit baseline growth procedure; AGENTS.md Repo-Local Guidance points to it (437a130da, 60007dc8d)
+- [Phase 45]: 45-09: per-scene ms/step uses cargo xtask playground scene-spot --scene <id> (the just recipe takes no args); PREP-02 left unticked for Plan 10
 
 ### Pending Todos
 
@@ -338,9 +340,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 45 P05 | 5min | 2 tasks | 10 files |
 | Phase 45 P06 | 11min | 2 tasks | 1 files |
 | Phase 45 P07 | 12min | 2 tasks | 1 files |
+| Phase 45 P09 | 3min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T16:52:27.088Z
-Stopped at: Completed 45-07-PLAN.md
+Last session: 2026-10-14T16:56:10.593Z
+Stopped at: Completed 45-09-PLAN.md
 Resume file: None
