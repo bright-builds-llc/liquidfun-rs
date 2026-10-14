@@ -152,6 +152,7 @@ async function beginScene(session: SceneRuntime, id: SceneId): Promise<void> {
             started,
             undefined,
             maybeInitialization.signal,
+            wantsSpeeds,
           );
     if (isStaleGeneration(started, session.generation)) {
       ownedSession.dispose();

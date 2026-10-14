@@ -30,11 +30,17 @@ type Pending = {
 export const MAX_PENDING_WORKER_REQUESTS = 64;
 const DISPOSED = "Rust/WASM live worker session is disposed";
 
-/** Creates one terminal, FIFO owner; no live WASM memory crosses the worker boundary. */
+/**
+ * Creates one terminal, FIFO owner; no live WASM memory crosses the worker boundary.
+ *
+ * `maybeWantsParticleSpeeds` is read for every frame request, so a render-mode
+ * change adds or removes the speed lane on the very next frame (D-11).
+ */
 export async function createWorkerSession(
   generation: number,
   maybeFactory?: () => WorkerPort,
   maybeAbortSignal?: AbortSignal,
+  maybeWantsParticleSpeeds?: () => boolean,
 ): Promise<LiveSceneSession> {
   if (maybeAbortSignal?.aborted) throw new Error(DISPOSED);
   const worker =
@@ -212,6 +218,10 @@ export async function createWorkerSession(
     maybeTerminationTimer = setTimeout(terminate, 1000);
   }
 
+  function speeds(): boolean {
+    return maybeWantsParticleSpeeds?.() ?? false;
+  }
+
   async function frame(operation: WorkerOperation): Promise<WorkerAdvance> {
     const reply = await send(operation);
     if (reply.kind !== "frame" || maybeLastTiming === undefined)
@@ -228,12 +238,15 @@ export async function createWorkerSession(
       return maybeLastTiming;
     },
     nextFrame: async (count = 1) =>
-      (await frame({ op: "advance", count, budgeted: false })).frame,
-    advanceBudgeted: (count) => frame({ op: "advance", count, budgeted: true }),
+      (await frame({ op: "advance", count, budgeted: false, speeds: speeds() }))
+        .frame,
+    advanceBudgeted: (count) =>
+      frame({ op: "advance", count, budgeted: true, speeds: speeds() }),
     advanceOnly: async (count) => {
       await send({ op: "advance-only", count });
     },
-    captureFrame: async () => (await frame({ op: "capture" })).frame,
+    captureFrame: async () =>
+      (await frame({ op: "capture", speeds: speeds() })).frame,
     applyControl: async (name, value) => {
       const reply = await send({ op: "control", name, value });
       if (reply.kind !== "result" || typeof reply.value !== "boolean")

@@ -50,9 +50,9 @@ const frame = () => ({
   circleLabels: [],
 });
 
-async function open() {
+async function open(maybeWantsParticleSpeeds?: () => boolean) {
   const worker = new FakeWorker();
-  const pending = createWorkerSession(1, () => worker);
+  const pending = createWorkerSession(1, () => worker, undefined, maybeWantsParticleSpeeds);
   worker.reply(0, { kind: "ready" });
   return { worker, session: await pending };
 }
@@ -202,5 +202,97 @@ describe("FIFO live worker session ownership", () => {
     // Assert
     expect(await result).toBeInstanceOf(Error);
     expect(worker.terminated).toBe(1);
+  });
+});
+
+/** The speed flag of a sent frame request; undefined for any other op. */
+function sentSpeeds(worker: FakeWorker, index: number): boolean | undefined {
+  const request = worker.sent[index];
+  if (request?.op === "advance" || request?.op === "capture") return request.speeds;
+  return undefined;
+}
+
+/** Replies to a frame request; a capture (ran 0) must not report steps. */
+function replyFrame(worker: FakeWorker, index: number, ran = 1): void {
+  worker.reply(index, {
+    kind: "frame",
+    frame: frame(),
+    ran,
+    timing: { advanceMs: 1, captureMs: 0.1, parseMs: 0.1 },
+  });
+}
+
+describe("live worker speed lane requests", () => {
+  it("sends speeds false on every frame request without an accessor", async () => {
+    // Arrange
+    const { worker, session } = await open();
+
+    // Act
+    const advanced = session.nextFrame(1);
+    const budgeted = session.advanceBudgeted(2);
+    const captured = session.captureFrame();
+    replyFrame(worker, 1);
+    await advanced;
+    replyFrame(worker, 2);
+    await budgeted;
+    replyFrame(worker, 3, 0);
+    await captured;
+
+    // Assert
+    expect([1, 2, 3].map((index) => sentSpeeds(worker, index))).toEqual([false, false, false]);
+  });
+
+  it("nextFrame sends the accessor value read at call time", async () => {
+    // Arrange
+    let wantsSpeeds = true;
+    const { worker, session } = await open(() => wantsSpeeds);
+
+    // Act
+    const first = session.nextFrame(1);
+    wantsSpeeds = false;
+    const second = session.nextFrame(1);
+    replyFrame(worker, 1);
+    await first;
+    replyFrame(worker, 2);
+    await second;
+
+    // Assert
+    expect([sentSpeeds(worker, 1), sentSpeeds(worker, 2)]).toEqual([true, false]);
+  });
+
+  it("advanceBudgeted sends the accessor value read at call time", async () => {
+    // Arrange
+    let wantsSpeeds = false;
+    const { worker, session } = await open(() => wantsSpeeds);
+
+    // Act
+    const first = session.advanceBudgeted(4);
+    wantsSpeeds = true;
+    const second = session.advanceBudgeted(4);
+    replyFrame(worker, 1);
+    await first;
+    replyFrame(worker, 2);
+    await second;
+
+    // Assert
+    expect([sentSpeeds(worker, 1), sentSpeeds(worker, 2)]).toEqual([false, true]);
+  });
+
+  it("captureFrame sends the accessor value read at call time", async () => {
+    // Arrange
+    let wantsSpeeds = true;
+    const { worker, session } = await open(() => wantsSpeeds);
+
+    // Act
+    const first = session.captureFrame();
+    wantsSpeeds = false;
+    const second = session.captureFrame();
+    replyFrame(worker, 1, 0);
+    await first;
+    replyFrame(worker, 2, 0);
+    await second;
+
+    // Assert
+    expect([sentSpeeds(worker, 1), sentSpeeds(worker, 2)]).toEqual([true, false]);
   });
 });

@@ -12,9 +12,15 @@ export type WorkerOperation =
       readonly op: "advance";
       readonly count: number;
       readonly budgeted: boolean;
+      /** Attach the per-particle speed lane to the reply frame (D-10, D-11). */
+      readonly speeds: boolean;
     }
   | { readonly op: "advance-only"; readonly count: number }
-  | { readonly op: "capture" }
+  | {
+      readonly op: "capture";
+      /** Attach the per-particle speed lane to the reply frame (D-10, D-11). */
+      readonly speeds: boolean;
+    }
   | { readonly op: "control"; readonly name: string; readonly value: string }
   | { readonly op: "action"; readonly name: string }
   | {
@@ -85,6 +91,11 @@ function text(value: unknown): string {
   return value;
 }
 
+function speedFlag(value: unknown): boolean {
+  if (typeof value !== "boolean") throw new Error("Invalid speed lane flag");
+  return value;
+}
+
 function envelope(value: Record<string, unknown>): WorkerEnvelope {
   if (value.version !== 1) throw new Error("Unsupported live worker protocol");
   return {
@@ -100,10 +111,11 @@ export function parseWorkerRequest(value: unknown): WorkerRequest {
     header = envelope(message);
   switch (message.op) {
     case "init":
-    case "capture":
     case "restore-gravity":
     case "dispose":
       return { ...header, op: message.op };
+    case "capture":
+      return { ...header, op: message.op, speeds: speedFlag(message.speeds) };
     case "advance-only":
       return {
         ...header,
@@ -118,6 +130,7 @@ export function parseWorkerRequest(value: unknown): WorkerRequest {
         op: message.op,
         count: safeInteger(message.count, 4),
         budgeted: message.budgeted,
+        speeds: speedFlag(message.speeds),
       };
     case "control":
       return {
@@ -168,6 +181,7 @@ export function validateTransferredFrame(value: unknown): RenderFrame {
     rigidSegments: () => frame.rigidSegments as Float32Array,
     rigidCircles: () => frame.rigidCircles as Float32Array,
     circleLabels: () => frame.circleLabels as readonly string[],
+    particleSpeeds: () => frame.maybeParticleSpeeds as Float32Array | undefined,
     free: () => undefined,
   });
   frameTransferables(parsed);
@@ -230,13 +244,14 @@ export function parseWorkerReply(value: unknown): WorkerReply {
 
 /** Live WASM memory is never transferable; every lane must have its own ordinary buffer. */
 export function frameTransferables(frame: RenderFrame): ArrayBuffer[] {
-  const lanes = [
+  const lanes: ArrayBufferView[] = [
     frame.particlePositions,
     frame.particleColors,
     frame.particleRadii,
     frame.rigidSegments,
     frame.rigidCircles,
   ];
+  if (frame.maybeParticleSpeeds !== undefined) lanes.push(frame.maybeParticleSpeeds);
   if (
     lanes.some(
       (lane) =>

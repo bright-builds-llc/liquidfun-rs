@@ -36,8 +36,12 @@ function sendFrame(
 ): void {
   const session = maybeSession;
   if (session === undefined) throw new Error("Worker session is unavailable");
+  const speeds =
+    request.op === "advance" || request.op === "capture"
+      ? request.speeds
+      : false;
   const began = performance.now(),
-    raw = session.captureFrame(),
+    raw = session.captureFrame(speeds),
     captured = performance.now();
   let frame;
   try {
