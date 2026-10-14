@@ -66,6 +66,30 @@ pub(super) const BOTTOM_THIRD_Y: f32 = INTERIOR_HEIGHT / 3.0;
 #[cfg(test)]
 pub(super) const TOP_THIRD_Y: f32 = INTERIOR_HEIGHT * 2.0 / 3.0;
 
+/// Percent of particles at or below the measured water surface; a high
+/// percentile ignores the few particles splashing above the column.
+#[cfg(test)]
+pub(super) const WATER_SURFACE_PERCENTILE: usize = 95;
+
+/// Settled water surface: the `WATER_SURFACE_PERCENTILE` particle height,
+/// or `None` when there are no particles (D-07a).
+#[cfg(test)]
+pub(super) fn water_surface_y(particle_heights: &[f32]) -> Option<f32> {
+    let mut heights = particle_heights.to_vec();
+    heights.sort_by(f32::total_cmp);
+    let last = heights.len().checked_sub(1)?;
+    heights.get(last * WATER_SURFACE_PERCENTILE / 100).copied()
+}
+
+/// Lower edge of the top third of a water column standing on the floor (y = 0).
+///
+/// At gravity 80 the particle column settles well below the cap, so the
+/// released diver's rise is judged against the water it floats in (D-07a).
+#[cfg(test)]
+pub(super) fn column_top_third_y(surface_y: f32) -> f32 {
+    surface_y * 2.0 / 3.0
+}
+
 /// Bubble radius as a fraction of the diver radius when released.
 const BUBBLE_RELEASED_FRACTION: f32 = 0.6;
 /// How much of the diver radius the bubble loses at full squeeze.

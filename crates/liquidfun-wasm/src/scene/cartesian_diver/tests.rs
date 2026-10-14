@@ -521,3 +521,32 @@ fn thirds_split_the_interior_height() {
     assert!((TOP_THIRD_Y - INTERIOR_HEIGHT * 2.0 / 3.0).abs() < 1e-6);
     const { assert!(DIVER_START.y >= TOP_THIRD_Y) };
 }
+
+#[test]
+fn water_surface_ignores_the_highest_splashes() {
+    // Arrange
+    let mut heights: Vec<f32> = (0_u8..100).map(|index| f32::from(index) * 0.01).collect();
+    heights.reverse();
+    heights.push(9.0);
+
+    // Act
+    let maybe_surface = geometry::water_surface_y(&heights);
+
+    // Assert
+    assert_eq!(maybe_surface, Some(0.95));
+}
+
+#[test]
+fn water_surface_is_none_without_particles() {
+    // Arrange / Act / Assert
+    assert_eq!(geometry::water_surface_y(&[]), None);
+}
+
+#[test]
+fn column_top_third_starts_two_thirds_up_from_the_floor() {
+    // Arrange / Act
+    let threshold = geometry::column_top_third_y(3.0);
+
+    // Assert
+    assert!((threshold - 2.0).abs() < 1e-6, "threshold {threshold}");
+}

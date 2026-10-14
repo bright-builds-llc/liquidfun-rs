@@ -27,14 +27,17 @@ use crate::session::SessionError;
 const SQUEEZE_ACTION: &str = "squeeze";
 /// Fixed steps for a full squeeze or release ramp: 0.25 s at 60 Hz (D-06).
 const RAMP_STEPS: u8 = 15;
-/// Stiffer than the default water so the squeezed diver reaches the floor at high gravity.
-const PRESSURE_STRENGTH: f32 = 0.2;
+/// Stiffer than the default water so the column stands as tall as it can at high gravity.
+const PRESSURE_STRENGTH: f32 = 0.25;
+/// Softer than the default particle damping so the water parts around the
+/// diver and a low-gravity rise does not stall (D-07a, tuning candidate P6).
+const PARTICLE_DAMPING: f32 = 0.2;
 /// Diver density while released: clearly lighter than the water (D-05).
-const RELEASED_DENSITY: f32 = 0.5;
+const RELEASED_DENSITY: f32 = 0.3;
 /// Diver density while squeezed: clearly heavier than the compressed water (D-05).
-const SQUEEZED_DENSITY: f32 = 5.0;
+const SQUEEZED_DENSITY: f32 = 8.0;
 /// Calms the sink and rise without slowing low gravity too much (D-06).
-const DIVER_LINEAR_DAMPING: f32 = 1.0;
+const DIVER_LINEAR_DAMPING: f32 = 0.5;
 /// Diver contact friction against the walls and particles.
 const DIVER_FRICTION: f32 = 0.2;
 /// Water particle density.
@@ -115,6 +118,8 @@ fn create_water(world: &mut World) -> Result<ParticleSystemId, SceneError> {
         .with_density(WATER_DENSITY)
         .map_err(|_error| SceneError::ParticleSystem)?
         .with_pressure_strength(PRESSURE_STRENGTH)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_damping(PARTICLE_DAMPING)
         .map_err(|_error| SceneError::ParticleSystem)?
         .with_maximum_count(MAXIMUM_PARTICLE_COUNT)
         .map_err(|_error| SceneError::ParticleSystem)?;
@@ -245,5 +250,7 @@ impl SceneHooks for CartesianDiverHooks {
     }
 }
 
+#[cfg(test)]
+mod motion_tests;
 #[cfg(test)]
 mod tests;
