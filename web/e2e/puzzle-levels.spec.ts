@@ -288,6 +288,7 @@ for (const { viewport, trayWidth } of PORTRAIT_TRAY_CASES) {
     expect(twoKindLevels).toBeGreaterThan(0);
 
     // Assert (grand-finale is the last level loaded)
+    expect(PUZZLE_IDS.at(-1)).toBe("grand-finale");
     await expectGrandFinaleTrayNames(page);
     await expect(page.locator(".puzzle-tray-name")).toHaveText(["Plank", "Valve"]);
     await expect(page.locator(".puzzle-tray-count")).toHaveText(["×2", "×1"]);
