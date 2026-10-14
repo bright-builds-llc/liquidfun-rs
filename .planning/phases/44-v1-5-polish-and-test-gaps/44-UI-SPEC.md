@@ -1,7 +1,8 @@
 ---
 phase: 44
 slug: v1-5-polish-and-test-gaps
-status: draft
+status: approved
+reviewed_at: 2026-10-14T01:52:00Z
 shadcn_initialized: false
 preset: none
 created: 2026-10-14
@@ -73,7 +74,7 @@ Exceptions: none new. Phase 38-40 exceptions still apply.
 
 ## Typography
 
-Unchanged: exactly 4 sizes (12, 14, 16, 20) and 2 weights (400, 600). This phase uses two **existing** roles inside the portrait two-kind chip and adds no size or weight.
+Unchanged: 4 scale sizes (12, 14, 16, 20) and 2 weights (400, 600), plus one pre-existing Phase 40 exception: the valve readout at 13 px, not approved by any earlier UI-SPEC and left for a later polish pass. This phase uses two **existing** roles inside the portrait two-kind chip and adds no size or weight.
 
 | Role | Size | Weight | Line Height | Use in this phase |
 |------|------|--------|-------------|-------------------|
@@ -195,7 +196,7 @@ No visual change. Because `maxOpenTick` now caps at 255, the "later" stepper but
 
 | Element | Copy |
 |---------|------|
-| Primary CTA | "Play" (unchanged); result card primary "Next level" (unchanged; the new Next e2e clicks it) |
+| Primary CTA | "Play" (unchanged); result card primary: visible "Next", accessible name "Next level" (unchanged; the new Next e2e locates it with `getByRole("link", { name: "Next level" })`) |
 | Tray item visible | "Plank" + "×2", "Valve" + "×1" (now stacked in portrait with two kinds) |
 | Tray item accessible name | "Plank, 2 left", "Valve, 1 left"; at zero "Plank, none left" |
 | Tray item title | "Place a plank (2 left)", "Place a valve (1 left)" |
@@ -237,11 +238,11 @@ No visual change. Because `maxOpenTick` now caps at 255, the "later" stepper but
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: FLAG (non-blocking; Next label clarified)
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: FLAG (non-blocking; 13 px Phase 40 exception recorded)
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
 **Approval:** pending
