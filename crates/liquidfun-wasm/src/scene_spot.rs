@@ -4,7 +4,7 @@ use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::time::{Duration, Instant};
 
-use crate::scene::SceneId;
+use crate::scene::{ALL_SCENE_IDS, SceneId};
 use crate::session::SessionCore;
 
 use self::fingerprint::{end_state_fingerprint, fingerprint_hex};
@@ -43,7 +43,7 @@ impl SurveyCue {
 }
 
 /// Every playground catalog scene, in `web/src/catalog/scenes.ts` order.
-const SURVEY_SCENES: [(&str, SceneId, SurveyCue); 25] = [
+const SURVEY_SCENES: [(&str, SceneId, SurveyCue); ALL_SCENE_IDS.len()] = [
     ("wave-machine", SceneId::WaveMachine, SurveyCue::Default),
     ("dam-break", SceneId::DamBreak, SurveyCue::Default),
     ("fountain", SceneId::Fountain, SurveyCue::Default),

@@ -70,6 +70,38 @@ pub(crate) enum SceneId {
     TeslaValve,
 }
 
+/// Every playground catalog scene, in `web/src/catalog/scenes.ts` `SCENE_IDS` order.
+///
+/// Scene counts derive from this list; append a new scene here when it joins the catalog.
+#[cfg(any(test, not(target_arch = "wasm32")))]
+pub(crate) const ALL_SCENE_IDS: &[SceneId] = &[
+    SceneId::WaveMachine,
+    SceneId::DamBreak,
+    SceneId::Fountain,
+    SceneId::FloatOrSink,
+    SceneId::ColorMixer,
+    SceneId::JellyDrop,
+    SceneId::WaterWheel,
+    SceneId::Particles,
+    SceneId::LiquidTimer,
+    SceneId::SurfaceTension,
+    SceneId::ElasticParticles,
+    SceneId::RigidParticles,
+    SceneId::Soup,
+    SceneId::SoupStirrer,
+    SceneId::Impulse,
+    SceneId::TheoJansen,
+    SceneId::LiquidTumbler,
+    SceneId::DrawingParticles,
+    SceneId::Sparky,
+    SceneId::HydraulicFountain,
+    SceneId::WaveTank,
+    SceneId::LiquidBubbler,
+    SceneId::StackedDrip,
+    SceneId::WashingMachine,
+    SceneId::TeslaValve,
+];
+
 pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
     match raw {
         "dam-break" => Ok(SceneId::DamBreak),
