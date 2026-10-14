@@ -18,7 +18,15 @@ export function particleFrame(): RenderFrame {
   };
 }
 
-export function glFixture() {
+/** Optional mock-GL capabilities; omitted fields keep permissive defaults. */
+export type GlFixtureOptions = {
+  readonly maybeExtensions?: readonly string[];
+  readonly maybeFramebufferStatus?: () => number;
+  readonly maybeMaxDrawBuffers?: number;
+  readonly maybeHighpPrecision?: number;
+};
+
+export function glFixture(options: GlFixtureOptions = {}) {
   let nextId = 0,
     lost = false;
   let bound: object | undefined;
@@ -53,8 +61,20 @@ export function glFixture() {
       "POINTS",
       "TEXTURE0",
       "TRIANGLE_STRIP",
+      "COLOR_ATTACHMENT1",
+      "MAX_DRAW_BUFFERS",
+      "UNSIGNED_BYTE",
+      "UNPACK_FLIP_Y_WEBGL",
+      "TEXTURE1",
+      "TEXTURE2",
+      "HIGH_FLOAT",
+      "FRAMEBUFFER_INCOMPLETE_ATTACHMENT",
     ].map((name, index) => [name, index + 1]),
   );
+  const loseContextExtension = {
+    loseContext: () => lose(),
+    restoreContext: () => restore(),
+  };
   const methods: Record<string, unknown> = {
     ...constants,
     createBuffer: vi.fn(() => ({ id: ++nextId })),
@@ -65,11 +85,30 @@ export function glFixture() {
     createFramebuffer: vi.fn(() => ({ id: ++nextId })),
     getShaderParameter: vi.fn(() => true),
     getProgramParameter: vi.fn(() => true),
-    getExtension: vi.fn(() => ({})),
+    getExtension: vi.fn((name: string) => {
+      if (name === "WEBGL_lose_context") return loseContextExtension;
+      const maybeExtensions = options.maybeExtensions;
+      if (maybeExtensions === undefined || maybeExtensions.includes(name))
+        return {};
+      return null;
+    }),
     getAttribLocation: vi.fn(() => 0),
     getUniformLocation: vi.fn((_program, name) => ({ name })),
-    checkFramebufferStatus: vi.fn(() => constants.FRAMEBUFFER_COMPLETE),
-    getParameter: vi.fn(() => new Float32Array([1, 1024])),
+    checkFramebufferStatus: vi.fn(
+      options.maybeFramebufferStatus ?? (() => constants.FRAMEBUFFER_COMPLETE),
+    ),
+    getParameter: vi.fn((name: number) => {
+      if (name === constants.MAX_DRAW_BUFFERS)
+        return options.maybeMaxDrawBuffers ?? 8;
+      if (name === constants.ALIASED_POINT_SIZE_RANGE)
+        return new Float32Array([1, 1024]);
+      return null;
+    }),
+    getShaderPrecisionFormat: vi.fn(() => ({
+      rangeMin: 127,
+      rangeMax: 127,
+      precision: options.maybeHighpPrecision ?? 23,
+    })),
     isContextLost: vi.fn(() => lost),
     bindBuffer: vi.fn((_target, buffer) => {
       bound = buffer;
@@ -85,25 +124,23 @@ export function glFixture() {
     },
   }) as unknown as WebGL2RenderingContext;
   const events = new EventTarget();
+  const contextRequests = vi.fn(() => gl);
   const canvas = {
     width: 640,
     height: 480,
-    getContext: vi.fn(() => gl),
+    getContext: contextRequests,
     addEventListener: events.addEventListener.bind(events),
+    removeEventListener: events.removeEventListener.bind(events),
   } as unknown as HTMLCanvasElement;
-  return {
-    gl,
-    canvas,
-    uploads,
-    lose: () => {
-      lost = true;
-      const event = new Event("webglcontextlost", { cancelable: true });
-      events.dispatchEvent(event);
-      return event;
-    },
-    restore: () => {
-      lost = false;
-      events.dispatchEvent(new Event("webglcontextrestored"));
-    },
-  };
+  function lose() {
+    lost = true;
+    const event = new Event("webglcontextlost", { cancelable: true });
+    events.dispatchEvent(event);
+    return event;
+  }
+  function restore() {
+    lost = false;
+    events.dispatchEvent(new Event("webglcontextrestored"));
+  }
+  return { gl, canvas, uploads, contextRequests, lose, restore };
 }
