@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.6
-milestone_name: milestone
+milestone_name: Physics Curiosity Scenes
 status: executing
-stopped_at: Phase 47 UI-SPEC approved
-last_updated: "2026-10-14T20:56:17.931Z"
-last_activity: 2026-10-14 -- Phase 47 planning complete
+stopped_at: Completed 47-01-PLAN.md
+last_updated: "2026-10-14T21:33:36.251Z"
+last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 20
-  completed_plans: 15
-  percent: 75
+  completed_plans: 16
+  percent: 80
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 ## Current Position
 
-Phase: 47
-Plan: Not started
+Phase: 47 (Archimedes Screw) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-10-14 -- Phase 47 planning complete
+Last activity: 2026-10-14
 
 Progress: [████░░░░░░] Phases 45–46 of 45–49 complete (50 and 51 dropped)
 
@@ -220,6 +220,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 46]: 46-04: README cues kept at samples 20/110; clip reaches bottom third 1.1 s after cue 1 and top third 2.2 s after cue 2; other scenes' host WebP re-encodes restored (SVGs byte-identical)
 - [Phase 46]: 46-04: diver scene-spot 2026-10-14T19-29-18Z start 1936 / end 1936 / median 0.582 ms/step; full capture 2026-10-14T19-29-46Z at 89983a79b gate PASS 25/25 unchanged, cartesian-diver fa849f40b8c2a791 added; 15/15 local gates
 - [Phase 46]: 46-05: baseline grown in single-file commit 18c8a5e92 from reused capture 2026-10-14T19-29-46Z at 89983a79b (crates/tools/web identical to HEAD); gate rerun PASS 26/26 unchanged, added none; Phase 47 protects 26 ids incl. cartesian-diver
+- [Phase 47]: Screw candidate A (one kinematic vane train, snap one pitch inside solid housings) passed the D-02 spike in iteration 3; candidate B not built
+- [Phase 47]: Screw tube is 6 m with 7 vanes; bottom housing face leans 45 degrees and the inlet slab end is undercut so closing vanes squeeze water out of open wedges; reservoir fill 1.15 m, 1,729 particles
 
 ### Pending Todos
 
@@ -360,9 +362,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 46 P03 | 3min | 2 tasks | 4 files |
 | Phase 46 P04 | 27min | 2 tasks | 4 files |
 | Phase 46 P05 | 3min | 2 tasks | 1 files |
+| Phase 47 P01 | 26min | 3 tasks | 9 files |
 
 ## Session Continuity
 
-Last session: 2026-10-14T20:34:02.939Z
-Stopped at: Phase 47 UI-SPEC approved
-Resume file: .planning/phases/47-archimedes-screw/47-UI-SPEC.md
+Last session: 2026-10-14T21:33:36.248Z
+Stopped at: Completed 47-01-PLAN.md
+Resume file: None
