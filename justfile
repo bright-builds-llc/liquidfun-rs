@@ -181,8 +181,9 @@ playground-scene-spot:
     cargo xtask playground scene-spot
 
 # Compare the pinned scene fingerprints by id with a fresh or saved scene-spot run.
+[positional-arguments]
 scene-fingerprint-gate *args:
-    cargo xtask playground scene-fingerprint-gate {{args}}
+    cargo xtask playground scene-fingerprint-gate "$@"
 
 phase13-acceptance:
     cargo xtask phase13 acceptance
