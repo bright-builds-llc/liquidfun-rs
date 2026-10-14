@@ -15,11 +15,11 @@ impl FrameData {
         if speeds.len() != particle_count {
             return Err(FrameError::LaneLengthMismatch);
         }
-        if speeds
-            .iter()
-            .any(|speed| !speed.is_finite() || *speed < 0.0)
-        {
-            return Err(FrameError::InvalidDiagnostic);
+        if speeds.iter().any(|speed| !speed.is_finite()) {
+            return Err(FrameError::NonFiniteValue);
+        }
+        if speeds.iter().any(|speed| *speed < 0.0) {
+            return Err(FrameError::NegativeSpeed);
         }
         self.maybe_particle_speeds = Some(speeds);
         Ok(())
@@ -79,8 +79,8 @@ mod tests {
     }
 
     #[test]
-    fn set_particle_speeds_rejects_non_finite_or_negative_values() {
-        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, -0.5] {
+    fn set_particle_speeds_rejects_non_finite_values() {
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
             // Arrange
             let mut frame = frame_data();
 
@@ -88,8 +88,20 @@ mod tests {
             let result = frame.set_particle_speeds(vec![0.0, bad, 1.0]);
 
             // Assert
-            assert_eq!(result, Err(FrameError::InvalidDiagnostic), "value {bad}");
+            assert_eq!(result, Err(FrameError::NonFiniteValue), "value {bad}");
         }
+    }
+
+    #[test]
+    fn set_particle_speeds_rejects_negative_values() {
+        // Arrange
+        let mut frame = frame_data();
+
+        // Act
+        let result = frame.set_particle_speeds(vec![0.0, -0.5, 1.0]);
+
+        // Assert
+        assert_eq!(result, Err(FrameError::NegativeSpeed));
     }
 
     #[test]

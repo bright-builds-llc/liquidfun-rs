@@ -22,6 +22,7 @@ pub(crate) enum FrameError {
     LaneLengthMismatch,
     NonFiniteValue,
     NonPositiveRadius,
+    NegativeSpeed,
     InvalidDiagnostic,
     ArithmeticOverflow,
 }
