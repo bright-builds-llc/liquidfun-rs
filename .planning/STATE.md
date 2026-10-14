@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: milestone
 status: executing
-stopped_at: Completed 43-01-PLAN.md
-last_updated: "2026-10-13T23:57:28.507Z"
-last_activity: 2026-10-13
+stopped_at: Completed 43-02-PLAN.md
+last_updated: "2026-10-14T00:02:48.965Z"
+last_activity: 2026-10-14
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 61
-  completed_plans: 56
-  percent: 92
+  completed_plans: 57
+  percent: 93
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-11)
 ## Current Position
 
 Phase: 43 (GPU Water Render Mode) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
-Last activity: 2026-10-13
+Last activity: 2026-10-14
 
 Progress: [██████████] 100%
 
@@ -174,10 +174,12 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 - [Phase 43]: 43-01: speed lane is a stateless per-capture flag (captureFrame(true)); lane = length_squared().sqrt() from the same velocity read so max(lane) == maxSpeed bit for bit; TS parses RenderFrame.maybeParticleSpeeds fail closed (52eec199e, 62e62e041)
 - [Phase 43]: 43-01: SessionCore::capture_frame() (no lane) is #[cfg(test)]; wasm uses capture_frame_with_speeds; on/off 120-step proofs bit-identical for dam-break and first-pour
 - [Phase 43]: 43-01: baseline target/phase43/base.txt from scene-spot 2026-10-13T23-40-01Z at 2653fd987, identical to Phase 42 after-postfix; after-01 25/25 identical; wasm replay 6 LEVELHASH + 14 REPLAY pass
+- [Phase 43]: 43-02: field-pass.ts owns one WebGL2 context per particle canvas (shared buffers + metadata cache, pass slots keyed by module symbols, per-key availability); shaded blob accepts EXT_color_buffer_float or EXT_color_buffer_half_float with checkFramebufferStatus deciding (D-13) (cb9a0ad07)
+- [Phase 43]: 43-02: watchParticleSurface creates the surface before adding repaint listeners so the reset runs first; restore repaint builds fresh programs (D-14) (aabbf02e6)
 
 ### Pending Todos
 
-- Optional quick task (research recommendation, before or alongside Phase 38): accept `EXT_color_buffer_half_float` as well as `EXT_color_buffer_float` in `web/src/render/webgl-particles.ts`, relying on `checkFramebufferStatus`; verify on an iPhone. Otherwise fold into Phase 43.
+- Half-float render targets: implemented in 43-02 (`field-pass.ts` `supportsHalfFloatTargets`, cb9a0ad07). The iPhone check remains a non-blocking D-20 UAT item.
 
 ### Blockers/Concerns
 
@@ -292,9 +294,10 @@ v1.3 decisions are in `.planning/milestones/v1.3-STATE.md` and PROJECT.md Key De
 | Phase 42 P04 | 5min | 2 tasks | 7 files |
 | Phase 42 P05 | 20min | 2 tasks | 3 files |
 | Phase 43 P01 | 17min | 3 tasks | 9 files |
+| Phase 43 P02 | 5min | 2 tasks | 5 files |
 
 ## Session Continuity
 
-Last session: 2026-10-13T23:57:28.504Z
-Stopped at: Completed 43-01-PLAN.md
+Last session: 2026-10-14T00:02:48.962Z
+Stopped at: Completed 43-02-PLAN.md
 Resume file: None
