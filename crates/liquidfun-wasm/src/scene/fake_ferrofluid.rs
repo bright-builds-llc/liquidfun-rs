@@ -271,6 +271,8 @@ impl SceneHooks for FakeFerrofluidHooks {
 #[cfg(test)]
 mod control_tests;
 #[cfg(test)]
+mod flow_tests;
+#[cfg(test)]
 mod spike_tests;
 #[cfg(test)]
 mod test_support;

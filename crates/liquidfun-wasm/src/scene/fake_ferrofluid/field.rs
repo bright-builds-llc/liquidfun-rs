@@ -13,10 +13,15 @@
 //! - `M = (1 - 4t^2)^4` with `t` the offset from the nearest column center is
 //!   a periodic bump that concentrates the lift into separate columns.
 //!
-//! The acceleration is the gradient of `Psi`, capped at `CAP * G * S`. A
-//! conservative pull plus drag cannot pump energy into a still puddle, so the
-//! spikes settle and hold (D-02). Only `+ - * /`, `abs`, `round` and `signum`
-//! are used, so native and wasm builds compute identical bits.
+//! The lift is `dPsi/dh` along `up`. The sideways pull is `dPsi/ds` with
+//! `|E(h)|` in place of `E(h)`, so liquid on both sides of the magnet axis is
+//! drawn toward it: with the odd `E`, liquid below a magnet held inside or
+//! above the puddle was pushed away from the columns and no crown formed. The
+//! field is therefore conservative above the magnet only. The acceleration is
+//! capped at `CAP * G * S`, and drag damps it everywhere inside the envelope;
+//! 60 s holds at full strength in five magnet positions show no energy growth,
+//! so the spikes settle and hold (D-02). Only `+ - * /`, `abs`, `round` and
+//! `signum` are used, so native and wasm builds compute identical bits.
 
 use liquidfun::math::Vec2;
 
@@ -135,7 +140,8 @@ pub(super) fn magnet_acceleration(
     let weight_slope = envelope_slope * modulation + envelope * modulation_slope;
     let scale = frame.magnitude * strength * params.strength_scale;
     let lift = scale * bump(h / params.reach) * weight;
-    let lateral = scale * bump_integral(h, params.reach) * weight_slope;
+    // `|E(h)|`: below the magnet the sideways pull still points toward it.
+    let lateral = scale * bump_integral(h, params.reach).abs() * weight_slope;
     let acceleration = frame.up * lift + frame.across * lateral;
     let cap = params.cap * frame.magnitude * strength;
     let length = acceleration.length();

@@ -22,11 +22,11 @@ pub(super) const FLOOR_TOP_Y: f32 = 0.0;
 /// Bottom face of the floor slab; the resting magnet sits flush below it.
 pub(super) const FLOOR_BOTTOM_Y: f32 = -0.25;
 /// Wall tops: the tallest measured column plus at least a 0.3 m margin, so
-/// no liquid climbs over (Research Pitfall 2). With a magnet held inside the
-/// puddle at full strength the tallest column measured 1.21 m with these
-/// walls but 1.42 m with 1.6 m walls, so 1.8 m is the lowest tested height
-/// that keeps the margin (48-01 spike).
-pub(super) const WALL_TOP_Y: f32 = 1.8;
+/// no liquid climbs over (Research Pitfall 2). The 48-01 field needed 1.8 m
+/// (tallest column 1.21 m). Since the sideways pull uses `|E(h)|` (48-02), a
+/// magnet held 1.3 to 1.5 m up gathers the liquid below it into columns that
+/// rise to about 2.67 m, above 2.5 m walls, so the walls are 3.0 m.
+pub(super) const WALL_TOP_Y: f32 = 3.0;
 /// Depth of the filled puddle box before it settles.
 pub(super) const PUDDLE_DEPTH: f32 = 0.6;
 /// The puddle box fills the dish floor, one radius clear of every face.

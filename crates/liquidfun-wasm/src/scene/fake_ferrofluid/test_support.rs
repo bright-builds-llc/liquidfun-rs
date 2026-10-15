@@ -1,5 +1,6 @@
-//! Test-only helpers shared by the ferrofluid unit and spike tests: the fixed
-//! step and the binned surface-peak metric (Research "Surface-Peak Metric").
+//! Test-only helpers shared by the ferrofluid unit, spike and flow tests: the
+//! fixed step, the binned surface-peak metric (Research "Surface-Peak
+//! Metric"), the hold positions and P3 hold rules, and session helpers.
 
 use liquidfun::StepConfiguration;
 use liquidfun::math::Vec2;
@@ -9,6 +10,7 @@ use super::geometry::{
     PARTICLE_RADIUS, out_of_dish,
 };
 use crate::scene::{SceneId, particle_iterations};
+use crate::session::{MAX_ADVANCE_STEPS, SessionCore};
 
 /// Least topographic prominence of a counted surface peak: about two diameters.
 pub(super) const PEAK_PROMINENCE: f32 = 0.15;
@@ -200,4 +202,206 @@ pub(super) fn column_top(positions: &[Vec2]) -> f32 {
         .iter()
         .map(|position| position.y)
         .fold(f32::MIN, f32::max)
+}
+
+/// Fewest peaks the roadmap floor accepts.
+pub(super) const MIN_PEAKS: usize = 4;
+/// D-04 target peak count at the default strength.
+pub(super) const TARGET_PEAKS: std::ops::RangeInclusive<usize> = 5..=9;
+/// Step at which the crown is counted against the D-04 target.
+pub(super) const CROWN_STEP: u32 = 180;
+
+/// Magnet resting under the dish floor.
+pub(super) const UNDER_THE_DISH: Vec2 = Vec2::new(0.0, -0.35);
+/// Magnet held above the puddle.
+pub(super) const ABOVE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 1.2);
+/// Magnet under the dish, far off-center.
+pub(super) const OFF_CENTER: Vec2 = Vec2::new(2.0, -0.35);
+/// Magnet tapped into the middle of the puddle.
+pub(super) const INSIDE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 0.3);
+/// Magnet tapped into the puddle next to the right wall.
+pub(super) const INSIDE_THE_PUDDLE_AT_THE_WALL: Vec2 = Vec2::new(2.7, 0.3);
+/// Magnet held where it gathers the tallest measured column (48-02 probe).
+pub(super) const HIGH_ABOVE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 1.3);
+/// Magnet held high at the right edge of the clamp, outside the inner face.
+pub(super) const HIGH_AT_THE_EDGE: Vec2 = Vec2::new(3.2, 1.5);
+/// Every hold position, plus the two tallest-column positions, for the
+/// containment margin check.
+pub(super) const HOLD_POSITIONS: [Vec2; 7] = [
+    UNDER_THE_DISH,
+    ABOVE_THE_PUDDLE,
+    OFF_CENTER,
+    INSIDE_THE_PUDDLE,
+    INSIDE_THE_PUDDLE_AT_THE_WALL,
+    HIGH_ABOVE_THE_PUDDLE,
+    HIGH_AT_THE_EDGE,
+];
+
+/// Particle placement samples are taken every this many hold steps.
+const HOLD_SAMPLE_EVERY: u32 = 30;
+/// Highest particle speed any hold may reach, in m/s (clamp 9.6).
+const MAX_HOLD_SPEED: f32 = 4.0;
+/// Early window for the max-speed growth check, in steps.
+const EARLY_WINDOW: std::ops::Range<u32> = 120..720;
+/// Late window for the max-speed growth check, in steps.
+const LATE_WINDOW: std::ops::Range<u32> = 3_000..3_600;
+/// How much faster the late window may get than the early one, in m/s.
+const SPEED_GROWTH_ALLOWANCE: f32 = 0.25;
+/// First kinetic-energy half of a hold, after the 2 s transient.
+const FIRST_HALF: std::ops::Range<u32> = 120..1_860;
+/// Second kinetic-energy half of a hold.
+const SECOND_HALF: std::ops::Range<u32> = 1_860..3_600;
+/// The second-half kinetic-energy mean may be at most this times the first...
+const KE_GROWTH_FACTOR: f32 = 1.25;
+/// ...plus this absolute allowance.
+const KE_GROWTH_ALLOWANCE: f32 = 0.5;
+/// Most isolated (flung) particles any hold sample may show.
+const MAX_ISOLATED: usize = 3;
+
+/// Measurements from one hold run.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct HoldReport {
+    pub(super) max_out_of_dish: usize,
+    pub(super) max_escaped: usize,
+    pub(super) max_isolated: usize,
+    pub(super) max_speed: f32,
+    pub(super) early_max_speed: f32,
+    pub(super) late_max_speed: f32,
+    pub(super) first_half_mean_energy: f32,
+    pub(super) second_half_mean_energy: f32,
+    pub(super) max_column_top: f32,
+}
+
+/// Accumulates a [`HoldReport`] from per-step particle reads.
+pub(super) struct HoldRecorder {
+    report: HoldReport,
+    first_half: Vec<f32>,
+    second_half: Vec<f32>,
+}
+
+impl HoldRecorder {
+    pub(super) fn new() -> Self {
+        Self {
+            report: HoldReport {
+                max_out_of_dish: 0,
+                max_escaped: 0,
+                max_isolated: 0,
+                max_speed: 0.0,
+                early_max_speed: 0.0,
+                late_max_speed: 0.0,
+                first_half_mean_energy: 0.0,
+                second_half_mean_energy: 0.0,
+                max_column_top: f32::MIN,
+            },
+            first_half: Vec::new(),
+            second_half: Vec::new(),
+        }
+    }
+
+    /// Records the particles after fixed step `step` (1-based).
+    pub(super) fn record(&mut self, step: u32, placed: &[Vec2], lanes: &[Vec2]) {
+        let report = &mut self.report;
+        let speed = max_speed(lanes);
+        report.max_speed = report.max_speed.max(speed);
+        report.max_column_top = report.max_column_top.max(column_top(placed));
+        if EARLY_WINDOW.contains(&step) {
+            report.early_max_speed = report.early_max_speed.max(speed);
+        }
+        if LATE_WINDOW.contains(&step) {
+            report.late_max_speed = report.late_max_speed.max(speed);
+        }
+        if FIRST_HALF.contains(&step) {
+            self.first_half.push(kinetic_energy(lanes));
+        }
+        if SECOND_HALF.contains(&step) {
+            self.second_half.push(kinetic_energy(lanes));
+        }
+        if step.is_multiple_of(HOLD_SAMPLE_EVERY) {
+            report.max_out_of_dish = report.max_out_of_dish.max(out_of_dish_count(placed));
+            report.max_escaped = report.max_escaped.max(escaped_count(placed));
+            report.max_isolated = report.max_isolated.max(isolated_count(placed));
+        }
+    }
+
+    pub(super) fn finish(mut self) -> HoldReport {
+        self.report.first_half_mean_energy = mean(&self.first_half);
+        self.report.second_half_mean_energy = mean(&self.second_half);
+        self.report
+    }
+}
+
+fn mean(values: &[f32]) -> f32 {
+    values.iter().sum::<f32>() / count_as_f32(values.len())
+}
+
+/// The P3 hold rules: nothing leaves the dish, speed stays bounded and does
+/// not grow, kinetic energy does not grow and nothing is flung.
+pub(super) fn assert_hold_is_bounded(report: &HoldReport) {
+    assert_eq!(report.max_out_of_dish, 0, "{report:?}");
+    assert_eq!(report.max_escaped, 0, "{report:?}");
+    assert!(report.max_speed <= MAX_HOLD_SPEED, "{report:?}");
+    assert!(
+        report.late_max_speed <= report.early_max_speed + SPEED_GROWTH_ALLOWANCE,
+        "{report:?}"
+    );
+    assert!(
+        report.second_half_mean_energy
+            <= KE_GROWTH_FACTOR * report.first_half_mean_energy + KE_GROWTH_ALLOWANCE,
+        "{report:?}"
+    );
+    assert!(report.max_isolated <= MAX_ISOLATED, "{report:?}");
+}
+
+/// Advances a session `steps` fixed steps in `MAX_ADVANCE_STEPS` chunks.
+pub(super) fn advance(session: &mut SessionCore, steps: u32) {
+    let mut remaining = steps;
+    while remaining > 0 {
+        let chunk = remaining.min(MAX_ADVANCE_STEPS);
+        session.advance(chunk).expect("the ferrofluid scene steps");
+        remaining -= chunk;
+    }
+}
+
+/// Live particle positions and velocities of a session.
+pub(super) fn session_lanes(session: &SessionCore) -> (Vec<Vec2>, Vec<Vec2>) {
+    session.read_particles(|world, system| {
+        let view = world.particle_system_view(system).expect("liquid");
+        (view.positions().to_vec(), view.velocities().to_vec())
+    })
+}
+
+/// The session's current surface profile.
+pub(super) fn profile(session: &SessionCore) -> SurfaceProfile {
+    surface_profile(&session_lanes(session).0)
+}
+
+/// Advances `every` steps at a time up to `deadline` and returns the first
+/// sampled step (counted from the call) at which `predicate` holds.
+pub(super) fn first_step_where(
+    session: &mut SessionCore,
+    deadline: u32,
+    every: u32,
+    predicate: impl Fn(&SessionCore) -> bool,
+) -> Option<u32> {
+    let mut step = 0;
+    while step + every <= deadline {
+        advance(session, every);
+        step += every;
+        if predicate(session) {
+            return Some(step);
+        }
+    }
+    None
+}
+
+/// Runs a session one fixed step at a time for `steps`, recording the P3 hold
+/// measurements.
+pub(super) fn run_session_hold(session: &mut SessionCore, steps: u32) -> HoldReport {
+    let mut recorder = HoldRecorder::new();
+    for step in 1..=steps {
+        advance(session, 1);
+        let (placed, lanes) = session_lanes(session);
+        recorder.record(step, &placed, &lanes);
+    }
+    recorder.finish()
 }
