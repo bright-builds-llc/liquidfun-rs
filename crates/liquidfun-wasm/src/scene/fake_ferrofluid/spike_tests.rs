@@ -16,6 +16,8 @@
 //! Debug builds diverge from release, so every test here is ignored in debug.
 //! Run them with `cargo test -p liquidfun-wasm --release --lib fake_ferrofluid`.
 
+use std::sync::OnceLock;
+
 use liquidfun::math::Vec2;
 use liquidfun::{NoDecisionHook, StepLimits};
 
@@ -122,9 +124,22 @@ fn run_hold(magnet: Vec2, strength_percent: u16, steps: u32) -> HoldReport {
     recorder.finish()
 }
 
-/// A full-strength 60 s hold (P3).
-fn run_full_strength_hold(magnet: Vec2) -> HoldReport {
-    run_hold(magnet, MAX_STRENGTH_PERCENT, HOLD_STEPS)
+/// A full-strength 60 s hold (P3), run once per `HOLD_POSITIONS` entry and
+/// shared by the P3 hold tests and the P4 column-top test.
+fn full_strength_hold(magnet: Vec2) -> HoldReport {
+    static REPORTS: [OnceLock<HoldReport>; HOLD_POSITIONS.len()] =
+        [const { OnceLock::new() }; HOLD_POSITIONS.len()];
+    let index = HOLD_POSITIONS
+        .iter()
+        .position(|position| *position == magnet)
+        .expect("holds run at a listed position");
+    *REPORTS[index].get_or_init(|| run_hold(magnet, MAX_STRENGTH_PERCENT, HOLD_STEPS))
+}
+
+/// The default-strength appearance run, shared by the P1, P2 and P2b tests.
+fn default_appearance() -> AppearanceReport {
+    static REPORT: OnceLock<AppearanceReport> = OnceLock::new();
+    *REPORT.get_or_init(|| run_appearance(DEFAULT_STRENGTH_PERCENT))
 }
 
 /// The load run (P1) and a separate off/on run (P2, P2b).
@@ -168,7 +183,7 @@ fn within_appearance_window(maybe_step: Option<u32>) -> bool {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn default_strength_forms_four_peaks_within_ninety_steps() {
     // Act
-    let report = run_appearance(DEFAULT_STRENGTH_PERCENT);
+    let report = default_appearance();
 
     // Assert
     assert!(
@@ -181,7 +196,7 @@ fn default_strength_forms_four_peaks_within_ninety_steps() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn default_strength_shows_five_to_nine_peaks_at_step_180() {
     // Act
-    let report = run_appearance(DEFAULT_STRENGTH_PERCENT);
+    let report = default_appearance();
 
     // Assert
     assert!(
@@ -194,7 +209,7 @@ fn default_strength_shows_five_to_nine_peaks_at_step_180() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn switching_off_flattens_within_ninety_steps() {
     // Act
-    let report = run_appearance(DEFAULT_STRENGTH_PERCENT);
+    let report = default_appearance();
 
     // Assert
     assert!(
@@ -207,7 +222,7 @@ fn switching_off_flattens_within_ninety_steps() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn switching_back_on_reforms_four_peaks_within_ninety_steps() {
     // Act
-    let report = run_appearance(DEFAULT_STRENGTH_PERCENT);
+    let report = default_appearance();
 
     // Assert
     assert!(
@@ -220,7 +235,7 @@ fn switching_back_on_reforms_four_peaks_within_ninety_steps() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn hold_under_the_dish_stays_bounded() {
     // Act
-    let report = run_full_strength_hold(UNDER_THE_DISH);
+    let report = full_strength_hold(UNDER_THE_DISH);
 
     // Assert
     assert_hold_is_bounded(&report);
@@ -230,7 +245,7 @@ fn hold_under_the_dish_stays_bounded() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn hold_above_the_puddle_stays_bounded() {
     // Act
-    let report = run_full_strength_hold(ABOVE_THE_PUDDLE);
+    let report = full_strength_hold(ABOVE_THE_PUDDLE);
 
     // Assert
     assert_hold_is_bounded(&report);
@@ -240,7 +255,7 @@ fn hold_above_the_puddle_stays_bounded() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn hold_off_center_stays_bounded() {
     // Act
-    let report = run_full_strength_hold(OFF_CENTER);
+    let report = full_strength_hold(OFF_CENTER);
 
     // Assert
     assert_hold_is_bounded(&report);
@@ -250,7 +265,7 @@ fn hold_off_center_stays_bounded() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn hold_inside_the_puddle_stays_bounded() {
     // Act
-    let report = run_full_strength_hold(INSIDE_THE_PUDDLE);
+    let report = full_strength_hold(INSIDE_THE_PUDDLE);
 
     // Assert
     assert_hold_is_bounded(&report);
@@ -260,7 +275,7 @@ fn hold_inside_the_puddle_stays_bounded() {
 #[cfg_attr(debug_assertions, ignore = "release-only ferrofluid spike (D-05)")]
 fn hold_inside_the_puddle_at_the_wall_stays_bounded() {
     // Act
-    let report = run_full_strength_hold(INSIDE_THE_PUDDLE_AT_THE_WALL);
+    let report = full_strength_hold(INSIDE_THE_PUDDLE_AT_THE_WALL);
 
     // Assert
     assert_hold_is_bounded(&report);
@@ -271,7 +286,7 @@ fn hold_inside_the_puddle_at_the_wall_stays_bounded() {
 fn column_tops_stay_three_tenths_below_the_wall_tops() {
     // Act
     let tallest = HOLD_POSITIONS
-        .map(|magnet| run_full_strength_hold(magnet).max_column_top)
+        .map(|magnet| full_strength_hold(magnet).max_column_top)
         .into_iter()
         .fold(f32::MIN, f32::max);
 
