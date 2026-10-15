@@ -193,7 +193,14 @@ Plans:
 1. Player can adjust magnet strength only within a range that never flings the liquid apart, and a native 60 s test with the pointer held at maximum strength shows no runaway energy, no evictions and no failed step.
 1. The magnet pull is applied once per fixed step and follows world gravity, so the gravity slider and phone tilt stay correct. The caption puts "fake" in the title or description and calls it a scripted magnetic pull. The scene meets every shared scene rule, and the id-join gate reports every protected fingerprint unchanged.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 48-01-PLAN.md — Shared gravity-aware particle-force helper, scene core (dish, polynomial field, hooks) and the D-05 release spike with CAP and wall-height choice
+- [ ] 48-02-PLAN.md — Pointer seam, `magnet` action, live `magnet-strength` control, bar-magnet marker, D-23 release outcome tests and README timing
+- [ ] 48-03-PLAN.md — Catalog and web wiring: record, strength spinner file, preview, view and portrait bounds, README/survey/demo plans, spoken percent, tests and e2e
+- [ ] 48-04-PLAN.md — Four-mode color check, README preview generation and review, full gates, scene-spot numbers, 27/27 fingerprint gate
+- [ ] 48-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 28/28 unchanged
 **UI hint**: yes
 
 ### Phase 49: Rayleigh–Taylor Instability

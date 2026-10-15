@@ -614,11 +614,14 @@ Execute sequentially on the main tree.
 | A7 | The honesty-guard word list | Pitfall 6 | Copy review only |
 | A8 | The "inside the puddle" hold position is an acceptable addition to D-23's three positions | Pitfall 2 | It adds coverage without removing any locked case; if the user objects, keep it as a spike-only check |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **CAP vs wall height (Pitfall 2).** Known: CAP 2.5 gives taller crowns at max (top ≈ 1.0 m at rest) but 1.5 m columns with the magnet in the liquid; CAP 1.5 keeps the worst case near 1.0 m with 5–7 peaks. Unclear: which looks better in the real scene. Recommendation: Plan 1 measures both in the scene and picks the lowest CAP that still gives ≥ 5 peaks at default, then sets walls to the measured worst-case top + 0.3 m.
-2. **Particle count.** The probe used 990 (r 0.04). There is budget for about 1,500 (wider dish or deeper fill) at well under 1.5 ms/step. Recommendation: keep about 1,000 unless the README clip looks sparse.
-3. **Percent readout wording.** `"65 %"` vs a spoken "percent" branch in `range-control.ts`. Recommendation: leave to the UI-SPEC; adding the branch is a 3-line change plus a unit test.
+1. **CAP vs wall height (Pitfall 2). (RESOLVED)** Known: CAP 2.5 gives taller crowns at max (top ≈ 1.0 m at rest) but 1.5 m columns with the magnet in the liquid; CAP 1.5 keeps the worst case near 1.0 m with 5–7 peaks. Unclear: which looks better in the real scene. Recommendation: Plan 1 measures both in the scene and picks the lowest CAP that still gives ≥ 5 peaks at default, then sets walls to the measured worst-case top + 0.3 m.
+   **RESOLVED:** Plan 01 Task 3 applies the CAP choice rule: measure P1 at cap 1.5, 2.0 and 2.5, keep the lowest cap whose step-180 peak count at default is ≥ 5 (compile-time `CAP <= 3.0`), then set `WALL_TOP_Y` = round_up_to_0.1(worst measured column top over the five P3 holds + 0.3) and `FRAME_MAX_Y >= WALL_TOP_Y + 0.6`; the P4 release test `column_tops_stay_three_tenths_below_the_wall_tops` guards it and the SUMMARY records the measurements and decision.
+2. **Particle count. (RESOLVED)** The probe used 990 (r 0.04). There is budget for about 1,500 (wider dish or deeper fill) at well under 1.5 ms/step. Recommendation: keep about 1,000 unless the README clip looks sparse.
+   **RESOLVED:** Plan 01 builds one filled puddle box of about 990 particles (radius 0.04, 0.6 m deep) with `MAXIMUM_PARTICLE_COUNT = 3000` as the D-15 budget cap; a build test asserts 800..=3000 particles. Puddle depth 0.5..0.8 m stays a Plan 01 tuning lever; the final count is recorded in the 48-01 SUMMARY.
+3. **Percent readout wording. (RESOLVED)** `"65 %"` vs a spoken "percent" branch in `range-control.ts`. Recommendation: leave to the UI-SPEC; adding the branch is a 3-line change plus a unit test.
+   **RESOLVED:** UI-SPEC UI-D78: the visible readout stays the shared `formatRangeReadout` (`65 %`, no readout branch), and `formatRangeValueText` gains one `unit === "%"` branch so screen readers hear `65 percent`. Plan 03 Task 2 implements it with the "speaks magnet strength in percent" test in `web/tests/fake-ferrofluid-controls.test.ts`.
 
 ## Environment Availability
 
