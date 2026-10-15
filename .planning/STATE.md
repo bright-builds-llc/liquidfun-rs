@@ -5,15 +5,15 @@ milestone_name: Physics Curiosity Scenes
 status: executing
 current_phase: 48
 current_phase_name: "Fake Ferrofluid"
-stopped_at: Completed 48-02-PLAN.md
-last_updated: "2026-10-15T06:23:30.454Z"
+stopped_at: Completed 48-03-PLAN.md
+last_updated: "2026-10-15T06:40:22.191Z"
 last_activity: 2026-10-15
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 25
-  completed_plans: 22
-  percent: 88
+  completed_plans: 23
+  percent: 92
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 48 (Fake Ferrofluid) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-10-15
 
@@ -237,6 +237,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 48]: 48-02: sideways pull ships the |E(h)| fallback (odd E gave 1 peak with the magnet pressed at y 1.0); lift and cap unchanged, field conservative above the magnet only
 - [Phase 48]: 48-02: WALL_TOP_Y 1.8 -> 3.0 m and FRAME_MAX_Y 2.4 -> 3.6 (magnet held 1.3-1.5 m up lifts columns to 2.67 m); P4 also guards (0,1.3) and (3.2,1.5); default strength 65 and FIELD numbers unchanged
 - [Phase 48]: 48-02: 18 release flow tests pass: crown at step 12, 5 peaks @180, drags shift 1.168 m, collapse 30 steps, re-rise 18, README flat 393 / re-rise 495, holds max 2.06 m/s
+- [Phase 48]: 48-03: FAKE_FERROFLUID_VIEW_BOUNDS -3.6/-0.8/3.6/3.6 (FRAME_MAX_Y 3.6 after 3.0 m walls, superseding nominal 2.4) reused as the portrait frame; MIN_HEIGHT_FRACTION 0.25 (measured 0.259)
+- [Phase 48]: 48-03: Magnet strength spoken as '{n} percent'; ferrofluid control tests in fake-ferrofluid-controls.test.ts; R14 sync_tests compare strength constants, view bounds (f32 bits) and magnet ids; README cues stay 120/160
 
 ### Pending Todos
 
@@ -384,9 +386,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 47 P05 | 2 min | 2 tasks | 1 files |
 | Phase 48 P01 | 26min | 3 tasks | 11 files |
 | Phase 48 P02 | 43min | 2 tasks | 8 files |
+| Phase 48 P03 | 17min | 2 tasks | 23 files |
 
 ## Session Continuity
 
-Last session: 2026-10-15T06:23:30.451Z
-Stopped at: Completed 48-02-PLAN.md
+Last session: 2026-10-15T06:40:22.188Z
+Stopped at: Completed 48-03-PLAN.md
 Resume file: None
