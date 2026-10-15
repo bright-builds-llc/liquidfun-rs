@@ -5,15 +5,15 @@ milestone_name: Physics Curiosity Scenes
 status: executing
 current_phase: 48
 current_phase_name: "Fake Ferrofluid"
-stopped_at: Completed 48-03-PLAN.md
-last_updated: "2026-10-15T06:40:22.191Z"
+stopped_at: Completed 48-04-PLAN.md
+last_updated: "2026-10-15T07:08:37.277Z"
 last_activity: 2026-10-15
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 25
-  completed_plans: 23
-  percent: 92
+  completed_plans: 24
+  percent: 96
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 48 (Fake Ferrofluid) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-15
 
@@ -239,6 +239,10 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 48]: 48-02: 18 release flow tests pass: crown at step 12, 5 peaks @180, drags shift 1.168 m, collapse 30 steps, re-rise 18, README flat 393 / re-rise 495, holds max 2.06 m/s
 - [Phase 48]: 48-03: FAKE_FERROFLUID_VIEW_BOUNDS -3.6/-0.8/3.6/3.6 (FRAME_MAX_Y 3.6 after 3.0 m walls, superseding nominal 2.4) reused as the portrait frame; MIN_HEIGHT_FRACTION 0.25 (measured 0.259)
 - [Phase 48]: 48-03: Magnet strength spoken as '{n} percent'; ferrofluid control tests in fake-ferrofluid-controls.test.ts; R14 sync_tests compare strength constants, view bounds (f32 bits) and magnet ids; README cues stay 120/160
+- [Phase 48]: 48-04: #8A84AD readable in Shaded blob, GPU Water, circle wireframe and static preview at 1280x800 and 390x844; no color change
+- [Phase 48]: 48-04: README cues stay 120/160; clip frames 61/351 spikes, 471 flat with off marker, 591 re-risen
+- [Phase 48]: 48-04: ferrofluid scene-spot 990/990, median 0.314 ms/step; gate PASS 27/27 with fake-ferrofluid e73ef71f0615b4eb added (capture 2026-10-15T07-06-56Z at f798bff91)
+- [Phase 48]: 48-04: finding, not re-tuned: crests rise about 0.3 m and fill only the bottom quarter of the 3.0 m dish; liquid reads mid-tone gray-violet, not dark
 
 ### Pending Todos
 
@@ -387,9 +391,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 48 P01 | 26min | 3 tasks | 11 files |
 | Phase 48 P02 | 43min | 2 tasks | 8 files |
 | Phase 48 P03 | 17min | 2 tasks | 23 files |
+| Phase 48 P04 | 27min | 3 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-10-15T06:40:22.188Z
-Stopped at: Completed 48-03-PLAN.md
+Last session: 2026-10-15T07:08:37.273Z
+Stopped at: Completed 48-04-PLAN.md
 Resume file: None
