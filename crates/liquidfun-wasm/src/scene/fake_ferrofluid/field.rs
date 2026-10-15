@@ -16,8 +16,11 @@
 //! The lift is `dPsi/dh` along `up`. The sideways pull is `dPsi/ds` with
 //! `|E(h)|` in place of `E(h)`, so liquid on both sides of the magnet axis is
 //! drawn toward it: with the odd `E`, liquid below a magnet held inside or
-//! above the puddle was pushed away from the columns and no crown formed. The
-//! field is therefore conservative above the magnet only. The acceleration is
+//! above the puddle was pushed away from the columns and no crown formed.
+//! `|E|` levels off past the reach, so the sideways pull also fades from the
+//! reach to twice the reach: a magnet far from the liquid gathers nothing
+//! (D-02). The field is therefore conservative above the magnet and inside
+//! the reach only. The acceleration is
 //! capped at `CAP * G * S`, and drag damps it everywhere inside the envelope;
 //! 60 s holds at full strength in five magnet positions show no energy growth,
 //! so the spikes settle and hold (D-02). Only `+ - * /`, `abs`, `round` and
@@ -84,6 +87,16 @@ fn bump_integral(h: f32, reach: f32) -> f32 {
     reach * (x - 2.0 * x3 / 3.0 + x3 * x * x / 5.0)
 }
 
+/// Fade of the sideways pull: 1 inside the reach, falling smoothly to 0 at
+/// twice the reach.
+fn far_fade(h: f32, reach: f32) -> f32 {
+    let x = (h.abs() - reach) / reach;
+    if x <= 0.0 {
+        return 1.0;
+    }
+    bump(x)
+}
+
 /// Column modulation `b^4` with `b = 1 - 4t^2` and `t = s/wavelength -
 /// round(s/wavelength)`; returns `(M, dM/ds)`.
 fn columns(s: f32, wavelength: f32) -> (f32, f32) {
@@ -141,7 +154,9 @@ pub(super) fn magnet_acceleration(
     let scale = frame.magnitude * strength * params.strength_scale;
     let lift = scale * bump(h / params.reach) * weight;
     // `|E(h)|`: below the magnet the sideways pull still points toward it.
-    let lateral = scale * bump_integral(h, params.reach).abs() * weight_slope;
+    // The fade is exactly 1 inside the reach, so the pull there is unchanged.
+    let lateral =
+        scale * bump_integral(h, params.reach).abs() * far_fade(h, params.reach) * weight_slope;
     let acceleration = frame.up * lift + frame.across * lateral;
     let cap = params.cap * frame.magnitude * strength;
     let length = acceleration.length();

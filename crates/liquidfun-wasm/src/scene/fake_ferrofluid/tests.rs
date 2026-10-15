@@ -237,6 +237,26 @@ fn lift_vanishes_beyond_the_reach() {
 }
 
 #[test]
+fn pull_vanishes_beyond_twice_the_reach() {
+    // Arrange: column flanks, where the sideways slope is steepest.
+    let far = 2.0 * FIELD.reach;
+    let offsets = [
+        (0.12, far),
+        (-0.12, -far),
+        (0.77, far + 0.5),
+        (-1.42, -far - 1.0),
+    ];
+
+    for (s, h) in offsets {
+        // Act
+        let acceleration = field_at(full_strength(), s, h);
+
+        // Assert
+        assert_eq!(acceleration, Vec2::ZERO, "{s},{h}");
+    }
+}
+
+#[test]
 fn pull_is_curl_free_where_the_cap_is_inactive() {
     // Arrange: column centers, where the uncapped pull stays below the cap.
     let samples = [
