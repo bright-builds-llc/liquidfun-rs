@@ -99,7 +99,8 @@ pub(crate) struct ParticleScratch {
 ///
 /// # Errors
 ///
-/// `StepFailed` when the system view or a force application fails.
+/// `StepFailed` when the system view or a force application fails. Forces
+/// already applied to earlier particles in this call are not rolled back.
 pub(crate) fn apply_accelerations(
     world: &mut World,
     system: ParticleSystemId,
