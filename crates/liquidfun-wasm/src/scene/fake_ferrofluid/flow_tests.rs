@@ -2,8 +2,9 @@
 //! D-23), driven through the session's pointer, action and control seams:
 //! spikes on load, the crown following a dragged magnet, collapse on
 //! release, cancel or switch-off, re-rise when switched back on, strength 0
-//! staying flat, 60 s held-pointer stability at full strength, gravity 2 and
-//! 80 smokes and the README clip timing. Assertions use the binned surface
+//! staying flat, 60 s held-pointer stability at full strength, liquid staying
+//! in the dish through slow full-strength drags to the clamp extremes and a
+//! release, gravity 2 and 80 smokes and the README clip timing. Assertions use the binned surface
 //! profile with tolerances, never exact trajectories.
 //!
 //! Debug builds diverge from release, so every test here is ignored in debug.
@@ -15,7 +16,7 @@ use super::geometry::{MAGNET_REST, dish_segments};
 use super::test_support::{
     ABOVE_THE_PUDDLE, CROWN_STEP, HoldReport, INSIDE_THE_PUDDLE, INSIDE_THE_PUDDLE_AT_THE_WALL,
     MIN_PEAKS, OFF_CENTER, TARGET_PEAKS, UNDER_THE_DISH, advance, assert_hold_is_bounded,
-    first_step_where, profile, run_session_hold,
+    escaped_count, first_step_where, out_of_dish_count, profile, run_session_hold, session_lanes,
 };
 use super::{MAGNET_ACTION, MAGNET_STRENGTH_CONTROL, MAX_STRENGTH_PERCENT};
 use crate::ProofFrame;
@@ -60,6 +61,19 @@ const README_END_STEP: u32 = 597;
 const ENERGIZED_MARKER_SEGMENTS: usize = 8;
 /// Floats per rigid segment in a frame.
 const SEGMENT_FLOATS: usize = 4;
+/// Fixed steps per drag-path leg: about 0.01 m per step, a slow drag.
+const LEG_STEPS: u16 = 300;
+/// Steps the magnet dwells at the end of a drag path before the release.
+const DWELL_STEPS: u32 = 120;
+/// Steps watched after the release (5 s).
+const AFTER_RELEASE_STEPS: u32 = 300;
+/// Drag path from rest: up the dish axis to the top of the frame, then
+/// across past the right inner wall face to the frame edge. The clamp holds
+/// the magnet below `MAGNET_MAX_Y` (WR-02).
+const UP_THEN_ACROSS_PATH: [Vec2; 3] = [MAGNET_REST, Vec2::new(0.0, 3.5), Vec2::new(3.2, 3.5)];
+/// Drag path from rest: across under the dish to the frame edge, then up
+/// past the right inner wall face to the top of the frame.
+const ACROSS_THEN_UP_PATH: [Vec2; 3] = [MAGNET_REST, Vec2::new(3.2, -0.35), Vec2::new(3.2, 3.5)];
 
 /// Crown measurements before and after a drag.
 #[derive(Debug, Clone, Copy)]
@@ -81,6 +95,15 @@ impl DragReport {
 #[derive(Debug, Clone, Copy)]
 struct HeldRunReport {
     hold: HoldReport,
+    built: usize,
+    live: usize,
+}
+
+/// Containment measurements from a full-strength drag and release.
+#[derive(Debug, Clone, Copy)]
+struct DragPathReport {
+    max_out_of_dish: usize,
+    max_escaped: usize,
     built: usize,
     live: usize,
 }
@@ -212,6 +235,53 @@ fn gravity_smoke(magnitude: &str) -> (usize, usize) {
         session.particle_count(),
         session.live_particle_count().expect("live count"),
     )
+}
+
+/// Advances one fixed step and folds the containment counts into `report`.
+fn step_and_watch(session: &mut SessionCore, report: &mut DragPathReport) {
+    advance(session, 1);
+    let positions = session_lanes(session).0;
+    report.max_out_of_dish = report.max_out_of_dish.max(out_of_dish_count(&positions));
+    report.max_escaped = report.max_escaped.max(escaped_count(&positions));
+}
+
+/// At full strength, presses at `path[0]` while the crown forms, drags the
+/// held magnet slowly along every leg of `path`, dwells, releases and
+/// watches the liquid for `AFTER_RELEASE_STEPS`.
+fn dragged_at_full_strength(path: &[Vec2]) -> DragPathReport {
+    let mut session = new_session();
+    set_strength(&mut session, MAX_STRENGTH_PERCENT);
+    let mut report = DragPathReport {
+        max_out_of_dish: 0,
+        max_escaped: 0,
+        built: session.particle_count(),
+        live: 0,
+    };
+    press(&mut session, "down", path[0]);
+    advance(&mut session, SETTLE_STEPS);
+    for leg in path.windows(2) {
+        for step in 1..=LEG_STEPS {
+            let fraction = f32::from(step) / f32::from(LEG_STEPS);
+            press(&mut session, "move", leg[0] + (leg[1] - leg[0]) * fraction);
+            step_and_watch(&mut session, &mut report);
+        }
+    }
+    for _ in 0..DWELL_STEPS {
+        step_and_watch(&mut session, &mut report);
+    }
+    let end = path[path.len() - 1];
+    press(&mut session, "up", end);
+    for _ in 0..AFTER_RELEASE_STEPS {
+        step_and_watch(&mut session, &mut report);
+    }
+    report.live = session.live_particle_count().expect("live count");
+    report
+}
+
+fn assert_drag_stays_in_the_dish(report: &DragPathReport) {
+    assert_eq!(report.max_out_of_dish, 0, "{report:?}");
+    assert_eq!(report.max_escaped, 0, "{report:?}");
+    assert_eq!(report.live, report.built, "no evictions: {report:?}");
 }
 
 fn readme_run() -> ReadmeReport {
@@ -436,6 +506,26 @@ fn held_inside_the_puddle_at_the_wall_at_full_strength_stays_stable() {
 
     // Assert
     assert_held_run_is_stable(&report);
+}
+
+#[test]
+#[cfg_attr(debug_assertions, ignore = "release-only ferrofluid flow (D-23)")]
+fn dragging_up_then_past_the_wall_at_full_strength_keeps_the_liquid_in() {
+    // Act
+    let report = dragged_at_full_strength(&UP_THEN_ACROSS_PATH);
+
+    // Assert
+    assert_drag_stays_in_the_dish(&report);
+}
+
+#[test]
+#[cfg_attr(debug_assertions, ignore = "release-only ferrofluid flow (D-23)")]
+fn dragging_past_the_wall_then_up_at_full_strength_keeps_the_liquid_in() {
+    // Act
+    let report = dragged_at_full_strength(&ACROSS_THEN_UP_PATH);
+
+    // Assert
+    assert_drag_stays_in_the_dish(&report);
 }
 
 #[test]

@@ -3,6 +3,7 @@
 
 use liquidfun::math::Vec2;
 
+use super::field::FIELD;
 use crate::scene::RigidSegment;
 use crate::scene::particle_force::GravityFrame;
 
@@ -59,7 +60,14 @@ pub(super) const FRAME_MAX_X: f32 = 3.6;
 pub(super) const FRAME_MIN_Y: f32 = -0.8;
 pub(super) const FRAME_MAX_Y: f32 = WALL_TOP_Y + 0.6;
 
+/// Highest magnet center a drag may reach: one reach below the wall tops.
+/// The lift is even about the magnet, so liquid near a higher magnet floats
+/// with it; a slow drag up and across then carried a blob over the wall and
+/// out of the dish (WR-02).
+pub(super) const MAGNET_MAX_Y: f32 = WALL_TOP_Y - FIELD.reach;
+
 const _: () = assert!(FRAME_MAX_Y >= WALL_TOP_Y + 0.6);
+const _: () = assert!(MAGNET_MAX_Y <= FRAME_MAX_Y - MAGNET_HALF_HEIGHT);
 const _: () = assert!(FRAME_MAX_X >= DISH_OUTER_HALF_WIDTH + 0.3);
 const _: () = assert!(FRAME_MIN_X <= -DISH_OUTER_HALF_WIDTH - 0.3);
 
@@ -100,17 +108,17 @@ pub(super) fn dish_segments() -> Vec<RigidSegment> {
 }
 
 /// Clamps a magnet position to the frame inset by the bar half extents, so
-/// the whole marker stays on screen (UI-D82).
+/// the whole marker stays on screen (UI-D82), and below `MAGNET_MAX_Y`, so a
+/// drag cannot lift liquid over the walls (D-09).
 pub(super) fn clamp_magnet(position: Vec2) -> Vec2 {
     Vec2::new(
         position.x.clamp(
             FRAME_MIN_X + MAGNET_HALF_LENGTH,
             FRAME_MAX_X - MAGNET_HALF_LENGTH,
         ),
-        position.y.clamp(
-            FRAME_MIN_Y + MAGNET_HALF_HEIGHT,
-            FRAME_MAX_Y - MAGNET_HALF_HEIGHT,
-        ),
+        position
+            .y
+            .clamp(FRAME_MIN_Y + MAGNET_HALF_HEIGHT, MAGNET_MAX_Y),
     )
 }
 

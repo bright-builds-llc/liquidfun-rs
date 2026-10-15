@@ -6,8 +6,8 @@ use liquidfun::StepConfiguration;
 use liquidfun::math::Vec2;
 
 use super::geometry::{
-    DISH_INNER_HALF_WIDTH, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y, PARTICLE_DIAMETER,
-    PARTICLE_RADIUS, out_of_dish,
+    DISH_INNER_HALF_WIDTH, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y, MAGNET_MAX_Y,
+    PARTICLE_DIAMETER, PARTICLE_RADIUS, out_of_dish,
 };
 use crate::scene::{SceneId, particle_iterations};
 use crate::session::{MAX_ADVANCE_STEPS, SessionCore};
@@ -223,8 +223,8 @@ pub(super) const INSIDE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 0.3);
 pub(super) const INSIDE_THE_PUDDLE_AT_THE_WALL: Vec2 = Vec2::new(2.7, 0.3);
 /// Magnet held where it gathers the tallest measured column (48-02 probe).
 pub(super) const HIGH_ABOVE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 1.3);
-/// Magnet held high at the right edge of the clamp, outside the inner face.
-pub(super) const HIGH_AT_THE_EDGE: Vec2 = Vec2::new(3.2, 1.5);
+/// Magnet held at the top right corner of the clamp, outside the inner face.
+pub(super) const HIGH_AT_THE_EDGE: Vec2 = Vec2::new(3.2, MAGNET_MAX_Y);
 /// Every hold position, plus the two tallest-column positions, for the
 /// containment margin check.
 pub(super) const HOLD_POSITIONS: [Vec2; 7] = [

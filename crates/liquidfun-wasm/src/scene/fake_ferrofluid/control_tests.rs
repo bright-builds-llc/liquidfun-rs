@@ -1,13 +1,14 @@
 //! Debug-safe Fake Ferrofluid seam tests: the pointer drag, the `magnet`
 //! action and the `magnet-strength` allowlist store intent only, the magnet
-//! stays clamped inside the frame, and the marker is drawn in the gravity
-//! frame (D-06..D-11, D-17, UI-D74, UI-D81, UI-D82).
+//! stays clamped inside the frame and one reach below the wall tops, and the
+//! marker is drawn in the gravity frame (D-06..D-11, D-17, UI-D74, UI-D81,
+//! UI-D82).
 
 use liquidfun::math::Vec2;
 
 use super::geometry::{
-    FLOOR_BOTTOM_Y, FRAME_MAX_X, FRAME_MIN_Y, MAGNET_HALF_HEIGHT, MAGNET_HALF_LENGTH, MAGNET_REST,
-    dish_segments, magnet_marker,
+    FLOOR_BOTTOM_Y, FRAME_MAX_X, FRAME_MIN_X, FRAME_MIN_Y, MAGNET_HALF_HEIGHT, MAGNET_HALF_LENGTH,
+    MAGNET_MAX_Y, MAGNET_REST, dish_segments, magnet_marker,
 };
 use super::{
     DEFAULT_STRENGTH_PERCENT, FerrofluidParts, MAGNET_ACTION, MAGNET_STRENGTH_CONTROL,
@@ -191,6 +192,19 @@ fn pointer_down_outside_the_frame_clamps_to_the_inset() {
 
     // Act
     pointer(&mut parts, PointerKind::Down, 50.0, -50.0);
+
+    // Assert
+    assert_eq!(parts.hooks.magnet_position, expected);
+}
+
+#[test]
+fn pointer_down_above_the_frame_clamps_one_reach_below_the_wall_tops() {
+    // Arrange
+    let mut parts = build_parts().expect("ferrofluid parts");
+    let expected = Vec2::new(FRAME_MIN_X + MAGNET_HALF_LENGTH, MAGNET_MAX_Y);
+
+    // Act
+    pointer(&mut parts, PointerKind::Down, -50.0, 50.0);
 
     // Assert
     assert_eq!(parts.hooks.magnet_position, expected);
