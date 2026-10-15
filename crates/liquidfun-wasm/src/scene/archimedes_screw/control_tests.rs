@@ -22,6 +22,9 @@ const POSITION_TOLERANCE: f32 = 1e-4;
 const SPEED_TS: &str = include_str!("../../../../../web/src/catalog/archimedes-screw-speed.ts");
 /// The web view bounds, which must mirror the landscape `FRAME_*` rectangle.
 const VIEW_BOUNDS_TS: &str = include_str!("../../../../../web/src/catalog/scene-view-bounds.ts");
+/// The web scene records, whose `screw-direction` options must parse in Rust.
+const CURIOSITY_TS: &str =
+    include_str!("../../../../../web/src/catalog/scene-records-curiosity.ts");
 
 /// Number literal after `key:` in a TypeScript object literal body.
 fn ts_field(body: &str, key: &str) -> f32 {
@@ -36,6 +39,41 @@ fn ts_field(body: &str, key: &str) -> f32 {
         .trim()
         .parse()
         .unwrap_or_else(|error| panic!("`{marker}` value {value:?}: {error}"))
+}
+
+/// Number literal of `const NAME = <value>;` in a TypeScript module.
+fn ts_const(source: &str, name: &str) -> f32 {
+    let marker = format!("const {name} =");
+    let (_, rest) = source
+        .split_once(&marker)
+        .unwrap_or_else(|| panic!("`{marker}` in the web speed control"));
+    let (value, _) = rest
+        .split_once(';')
+        .unwrap_or_else(|| panic!("`;` after `{marker}`"));
+    value
+        .trim()
+        .parse()
+        .unwrap_or_else(|error| panic!("`{marker}` value {value:?}: {error}"))
+}
+
+/// Every `option("<token>"` token of the web `screw-direction` preset, in order.
+fn web_direction_tokens() -> Vec<&'static str> {
+    let marker = format!("runtimePreset(\"{SCREW_DIRECTION_CONTROL}\"");
+    let (_, after) = CURIOSITY_TS
+        .split_once(&marker)
+        .unwrap_or_else(|| panic!("`{marker}` in the web scene records"));
+    let (options, _) = after
+        .split_once("])")
+        .expect("`])` closing the direction options");
+    options
+        .split("option(\"")
+        .skip(1)
+        .map(|rest| {
+            rest.split_once('"')
+                .expect("closing quote of a direction token")
+                .0
+        })
+        .collect()
 }
 
 fn train_snapshot(parts: &ScrewParts) -> BodySnapshot {
@@ -243,18 +281,73 @@ fn reverse_moves_the_train_down_the_axis_at_the_current_speed() {
 }
 
 #[test]
-fn web_speed_constants_match_rust() {
+fn web_speed_default_and_maximum_match_rust() {
     // Arrange
-    let default_line = format!("SCREW_SPEED_DEFAULT = {DEFAULT_SCREW_RPM};");
-    let max_line = format!("SCREW_SPEED_MAX = {MAX_SCREW_RPM};");
+    let rust = [f32::from(DEFAULT_SCREW_RPM), f32::from(MAX_SCREW_RPM)];
 
     // Act
-    let has_default = SPEED_TS.contains(&default_line);
-    let has_max = SPEED_TS.contains(&max_line);
+    let web = [
+        ts_const(SPEED_TS, "SCREW_SPEED_DEFAULT"),
+        ts_const(SPEED_TS, "SCREW_SPEED_MAX"),
+    ];
 
     // Assert
-    assert!(has_default, "web speed file lacks `{default_line}`");
-    assert!(has_max, "web speed file lacks `{max_line}`");
+    assert_eq!(
+        web.map(f32::to_bits),
+        rust.map(f32::to_bits),
+        "{web:?} vs {rust:?}"
+    );
+}
+
+#[test]
+fn web_speed_minimum_and_step_match_whole_rpm_tokens() {
+    // Arrange
+    let whole_rpm = [0.0_f32, 1.0];
+
+    // Act
+    let web = [
+        ts_const(SPEED_TS, "SCREW_SPEED_MIN"),
+        ts_const(SPEED_TS, "SCREW_SPEED_STEP"),
+    ];
+
+    // Assert
+    assert_eq!(
+        web.map(f32::to_bits),
+        whole_rpm.map(f32::to_bits),
+        "{web:?} vs {whole_rpm:?}"
+    );
+}
+
+#[test]
+fn web_direction_options_are_forward_then_reverse() {
+    // Act
+    let tokens = web_direction_tokens();
+
+    // Assert
+    assert_eq!(tokens, ["forward", "reverse"]);
+}
+
+#[test]
+fn every_web_direction_option_is_a_live_rust_control() {
+    // Arrange
+    let mut parts = build_parts().expect("screw parts");
+    let tokens = web_direction_tokens();
+
+    // Act
+    let rejected: Vec<&str> = tokens
+        .iter()
+        .copied()
+        .filter(|token| {
+            !matches!(
+                control(&mut parts, SCREW_DIRECTION_CONTROL, token),
+                Ok(ControlEffect::Live)
+            )
+        })
+        .collect();
+
+    // Assert
+    assert!(!tokens.is_empty(), "no web direction options");
+    assert!(rejected.is_empty(), "rejected web tokens: {rejected:?}");
 }
 
 #[test]
