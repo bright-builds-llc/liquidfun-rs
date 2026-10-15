@@ -99,6 +99,9 @@ export function formatRangeValueText(value: string, unit: string): string {
   if (unit === "particles/s") {
     return `${value} particles per second`;
   }
+  if (unit === "%") {
+    return `${value} percent`;
+  }
   if (unit === "direction") {
     return directionSpoken(value);
   }

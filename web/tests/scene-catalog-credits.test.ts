@@ -216,6 +216,7 @@ describe("scene catalog credits", () => {
     expect(inspirationById["tesla-valve"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["cartesian-diver"]).toEqual([SHOWCASE_HREF]);
     expect(inspirationById["archimedes-screw"]).toEqual([SHOWCASE_HREF]);
+    expect(inspirationById["fake-ferrofluid"]).toEqual([SHOWCASE_HREF]);
     expect(maybeSceneById("drawing-particles")?.credits.inspiration).toEqual([
       { label: "Pinned DrawingParticles.js", href: DRAWING_PARTICLES_JS_HREF },
       { label: "Pinned DrawingParticles.h", href: DRAWING_PARTICLES_H_HREF },

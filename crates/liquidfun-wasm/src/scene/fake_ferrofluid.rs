@@ -275,6 +275,8 @@ mod flow_tests;
 #[cfg(test)]
 mod spike_tests;
 #[cfg(test)]
+mod sync_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod tests;

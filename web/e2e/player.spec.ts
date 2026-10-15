@@ -55,6 +55,7 @@ const POINTER_CONTROL: Readonly<
   "tesla-valve": { gesture: "click", control: "Flow rate" },
   "cartesian-diver": { gesture: "click", control: "Squeeze" },
   "archimedes-screw": { gesture: "click", control: "Screw speed" },
+  "fake-ferrofluid": { gesture: "drag", control: "Magnet" },
 };
 
 const INTERACTIVE_SCENE_IDS = SCENE_IDS.filter(

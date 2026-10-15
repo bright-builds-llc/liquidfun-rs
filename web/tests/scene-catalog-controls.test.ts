@@ -7,6 +7,7 @@ import {
 } from "../src/catalog/gravity-slider";
 import { GAP_CONTROL } from "../src/catalog/hydraulic-fountain-gap";
 import { SCREW_SPEED_CONTROL } from "../src/catalog/archimedes-screw-speed";
+import { MAGNET_STRENGTH_CONTROL } from "../src/catalog/fake-ferrofluid-strength";
 import {
   action,
   option,
@@ -427,5 +428,21 @@ describe("scene catalog controls", () => {
     expect(controls).toEqual(expected);
     expect(controls[0]?.recreates).toBe(false);
     expect(controls[1]?.recreates).toBe(false);
+  });
+
+  it("gives Fake Ferrofluid a live Magnet strength and a Magnet action before gravity", () => {
+    // Arrange
+    const expected = [
+      MAGNET_STRENGTH_CONTROL,
+      action("magnet", "Magnet"),
+      GRAVITY_CONTROL,
+    ];
+
+    // Act
+    const controls = maybeSceneById("fake-ferrofluid")?.controls ?? [];
+
+    // Assert
+    expect(controls).toEqual(expected);
+    expect(controls[0]?.recreates).toBe(false);
   });
 });

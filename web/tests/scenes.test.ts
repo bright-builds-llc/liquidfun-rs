@@ -173,6 +173,19 @@ const SCREW_FORBIDDEN_CLAIMS = [
   "pump",
 ] as const;
 
+/** Claims the Fake Ferrofluid copy must not make about its scripted pull (UI-D77). */
+const FERRO_FORBIDDEN_CLAIMS = [
+  "magnetic field",
+  "magnetostatic",
+  "field solve",
+  "real magnet",
+  "simulated magnet",
+  "simulates magnet",
+  "maxwell",
+  "rosensweig",
+  "measured",
+] as const;
+
 describe("SCENES", () => {
   it("lists the locked scenes in the approved order", () => {
     // Arrange
@@ -373,6 +386,23 @@ describe("SCENES", () => {
     // Assert
     expect(claims).toEqual([]);
     expect(description).toContain("flat vanes stand in for a turning helix");
+  });
+
+  it("keeps the Fake Ferrofluid caption honest about its scripted pull", () => {
+    // Arrange
+    const ferro = maybeSceneById("fake-ferrofluid");
+    const description = (ferro?.description ?? "").toLowerCase();
+    const hint = (ferro?.interactionHint ?? "").toLowerCase();
+
+    // Act
+    const claims = FERRO_FORBIDDEN_CLAIMS.filter(
+      (claim) => description.includes(claim) || hint.includes(claim),
+    );
+
+    // Assert
+    expect(claims).toEqual([]);
+    expect(description).toContain("scripted magnetic pull");
+    expect(ferro?.title).toBe("Fake Ferrofluid");
   });
 });
 

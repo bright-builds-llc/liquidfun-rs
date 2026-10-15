@@ -416,6 +416,17 @@ describe("portrait scene frames", () => {
         { x: 1.7, y: 2.05 },
         { x: 2.45, y: 2.8 },
       ],
+      // Dish wall tops, slab bottom corners and the resting magnet.
+      "fake-ferrofluid": [
+        { x: -3.3, y: 3.0 },
+        { x: -3.0, y: 3.0 },
+        { x: 3.0, y: 3.0 },
+        { x: 3.3, y: 3.0 },
+        { x: -3.3, y: -0.25 },
+        { x: 3.3, y: -0.25 },
+        { x: -0.4, y: -0.45 },
+        { x: 0.4, y: -0.45 },
+      ],
     } as const;
 
     // Act
