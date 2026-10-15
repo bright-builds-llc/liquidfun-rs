@@ -6,7 +6,7 @@ use liquidfun::math::Vec2;
 use liquidfun::{BodySnapshot, NoDecisionHook, StepLimits};
 
 use super::geometry::{
-    AXIS, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y, PITCH, TUBE_ORIGIN,
+    AXIS, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y, NORMAL, PITCH, TUBE_ORIGIN,
 };
 use super::test_support::step_configuration;
 use super::{
@@ -17,6 +17,7 @@ use crate::scene::{ControlEffect, SceneHooks, SceneId};
 use crate::session::{SessionCore, SessionError};
 
 const POSITION_TOLERANCE: f32 = 1e-4;
+const SPEED_TOLERANCE: f32 = 1e-5;
 
 /// The web speed control, which must mirror `DEFAULT_SCREW_RPM` and `MAX_SCREW_RPM`.
 const SPEED_TS: &str = include_str!("../../../../../web/src/catalog/archimedes-screw-speed.ts");
@@ -256,7 +257,9 @@ fn reverse_moves_the_train_down_the_axis_at_the_current_speed() {
     // Arrange
     let mut parts = build_parts().expect("screw parts");
     control(&mut parts, SCREW_DIRECTION_CONTROL, "reverse").expect("reverse is allowed");
-    let expected = -axial_speed(DEFAULT_SCREW_RPM, false) * SIM_DT;
+    let expected_speed = axial_speed(DEFAULT_SCREW_RPM, true);
+    // From phase 0 one reverse step wraps the phase to `PITCH - step`.
+    let expected_phase = PITCH + expected_speed * SIM_DT;
     let system = parts.particle_system;
 
     // Act
@@ -274,10 +277,24 @@ fn reverse_moves_the_train_down_the_axis_at_the_current_speed() {
         .expect("the screw world steps");
 
     // Assert
-    let travelled = (train_snapshot(&parts).position() - TUBE_ORIGIN).dot(AXIS);
-    let error = (travelled - expected).rem_euclid(PITCH);
-    let error = error.min(PITCH - error);
-    assert!(error < POSITION_TOLERANCE, "{travelled} vs {expected}");
+    let snapshot = train_snapshot(&parts);
+    let velocity = snapshot.linear_velocity();
+    let along = velocity.dot(AXIS);
+    assert!(
+        (along - expected_speed).abs() < SPEED_TOLERANCE,
+        "{along} vs {expected_speed}"
+    );
+    assert!(velocity.dot(NORMAL).abs() < SPEED_TOLERANCE, "{velocity:?}");
+    assert!(
+        (parts.hooks.phase - expected_phase).abs() < POSITION_TOLERANCE,
+        "{} vs {expected_phase}",
+        parts.hooks.phase
+    );
+    let travelled = (snapshot.position() - TUBE_ORIGIN).dot(AXIS);
+    assert!(
+        (travelled - expected_phase).abs() < POSITION_TOLERANCE,
+        "{travelled} vs {expected_phase}"
+    );
 }
 
 #[test]

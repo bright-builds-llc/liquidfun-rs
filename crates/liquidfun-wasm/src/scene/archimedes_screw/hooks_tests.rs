@@ -208,10 +208,13 @@ fn the_train_moves_one_pitch_per_revolution_along_the_axis() {
     drive(&mut parts, MOVE_STEPS, |_world| {});
 
     // Assert
+    // The run stays inside one pitch, so no snap hides in the distance.
+    assert!(expected < PITCH, "{expected}");
     let travelled = (train_origin(&parts.world, parts.hooks.train) - TUBE_ORIGIN).dot(AXIS);
-    let error = (travelled - expected).rem_euclid(PITCH);
-    let error = error.min(PITCH - error);
-    assert!(error < POSITION_TOLERANCE, "{travelled} vs {expected}");
+    assert!(
+        (travelled - expected).abs() < POSITION_TOLERANCE,
+        "{travelled} vs {expected}"
+    );
 }
 
 #[test]
