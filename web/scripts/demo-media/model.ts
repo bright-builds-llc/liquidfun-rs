@@ -299,6 +299,10 @@ export const SCENE_CAPTURE_PLANS: readonly SceneCapturePlan[] = [
     interactionStep: 180,
     action: { kind: "click", point: { x: 0.5, y: 0.5 } },
   },
+  // The shared center click is not neutral here: its release parks the
+  // magnet and switches it off at step 180, so the 8 s capture shows the
+  // spikes rise for 3 s and then collapse. Every canvas gesture ends in a
+  // release, so no click or drag keeps the spikes; this is accepted (D-21).
   {
     id: "fake-ferrofluid",
     title: "Fake Ferrofluid",
