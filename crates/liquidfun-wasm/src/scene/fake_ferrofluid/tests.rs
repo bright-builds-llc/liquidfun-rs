@@ -14,7 +14,7 @@ use super::geometry::{
 use super::test_support::{step_configuration, surface_profile};
 use super::{DEFAULT_STRENGTH_PERCENT, LIQUID_COLOR, MAX_STRENGTH_PERCENT, build, build_parts};
 use crate::scene::particle_force::GravityFrame;
-use crate::scene::{PointerKind, SceneHooks, SceneId, build_scene};
+use crate::scene::{SceneHooks, SceneId, build_scene};
 use crate::session::SessionError;
 
 const FRAME_MARGIN: f32 = 0.1;
@@ -489,50 +489,7 @@ fn magnet_off_applies_no_force() {
 }
 
 #[test]
-fn controls_and_actions_are_rejected_until_the_magnet_seam_lands() {
-    // Arrange
-    let mut parts = build_parts().expect("ferrofluid parts");
-    let system = parts.particle_system;
-
-    // Act
-    let control = parts
-        .hooks
-        .apply_control(&mut parts.world, system, "magnet-strength", "65");
-    let action = parts.hooks.apply_action(&mut parts.world, system, "magnet");
-
-    // Assert
-    assert!(matches!(control, Err(SessionError::UnknownControl)));
-    assert_eq!(action, Err(SessionError::UnknownControl));
-}
-
-#[test]
-fn pointer_events_change_nothing_yet() {
-    // Arrange
-    let mut parts = build_parts().expect("ferrofluid parts");
-    let system = parts.particle_system;
-    let kinds = [
-        PointerKind::Down,
-        PointerKind::Move,
-        PointerKind::Up,
-        PointerKind::Cancel,
-    ];
-
-    for kind in kinds {
-        // Act
-        let result = parts
-            .hooks
-            .apply_pointer(&mut parts.world, system, kind, 1.0, 0.5);
-
-        // Assert
-        assert_eq!(result, Ok(()));
-        assert!(parts.hooks.magnet_on);
-        assert_eq!(parts.hooks.magnet_position, MAGNET_REST);
-        assert_eq!(parts.hooks.strength_percent, DEFAULT_STRENGTH_PERCENT);
-    }
-}
-
-#[test]
-fn collect_segments_returns_only_the_dish_loops() {
+fn collect_segments_starts_with_the_dish_loops() {
     // Arrange
     let parts = build_parts().expect("ferrofluid parts");
     let expected = dish_quads()
@@ -545,15 +502,14 @@ fn collect_segments_returns_only_the_dish_loops() {
         .hooks
         .collect_segments(&parts.world)
         .expect("segments");
-    let circles = parts.hooks.collect_circles(&parts.world).expect("circles");
 
     // Assert
     let actual = segments
         .iter()
+        .take(expected.len())
         .map(|segment| (segment.start, segment.end))
         .collect::<Vec<_>>();
     assert_eq!(actual, expected);
-    assert!(circles.is_empty());
 }
 
 #[test]

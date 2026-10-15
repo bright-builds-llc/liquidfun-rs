@@ -4,6 +4,7 @@
 use liquidfun::math::Vec2;
 
 use crate::scene::RigidSegment;
+use crate::scene::particle_force::GravityFrame;
 
 /// Liquid particle radius: small enough for slender spikes (D-15).
 pub(super) const PARTICLE_RADIUS: f32 = 0.04;
@@ -39,29 +40,27 @@ pub(super) const PUDDLE_CENTER: Vec2 =
 /// bar's top face flush with the slab bottom (D-06).
 pub(super) const MAGNET_REST: Vec2 = Vec2::new(0.0, -0.35);
 /// Half the bar magnet's length, along the dish.
-#[cfg(test)]
 pub(super) const MAGNET_HALF_LENGTH: f32 = 0.4;
 /// Half the bar magnet's height, along the field axis.
-#[cfg(test)]
 pub(super) const MAGNET_HALF_HEIGHT: f32 = 0.1;
+
+/// Gap between the bar's top face and the field ticks, in meters.
+const TICK_GAP: f32 = 0.04;
+/// Length of each field tick, in meters.
+const TICK_LENGTH: f32 = 0.16;
+/// Field tick offsets along the bar from its center, in meters.
+const TICK_OFFSETS: [f32; 3] = [-0.25, 0.0, 0.25];
 
 /// Scene frame: the dish and the resting marker plus a 0.3 m side margin and
 /// at least 0.6 m of headroom above the wall tops (UI-D83). The web
 /// `FAKE_FERROFLUID_VIEW_BOUNDS` mirrors these values.
-#[cfg(test)]
 pub(super) const FRAME_MIN_X: f32 = -3.6;
-#[cfg(test)]
 pub(super) const FRAME_MAX_X: f32 = 3.6;
-#[cfg(test)]
 pub(super) const FRAME_MIN_Y: f32 = -0.8;
-#[cfg(test)]
 pub(super) const FRAME_MAX_Y: f32 = WALL_TOP_Y + 0.6;
 
-#[cfg(test)]
 const _: () = assert!(FRAME_MAX_Y >= WALL_TOP_Y + 0.6);
-#[cfg(test)]
 const _: () = assert!(FRAME_MAX_X >= DISH_OUTER_HALF_WIDTH + 0.3);
-#[cfg(test)]
 const _: () = assert!(FRAME_MIN_X <= -DISH_OUTER_HALF_WIDTH - 0.3);
 
 /// The dish as counter-clockwise convex quads, in a fixed order: floor slab,
@@ -97,6 +96,67 @@ pub(super) fn dish_segments() -> Vec<RigidSegment> {
     for quad in &dish_quads() {
         push_loop(&mut segments, quad);
     }
+    segments
+}
+
+/// Clamps a magnet position to the frame inset by the bar half extents, so
+/// the whole marker stays on screen (UI-D82).
+pub(super) fn clamp_magnet(position: Vec2) -> Vec2 {
+    Vec2::new(
+        position.x.clamp(
+            FRAME_MIN_X + MAGNET_HALF_LENGTH,
+            FRAME_MAX_X - MAGNET_HALF_LENGTH,
+        ),
+        position.y.clamp(
+            FRAME_MIN_Y + MAGNET_HALF_HEIGHT,
+            FRAME_MAX_Y - MAGNET_HALF_HEIGHT,
+        ),
+    )
+}
+
+/// The bar-magnet marker centered on `center`, drawn in the gravity frame so
+/// it tilts with gravity (UI-D81, D-14): the outline always, plus the pole
+/// divider and three field ticks while the magnet is on. Without a gravity
+/// frame it falls back to an axis-aligned outline.
+pub(super) fn magnet_marker(
+    center: Vec2,
+    maybe_frame: Option<GravityFrame>,
+    on: bool,
+) -> Vec<RigidSegment> {
+    let Some(frame) = maybe_frame else {
+        return bar_outline(center, Vec2::new(0.0, 1.0), Vec2::new(1.0, 0.0));
+    };
+    let mut segments = bar_outline(center, frame.up, frame.across);
+    if !on {
+        return segments;
+    }
+    let half_height = frame.up * MAGNET_HALF_HEIGHT;
+    segments.push(RigidSegment {
+        start: center - half_height,
+        end: center + half_height,
+    });
+    for offset in TICK_OFFSETS {
+        let start = center + frame.across * offset + frame.up * (MAGNET_HALF_HEIGHT + TICK_GAP);
+        segments.push(RigidSegment {
+            start,
+            end: start + frame.up * TICK_LENGTH,
+        });
+    }
+    segments
+}
+
+/// The bar's closed outline: long sides along `across`, short along `up`.
+fn bar_outline(center: Vec2, up: Vec2, across: Vec2) -> Vec<RigidSegment> {
+    let half_length = across * MAGNET_HALF_LENGTH;
+    let half_height = up * MAGNET_HALF_HEIGHT;
+    let corners = [
+        center - half_length - half_height,
+        center + half_length - half_height,
+        center + half_length + half_height,
+        center - half_length + half_height,
+    ];
+    let mut segments = Vec::with_capacity(8);
+    push_loop(&mut segments, &corners);
     segments
 }
 

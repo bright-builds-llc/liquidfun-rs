@@ -6,6 +6,13 @@
 //! particle the gradient of one bounded polynomial potential plus velocity
 //! drag, through the shared gravity-aware force helper. The magnet itself is
 //! only a drawn marker; it never collides with anything.
+//!
+//! Pressing anywhere switches the magnet on and moves it to the pointer, and
+//! dragging moves it; the spikes follow. Releasing or cancelling the press
+//! switches it off and parks it back under the dish, so the spikes slump.
+//! The `magnet` action toggles it at its current position, and the live
+//! `magnet-strength` control sets the pull from 0 to 100 percent. These
+//! inputs only store intent; the pull is applied in `on_advance`.
 
 mod field;
 mod geometry;
@@ -25,14 +32,17 @@ use self::geometry::{
 use super::particle_force::{self, ForceScale, GravityFrame, ParticleScratch};
 use super::{
     BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks, SceneId,
-    attach_basin_fixture,
+    attach_basin_fixture, parse_whole_rpm,
 };
 use crate::session::SessionError;
 
+/// Live control: pull strength in whole percent, `0..=100` (D-09, D-11).
+const MAGNET_STRENGTH_CONTROL: &str = "magnet-strength";
+/// Action: toggles the magnet on or off at its current position (D-10).
+const MAGNET_ACTION: &str = "magnet";
 /// Strength on load, in percent of the tuned maximum: five to nine spikes (D-04, D-09).
 const DEFAULT_STRENGTH_PERCENT: u16 = 65;
 /// The tuned safe maximum strength, in percent (D-09).
-#[cfg(test)]
 const MAX_STRENGTH_PERCENT: u16 = 100;
 /// Neighbor viscosity that keeps spikes cohesive; the step fails above about 2.0 (D-03).
 const VISCOUS_STRENGTH: f32 = 0.25;
@@ -46,12 +56,15 @@ const MAXIMUM_PARTICLE_COUNT: usize = 3_000;
 const _: () = assert!(DEFAULT_STRENGTH_PERCENT >= 60 && DEFAULT_STRENGTH_PERCENT <= 70);
 const _: () = assert!(VISCOUS_STRENGTH <= 1.5);
 
-/// Magnet intent; the pull is applied only in `on_advance`, once per fixed step (D-08).
+/// Magnet intent from the pointer, action and control seams; the pull is
+/// applied only in `on_advance`, once per fixed step (D-08).
 struct FakeFerrofluidHooks {
     /// Whether the magnet pulls; on at load (D-06).
     magnet_on: bool,
     /// Field origin; rests under the dish floor center at load (D-06).
     magnet_position: Vec2,
+    /// Whether a press is held, so pointer moves drag the magnet (D-07).
+    pointer_held: bool,
     /// Pull strength in percent; 0 means no pull while drag still holds the puddle (D-11).
     strength_percent: u16,
     /// Particle mass times particle iterations, from the live system definition.
@@ -110,6 +123,7 @@ fn build_parts() -> Result<FerrofluidParts, SceneError> {
         hooks: FakeFerrofluidHooks {
             magnet_on: true,
             magnet_position: MAGNET_REST,
+            pointer_held: false,
             strength_percent: DEFAULT_STRENGTH_PERCENT,
             scale,
             scratch: ParticleScratch::default(),
@@ -182,35 +196,71 @@ impl SceneHooks for FakeFerrofluidHooks {
         &mut self,
         _world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
-        _value: &str,
+        name: &str,
+        value: &str,
     ) -> Result<ControlEffect, SessionError> {
-        Err(SessionError::UnknownControl)
+        if name != MAGNET_STRENGTH_CONTROL {
+            return Err(SessionError::UnknownControl);
+        }
+        let Some(percent) = parse_whole_rpm(value, MAX_STRENGTH_PERCENT) else {
+            return Err(SessionError::UnknownControl);
+        };
+        self.strength_percent = percent;
+        Ok(ControlEffect::Live)
     }
 
     fn apply_action(
         &mut self,
         _world: &mut World,
         _system: ParticleSystemId,
-        _name: &str,
+        name: &str,
     ) -> Result<(), SessionError> {
-        Err(SessionError::UnknownControl)
+        if name != MAGNET_ACTION {
+            return Err(SessionError::UnknownControl);
+        }
+        self.magnet_on = !self.magnet_on;
+        Ok(())
     }
 
     fn apply_pointer(
         &mut self,
         _world: &mut World,
         _system: ParticleSystemId,
-        _kind: PointerKind,
-        _world_x: f32,
-        _world_y: f32,
+        kind: PointerKind,
+        world_x: f32,
+        world_y: f32,
     ) -> Result<(), SessionError> {
-        // An ignored pointer must stay Ok: an error would fail the scene in the browser.
+        let pointer = Vec2::new(world_x, world_y);
+        match kind {
+            PointerKind::Down => {
+                self.pointer_held = true;
+                self.magnet_on = true;
+                self.magnet_position = geometry::clamp_magnet(pointer);
+            }
+            PointerKind::Move if self.pointer_held => {
+                self.magnet_position = geometry::clamp_magnet(pointer);
+            }
+            // Release and cancel always park the magnet, pressed or not (D-07).
+            PointerKind::Up | PointerKind::Cancel => {
+                self.pointer_held = false;
+                self.magnet_on = false;
+                self.magnet_position = MAGNET_REST;
+            }
+            // An ignored pointer must stay Ok: an error would fail the scene in the browser.
+            PointerKind::Move => {}
+        }
         Ok(())
     }
 
-    fn collect_segments(&self, _world: &World) -> Result<Vec<RigidSegment>, SessionError> {
-        Ok(self.dish_segments.clone())
+    fn collect_segments(&self, world: &World) -> Result<Vec<RigidSegment>, SessionError> {
+        // Dish first, so dish line indices never change when the marker toggles.
+        let mut segments = self.dish_segments.clone();
+        segments.extend(geometry::magnet_marker(
+            self.magnet_position,
+            GravityFrame::from_gravity(world.gravity()),
+            self.magnet_on,
+        ));
+        Ok(segments)
     }
 
     fn collect_circles(&self, _world: &World) -> Result<Vec<(Vec2, f32)>, SessionError> {
@@ -218,6 +268,8 @@ impl SceneHooks for FakeFerrofluidHooks {
     }
 }
 
+#[cfg(test)]
+mod control_tests;
 #[cfg(test)]
 mod spike_tests;
 #[cfg(test)]
