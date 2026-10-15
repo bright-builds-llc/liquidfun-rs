@@ -68,6 +68,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "A diver floats in a closed bottle of particle water. Squeeze the bottle and it sinks, then let go and it rises. Switching the diver to a heavier density stands in for its squeezed air bubble. The bottle dent and the bubble are drawn, not simulated. This is an original experimental scene.",
   "archimedes-screw":
     "Slanted vanes slide up a tilted tube and carry pockets of water from the low reservoir into the upper basin, which overflows back down a chute. Flat vanes stand in for a turning helix in this 2D side view. This is an original experimental scene.",
+  "fake-ferrofluid":
+    "A dark liquid puddle sits in a shallow dish over a magnet and rises into a row of separate spikes. A scripted magnetic pull lifts the liquid into the spikes. The physics engine has no magnetism, and the magnet is only a drawn marker. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -115,6 +117,8 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Press and hold the bottle, or use Squeeze, to sink the diver. Let go, or use Squeeze again, and it rises. Presses outside the bottle do nothing. Labeled controls also work from the keyboard.",
   "archimedes-screw":
     "Use Screw speed to speed up or stop the screw, and Direction to run it in reverse. Labeled controls also work from the keyboard.",
+  "fake-ferrofluid":
+    "Press and drag to move the magnet, and the spikes follow. Let go and it switches off and returns under the dish. Use Magnet to switch it on or off, and Magnet strength to change the pull. Labeled controls also work from the keyboard.",
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -143,6 +147,7 @@ const LOCKED_ACTION_LABELS = [
   "Poke jelly",
   "Jet strength",
   "Squeeze",
+  "Magnet",
 ] as const;
 const DIVER_FORBIDDEN_CLAIMS = [
   "pressure",
@@ -199,6 +204,7 @@ describe("SCENES", () => {
       "tesla-valve",
       "cartesian-diver",
       "archimedes-screw",
+      "fake-ferrofluid",
     ] as const;
 
     // Act
@@ -240,6 +246,7 @@ describe("SCENES", () => {
       "Tesla Valve",
       "Cartesian Diver",
       "Archimedes Screw",
+      "Fake Ferrofluid",
     ];
 
     // Act

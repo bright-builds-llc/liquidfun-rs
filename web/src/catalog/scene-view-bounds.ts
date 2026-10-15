@@ -30,6 +30,21 @@ export const CARTESIAN_DIVER_VIEW_BOUNDS = {
 } as const;
 
 /**
+ * Camera frame for Fake Ferrofluid, in meters.
+ *
+ * Keep in sync with `FRAME_*` in
+ * `crates/liquidfun-wasm/src/scene/fake_ferrofluid/geometry.rs`. This is the
+ * dish and the resting magnet with a 0.3 m side margin, plus headroom above
+ * the walls for the spikes and a dragged magnet.
+ */
+export const FAKE_FERROFLUID_VIEW_BOUNDS = {
+  minX: -3.6,
+  minY: -0.8,
+  maxX: 3.6,
+  maxY: 3.6,
+} as const;
+
+/**
  * Camera frame for Liquid Tumbler, in meters.
  *
  * Keep in sync with the glass comments in

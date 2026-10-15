@@ -1,5 +1,5 @@
 /** Static SVG previews for the curiosity scenes. */
-import { CANVAS, PreviewFrame, RIGID, WATER } from "./preview-kit";
+import { CANVAS, FERRO, PreviewFrame, RIGID, WATER } from "./preview-kit";
 
 export function CartesianDiverPreview() {
   return (
@@ -36,6 +36,24 @@ export function ArchimedesScrewPreview() {
       <line x1="61.6" y1="54" x2="59.7" y2="43.5" stroke={RIGID} stroke-width="2" />
       <line x1="75.4" y1="46" x2="73.6" y2="35.5" stroke={RIGID} stroke-width="2" />
       <line x1="89.3" y1="38" x2="87.4" y2="27.5" stroke={RIGID} stroke-width="2" />
+    </PreviewFrame>
+  );
+}
+
+export function FakeFerrofluidPreview() {
+  return (
+    <PreviewFrame>
+      <rect x="18" y="60" width="124" height="6.5" fill={FERRO} />
+      <polygon points="35.5,61 41,52 46.5,61" fill={FERRO} />
+      <polygon points="48.5,61 54,46 59.5,61" fill={FERRO} />
+      <polygon points="61.5,61 67,41 72.5,61" fill={FERRO} />
+      <polygon points="74.5,61 80,38 85.5,61" fill={FERRO} />
+      <polygon points="87.5,61 93,41 98.5,61" fill={FERRO} />
+      <polygon points="100.5,61 106,46 111.5,61" fill={FERRO} />
+      <polygon points="113.5,61 119,52 124.5,61" fill={FERRO} />
+      <polyline points="16,40 16,68 144,68 144,40" fill="none" stroke={RIGID} stroke-width="3" />
+      <rect x="68" y="74" width="24" height="6" fill={CANVAS} stroke={RIGID} stroke-width="2" />
+      <line x1="80" y1="74" x2="80" y2="80" stroke={RIGID} stroke-width="2" />
     </PreviewFrame>
   );
 }

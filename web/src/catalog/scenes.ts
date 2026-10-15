@@ -2,6 +2,7 @@ import { WORLD_BOUNDS, type WorldBounds } from "../render/camera";
 import {
   ARCHIMEDES_SCREW_VIEW_BOUNDS,
   CARTESIAN_DIVER_VIEW_BOUNDS,
+  FAKE_FERROFLUID_VIEW_BOUNDS,
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
   TESLA_VALVE_VIEW_BOUNDS,
@@ -38,6 +39,7 @@ export const SCENE_IDS = [
   "tesla-valve",
   "cartesian-diver",
   "archimedes-screw",
+  "fake-ferrofluid",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -99,6 +101,7 @@ export type SceneRecord = {
 export {
   ARCHIMEDES_SCREW_VIEW_BOUNDS,
   CARTESIAN_DIVER_VIEW_BOUNDS,
+  FAKE_FERROFLUID_VIEW_BOUNDS,
   LIQUID_TUMBLER_VIEW_BOUNDS,
   SCENES,
   TESLA_VALVE_VIEW_BOUNDS,

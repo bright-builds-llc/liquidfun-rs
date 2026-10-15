@@ -10,6 +10,7 @@ import {
 import {
   ArchimedesScrewPreview,
   CartesianDiverPreview,
+  FakeFerrofluidPreview,
 } from "./previews-curiosity";
 import {
   HydraulicFountainPreview,
@@ -96,6 +97,8 @@ export function ScenePreview(props: ScenePreviewProps) {
       return <CartesianDiverPreview />;
     case "archimedes-screw":
       return <ArchimedesScrewPreview />;
+    case "fake-ferrofluid":
+      return <FakeFerrofluidPreview />;
   }
   // A catalog id without a case narrows to a non-never type here and fails to compile.
   const unreachable: never = props.sceneId;

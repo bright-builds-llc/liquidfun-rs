@@ -88,6 +88,13 @@ export const README_SVG_PLANS: readonly ReadmeSvgPlan[] = [
     ],
   },
   { id: "archimedes-screw", cues: [] },
+  {
+    id: "fake-ferrofluid",
+    cues: [
+      { atSample: 120, kind: "action", name: "magnet" },
+      { atSample: 160, kind: "action", name: "magnet" },
+    ],
+  },
 ];
 
 /** Repo path of one committed README SVG loop. */

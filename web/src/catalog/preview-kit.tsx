@@ -2,6 +2,8 @@
 import type { JSX } from "solid-js";
 
 export const WATER = "#4DA3FF";
+/** Fake Ferrofluid liquid; matches the Rust particle color. */
+export const FERRO = "#8A84AD";
 export const DRIP = "#F2B040";
 export const ACCENT_WATER = "#39D3C7";
 export const MIX_RED = "#F87171";

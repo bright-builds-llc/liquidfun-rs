@@ -1,5 +1,6 @@
 /** Catalog records for the curiosity scenes, in catalog order. */
 import { SCREW_SPEED_CONTROL } from "./archimedes-screw-speed";
+import { MAGNET_STRENGTH_CONTROL } from "./fake-ferrofluid-strength";
 import { withGravitySlider } from "./gravity-slider";
 import {
   SHOWCASE,
@@ -11,6 +12,7 @@ import {
 import {
   ARCHIMEDES_SCREW_VIEW_BOUNDS,
   CARTESIAN_DIVER_VIEW_BOUNDS,
+  FAKE_FERROFLUID_VIEW_BOUNDS,
 } from "./scene-view-bounds";
 import type { SceneRecord } from "./scenes";
 
@@ -48,6 +50,24 @@ export const CURIOSITY_SCENE_RECORDS: readonly SceneRecord[] = [
     viewBounds: ARCHIMEDES_SCREW_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("archimedes_screw.rs"),
+      inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "fake-ferrofluid",
+    title: "Fake Ferrofluid",
+    ready: true,
+    description:
+      "A dark liquid puddle sits in a shallow dish over a magnet and rises into a row of separate spikes. A scripted magnetic pull lifts the liquid into the spikes. The physics engine has no magnetism, and the magnet is only a drawn marker. This is an original experimental scene.",
+    interactionHint:
+      "Press and drag to move the magnet, and the spikes follow. Let go and it switches off and returns under the dish. Use Magnet to switch it on or off, and Magnet strength to change the pull. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([
+      MAGNET_STRENGTH_CONTROL,
+      action("magnet", "Magnet"),
+    ]),
+    viewBounds: FAKE_FERROFLUID_VIEW_BOUNDS,
+    credits: {
+      implementationPath: sceneSource("fake_ferrofluid.rs"),
       inspiration: [SHOWCASE],
     },
   },

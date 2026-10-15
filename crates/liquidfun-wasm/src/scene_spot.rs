@@ -111,6 +111,11 @@ const SURVEY_SCENES: [(&str, SceneId, SurveyCue); ALL_SCENE_IDS.len()] = [
         SceneId::ArchimedesScrew,
         SurveyCue::Default,
     ),
+    (
+        "fake-ferrofluid",
+        SceneId::FakeFerrofluid,
+        SurveyCue::Default,
+    ),
 ];
 
 /// Closed error for the native all-catalog scene survey timer.
