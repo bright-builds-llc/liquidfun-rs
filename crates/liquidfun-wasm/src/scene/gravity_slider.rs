@@ -187,6 +187,7 @@ mod tests {
             SceneId::TeslaValve => 24,
             SceneId::CartesianDiver => 25,
             SceneId::ArchimedesScrew => 26,
+            SceneId::FakeFerrofluid => 27,
         }
     }
 }
