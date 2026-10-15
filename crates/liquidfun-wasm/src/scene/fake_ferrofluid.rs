@@ -32,7 +32,7 @@ use self::geometry::{
 use super::particle_force::{self, ForceScale, GravityFrame, ParticleScratch};
 use super::{
     BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks, SceneId,
-    attach_basin_fixture, parse_whole_rpm,
+    attach_basin_fixture, parse_whole_number,
 };
 use crate::session::SessionError;
 
@@ -202,7 +202,7 @@ impl SceneHooks for FakeFerrofluidHooks {
         if name != MAGNET_STRENGTH_CONTROL {
             return Err(SessionError::UnknownControl);
         }
-        let Some(percent) = parse_whole_rpm(value, MAX_STRENGTH_PERCENT) else {
+        let Some(percent) = parse_whole_number(value, MAX_STRENGTH_PERCENT) else {
             return Err(SessionError::UnknownControl);
         };
         self.strength_percent = percent;

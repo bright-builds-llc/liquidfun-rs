@@ -23,7 +23,8 @@ use liquidfun::{
 
 use self::geometry::{DRUM_CENTER, Quad, RIB_COUNT, SEGMENT_COUNT};
 use super::{
-    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks, parse_whole_rpm,
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
+    parse_whole_number,
 };
 use crate::session::SessionError;
 
@@ -293,7 +294,7 @@ impl SceneHooks for WashingMachineHooks {
         if name != DRUM_SPEED_CONTROL {
             return Err(SessionError::UnknownControl);
         }
-        let Some(rpm) = parse_whole_rpm(value, MAX_DRUM_RPM) else {
+        let Some(rpm) = parse_whole_number(value, MAX_DRUM_RPM) else {
             return Err(SessionError::UnknownControl);
         };
         write_motor_speed(world, self.joint, rad_per_sec(rpm))?;

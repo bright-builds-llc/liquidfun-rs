@@ -28,7 +28,7 @@ use self::geometry::{
 };
 use super::{
     BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
-    attach_basin_fixture, parse_whole_rpm,
+    attach_basin_fixture, parse_whole_number,
 };
 use crate::session::SessionError;
 
@@ -252,7 +252,7 @@ impl SceneHooks for ArchimedesScrewHooks {
         // Intent only: `on_advance` turns it into vane motion on the next step.
         match (name, value) {
             (SCREW_SPEED_CONTROL, _) => {
-                let Some(rpm) = parse_whole_rpm(value, MAX_SCREW_RPM) else {
+                let Some(rpm) = parse_whole_number(value, MAX_SCREW_RPM) else {
                     return Err(SessionError::UnknownControl);
                 };
                 self.rpm = rpm;

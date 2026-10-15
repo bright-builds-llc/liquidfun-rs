@@ -13,7 +13,7 @@ use super::{
     DEFAULT_SCREW_RPM, MAX_SCREW_RPM, SCREW_DIRECTION_CONTROL, SCREW_SPEED_CONTROL, SIM_DT,
     ScrewParts, axial_speed, build_parts,
 };
-use crate::scene::{ControlEffect, SceneHooks, SceneId, parse_whole_rpm};
+use crate::scene::{ControlEffect, SceneHooks, SceneId, parse_whole_number};
 use crate::session::{SessionCore, SessionError};
 
 const POSITION_TOLERANCE: f32 = 1e-4;
@@ -79,7 +79,7 @@ fn web_direction_tokens() -> Vec<&'static str> {
 
 /// The screw's `screw-speed` parser: whole rpm up to [`MAX_SCREW_RPM`].
 fn parse_screw_rpm(value: &str) -> Option<u16> {
-    parse_whole_rpm(value, MAX_SCREW_RPM)
+    parse_whole_number(value, MAX_SCREW_RPM)
 }
 
 fn train_snapshot(parts: &ScrewParts) -> BodySnapshot {
