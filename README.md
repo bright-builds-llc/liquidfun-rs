@@ -203,6 +203,12 @@ change.
 
 [Animated SVG](docs/assets/readme/archimedes-screw-10s.svg)
 
+#### [Fake Ferrofluid](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fake-ferrofluid)
+
+[![Fake Ferrofluid simulation preview](docs/assets/readme/fake-ferrofluid-10s.webp)](https://bright-builds-llc.github.io/liquidfun-rs/#/scene/fake-ferrofluid)
+
+[Animated SVG](docs/assets/readme/fake-ferrofluid-10s.svg)
+
 <!-- readme-svg-gallery:end -->
 
 The private, unpublished `liquidfun-wasm` wrapper and SolidJS player rebuild
