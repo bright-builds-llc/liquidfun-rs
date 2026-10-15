@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Physics Curiosity Scenes
-status: executing
+status: verifying
 current_phase: 48
 current_phase_name: "Fake Ferrofluid"
-stopped_at: Completed 48-04-PLAN.md
-last_updated: "2026-10-15T07:08:37.277Z"
+stopped_at: Completed 48-05-PLAN.md
+last_updated: "2026-10-15T07:10:12.995Z"
 last_activity: 2026-10-15
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 25
-  completed_plans: 24
-  percent: 96
+  completed_plans: 25
+  percent: 100
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 Phase: 48 (Fake Ferrofluid) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-15
 
 Progress: [██████░░░░] Phases 45–47 of 45–49 complete (50 and 51 dropped)
@@ -243,6 +243,7 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 48]: 48-04: README cues stay 120/160; clip frames 61/351 spikes, 471 flat with off marker, 591 re-risen
 - [Phase 48]: 48-04: ferrofluid scene-spot 990/990, median 0.314 ms/step; gate PASS 27/27 with fake-ferrofluid e73ef71f0615b4eb added (capture 2026-10-15T07-06-56Z at f798bff91)
 - [Phase 48]: 48-04: finding, not re-tuned: crests rise about 0.3 m and fill only the bottom quarter of the 3.0 m dish; liquid reads mid-tone gray-violet, not dark
+- [Phase 48]: 48-05: baseline grown in single-file commit 2db76fda3 from reused 48-04 capture 2026-10-15T07-06-56Z at f798bff91 (crates/tools/web identical to HEAD); gate rerun PASS 28/28 unchanged, added none; Phase 49 protects fake-ferrofluid
 
 ### Pending Todos
 
@@ -392,9 +393,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 48 P02 | 43min | 2 tasks | 8 files |
 | Phase 48 P03 | 17min | 2 tasks | 23 files |
 | Phase 48 P04 | 27min | 3 tasks | 4 files |
+| Phase 48 P05 | 2 min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-15T07:08:37.273Z
-Stopped at: Completed 48-04-PLAN.md
+Last session: 2026-10-15T07:10:12.992Z
+Stopped at: Completed 48-05-PLAN.md
 Resume file: None

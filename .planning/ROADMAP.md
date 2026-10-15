@@ -200,7 +200,7 @@ Plans:
 - [x] 48-02-PLAN.md — Pointer seam, `magnet` action, live `magnet-strength` control, bar-magnet marker, D-23 release outcome tests and README timing
 - [x] 48-03-PLAN.md — Catalog and web wiring: record, strength spinner file, preview, view and portrait bounds, README/survey/demo plans, spoken percent, tests and e2e
 - [x] 48-04-PLAN.md — Four-mode color check, README preview generation and review, full gates, scene-spot numbers, 27/27 fingerprint gate
-- [ ] 48-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 28/28 unchanged
+- [x] 48-05-PLAN.md — Separate single-file baseline growth commit, gate rerun 28/28 unchanged
 **UI hint**: yes
 
 ### Phase 49: Rayleigh–Taylor Instability
@@ -288,7 +288,7 @@ Plans:
 | 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 10/10 | Complete    | 2026-10-14 |
 | 46. Cartesian Diver | v1.6 | 5/5 | Complete    | 2026-10-14 |
 | 47. Archimedes Screw | v1.6 | 5/5 | Complete    | 2026-10-14 |
-| 48. Fake Ferrofluid | v1.6 | 4/5 | In Progress|  |
+| 48. Fake Ferrofluid | v1.6 | 5/5 | Complete   | 2026-10-15 |
 | 49. Rayleigh–Taylor Instability | v1.6 | 0/TBD | Not started | - |
 | 50. Siphon | v1.6 | 0/TBD | Dropped (SEED-008) | - |
 | 51. Sand Hourglass | v1.6 | 0/TBD | Dropped (SEED-007) | - |
