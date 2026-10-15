@@ -146,7 +146,9 @@ pub(crate) fn apply_accelerations(
 ///
 /// # Errors
 ///
-/// `StepFailed` when the group view or the force application fails.
+/// `StepFailed` when the group view or the force application fails, or when
+/// the group has more than `u16::MAX` (65,535) members, the most whose count
+/// converts to `f32` without a lossy cast.
 #[cfg_attr(
     not(test),
     expect(
