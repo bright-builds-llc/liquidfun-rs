@@ -10,7 +10,8 @@ use super::geometry::{
 };
 use super::test_support::step_configuration;
 use super::{
-    DEFAULT_SCREW_RPM, SIM_DT, ScrewParts, advance_phase, axial_speed, build, build_parts,
+    DEFAULT_SCREW_RPM, MAX_SCREW_RPM, SIM_DT, ScrewParts, advance_phase, axial_speed, build,
+    build_parts, train_position,
 };
 use crate::ProofFrame;
 use crate::scene::{PointerKind, SceneHooks, SceneId, build_scene};
@@ -25,10 +26,12 @@ const LATTICE_TOLERANCE: f32 = 1e-5;
 const PHASE_TOLERANCE: f32 = 1e-6;
 const MAX_FRAME_SEGMENTS: usize = 512;
 
-/// Runs `steps` fixed steps the way the session does: `on_advance`, then `world.step`.
+/// Runs `steps` fixed steps the way the session does: `on_advance`, then
+/// `world.step`. After each step the train body must sit at the stored
+/// phase, because `collect_segments` draws the vanes from that phase.
 fn drive(parts: &mut ScrewParts, steps: u32, mut after_step: impl FnMut(&World)) {
     let step = step_configuration();
-    for _ in 0..steps {
+    for index in 0..steps {
         parts
             .hooks
             .on_advance(&mut parts.world, parts.particle_system)
@@ -37,6 +40,13 @@ fn drive(parts: &mut ScrewParts, steps: u32, mut after_step: impl FnMut(&World))
             .world
             .step(step, &mut NoDecisionHook, StepLimits::default())
             .expect("the screw world steps");
+        let body = train_origin(&parts.world, parts.hooks.train);
+        let drawn = train_position(parts.hooks.phase);
+        assert!(
+            (body - drawn).length() < LATTICE_TOLERANCE,
+            "step {index}: body {body:?} vs drawn phase {} at {drawn:?}",
+            parts.hooks.phase
+        );
         after_step(&parts.world);
     }
 }
@@ -243,6 +253,22 @@ fn the_train_stays_within_one_pitch_across_snaps() {
         })
         .collect();
     assert!(outside.is_empty(), "{outside:?}");
+}
+
+#[test]
+fn the_train_body_follows_the_drawn_phase_at_the_maximum_speed_both_ways() {
+    // Arrange
+    let mut runs = [false, true].map(|reverse| {
+        let mut parts = build_parts().expect("screw parts");
+        parts.hooks.rpm = MAX_SCREW_RPM;
+        parts.hooks.reverse = reverse;
+        parts
+    });
+
+    // Act / Assert: `drive` checks the body against the drawn phase every step.
+    for parts in &mut runs {
+        drive(parts, SNAP_STEPS, |_world| {});
+    }
 }
 
 #[test]
