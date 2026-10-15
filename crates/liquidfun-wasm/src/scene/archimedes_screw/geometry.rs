@@ -73,7 +73,7 @@ pub(super) const TOP_FACE_TAN: f32 = 0.0;
 /// Lean of the inlet end of the floor slab: the vanes' mirror image, an
 /// undercut whose wedge against a rising vane tip opens downward.
 const INLET_END_TAN: f32 = -VANE_TAN;
-/// Axial reach of a vane tip beyond its mid-height point.
+/// Axial lean of a vane from its bottom tip to its top tip.
 #[cfg(test)]
 pub(super) const VANE_OVERHANG: f32 = (TUBE_GAP + VANE_EMBED) * VANE_TAN;
 /// Half the vane width along `q`.
