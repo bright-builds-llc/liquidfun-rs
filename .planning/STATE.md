@@ -5,15 +5,15 @@ milestone_name: Physics Curiosity Scenes
 status: executing
 current_phase: 48
 current_phase_name: "Fake Ferrofluid"
-stopped_at: Completed 48-01-PLAN.md
-last_updated: "2026-10-15T05:37:38.290Z"
+stopped_at: Completed 48-02-PLAN.md
+last_updated: "2026-10-15T06:23:30.454Z"
 last_activity: 2026-10-15
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 25
-  completed_plans: 21
-  percent: 84
+  completed_plans: 22
+  percent: 88
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 48 (Fake Ferrofluid) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-10-15
 
@@ -234,6 +234,9 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 48]: 48-01: candidate (a) polynomial potential pull passed every D-05 rule; candidate (b) not built
 - [Phase 48]: 48-01: CAP 1.5 x G x S (lowest of 1.5/2.0/2.5 with >= 5 peaks at default 65 %); WALL_TOP_Y 1.8 m because 1.6 m walls let the in-puddle column reach 1.42 m; FRAME_* -3.6/-0.8/3.6/2.4; 990 particles
 - [Phase 48]: 48-01: shared scene/particle_force.rs (GravityFrame, ForceScale = mass x iterations, apply_accelerations, apply_group_acceleration) calibrated within 1e-3 at 2 and 3 iterations; Phase 49 reuses it
+- [Phase 48]: 48-02: sideways pull ships the |E(h)| fallback (odd E gave 1 peak with the magnet pressed at y 1.0); lift and cap unchanged, field conservative above the magnet only
+- [Phase 48]: 48-02: WALL_TOP_Y 1.8 -> 3.0 m and FRAME_MAX_Y 2.4 -> 3.6 (magnet held 1.3-1.5 m up lifts columns to 2.67 m); P4 also guards (0,1.3) and (3.2,1.5); default strength 65 and FIELD numbers unchanged
+- [Phase 48]: 48-02: 18 release flow tests pass: crown at step 12, 5 peaks @180, drags shift 1.168 m, collapse 30 steps, re-rise 18, README flat 393 / re-rise 495, holds max 2.06 m/s
 
 ### Pending Todos
 
@@ -380,9 +383,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 47 P04 | 24min | 2 tasks | 4 files |
 | Phase 47 P05 | 2 min | 2 tasks | 1 files |
 | Phase 48 P01 | 26min | 3 tasks | 11 files |
+| Phase 48 P02 | 43min | 2 tasks | 8 files |
 
 ## Session Continuity
 
-Last session: 2026-10-15T05:37:38.287Z
-Stopped at: Completed 48-01-PLAN.md
+Last session: 2026-10-15T06:23:30.451Z
+Stopped at: Completed 48-02-PLAN.md
 Resume file: None
