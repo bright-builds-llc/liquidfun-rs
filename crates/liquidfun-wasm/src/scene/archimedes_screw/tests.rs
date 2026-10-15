@@ -14,6 +14,7 @@ use super::geometry::{
     quad_contains, top_housing, tube_point, vane_quads, visible_vane_outline, wall_quads,
     water_positions,
 };
+use super::{MAX_AXIAL_SPEED, SIM_DT};
 
 const LITERAL_TOLERANCE: f32 = 1e-6;
 const FRAME_MARGIN: f32 = 0.1;
@@ -68,42 +69,52 @@ fn vane_slant_literals_match_twenty_degrees() {
     );
 }
 
-#[test]
-fn the_vane_added_by_a_forward_snap_lies_inside_the_bottom_housing() {
-    // Arrange
-    let housing = polygon(&bottom_housing());
-
-    // Act
-    let vane = vane_at_phase(0, 0.0);
-
-    // Assert
-    for corner in vane {
-        assert!(
-            housing
-                .test_point(Transform::IDENTITY, corner)
-                .expect("finite corner"),
-            "vane 0 corner {corner:?} is outside the bottom housing"
-        );
-    }
+/// Vane corners at `phases` that lie outside `housing`.
+fn corners_outside(housing: &[Vec2; 4], index: u8, phases: [f32; 3]) -> Vec<(f32, Vec2)> {
+    let housing = polygon(housing);
+    phases
+        .into_iter()
+        .flat_map(|phase| vane_at_phase(index, phase).map(|corner| (phase, corner)))
+        .filter(|(_, corner)| {
+            !housing
+                .test_point(Transform::IDENTITY, *corner)
+                .expect("finite corner")
+        })
+        .collect()
 }
 
 #[test]
-fn the_vane_removed_by_a_forward_snap_lies_inside_the_top_housing() {
+fn the_vane_a_snap_adds_or_removes_at_the_bottom_lies_inside_the_bottom_housing() {
     // Arrange
-    let housing = polygon(&top_housing());
+    let max_step = MAX_AXIAL_SPEED * SIM_DT;
+    // A forward snap adds vane 0 below zero; a reverse snap removes it in `[0, step)`.
+    let phases = [-max_step, 0.0, max_step];
 
     // Act
-    let vane = vane_at_phase(VANE_COUNT - 1, PITCH - 1e-4);
+    let outside = corners_outside(&bottom_housing(), 0, phases);
 
     // Assert
-    for corner in vane {
-        assert!(
-            housing
-                .test_point(Transform::IDENTITY, corner)
-                .expect("finite corner"),
-            "last vane corner {corner:?} is outside the top housing"
-        );
-    }
+    assert!(
+        outside.is_empty(),
+        "vane 0 (phase, corner) outside: {outside:?}"
+    );
+}
+
+#[test]
+fn the_vane_a_snap_adds_or_removes_at_the_top_lies_inside_the_top_housing() {
+    // Arrange
+    let max_step = MAX_AXIAL_SPEED * SIM_DT;
+    // A forward snap removes the last vane near `PITCH`; a reverse snap adds it in `[PITCH, PITCH + step)`.
+    let phases = [PITCH - max_step, PITCH, PITCH + max_step];
+
+    // Act
+    let outside = corners_outside(&top_housing(), VANE_COUNT - 1, phases);
+
+    // Assert
+    assert!(
+        outside.is_empty(),
+        "last vane (phase, corner) outside: {outside:?}"
+    );
 }
 
 #[test]
