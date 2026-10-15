@@ -246,7 +246,7 @@ fn pull_is_curl_free_where_the_cap_is_inactive() {
         (1.3, 0.8),
         (-1.95, 1.1),
     ];
-    let eps = 0.005;
+    let eps = 0.001;
     let cap = FIELD.cap * 10.0;
 
     for (s, h) in samples {

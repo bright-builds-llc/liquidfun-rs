@@ -4,7 +4,10 @@
 use liquidfun::StepConfiguration;
 use liquidfun::math::Vec2;
 
-use super::geometry::{DISH_INNER_HALF_WIDTH, PARTICLE_DIAMETER};
+use super::geometry::{
+    DISH_INNER_HALF_WIDTH, FRAME_MAX_X, FRAME_MAX_Y, FRAME_MIN_X, FRAME_MIN_Y, PARTICLE_DIAMETER,
+    PARTICLE_RADIUS, out_of_dish,
+};
 use crate::scene::{SceneId, particle_iterations};
 
 /// Least topographic prominence of a counted surface peak: about two diameters.
@@ -15,6 +18,10 @@ pub(super) const FLAT_RANGE: f32 = 0.12;
 const BIN_START: f32 = -DISH_INNER_HALF_WIDTH + 2.0 * PARTICLE_DIAMETER;
 /// One bin per particle diameter across the binned span.
 const BIN_COUNT: u16 = 71;
+/// How far past the frame a particle may fly before it counts as escaped.
+const ESCAPE_MARGIN: f32 = 0.5;
+/// A particle with no neighbor center within this distance is isolated (flung).
+const NEIGHBOR_DISTANCE: f32 = 3.0 * PARTICLE_RADIUS;
 
 /// The session's fixed step: 1/60 s, 8 velocity and 3 position iterations,
 /// and the scene's particle iterations.
@@ -132,4 +139,65 @@ fn bin_center_x(index: usize) -> f32 {
 /// A small count as `f32`; test counts stay far below `u16::MAX`.
 pub(super) fn count_as_f32(count: usize) -> f32 {
     f32::from(u16::try_from(count).expect("test counts fit in u16"))
+}
+
+/// Kinetic-energy proxy: the sum of `0.5 * |v|^2` (unit mass).
+pub(super) fn kinetic_energy(velocities: &[Vec2]) -> f32 {
+    velocities
+        .iter()
+        .map(|velocity| 0.5 * velocity.length_squared())
+        .sum()
+}
+
+/// Fastest particle speed.
+pub(super) fn max_speed(velocities: &[Vec2]) -> f32 {
+    velocities
+        .iter()
+        .map(|velocity| velocity.length())
+        .fold(0.0, f32::max)
+}
+
+/// Particle centers outside the dish interior.
+pub(super) fn out_of_dish_count(positions: &[Vec2]) -> usize {
+    positions
+        .iter()
+        .filter(|position| out_of_dish(**position))
+        .count()
+}
+
+/// Non-finite particles and particles beyond the frame grown by `ESCAPE_MARGIN`.
+pub(super) fn escaped_count(positions: &[Vec2]) -> usize {
+    positions
+        .iter()
+        .filter(|position| {
+            !position.x.is_finite()
+                || !position.y.is_finite()
+                || position.x < FRAME_MIN_X - ESCAPE_MARGIN
+                || position.x > FRAME_MAX_X + ESCAPE_MARGIN
+                || position.y < FRAME_MIN_Y - ESCAPE_MARGIN
+                || position.y > FRAME_MAX_Y + ESCAPE_MARGIN
+        })
+        .count()
+}
+
+/// Particles with no other particle center within `NEIGHBOR_DISTANCE` (O(n^2)).
+pub(super) fn isolated_count(positions: &[Vec2]) -> usize {
+    let limit = NEIGHBOR_DISTANCE * NEIGHBOR_DISTANCE;
+    positions
+        .iter()
+        .enumerate()
+        .filter(|(index, position)| {
+            !positions.iter().enumerate().any(|(other_index, other)| {
+                other_index != *index && (*other - **position).length_squared() <= limit
+            })
+        })
+        .count()
+}
+
+/// Highest particle center: the tallest column top.
+pub(super) fn column_top(positions: &[Vec2]) -> f32 {
+    positions
+        .iter()
+        .map(|position| position.y)
+        .fold(f32::MIN, f32::max)
 }

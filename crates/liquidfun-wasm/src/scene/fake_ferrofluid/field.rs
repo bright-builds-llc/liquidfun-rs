@@ -45,13 +45,16 @@ pub(super) struct FieldParams {
     pub(super) drag_per_second: f32,
 }
 
-/// The tuned pull for the shipped scene.
+/// The tuned pull for the shipped scene. The cap is the lowest measured value
+/// that still shows at least five spikes at the default strength, which keeps
+/// a column lifted by a magnet inside the puddle well below the wall tops
+/// (48-01 spike: caps 1.5, 2.0 and 2.5 measured).
 pub(super) const FIELD: FieldParams = FieldParams {
     wavelength: 0.65,
     envelope_half_width: 2.6,
     reach: 1.6,
     strength_scale: 2.5,
-    cap: 2.0,
+    cap: 1.5,
     drag_per_second: 3.0,
 };
 

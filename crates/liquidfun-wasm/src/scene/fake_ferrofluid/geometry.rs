@@ -20,8 +20,11 @@ pub(super) const DISH_OUTER_HALF_WIDTH: f32 = DISH_INNER_HALF_WIDTH + WALL_THICK
 pub(super) const FLOOR_TOP_Y: f32 = 0.0;
 /// Bottom face of the floor slab; the resting magnet sits flush below it.
 pub(super) const FLOOR_BOTTOM_Y: f32 = -0.25;
-/// Wall tops: the tallest measured column (magnet inside the puddle at full
-/// strength) plus a 0.3 m margin, so no liquid climbs over (Research Pitfall 2).
+/// Wall tops: the tallest measured column plus at least a 0.3 m margin, so
+/// no liquid climbs over (Research Pitfall 2). With a magnet held inside the
+/// puddle at full strength the tallest column measured 1.21 m with these
+/// walls but 1.42 m with 1.6 m walls, so 1.8 m is the lowest tested height
+/// that keeps the margin (48-01 spike).
 pub(super) const WALL_TOP_Y: f32 = 1.8;
 /// Depth of the filled puddle box before it settles.
 pub(super) const PUDDLE_DEPTH: f32 = 0.6;
@@ -95,6 +98,12 @@ pub(super) fn dish_segments() -> Vec<RigidSegment> {
         push_loop(&mut segments, quad);
     }
     segments
+}
+
+/// Whether a particle center has left the dish interior.
+#[cfg(test)]
+pub(super) fn out_of_dish(position: Vec2) -> bool {
+    position.x.abs() > DISH_INNER_HALF_WIDTH + PARTICLE_RADIUS || position.y < -PARTICLE_RADIUS
 }
 
 /// Appends `corners` as a closed loop of segments.
