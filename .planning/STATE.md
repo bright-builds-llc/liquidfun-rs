@@ -2,11 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Physics Curiosity Scenes
-status: verifying
-current_phase: 48
-current_phase_name: "Fake Ferrofluid"
-stopped_at: Completed 48-05-PLAN.md
-last_updated: "2026-10-15T07:10:12.995Z"
+status: ready_to_plan
+current_phase: 49
+current_phase_name: "Rayleigh–Taylor Instability"
+current_plan: null
+stopped_at: Phase 48 complete (verified 4/4); 28/28 fingerprints protected
+last_updated: "2026-10-15T08:03:34.588Z"
 last_activity: 2026-10-15
 progress:
   total_phases: 7
@@ -23,16 +24,16 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 **Core value:** Deliver a useful, independent Rust physics library for enjoyable experimentation, with honest limitations and a lightweight native development loop.
-**Current focus:** Phase 48 — Fake Ferrofluid
+**Current focus:** Phase 49 — Rayleigh–Taylor Instability
 
 ## Current Position
 
-Phase: 48 (Fake Ferrofluid) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
+Phase: 49
+Plan: Not started
+Status: Phase 48 complete and verified — ready to discuss Phase 49
 Last activity: 2026-10-15
 
-Progress: [██████░░░░] Phases 45–47 of 45–49 complete (50 and 51 dropped)
+Progress: [████████░░] Phases 45–48 of 45–49 complete (50 and 51 dropped)
 
 v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. v1.6 Physics Curiosity Scenes started 2026-10-14 (SEED-004); phase numbering continues at 45. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
 

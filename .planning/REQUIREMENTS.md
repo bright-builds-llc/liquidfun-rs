@@ -34,9 +34,9 @@ Research: `.planning/research/v1.6-curiosity-scenes/SUMMARY.md`.
 
 ### Fake ferrofluid
 
-- [ ] **FERRO-01**: Player sees a dark liquid puddle (visible on the dark canvas) rise into several separate spikes toward a magnet. The magnet rests under the dish by default.
-- [ ] **FERRO-02**: Player can press and drag to move the magnet. The spikes follow, and they collapse when the magnet is released or switched off.
-- [ ] **FERRO-03**: Player can adjust magnet strength within a range that never flings the liquid apart, and the scene stays stable while the pointer is held.
+- [x] **FERRO-01**: Player sees a dark liquid puddle (visible on the dark canvas) rise into several separate spikes toward a magnet. The magnet rests under the dish by default.
+- [x] **FERRO-02**: Player can press and drag to move the magnet. The spikes follow, and they collapse when the magnet is released or switched off.
+- [x] **FERRO-03**: Player can adjust magnet strength within a range that never flings the liquid apart, and the scene stays stable while the pointer is held.
 
 ### Rayleigh–Taylor instability
 
@@ -96,9 +96,9 @@ SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns af
 | DIVER-03 | Phase 46 | Complete |
 | SCREW-01 | Phase 47 | Complete |
 | SCREW-02 | Phase 47 | Complete |
-| FERRO-01 | Phase 48 | Pending |
-| FERRO-02 | Phase 48 | Pending |
-| FERRO-03 | Phase 48 | Pending |
+| FERRO-01 | Phase 48 | Complete |
+| FERRO-02 | Phase 48 | Complete |
+| FERRO-03 | Phase 48 | Complete |
 | RT-01 | Phase 49 | Pending |
 | RT-02 | Phase 49 | Pending |
 | SIPHON-01 | Phase 50 | Returned to SEED-008 |

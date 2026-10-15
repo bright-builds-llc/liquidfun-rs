@@ -19,7 +19,7 @@ v1.6 Physics Curiosity Scenes adds six small, self-contained playground scenes o
 - [x] **Phase 45: Curiosity Groundwork and Feasibility Spikes** — Pin the 25 fingerprints behind an id-join gate, derive scene counts from the catalog, split near-limit files, and decide go, reshape or drop for the siphon and hourglass. (completed 2026-10-14)
 - [x] **Phase 46: Cartesian Diver** — Press and hold the bottle to sink the diver, release to let it rise; first scene through the shared checklist. (completed 2026-10-14)
 - [x] **Phase 47: Archimedes Screw** — Moving slanted vanes lift pockets of water up a tilted trough, with live speed and reverse. (completed 2026-10-14)
-- [ ] **Phase 48: Fake Ferrofluid** — A dark puddle rises into spikes toward a draggable magnet, with a safe strength range.
+- [x] **Phase 48: Fake Ferrofluid** — A dark puddle rises into spikes toward a draggable magnet, with a safe strength range. (completed 2026-10-15)
 - [ ] **Phase 49: Rayleigh–Taylor Instability** — A heavier liquid layer fingers down through a lighter one, with a choosable weight ratio.
 - [ ] **Phase 50: Siphon** — Dropped by the Phase 45 spike; SIPHON-01 and SIPHON-02 returned to SEED-008
 - [ ] **Phase 51: Sand Hourglass** — Dropped by the Phase 45 spike; SAND-01 and SAND-02 returned to SEED-007
@@ -288,7 +288,7 @@ Plans:
 | 45. Curiosity Groundwork and Feasibility Spikes | v1.6 | 10/10 | Complete    | 2026-10-14 |
 | 46. Cartesian Diver | v1.6 | 5/5 | Complete    | 2026-10-14 |
 | 47. Archimedes Screw | v1.6 | 5/5 | Complete    | 2026-10-14 |
-| 48. Fake Ferrofluid | v1.6 | 5/5 | Complete   | 2026-10-15 |
+| 48. Fake Ferrofluid | v1.6 | 5/5 | Complete    | 2026-10-15 |
 | 49. Rayleigh–Taylor Instability | v1.6 | 0/TBD | Not started | - |
 | 50. Siphon | v1.6 | 0/TBD | Dropped (SEED-008) | - |
 | 51. Sand Hourglass | v1.6 | 0/TBD | Dropped (SEED-007) | - |
