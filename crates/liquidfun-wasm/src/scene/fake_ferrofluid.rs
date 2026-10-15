@@ -69,7 +69,7 @@ struct FakeFerrofluidHooks {
     strength_percent: u16,
     /// Particle mass times particle iterations, from the live system definition.
     scale: ForceScale,
-    /// Reused particle lanes, so stepping allocates nothing after the first step.
+    /// Particle lane copies, reused after the first step.
     scratch: ParticleScratch,
     /// Static dish outlines, built once.
     dish_segments: Vec<RigidSegment>,

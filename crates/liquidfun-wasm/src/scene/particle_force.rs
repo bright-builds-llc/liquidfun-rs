@@ -84,8 +84,9 @@ impl ForceScale {
     }
 }
 
-/// Reusable copies of the particle lanes, so a per-step caller allocates
-/// nothing after the first step.
+/// Reusable copies of the particle lanes, so a per-step caller reuses these
+/// buffers after the first step. Each force application still allocates in
+/// the engine, once per affected particle.
 #[derive(Debug, Default)]
 pub(crate) struct ParticleScratch {
     positions: Vec<Vec2>,
