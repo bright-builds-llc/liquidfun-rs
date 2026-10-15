@@ -5,15 +5,15 @@ milestone_name: Physics Curiosity Scenes
 status: executing
 current_phase: 48
 current_phase_name: "Fake Ferrofluid"
-stopped_at: Phase 48 planned (5 plans)
-last_updated: "2026-10-15T05:08:57.671Z"
-last_activity: 2026-10-15 -- Phase 48 planning complete
+stopped_at: Completed 48-01-PLAN.md
+last_updated: "2026-10-15T05:37:38.290Z"
+last_activity: 2026-10-15
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 25
-  completed_plans: 20
-  percent: 80
+  completed_plans: 21
+  percent: 84
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 ## Current Position
 
-Phase: 48
-Plan: Not started
+Phase: 48 (Fake Ferrofluid) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-10-15 -- Phase 48 planning complete
+Last activity: 2026-10-15
 
 Progress: [██████░░░░] Phases 45–47 of 45–49 complete (50 and 51 dropped)
 
@@ -231,6 +231,9 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 47]: 47-04: default rpm stays 30 (max 60); reviewed README clip shows pockets reaching the basin and overflow before 10 s
 - [Phase 47]: 47-04: screw scene-spot 1729/1729 particles, median 0.688 ms/step; gate PASS 26/26 with archimedes-screw 86a28d366447bbeb added (capture 2026-10-14T22-42-42Z at 23541975c)
 - [Phase 47]: 47-05: baseline grown in single-file commit 4be8ffdab from reused 47-04 capture 2026-10-14T22-42-42Z at 23541975c; gate rerun PASS 27/27 unchanged, Phase 48 protects archimedes-screw
+- [Phase 48]: 48-01: candidate (a) polynomial potential pull passed every D-05 rule; candidate (b) not built
+- [Phase 48]: 48-01: CAP 1.5 x G x S (lowest of 1.5/2.0/2.5 with >= 5 peaks at default 65 %); WALL_TOP_Y 1.8 m because 1.6 m walls let the in-puddle column reach 1.42 m; FRAME_* -3.6/-0.8/3.6/2.4; 990 particles
+- [Phase 48]: 48-01: shared scene/particle_force.rs (GravityFrame, ForceScale = mass x iterations, apply_accelerations, apply_group_acceleration) calibrated within 1e-3 at 2 and 3 iterations; Phase 49 reuses it
 
 ### Pending Todos
 
@@ -376,9 +379,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 47 P03 | 19min | 2 tasks | 20 files |
 | Phase 47 P04 | 24min | 2 tasks | 4 files |
 | Phase 47 P05 | 2 min | 2 tasks | 1 files |
+| Phase 48 P01 | 26min | 3 tasks | 11 files |
 
 ## Session Continuity
 
-Last session: 2026-10-15T04:47:26.761Z
-Stopped at: Phase 48 UI-SPEC approved
-Resume file: .planning/phases/48-fake-ferrofluid/48-UI-SPEC.md
+Last session: 2026-10-15T05:37:38.287Z
+Stopped at: Completed 48-01-PLAN.md
+Resume file: None
