@@ -28,7 +28,7 @@ use self::geometry::{
 };
 use super::{
     BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks,
-    attach_basin_fixture,
+    attach_basin_fixture, parse_whole_rpm,
 };
 use crate::session::SessionError;
 
@@ -55,21 +55,6 @@ const PRESSURE_STRENGTH: f32 = 0.25;
 const VANE_FRICTION: f32 = 0.2;
 /// The shared playground water color.
 const WATER_COLOR: ParticleColor = ParticleColor::new(77, 163, 255, 255);
-
-/// Whole-number rpm tokens from `0` through [`MAX_SCREW_RPM`].
-fn parse_screw_rpm(value: &str) -> Option<u16> {
-    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
-    }
-    if value.len() > 1 && value.starts_with('0') {
-        return None;
-    }
-    let rpm = value.parse::<u16>().ok()?;
-    if rpm > MAX_SCREW_RPM {
-        return None;
-    }
-    Some(rpm)
-}
 
 /// Signed axial vane speed in m/s: one pitch per revolution, negative in reverse.
 fn axial_speed(rpm: u16, reverse: bool) -> f32 {
@@ -267,7 +252,7 @@ impl SceneHooks for ArchimedesScrewHooks {
         // Intent only: `on_advance` turns it into vane motion on the next step.
         match (name, value) {
             (SCREW_SPEED_CONTROL, _) => {
-                let Some(rpm) = parse_screw_rpm(value) else {
+                let Some(rpm) = parse_whole_rpm(value, MAX_SCREW_RPM) else {
                     return Err(SessionError::UnknownControl);
                 };
                 self.rpm = rpm;

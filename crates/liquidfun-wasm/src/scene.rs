@@ -324,6 +324,22 @@ pub(crate) fn attach_basin_fixture(
     Ok(())
 }
 
+/// Whole-number rpm tokens from `0` through `max`: ASCII digits only, with no
+/// sign, whitespace, decimal point or leading zero.
+pub(crate) fn parse_whole_rpm(value: &str, max: u16) -> Option<u16> {
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    if value.len() > 1 && value.starts_with('0') {
+        return None;
+    }
+    let rpm = value.parse::<u16>().ok()?;
+    if rpm > max {
+        return None;
+    }
+    Some(rpm)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{ALL_SCENE_IDS, PointerKind, parse_pointer_kind, parse_scene_id};

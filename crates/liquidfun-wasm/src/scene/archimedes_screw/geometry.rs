@@ -456,9 +456,8 @@ fn prefilled_pocket(q: f32) -> bool {
 /// its fill line (including the flooded inlet), plus the lower half of each
 /// sealed pocket. The basin and chute start empty (D-08).
 fn wanted_water(point: Vec2) -> bool {
-    let (s, t) = tube_coordinates(point);
-    let in_tube = (0.0..=TUBE_LENGTH).contains(&s) && (0.0..=TUBE_GAP).contains(&t);
-    if in_tube {
+    if in_tube(point) {
+        let (s, t) = tube_coordinates(point);
         let q = vane_coordinate(s, t);
         return (q <= INLET_LENGTH && point.y <= RESERVOIR_FILL_TOP_Y)
             || (t <= TUBE_GAP / 2.0 && prefilled_pocket(q));
@@ -506,7 +505,6 @@ pub(super) fn water_positions() -> Vec<Vec2> {
 }
 
 /// Inside the open tube interior between the housing faces.
-#[cfg(test)]
 pub(super) fn in_tube(point: Vec2) -> bool {
     let (s, t) = tube_coordinates(point);
     (0.0..=TUBE_LENGTH).contains(&s) && (0.0..=TUBE_GAP).contains(&t)

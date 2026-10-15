@@ -22,7 +22,9 @@ use liquidfun::{
 };
 
 use self::geometry::{DRUM_CENTER, Quad, RIB_COUNT, SEGMENT_COUNT};
-use super::{BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks};
+use super::{
+    BuiltScene, ControlEffect, PointerKind, RigidSegment, SceneError, SceneHooks, parse_whole_rpm,
+};
 use crate::session::SessionError;
 
 /// Radius that sampled 3,000 water particles at the default stride.
@@ -254,22 +256,6 @@ fn carve_quads(
     Ok(())
 }
 
-/// Whole-number rpm tokens from `0` through [`MAX_DRUM_RPM`].
-fn parse_drum_rpm(value: &str) -> Option<u16> {
-    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
-    }
-    if value.len() > 1 && value.starts_with('0') {
-        return None;
-    }
-
-    let rpm = value.parse::<u16>().ok()?;
-    if rpm > MAX_DRUM_RPM {
-        return None;
-    }
-    Some(rpm)
-}
-
 fn rad_per_sec(rpm: u16) -> f32 {
     f32::from(rpm) * TAU / 60.0
 }
@@ -307,7 +293,7 @@ impl SceneHooks for WashingMachineHooks {
         if name != DRUM_SPEED_CONTROL {
             return Err(SessionError::UnknownControl);
         }
-        let Some(rpm) = parse_drum_rpm(value) else {
+        let Some(rpm) = parse_whole_rpm(value, MAX_DRUM_RPM) else {
             return Err(SessionError::UnknownControl);
         };
         write_motor_speed(world, self.joint, rad_per_sec(rpm))?;
