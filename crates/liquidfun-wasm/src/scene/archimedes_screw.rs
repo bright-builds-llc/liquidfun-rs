@@ -86,7 +86,13 @@ fn advance_phase(phase: f32, step: f32) -> (f32, f32) {
         return (next - PITCH, -PITCH);
     }
     if next < 0.0 {
-        return (next + PITCH, PITCH);
+        let wrapped = next + PITCH;
+        // A `next` just below zero rounds `wrapped` up to `PITCH`; phase 0 is the same lattice.
+        return if wrapped < PITCH {
+            (wrapped, PITCH)
+        } else {
+            (0.0, 0.0)
+        };
     }
     (next, 0.0)
 }

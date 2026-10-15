@@ -66,6 +66,26 @@ fn advance_phase_snaps_forward_a_pitch_below_zero() {
 }
 
 #[test]
+fn advance_phase_stays_below_a_pitch_when_the_wrap_rounds_up() {
+    // Arrange
+    let step = -1e-8;
+    let next = 0.0 + step;
+    assert!(next > -3e-8 && next < 0.0, "{next}");
+    assert_eq!(
+        (next + PITCH).to_bits(),
+        PITCH.to_bits(),
+        "the wrap rounds up"
+    );
+
+    // Act
+    let (wrapped, snap) = advance_phase(0.0, step);
+
+    // Assert
+    assert!((0.0..PITCH).contains(&wrapped), "{wrapped}");
+    assert_eq!(snap.to_bits(), 0.0_f32.to_bits());
+}
+
+#[test]
 fn advance_phase_moves_without_a_snap_inside_a_pitch() {
     // Arrange / Act
     let (next, snap) = advance_phase(0.3, 0.1);
