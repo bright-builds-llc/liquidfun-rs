@@ -53,17 +53,20 @@ pub(super) struct FieldParams {
     pub(super) drag_per_second: f32,
 }
 
-/// The tuned pull for the shipped scene. The cap is the lowest measured value
-/// that still shows at least five spikes at the default strength, which keeps
-/// a column lifted by a magnet inside the puddle well below the wall tops
-/// (48-01 spike: caps 1.5, 2.0 and 2.5 measured).
+/// The tuned pull for the shipped scene. At the default strength the cap is
+/// above gravity, so the lift beats gravity only inside a contour that
+/// narrows with height, which draws each column into a pointed spike. The
+/// 48-01 cap of 1.5 kept the lift below gravity at the default, so the
+/// columns were low rounded crests about 0.28 m tall; these values raise
+/// them to about 0.6 m (quick 261016-u0s). The drag of 5 per second keeps
+/// the fastest particle near 3 m/s in full-strength holds.
 pub(super) const FIELD: FieldParams = FieldParams {
     wavelength: 0.65,
     envelope_half_width: 2.6,
-    reach: 1.6,
-    strength_scale: 2.5,
-    cap: 1.5,
-    drag_per_second: 3.0,
+    reach: 2.0,
+    strength_scale: 3.5,
+    cap: 2.5,
+    drag_per_second: 5.0,
 };
 
 const _: () = assert!(FIELD.cap <= 3.0);

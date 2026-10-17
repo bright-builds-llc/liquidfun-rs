@@ -73,8 +73,8 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   "cartesian-diver": 0.75,
   // The wide screw frame is width-bound on a phone and fits 0.31 of its height.
   "archimedes-screw": 0.3,
-  // The wide dish frame is width-bound on a phone and fits 0.259 of its height.
-  "fake-ferrofluid": 0.25,
+  // The wide dish frame is width-bound on a phone and fits 0.218 of its height.
+  "fake-ferrofluid": 0.21,
 };
 
 /** Smallest share of the iPhone width the fitted frame should cover. */
@@ -418,10 +418,10 @@ describe("portrait scene frames", () => {
       ],
       // Dish wall tops, slab bottom corners and the resting magnet.
       "fake-ferrofluid": [
-        { x: -3.3, y: 3.0 },
-        { x: -3.0, y: 3.0 },
-        { x: 3.0, y: 3.0 },
-        { x: 3.3, y: 3.0 },
+        { x: -3.3, y: 2.6 },
+        { x: -3.0, y: 2.6 },
+        { x: 3.0, y: 2.6 },
+        { x: 3.3, y: 2.6 },
         { x: -3.3, y: -0.25 },
         { x: 3.3, y: -0.25 },
         { x: -0.4, y: -0.45 },

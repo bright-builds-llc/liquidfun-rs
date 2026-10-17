@@ -23,11 +23,12 @@ pub(super) const FLOOR_TOP_Y: f32 = 0.0;
 /// Bottom face of the floor slab; the resting magnet sits flush below it.
 pub(super) const FLOOR_BOTTOM_Y: f32 = -0.25;
 /// Wall tops: the tallest measured column plus at least a 0.3 m margin, so
-/// no liquid climbs over (Research Pitfall 2). The 48-01 field needed 1.8 m
-/// (tallest column 1.21 m). Since the sideways pull uses `|E(h)|` (48-02), a
-/// magnet held 1.3 to 1.5 m up gathers the liquid below it into columns that
-/// rise to about 2.67 m, above 2.5 m walls, so the walls are 3.0 m.
-pub(super) const WALL_TOP_Y: f32 = 3.0;
+/// no liquid climbs over (Research Pitfall 2). Liquid above the magnet is
+/// lifted too, so a raised magnet sets the tallest column: at full strength
+/// it rises about 1.67 m above the magnet. With the magnet capped one reach
+/// below the wall tops (`MAGNET_MAX_Y`), the tallest held column is 2.27 m
+/// (quick 261016-u0s), so the walls are 2.6 m.
+pub(super) const WALL_TOP_Y: f32 = 2.6;
 /// Depth of the filled puddle box before it settles.
 pub(super) const PUDDLE_DEPTH: f32 = 0.6;
 /// The puddle box fills the dish floor, one radius clear of every face.
@@ -52,13 +53,14 @@ const TICK_LENGTH: f32 = 0.16;
 /// Field tick offsets along the bar from its center, in meters.
 const TICK_OFFSETS: [f32; 3] = [-0.25, 0.0, 0.25];
 
-/// Scene frame: the dish and the resting marker plus a 0.3 m side margin and
-/// at least 0.6 m of headroom above the wall tops (UI-D83). The web
+/// Scene frame: the dish and the resting marker plus at least 0.3 m on every
+/// side (UI-D83). The capped magnet and the tallest column both stay below
+/// the wall tops, so the walls set the headroom. The web
 /// `FAKE_FERROFLUID_VIEW_BOUNDS` mirrors these values.
 pub(super) const FRAME_MIN_X: f32 = -3.6;
 pub(super) const FRAME_MAX_X: f32 = 3.6;
 pub(super) const FRAME_MIN_Y: f32 = -0.8;
-pub(super) const FRAME_MAX_Y: f32 = WALL_TOP_Y + 0.6;
+pub(super) const FRAME_MAX_Y: f32 = 2.9;
 
 /// Highest magnet center a drag may reach: one reach below the wall tops.
 /// The lift is even about the magnet, so liquid near a higher magnet floats
@@ -66,7 +68,7 @@ pub(super) const FRAME_MAX_Y: f32 = WALL_TOP_Y + 0.6;
 /// out of the dish (WR-02).
 pub(super) const MAGNET_MAX_Y: f32 = WALL_TOP_Y - FIELD.reach;
 
-const _: () = assert!(FRAME_MAX_Y >= WALL_TOP_Y + 0.6);
+const _: () = assert!(FRAME_MAX_Y >= WALL_TOP_Y + 0.3);
 const _: () = assert!(MAGNET_MAX_Y <= FRAME_MAX_Y - MAGNET_HALF_HEIGHT);
 const _: () = assert!(FRAME_MAX_X >= DISH_OUTER_HALF_WIDTH + 0.3);
 const _: () = assert!(FRAME_MIN_X <= -DISH_OUTER_HALF_WIDTH - 0.3);

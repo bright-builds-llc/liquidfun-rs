@@ -213,16 +213,16 @@ pub(super) const CROWN_STEP: u32 = 180;
 
 /// Magnet resting under the dish floor.
 pub(super) const UNDER_THE_DISH: Vec2 = Vec2::new(0.0, -0.35);
-/// Magnet held above the puddle.
-pub(super) const ABOVE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 1.2);
+/// Magnet held above the puddle, as high as the clamp allows.
+pub(super) const ABOVE_THE_PUDDLE: Vec2 = Vec2::new(0.0, MAGNET_MAX_Y);
 /// Magnet under the dish, far off-center.
 pub(super) const OFF_CENTER: Vec2 = Vec2::new(2.0, -0.35);
 /// Magnet tapped into the middle of the puddle.
 pub(super) const INSIDE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 0.3);
 /// Magnet tapped into the puddle next to the right wall.
 pub(super) const INSIDE_THE_PUDDLE_AT_THE_WALL: Vec2 = Vec2::new(2.7, 0.3);
-/// Magnet held where it gathers the tallest measured column (48-02 probe).
-pub(super) const HIGH_ABOVE_THE_PUDDLE: Vec2 = Vec2::new(0.0, 1.3);
+/// Magnet held where it gathers the tallest measured column (quick 261016-u0s probe).
+pub(super) const HIGH_ABOVE_THE_PUDDLE: Vec2 = Vec2::new(1.5, MAGNET_MAX_Y);
 /// Magnet held at the top right corner of the clamp, outside the inner face.
 pub(super) const HIGH_AT_THE_EDGE: Vec2 = Vec2::new(3.2, MAGNET_MAX_Y);
 /// Every hold position, plus the two tallest-column positions, for the

@@ -12,7 +12,7 @@
 
 use liquidfun::math::Vec2;
 
-use super::geometry::{MAGNET_REST, dish_segments};
+use super::geometry::{MAGNET_MAX_Y, MAGNET_REST, dish_segments};
 use super::test_support::{
     ABOVE_THE_PUDDLE, CROWN_STEP, HoldReport, INSIDE_THE_PUDDLE, INSIDE_THE_PUDDLE_AT_THE_WALL,
     MIN_PEAKS, OFF_CENTER, TARGET_PEAKS, UNDER_THE_DISH, advance, assert_hold_is_bounded,
@@ -45,8 +45,8 @@ const FOLLOW_STEPS: u32 = 90;
 const STRENGTH_ZERO_CHECK_STEPS: u32 = 90;
 /// Magnet height inside the puddle for the press-point drag.
 const IN_PUDDLE_Y: f32 = 0.3;
-/// Magnet height above the puddle for the press-point drag.
-const ABOVE_PUDDLE_Y: f32 = 1.0;
+/// Magnet height above the puddle for the press-point drag: the clamp's top.
+const ABOVE_PUDDLE_Y: f32 = MAGNET_MAX_Y;
 /// README clip: samples are 3 steps apart (20 Hz).
 const README_SAMPLE_EVERY: u32 = 3;
 /// README clip: the crown is checked one sample before the off cue.
