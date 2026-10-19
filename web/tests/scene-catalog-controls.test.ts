@@ -8,6 +8,7 @@ import {
 import { GAP_CONTROL } from "../src/catalog/hydraulic-fountain-gap";
 import { SCREW_SPEED_CONTROL } from "../src/catalog/archimedes-screw-speed";
 import { MAGNET_STRENGTH_CONTROL } from "../src/catalog/fake-ferrofluid-strength";
+import { WEIGHT_RATIO_CONTROL } from "../src/catalog/rayleigh-taylor-ratio";
 import {
   action,
   option,
@@ -446,5 +447,17 @@ describe("scene catalog controls", () => {
     // Assert
     expect(controls).toEqual(expected);
     expect(controls[0]?.recreates).toBe(false);
+  });
+
+  it("gives Rayleigh–Taylor a recreating Weight ratio before gravity", () => {
+    // Arrange
+    const expected = [WEIGHT_RATIO_CONTROL, GRAVITY_CONTROL];
+
+    // Act
+    const controls = maybeSceneById("rayleigh-taylor")?.controls ?? [];
+
+    // Assert
+    expect(controls).toEqual(expected);
+    expect(controls[0]?.recreates).toBe(true);
   });
 });

@@ -429,6 +429,17 @@ describe("portrait scene frames", () => {
         { x: -0.4, y: -0.45 },
         { x: 0.4, y: -0.45 },
       ],
+      // Tank floor bottom and lid top outer corners, and the inner floor and lid corners.
+      "rayleigh-taylor": [
+        { x: -1.7, y: -0.3 },
+        { x: 1.7, y: -0.3 },
+        { x: -1.7, y: 1.9 },
+        { x: 1.7, y: 1.9 },
+        { x: -1.4, y: 0.0 },
+        { x: 1.4, y: 0.0 },
+        { x: -1.4, y: 1.6 },
+        { x: 1.4, y: 1.6 },
+      ],
     } as const;
 
     // Act
