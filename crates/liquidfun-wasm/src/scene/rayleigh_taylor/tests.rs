@@ -9,6 +9,9 @@ use super::geometry::{
     LID_BOTTOM_Y, TANK_HALF_WIDTH, TANK_INNER_HEIGHT, WALL_THICKNESS, interface_y, lattice,
     lattice_stride, split_layers, tank_quads, tank_segments, wave,
 };
+use super::test_support::{
+    DEPTH_LINE, FINGER_BIN_WIDTH, Layers, down_frame, finger_count, is_overturned,
+};
 use super::{DEFAULT_WEIGHT_RATIO_TOKEN, TUNING, WEIGHT_RATIO_TOKENS, WeightRatio};
 
 const WAVE_TOLERANCE: f32 = 1e-6;
@@ -20,6 +23,35 @@ const MAX_LATTICE_POINTS: usize = 3_000;
 /// `u` from -1 to 1 in steps of 0.01.
 fn wave_grid() -> impl Iterator<Item = f32> {
     (-100_i16..=100).map(|step| f32::from(step) * 0.01)
+}
+
+/// `per_bin` heavy particles below the depth line in each listed finger bin.
+fn clusters(bins: &[u16], per_bin: u16) -> Layers {
+    let mut heavy = Vec::new();
+    for bin in bins {
+        let x = -TANK_HALF_WIDTH + FINGER_BIN_WIDTH * (f32::from(*bin) + 0.5);
+        for index in 0..per_bin {
+            heavy.push(Vec2::new(x, DEPTH_LINE - 0.1 - 0.05 * f32::from(index)));
+        }
+    }
+    Layers {
+        heavy,
+        ..Layers::default()
+    }
+}
+
+/// Two flat rows of particles at heights `heavy_y` and `light_y`.
+fn two_rows(heavy_y: f32, light_y: f32) -> Layers {
+    let row = |y: f32| -> Vec<Vec2> {
+        (-10_i16..=10)
+            .map(|step| Vec2::new(f32::from(step) * 0.1, y))
+            .collect()
+    };
+    Layers {
+        heavy: row(heavy_y),
+        light: row(light_y),
+        velocities: Vec::new(),
+    }
 }
 
 fn point_bits(points: &[Vec2]) -> Vec<(u32, u32)> {
@@ -320,4 +352,76 @@ fn weight_ratio_default_is_two_and_matches_the_default_token() {
     // Assert
     assert_eq!(WeightRatio::DEFAULT, WeightRatio::Two);
     assert_eq!(maybe_default, Some(WeightRatio::DEFAULT));
+}
+
+#[test]
+fn three_separate_four_particle_clusters_count_three_fingers() {
+    // Arrange
+    let layers = clusters(&[3, 7, 11], 4);
+
+    // Act
+    let fingers = finger_count(&layers, down_frame());
+
+    // Assert
+    assert_eq!(fingers, 3);
+}
+
+#[test]
+fn three_particle_clusters_count_no_fingers() {
+    // Arrange
+    let layers = clusters(&[3, 7, 11], 3);
+
+    // Act
+    let fingers = finger_count(&layers, down_frame());
+
+    // Assert
+    assert_eq!(fingers, 0);
+}
+
+#[test]
+fn a_cluster_in_the_wall_bin_counts_no_finger() {
+    // Arrange
+    let layers = clusters(&[0], 4);
+
+    // Act
+    let fingers = finger_count(&layers, down_frame());
+
+    // Assert
+    assert_eq!(fingers, 0);
+}
+
+#[test]
+fn clusters_in_adjacent_bins_count_one_finger() {
+    // Arrange
+    let layers = clusters(&[5, 6], 4);
+
+    // Act
+    let fingers = finger_count(&layers, down_frame());
+
+    // Assert
+    assert_eq!(fingers, 1);
+}
+
+#[test]
+fn heavy_above_light_is_not_overturned() {
+    // Arrange
+    let layers = two_rows(2.0, 1.0);
+
+    // Act
+    let overturned = is_overturned(&layers, down_frame());
+
+    // Assert
+    assert!(!overturned);
+}
+
+#[test]
+fn heavy_below_light_is_overturned() {
+    // Arrange
+    let layers = two_rows(1.0, 2.0);
+
+    // Act
+    let overturned = is_overturned(&layers, down_frame());
+
+    // Assert
+    assert!(overturned);
 }
