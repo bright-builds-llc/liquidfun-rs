@@ -340,6 +340,8 @@ impl SceneHooks for RayleighTaylorHooks {
 }
 
 #[cfg(test)]
+mod flow_tests;
+#[cfg(test)]
 mod force_lane_tests;
 #[cfg(test)]
 mod hook_tests;

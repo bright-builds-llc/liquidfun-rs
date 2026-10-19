@@ -1,18 +1,23 @@
-//! Test-only helpers shared by the Rayleigh–Taylor unit and spike tests: the
-//! fixed step, the layer split and the D-07 finger, overturn, speed,
-//! containment and rain metrics (49-01-PLAN "Metrics", as amended by
-//! 49-CONTEXT D-06a: depths are measured from the settled interface).
+//! Test-only helpers shared by the Rayleigh–Taylor unit, spike, force-lane
+//! and flow tests: the fixed step, the layer split, the D-07 finger,
+//! overturn, speed, containment and rain metrics (49-01-PLAN "Metrics", as
+//! amended by 49-CONTEXT D-06a: depths are measured from the settled
+//! interface), the S4 stability recorder and the session drivers.
 //!
 //! Every metric reads heights along `frame.up` and bins along
 //! `frame.across`, so a tilted-gravity test can reuse them. The finger bins
 //! cover the inner tank in the gravity-down frame.
 
 use liquidfun::math::Vec2;
-use liquidfun::{ParticleGroupId, ParticleSystemId, StepConfiguration, World};
+use liquidfun::{
+    NoDecisionHook, ParticleGroupId, ParticleSystemId, StepConfiguration, StepLimits, World,
+};
 
 use super::geometry::{FLOOR_TOP_Y, LID_BOTTOM_Y, TANK_HALF_WIDTH, TANK_INNER_HEIGHT};
+use super::{RayleighTaylorParts, TUNING};
 use crate::scene::particle_force::GravityFrame;
-use crate::scene::{SceneId, particle_iterations};
+use crate::scene::{SceneHooks, SceneId, particle_iterations};
+use crate::session::{MAX_ADVANCE_STEPS, SessionCore};
 
 /// How far below the settled interface a finger must reach, as a share of
 /// the inner tank height (D-06a).
@@ -28,6 +33,12 @@ pub(super) const FINGER_BIN_COUNT: usize = 17;
 pub(super) const MIN_FINGER_PARTICLES: usize = 4;
 /// Largest particle speed a bounded run may reach at gravity 10 (S4).
 pub(super) const MAX_SPEED: f32 = 6.0;
+/// Speed and containment samples are taken every this many steps (S4).
+pub(super) const STABILITY_SAMPLE_EVERY: u32 = 30;
+/// Last step of the early speed window (S4).
+const EARLY_WINDOW_END: u32 = 1_200;
+/// First step of the late speed window (S4).
+const LATE_WINDOW_START: u32 = 3_000;
 /// A heavy particle below the depth line with fewer neighbors than this is rain.
 const MIN_RAIN_NEIGHBORS: usize = 2;
 /// Neighbor reach for the rain diagnostic, in particle radii.
@@ -292,4 +303,151 @@ pub(super) fn velocity_bits(world: &World, system: ParticleSystemId) -> Vec<(u32
             .expect("liquid")
             .velocities(),
     )
+}
+
+/// One session-order fixed step on bare parts: `on_advance`, then `world.step`.
+pub(super) fn fixed_step(parts: &mut RayleighTaylorParts) {
+    parts
+        .hooks
+        .on_advance(&mut parts.world, parts.particle_system)
+        .expect("the extra weight applies");
+    parts
+        .world
+        .step(
+            step_configuration(),
+            &mut NoDecisionHook,
+            StepLimits::default(),
+        )
+        .expect("the tank world steps");
+}
+
+/// Plain mean of `positions`.
+pub(super) fn centroid(positions: &[Vec2]) -> Vec2 {
+    let total = positions
+        .iter()
+        .fold(Vec2::ZERO, |sum, position| sum + *position);
+    total * (1.0 / f32::from(u16::try_from(positions.len().max(1)).expect("count fits u16")))
+}
+
+/// S4 speed and containment, sampled every `STABILITY_SAMPLE_EVERY` steps.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct Stability {
+    /// Largest sampled speed over steps 0..=1,200.
+    pub(super) max_speed_early: f32,
+    /// Largest sampled speed from step 3,000, once a sample lands there.
+    pub(super) maybe_max_speed_late: Option<f32>,
+    pub(super) max_speed_overall: f32,
+    pub(super) max_out_of_tank: usize,
+}
+
+impl Stability {
+    /// Folds in the sample taken after `step`, for particles of `radius`.
+    pub(super) fn record(
+        &mut self,
+        step: u32,
+        positions: &[Vec2],
+        velocities: &[Vec2],
+        radius: f32,
+    ) {
+        let speed = max_speed(velocities);
+        self.max_speed_overall = self.max_speed_overall.max(speed);
+        if step <= EARLY_WINDOW_END {
+            self.max_speed_early = self.max_speed_early.max(speed);
+        }
+        if step >= LATE_WINDOW_START {
+            self.maybe_max_speed_late = Some(
+                self.maybe_max_speed_late
+                    .map_or(speed, |late| late.max(speed)),
+            );
+        }
+        self.max_out_of_tank = self
+            .max_out_of_tank
+            .max(out_of_tank_count(positions, radius));
+    }
+}
+
+/// S4: nothing left the tank, every sampled speed is within `MAX_SPEED`, and
+/// the late window is no faster than the early one. `context` is printed on
+/// failure.
+pub(super) fn assert_bounded(stability: &Stability, context: &impl std::fmt::Debug) {
+    assert_eq!(stability.max_out_of_tank, 0, "{context:?}");
+    assert!(stability.max_speed_overall <= MAX_SPEED, "{context:?}");
+    let late = stability.maybe_max_speed_late.expect("late window sampled");
+    assert!(late <= stability.max_speed_early, "{context:?}");
+}
+
+/// Advances a session `steps` fixed steps in the largest allowed chunks;
+/// every chunk must step.
+pub(super) fn advance(session: &mut SessionCore, steps: u32) {
+    let mut remaining = steps;
+    while remaining > 0 {
+        let chunk = remaining.min(MAX_ADVANCE_STEPS);
+        session
+            .advance(chunk)
+            .expect("the rayleigh-taylor scene steps");
+        remaining -= chunk;
+    }
+}
+
+/// The heavy group: the group of the highest particle. The heavy layer sits
+/// on top at load, so call this before advancing.
+pub(super) fn heavy_group_of(session: &SessionCore) -> ParticleGroupId {
+    session.read_particles(|world, system| {
+        let view = world.particle_system_view(system).expect("liquid");
+        let (top, _height) = view.positions().iter().enumerate().fold(
+            (0, f32::NEG_INFINITY),
+            |best, (index, position)| {
+                if position.y > best.1 {
+                    (index, position.y)
+                } else {
+                    best
+                }
+            },
+        );
+        view.group_ids()[top].expect("every particle is in a layer group")
+    })
+}
+
+/// The session's particles split by `heavy`.
+pub(super) fn session_layers(session: &SessionCore, heavy: ParticleGroupId) -> Layers {
+    session.read_particles(|world, system| split_layers(world, system, heavy))
+}
+
+/// Bit patterns of the session's positions, then its velocities.
+pub(super) fn session_bits(session: &SessionCore) -> Vec<(u32, u32)> {
+    session.read_particles(|world, system| {
+        let view = world.particle_system_view(system).expect("liquid");
+        let mut bits = vector_bits(view.positions());
+        bits.extend(vector_bits(view.velocities()));
+        bits
+    })
+}
+
+/// Stability of a session run, with its built and live particle counts.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct StabilityReport {
+    pub(super) stability: Stability,
+    pub(super) built: usize,
+    pub(super) live: usize,
+}
+
+/// Advances `session` `steps` steps, sampling S4 stability every
+/// `STABILITY_SAMPLE_EVERY` steps; every step must succeed.
+pub(super) fn run_session_stability(session: &mut SessionCore, steps: u32) -> StabilityReport {
+    let mut stability = Stability::default();
+    let mut step = 0;
+    while step < steps {
+        let chunk = STABILITY_SAMPLE_EVERY.min(steps - step);
+        advance(session, chunk);
+        step += chunk;
+        session.read_particles(|world, system| {
+            let view = world.particle_system_view(system).expect("liquid");
+            stability.record(step, view.positions(), view.velocities(), TUNING.radius);
+        });
+    }
+    StabilityReport {
+        stability,
+        built: session.particle_count(),
+        live: session.live_particle_count().expect("live particle count"),
+    }
 }

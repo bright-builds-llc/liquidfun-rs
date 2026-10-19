@@ -49,21 +49,17 @@
 use std::sync::OnceLock;
 
 use liquidfun::math::Vec2;
-use liquidfun::{NoDecisionHook, StepLimits};
 
 use super::geometry::TANK_INNER_HEIGHT;
 use super::test_support::{
-    Layers, MAX_SPEED, depth_line, down_frame, finger_count, fluid_top, interface_height,
-    is_overturned, max_speed, out_of_tank_count, rain_share, ripple_depth, split_layers,
-    step_configuration,
+    Layers, STABILITY_SAMPLE_EVERY, Stability, assert_bounded, depth_line, down_frame,
+    finger_count, fixed_step, fluid_top, interface_height, is_overturned, rain_share, ripple_depth,
+    split_layers,
 };
 use super::{RayleighTaylorParts, TUNING, Tuning, WeightRatio, build_parts};
-use crate::scene::SceneHooks;
 
 /// Finger and overturn samples are taken every this many steps (0.1 s).
 const SAMPLE_EVERY: u32 = 6;
-/// Speed and containment samples are taken every this many steps (S4).
-const STABILITY_SAMPLE_EVERY: u32 = 30;
 /// Largest settle drop of the fluid top, as a share of the tank height (S0).
 const MAX_SETTLE_DROP_FRACTION: f32 = 0.1;
 /// Latest first sample with at least 3 fingers at ratio 2 (S1, 4.0 s).
@@ -84,10 +80,6 @@ const START_SAMPLE_STEP: u32 = 60;
 const START_DEPTH_GAIN: f32 = 0.06;
 /// A 60 s run at 60 Hz (S4).
 const LONG_RUN_STEPS: u32 = 3_600;
-/// Last step of the early speed window (S4).
-const EARLY_WINDOW_END: u32 = 1_200;
-/// First step of the late speed window (S4).
-const LATE_WINDOW_START: u32 = 3_000;
 /// Steps of each determinism run (S5).
 const DETERMINISM_STEPS: u32 = 600;
 
@@ -103,26 +95,7 @@ struct RunReport {
     maybe_rain_share_at_240: Option<f32>,
     ripple_depth_at_0: f32,
     maybe_ripple_depth_at_60: Option<f32>,
-    max_speed_early: f32,
-    maybe_max_speed_late: Option<f32>,
-    max_speed_overall: f32,
-    max_out_of_tank: usize,
-}
-
-/// One session-order fixed step: `on_advance`, then `world.step`.
-fn advance(parts: &mut RayleighTaylorParts) {
-    parts
-        .hooks
-        .on_advance(&mut parts.world, parts.particle_system)
-        .expect("the extra weight applies");
-    parts
-        .world
-        .step(
-            step_configuration(),
-            &mut NoDecisionHook,
-            StepLimits::default(),
-        )
-        .expect("the tank world steps");
+    stability: Stability,
 }
 
 fn layers(parts: &RayleighTaylorParts) -> Layers {
@@ -137,7 +110,7 @@ fn settle(ratio: WeightRatio, tuning: &Tuning) -> (RayleighTaylorParts, RunRepor
     let start = layers(&parts);
     let start_interface = interface_height(&start, frame);
     for _step in 0..tuning.settle_steps {
-        advance(&mut parts);
+        fixed_step(&mut parts);
     }
     let settled = layers(&parts);
     let settled_interface = interface_height(&settled, frame);
@@ -151,10 +124,7 @@ fn settle(ratio: WeightRatio, tuning: &Tuning) -> (RayleighTaylorParts, RunRepor
         maybe_rain_share_at_240: None,
         ripple_depth_at_0: ripple_depth(&start, frame, start_interface),
         maybe_ripple_depth_at_60: None,
-        max_speed_early: 0.0,
-        maybe_max_speed_late: None,
-        max_speed_overall: 0.0,
-        max_out_of_tank: 0,
+        stability: Stability::default(),
     };
     (parts, report)
 }
@@ -164,7 +134,7 @@ fn run(ratio: WeightRatio, tuning: &Tuning, steps: u32) -> RunReport {
     let frame = down_frame();
     let line = depth_line(report.settled_interface);
     for step in u32::from(tuning.settle_steps) + 1..=steps {
-        advance(&mut parts);
+        fixed_step(&mut parts);
         if step % SAMPLE_EVERY != 0 {
             continue;
         }
@@ -185,51 +155,22 @@ fn run(ratio: WeightRatio, tuning: &Tuning, steps: u32) -> RunReport {
             report.maybe_rain_share_at_240 = Some(rain_share(&sample, frame, tuning.radius, line));
         }
         if step % STABILITY_SAMPLE_EVERY == 0 {
-            record_stability(&mut report, &parts, &sample, step, tuning.radius);
+            let view = parts
+                .world
+                .particle_system_view(parts.particle_system)
+                .expect("liquid");
+            report
+                .stability
+                .record(step, view.positions(), &sample.velocities, tuning.radius);
         }
     }
     report
-}
-
-fn record_stability(
-    report: &mut RunReport,
-    parts: &RayleighTaylorParts,
-    sample: &Layers,
-    step: u32,
-    radius: f32,
-) {
-    let speed = max_speed(&sample.velocities);
-    report.max_speed_overall = report.max_speed_overall.max(speed);
-    if step <= EARLY_WINDOW_END {
-        report.max_speed_early = report.max_speed_early.max(speed);
-    }
-    if step >= LATE_WINDOW_START {
-        report.maybe_max_speed_late = Some(
-            report
-                .maybe_max_speed_late
-                .map_or(speed, |late| late.max(speed)),
-        );
-    }
-    let view = parts
-        .world
-        .particle_system_view(parts.particle_system)
-        .expect("liquid");
-    report.max_out_of_tank = report
-        .max_out_of_tank
-        .max(out_of_tank_count(view.positions(), radius));
 }
 
 /// The 60 s default-ratio run, shared by S0, S1, S2, S4, S6 and the rain veto.
 fn default_run() -> RunReport {
     static REPORT: OnceLock<RunReport> = OnceLock::new();
     *REPORT.get_or_init(|| run(WeightRatio::Two, &TUNING, LONG_RUN_STEPS))
-}
-
-fn assert_bounded(report: &RunReport) {
-    assert_eq!(report.max_out_of_tank, 0, "{report:?}");
-    assert!(report.max_speed_overall <= MAX_SPEED, "{report:?}");
-    let late = report.maybe_max_speed_late.expect("late window sampled");
-    assert!(late <= report.max_speed_early, "{report:?}");
 }
 
 fn final_bits(parts: &RayleighTaylorParts) -> Vec<(u32, u32)> {
@@ -313,7 +254,7 @@ fn default_ratio_runs_sixty_seconds_bounded() {
     let report = default_run();
 
     // Assert
-    assert_bounded(&report);
+    assert_bounded(&report.stability, &report);
 }
 
 #[test]
@@ -323,7 +264,7 @@ fn ratio_three_runs_sixty_seconds_bounded() {
     let report = run(WeightRatio::Three, &TUNING, LONG_RUN_STEPS);
 
     // Assert
-    assert_bounded(&report);
+    assert_bounded(&report.stability, &report);
 }
 
 #[test]
@@ -335,8 +276,8 @@ fn two_default_runs_are_bit_identical() {
 
     // Act
     for _step in 0..DETERMINISM_STEPS {
-        advance(&mut first);
-        advance(&mut second);
+        fixed_step(&mut first);
+        fixed_step(&mut second);
     }
 
     // Assert
