@@ -1,17 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.6
-milestone_name: milestone
-status: verifying
-stopped_at: Phase 49 context gathered
-last_updated: "2026-10-19T00:39:03.375Z"
-last_activity: "2026-10-17 - Completed quick task 261016-u0s: Tune fake-ferrofluid spikes and frame"
+milestone_name: Physics Curiosity Scenes
+status: executing
+current_phase: 49
+current_phase_name: "Rayleigh–Taylor Instability"
+current_plan: 1
+stopped_at: Phase 49 planned (5 plans)
+last_updated: "2026-10-19T01:25:34.460Z"
+last_activity: 2026-10-19 -- Phase 49 planning complete
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 25
+  total_plans: 30
   completed_plans: 25
-  percent: 100
+  percent: 83
 ---
 
 # Project State
@@ -27,8 +30,8 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 Phase: 49
 Plan: Not started
-Status: Phase 48 complete and verified — ready to discuss Phase 49
-Last activity: 2026-10-17 - Completed quick task 261016-u0s: Tune fake-ferrofluid spikes and frame
+Status: Ready to execute
+Last activity: 2026-10-19 -- Phase 49 planning complete
 
 Progress: [████████░░] Phases 45–48 of 45–49 complete (50 and 51 dropped)
 
