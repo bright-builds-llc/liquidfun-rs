@@ -453,16 +453,19 @@ Plans 01 and 02 can merge if the spike passes on the first candidate (a hobby-sc
 | A10 | Honesty word list | Pitfall 8 | Copy review only |
 | A11 | `MIN_HEIGHT_FRACTION` ≈ 0.48 for the nominal frame | Site Map | Recompute from the final frame |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does candidate 1 (plain water) form fingers or rain at r 0.04?**
    - Known: no interfacial tension; ~10 particles per wavelength.
    - Unclear: whether percolation dominates at ratio 3.
    - Recommendation: the D-05 order and the rain diagnostic decide; look at a frame at 3 s for each candidate.
+   - RESOLVED: Plan 01 Task 3 runs the D-05 candidates in order and applies the pre-written rain veto (rain share at step 240 above 0.5 rejects a config) plus the ASCII-map review.
 2. **Should the tilt test be the one-step twin or the behavior run?**
    - Recommendation: write the debug-safe twin (exact, fast) and keep a short release behavior check, since D-18 words it as centroid motion.
+   - RESOLVED: both, in Plan 02. The debug check reads the particle force lane after `on_advance` (heavy rows equal the scaled extra weight along `-up`, light rows zero), because post-step velocities mix through the pressure, damping and wall passes; the release test checks the sideways centroid motion.
 3. **Exact D-07 interpretation (minimum particles per bin, wall bins).**
    - Recommendation: lock it in the Plan 1 text before the sweep runs, so the floor is never loosened after measuring (the D-06 spirit).
+   - RESOLVED: locked in the Plan 01 `<facts>` metrics and the amended D-07 (at least 4 heavy particles per bin past the 20% line, wall bins skipped).
 
 ## Environment Availability
 

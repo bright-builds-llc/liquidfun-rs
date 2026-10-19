@@ -215,8 +215,15 @@ Plans:
 1. The scene uses one particle system with two groups and extra weight on the heavy group along world gravity, with no engine change. The caption says the heavy layer is given extra weight and never claims a simulated density.
 1. The scene meets every shared scene rule, and the id-join gate reports every protected fingerprint unchanged.
 
-**Plans**: TBD
+**Plans**: 5 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 49-01-PLAN.md — Scene core (tank, seeded two-group lattice, gravity-following extra weight via apply_group_acceleration, weight-ratio parse and Recreated arm) and the time-boxed D-06 spike
+- [ ] 49-02-PLAN.md — D-18 tests: settle and tilted-gravity twins, release fingers, overturn, per-ratio replay, sideways gravity, 60 s ratio 3 and gravity 2/80 smokes
+- [ ] 49-03-PLAN.md — Catalog registration (Rust + web), Weight ratio preset and default, preview, frames, README/survey/demo plans, honesty and sync tests, e2e
+- [ ] 49-04-PLAN.md — Four-mode color check, README preview review, checklist row, all gates, scene-spot numbers and the 28/28 fingerprint gate
+- [ ] 49-05-PLAN.md — Single-file baseline growth with rayleigh-taylor and the 29/29 gate rerun
 
 ### Phase 50: Siphon
 
