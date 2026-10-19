@@ -223,7 +223,7 @@ Plans:
 - [x] 49-02-PLAN.md — D-18 tests: settle and tilted-gravity twins, release fingers, overturn, per-ratio replay, sideways gravity, 60 s ratio 3 and gravity 2/80 smokes
 - [x] 49-03-PLAN.md — Catalog registration (Rust + web), Weight ratio preset and default, preview, frames, README/survey/demo plans, honesty and sync tests, e2e
 - [x] 49-04-PLAN.md — Four-mode color check, README preview review, checklist row, all gates, scene-spot numbers and the 28/28 fingerprint gate
-- [ ] 49-05-PLAN.md — Single-file baseline growth with rayleigh-taylor and the 29/29 gate rerun
+- [x] 49-05-PLAN.md — Single-file baseline growth with rayleigh-taylor and the 29/29 gate rerun
 
 ### Phase 50: Siphon
 
@@ -296,7 +296,7 @@ Plans:
 | 46. Cartesian Diver | v1.6 | 5/5 | Complete    | 2026-10-14 |
 | 47. Archimedes Screw | v1.6 | 5/5 | Complete    | 2026-10-14 |
 | 48. Fake Ferrofluid | v1.6 | 5/5 | Complete    | 2026-10-15 |
-| 49. Rayleigh–Taylor Instability | v1.6 | 4/5 | In Progress|  |
+| 49. Rayleigh–Taylor Instability | v1.6 | 5/5 | Complete   | 2026-10-19 |
 | 50. Siphon | v1.6 | 0/TBD | Dropped (SEED-008) | - |
 | 51. Sand Hourglass | v1.6 | 0/TBD | Dropped (SEED-007) | - |
 

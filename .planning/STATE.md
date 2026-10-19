@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Physics Curiosity Scenes
-status: executing
+status: verifying
 current_phase: 49
 current_phase_name: "Rayleigh–Taylor Instability"
 current_plan: 5
-stopped_at: Completed 49-04-PLAN.md
-last_updated: "2026-10-19T03:13:48.311Z"
+stopped_at: Completed 49-05-PLAN.md
+last_updated: "2026-10-19T03:16:20.897Z"
 last_activity: 2026-10-19
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 30
-  completed_plans: 29
-  percent: 97
+  completed_plans: 30
+  percent: 100
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 Phase: 49 (Rayleigh–Taylor Instability) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-10-19
 
 Progress: [████████░░] Phases 45–48 of 45–49 complete (50 and 51 dropped)
@@ -252,6 +252,7 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 49]: 49-04: #FB923C / #3B82F6 stay; both layers are distinct in Shaded blob, Water, circle wireframe and the static preview at desktop and 390x844
 - [Phase 49]: 49-04: README clip reviewed (frames 31, 61, 115, 241, 571): ripple, deeper troughs at 1 s, five fingers at 1.9 s, overturned by 4 s; no cue, no retune
 - [Phase 49]: 49-04: rayleigh-taylor 1,484/1,484 particles at 0.363 ms/step; gate PASS 28/28 with rayleigh-taylor ac59254e2231967c added (capture 2026-10-19T03-11-46Z at e495c30f5)
+- [Phase 49]: 49-05: baseline grown in single-file commit 9e7e61cfc from reused 49-04 capture 2026-10-19T03-11-46Z at e495c30f5; gate rerun PASS 29/29 unchanged, added none; later work protects rayleigh-taylor
 
 ### Pending Todos
 
@@ -407,9 +408,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 49 P02 | 16min | 2 tasks | 5 files |
 | Phase 49 P03 | 14 min | 2 tasks | 22 files |
 | Phase 49 P04 | 24min | 3 tasks | 4 files |
+| Phase 49 P05 | 1min | 2 tasks | 1 files |
 
 ## Session Continuity
 
-Last session: 2026-10-19T03:13:48.307Z
-Stopped at: Completed 49-04-PLAN.md
+Last session: 2026-10-19T03:16:20.894Z
+Stopped at: Completed 49-05-PLAN.md
 Resume file: None
