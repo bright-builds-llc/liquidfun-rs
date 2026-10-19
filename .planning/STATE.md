@@ -5,16 +5,16 @@ milestone_name: Physics Curiosity Scenes
 status: executing
 current_phase: 49
 current_phase_name: "Rayleigh–Taylor Instability"
-current_plan: 4
-stopped_at: Completed 49-03-PLAN.md
-last_updated: "2026-10-19T02:46:42.099Z"
+current_plan: 5
+stopped_at: Completed 49-04-PLAN.md
+last_updated: "2026-10-19T03:13:48.311Z"
 last_activity: 2026-10-19
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 30
-  completed_plans: 28
-  percent: 93
+  completed_plans: 29
+  percent: 97
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 49 (Rayleigh–Taylor Instability) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-10-19
 
@@ -249,6 +249,9 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 49]: 49-01 tank is wider than tall (lid 1.6, fill 1.5, FRAME_MAX_Y 2.2); Plan 03 must use the SUMMARY wall points and MIN_HEIGHT_FRACTION 0.3, not the nominal values
 - [Phase 49]: 49-02: force-lane tests live in force_lane_tests.rs (distinct from hook_tests.rs); TUNING unchanged, every D-18 release rule passed first run (fingers 114, overturn 156, tilt gain 0.74 m)
 - [Phase 49]: MIN_HEIGHT_FRACTION[rayleigh-taylor] = 0.29: the camera-fitted share on 390x844 is 0.2969, so 0.3 would fail
+- [Phase 49]: 49-04: #FB923C / #3B82F6 stay; both layers are distinct in Shaded blob, Water, circle wireframe and the static preview at desktop and 390x844
+- [Phase 49]: 49-04: README clip reviewed (frames 31, 61, 115, 241, 571): ripple, deeper troughs at 1 s, five fingers at 1.9 s, overturned by 4 s; no cue, no retune
+- [Phase 49]: 49-04: rayleigh-taylor 1,484/1,484 particles at 0.363 ms/step; gate PASS 28/28 with rayleigh-taylor ac59254e2231967c added (capture 2026-10-19T03-11-46Z at e495c30f5)
 
 ### Pending Todos
 
@@ -403,9 +406,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 49 P01 | 45min | 3 tasks | 11 files |
 | Phase 49 P02 | 16min | 2 tasks | 5 files |
 | Phase 49 P03 | 14 min | 2 tasks | 22 files |
+| Phase 49 P04 | 24min | 3 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-10-19T02:46:42.095Z
-Stopped at: Completed 49-03-PLAN.md
+Last session: 2026-10-19T03:13:48.307Z
+Stopped at: Completed 49-04-PLAN.md
 Resume file: None
