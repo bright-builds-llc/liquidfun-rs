@@ -11,15 +11,16 @@ use crate::scene::RigidSegment;
 pub(super) const TANK_HALF_WIDTH: f32 = 1.4;
 /// Top face of the floor slab; the light layer rests on it.
 pub(super) const FLOOR_TOP_Y: f32 = 0.0;
-/// Underside of the lid: the tank is a little taller than wide (D-11).
-pub(super) const LID_BOTTOM_Y: f32 = 3.2;
+/// Underside of the lid, just above the settled fluid top (D-06a).
+pub(super) const LID_BOTTOM_Y: f32 = 1.6;
 /// Walls, floor and lid are several particle diameters thick so nothing tunnels through.
 pub(super) const WALL_THICKNESS: f32 = 0.3;
-/// Highest lattice row: about 0.2 m of headspace keeps the settle off the lid.
-pub(super) const FILL_TOP_Y: f32 = 3.0;
+/// Highest lattice row. The column stays well under the engine pressure cap,
+/// so it settles without slumping (D-06a).
+pub(super) const FILL_TOP_Y: f32 = 1.5;
 /// Mean interface height: the two layers start about equally deep (D-11).
-pub(super) const INTERFACE_MEAN_Y: f32 = 1.5;
-/// Inner tank height, the reference for the 20% finger depth line (D-06).
+pub(super) const INTERFACE_MEAN_Y: f32 = 0.75;
+/// Inner tank height, the reference for the 20% finger depth line (D-06a).
 #[cfg(test)]
 pub(super) const TANK_INNER_HEIGHT: f32 = LID_BOTTOM_Y - FLOOR_TOP_Y;
 
@@ -42,7 +43,7 @@ pub(super) const FRAME_MIN_Y: f32 = -0.6;
 pub(super) const FRAME_MAX_X: f32 = 2.0;
 /// Upper edge of the landscape frame.
 #[cfg(test)]
-pub(super) const FRAME_MAX_Y: f32 = 3.8;
+pub(super) const FRAME_MAX_Y: f32 = 2.2;
 
 /// One periodic interface mode: `troughs` dips across the tank, `amplitude`
 /// meters deep. An amplitude of 0 disables the mode.

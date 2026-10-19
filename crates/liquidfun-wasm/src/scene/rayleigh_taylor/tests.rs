@@ -10,19 +10,26 @@ use super::geometry::{
     lattice_stride, split_layers, tank_quads, tank_segments, wave,
 };
 use super::test_support::{
-    DEPTH_LINE, FINGER_BIN_WIDTH, Layers, down_frame, finger_count, is_overturned,
+    FINGER_BIN_WIDTH, Layers, depth_line, down_frame, finger_count, is_overturned,
 };
 use super::{DEFAULT_WEIGHT_RATIO_TOKEN, TUNING, WEIGHT_RATIO_TOKENS, WeightRatio};
 
 const WAVE_TOLERANCE: f32 = 1e-6;
 const FRAME_MARGIN: f32 = 0.1;
 const MIN_TROUGH_DEPTH: f32 = 0.06;
-const MIN_LATTICE_POINTS: usize = 1_500;
+const MIN_LATTICE_POINTS: usize = 1_200;
+/// The lid sits just above the fluid, so the tank is not half empty (D-06a).
+const MAX_HEADSPACE_FRACTION: f32 = 0.1;
 const MAX_LATTICE_POINTS: usize = 3_000;
 
 /// `u` from -1 to 1 in steps of 0.01.
 fn wave_grid() -> impl Iterator<Item = f32> {
     (-100_i16..=100).map(|step| f32::from(step) * 0.01)
+}
+
+/// The depth line for a column that settled at its starting interface.
+fn synthetic_depth_line() -> f32 {
+    depth_line(INTERFACE_MEAN_Y)
 }
 
 /// `per_bin` heavy particles below the depth line in each listed finger bin.
@@ -31,7 +38,10 @@ fn clusters(bins: &[u16], per_bin: u16) -> Layers {
     for bin in bins {
         let x = -TANK_HALF_WIDTH + FINGER_BIN_WIDTH * (f32::from(*bin) + 0.5);
         for index in 0..per_bin {
-            heavy.push(Vec2::new(x, DEPTH_LINE - 0.1 - 0.05 * f32::from(index)));
+            heavy.push(Vec2::new(
+                x,
+                synthetic_depth_line() - 0.1 - 0.05 * f32::from(index),
+            ));
         }
     }
     Layers {
@@ -167,12 +177,24 @@ fn walls_and_lid_are_at_least_three_diameters_thick() {
 }
 
 #[test]
-fn tank_is_as_tall_as_wide_or_a_little_taller() {
+fn tank_inner_width_stays_in_the_toy_range() {
     // Act
-    let aspect = TANK_INNER_HEIGHT / (2.0 * TANK_HALF_WIDTH);
+    let width = 2.0 * TANK_HALF_WIDTH;
 
     // Assert
-    assert!((1.0..=1.3).contains(&aspect), "{aspect}");
+    assert!((2.4..=3.2).contains(&width), "{width}");
+}
+
+#[test]
+fn lid_sits_just_above_the_fill() {
+    // Act
+    let headspace = LID_BOTTOM_Y - FILL_TOP_Y;
+
+    // Assert
+    assert!(
+        headspace > 0.0 && headspace <= MAX_HEADSPACE_FRACTION * TANK_INNER_HEIGHT,
+        "{headspace}"
+    );
 }
 
 #[test]
@@ -360,7 +382,7 @@ fn three_separate_four_particle_clusters_count_three_fingers() {
     let layers = clusters(&[3, 7, 11], 4);
 
     // Act
-    let fingers = finger_count(&layers, down_frame());
+    let fingers = finger_count(&layers, down_frame(), synthetic_depth_line());
 
     // Assert
     assert_eq!(fingers, 3);
@@ -372,7 +394,7 @@ fn three_particle_clusters_count_no_fingers() {
     let layers = clusters(&[3, 7, 11], 3);
 
     // Act
-    let fingers = finger_count(&layers, down_frame());
+    let fingers = finger_count(&layers, down_frame(), synthetic_depth_line());
 
     // Assert
     assert_eq!(fingers, 0);
@@ -384,7 +406,7 @@ fn a_cluster_in_the_wall_bin_counts_no_finger() {
     let layers = clusters(&[0], 4);
 
     // Act
-    let fingers = finger_count(&layers, down_frame());
+    let fingers = finger_count(&layers, down_frame(), synthetic_depth_line());
 
     // Assert
     assert_eq!(fingers, 0);
@@ -396,7 +418,7 @@ fn clusters_in_adjacent_bins_count_one_finger() {
     let layers = clusters(&[5, 6], 4);
 
     // Act
-    let fingers = finger_count(&layers, down_frame());
+    let fingers = finger_count(&layers, down_frame(), synthetic_depth_line());
 
     // Assert
     assert_eq!(fingers, 1);

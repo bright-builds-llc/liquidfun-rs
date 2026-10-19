@@ -83,6 +83,10 @@ struct Tuning {
     particle_flags: ParticleFlags,
     viscous_strength: f32,
     repulsive_strength: f32,
+    /// Pressure stiffness: stiffer liquid keeps the column from slumping (D-06a).
+    pressure_strength: f32,
+    /// Particle contact damping (D-06a).
+    damping: f32,
     modes: [SeedMode; 2],
     /// Steps with no extra weight while the lattice settles (D-03).
     settle_steps: u16,
@@ -90,24 +94,29 @@ struct Tuning {
     ramp_steps: u16,
 }
 
-/// The tuning chosen by the D-06 spike (49-01-SUMMARY).
+/// The tuning chosen by the D-06 spike (49-01-SUMMARY): plain water (D-05
+/// candidate 1) with stiff pressure, so the column settles without slumping,
+/// and light contact damping, so the interface stays mobile enough to
+/// overturn at ratio 1.2 (D-06a).
 const TUNING: Tuning = Tuning {
-    radius: 0.04,
+    radius: 0.035,
     particle_flags: ParticleFlags::WATER,
     viscous_strength: 0.25,
     repulsive_strength: 1.0,
+    pressure_strength: 2.0,
+    damping: 0.2,
     modes: [
         SeedMode {
-            troughs: 4,
+            troughs: 5,
             amplitude: 0.10,
         },
         SeedMode {
-            troughs: 7,
+            troughs: 9,
             amplitude: 0.03,
         },
     ],
-    settle_steps: 30,
-    ramp_steps: 18,
+    settle_steps: 36,
+    ramp_steps: 24,
 };
 
 const _: () = assert!(TUNING.settle_steps >= 18 && TUNING.settle_steps <= 36);
@@ -220,6 +229,10 @@ fn create_system(world: &mut World, tuning: &Tuning) -> Result<ParticleSystemId,
         .with_viscous_strength(tuning.viscous_strength)
         .map_err(|_error| SceneError::ParticleSystem)?
         .with_repulsive_strength(tuning.repulsive_strength)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_pressure_strength(tuning.pressure_strength)
+        .map_err(|_error| SceneError::ParticleSystem)?
+        .with_damping(tuning.damping)
         .map_err(|_error| SceneError::ParticleSystem)?
         .with_maximum_count(MAXIMUM_PARTICLE_COUNT)
         .map_err(|_error| SceneError::ParticleSystem)?;

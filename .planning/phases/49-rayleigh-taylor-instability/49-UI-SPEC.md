@@ -195,16 +195,16 @@ No new npm or Cargo dependency (shared acceptance rule).
 
 ### Static preview (`RayleighTaylorPreview` in `web/src/catalog/previews-curiosity.tsx`) **[UI-D92]**
 
-The preview shows the defining moment: a closed tall tank, orange on top, blue below, three orange fingers with rounded caps sinking past the middle while two blue bubbles rise between them. Tokens only from `preview-kit.tsx` (`RIGID`, new `RT_HEAVY`, `RT_LIGHT`); still image (no animation, no `transform`). Add `RT_HEAVY` and `RT_LIGHT` to the existing import. Add the `case "rayleigh-taylor": return <RayleighTaylorPreview />;` arm last in the `ScenePreview` switch in `web/src/catalog/previews.tsx`, before the `never` guard.
+The preview shows the defining moment: a closed wide tank (49-01 D-06a geometry), orange on top, blue below, three orange fingers with rounded caps sinking past the middle while two blue bubbles rise between them. Tokens only from `preview-kit.tsx` (`RIGID`, new `RT_HEAVY`, `RT_LIGHT`); still image (no animation, no `transform`). Add `RT_HEAVY` and `RT_LIGHT` to the existing import. Add the `case "rayleigh-taylor": return <RayleighTaylorPreview />;` arm last in the `ScenePreview` switch in `web/src/catalog/previews.tsx`, before the `never` guard.
 
-Exact composition inside `<PreviewFrame>` (`viewBox="0 0 160 90"`, ground `CANVAS`). The tank inner box is x 53.5–106.5, y 13.5–74.5 (the nominal 2.8 × 3.2 m tank at about 19 units per meter); the fill stops at y 17.5 to show the headspace under the lid; the interface sits at y 46 (mid-depth). Liquid first, then the tank:
+Exact composition inside `<PreviewFrame>` (`viewBox="0 0 160 90"`, ground `CANVAS`). The tank inner box is x 45–115, y 25–65 (the final 2.8 × 1.6 m tank from 49-01 at 25 units per meter); the fill stops at y 27.5 to show the 0.1 m headspace under the lid; the interface sits at y 46 (mid-depth). Liquid first, then the tank:
 
-1. Heavy layer: `<rect x="53.5" y="17.5" width="53" height="28.5" fill={RT_HEAVY} />`.
-1. Light layer: `<rect x="53.5" y="46" width="53" height="28.5" fill={RT_LIGHT} />`.
-1. Blue bubbles rising, each `fill={RT_LIGHT}`: `<ellipse cx="73.4" cy="40" rx="4" ry="6" />`, `<ellipse cx="86.6" cy="40" rx="4" ry="6" />`.
-1. Finger stems, each `fill={RT_HEAVY}`: `<rect x="64.75" y="45" width="4" height="12" />`, `<rect x="78" y="45" width="4" height="15" />`, `<rect x="91.25" y="45" width="4" height="12" />`.
-1. Finger caps, each `fill={RT_HEAVY}`: `<ellipse cx="66.75" cy="58" rx="4.5" ry="3" />`, `<ellipse cx="80" cy="61" rx="4.5" ry="3" />`, `<ellipse cx="93.25" cy="58" rx="4.5" ry="3" />`.
-1. Tank: `<rect x="52" y="12" width="56" height="64" fill="none" stroke={RIGID} stroke-width="3" />`.
+1. Heavy layer: `<rect x="45" y="27.5" width="70" height="18.5" fill={RT_HEAVY} />`.
+1. Light layer: `<rect x="45" y="46" width="70" height="19" fill={RT_LIGHT} />`.
+1. Blue bubbles rising, each `fill={RT_LIGHT}`: `<ellipse cx="73" cy="40" rx="3.5" ry="5" />`, `<ellipse cx="87" cy="40" rx="3.5" ry="5" />`.
+1. Finger stems, each `fill={RT_HEAVY}`: `<rect x="64" y="45" width="4" height="9" />`, `<rect x="78" y="45" width="4" height="11" />`, `<rect x="92" y="45" width="4" height="9" />`.
+1. Finger caps, each `fill={RT_HEAVY}`: `<ellipse cx="66" cy="55" rx="4.5" ry="3" />`, `<ellipse cx="80" cy="57" rx="4.5" ry="3" />`, `<ellipse cx="94" cy="55" rx="4.5" ry="3" />`.
+1. Tank: `<rect x="43.5" y="23.5" width="73" height="43" fill="none" stroke={RIGID} stroke-width="3" />`.
 
 No depth line, arrows or labels in the preview. No new palette constant besides `RT_HEAVY` and `RT_LIGHT`.
 
@@ -216,14 +216,14 @@ Everything the visitor sees besides the two liquids comes from `collect_segments
 
 ### Nominal geometry (meters)
 
-**[UI-D93]** Nominal values from `49-RESEARCH.md` § Scene Design, used here for framing. The Plan 1 spike may retune inside D-11, but whenever a geometry constant changes, the Rust `FRAME_*` constants, `RAYLEIGH_TAYLOR_VIEW_BOUNDS`, `MIN_HEIGHT_FRACTION["rayleigh-taylor"]` and the `portrait-bounds.test.ts` wall points are updated **in the same change** (Phase 31 rule). If the spike is indifferent between tank shapes, prefer the taller end of D-11 (inner height up to about 1.3 × inner width), because it fills the phone better (D-13).
+**[UI-D93]** Final values from the Plan 49-01 D-06a spike (49-01-SUMMARY), which replaced the nominal 2.8 × 3.2 m tank from `49-RESEARCH.md` § Scene Design: the 3.0 m column slumped under the engine pressure cap, so D-06a allows a tank wider than tall that the settled fluid fills. Later retuning stays inside D-11 as amended by D-06a, but whenever a geometry constant changes, the Rust `FRAME_*` constants, `RAYLEIGH_TAYLOR_VIEW_BOUNDS`, `MIN_HEIGHT_FRACTION["rayleigh-taylor"]` and the `portrait-bounds.test.ts` wall points are updated **in the same change** (Phase 31 rule). If the spike is indifferent between tank shapes, prefer the taller end of D-11 (inner height up to about 1.3 × inner width), because it fills the phone better (D-13).
 
 | Item | Value |
 |------|-------|
-| Particle radius | 0.04 (about 2,300 particles; budget ≤ ~3,000) |
-| Tank inner | x ∈ [−1.4, 1.4], floor top y = 0, lid underside y = 3.2 |
-| Walls, floor, lid | 0.3 m thick, overlapping at the corners (outer box x ±1.7, y −0.3 … 3.5) |
-| Fill | from the floor to about y = 3.0 (about 0.2 m headspace under the lid); interface mean y = 1.5 with the seeded ripple |
+| Particle radius | 0.035 (1,484 particles; budget ≤ ~3,000) |
+| Tank inner | x ∈ [−1.4, 1.4], floor top y = 0, lid underside y = 1.6 |
+| Walls, floor, lid | 0.3 m thick, overlapping at the corners (outer box x ±1.7, y −0.3 … 1.9) |
+| Fill | from the floor to y = 1.5 (0.1 m headspace under the lid; the column settles about 0.08 m in the first 0.6 s); interface mean y = 0.75 with the seeded ripple (5 troughs at 0.10 m plus 9 at 0.03 m) |
 
 ### Tank outline
 
@@ -236,7 +236,7 @@ Everything the visitor sees besides the two liquids comes from `collect_segments
 | Concern | Contract |
 |---------|----------|
 | Opening frame | orange over blue, filling the tank to just below the lid, with the seeded ripple visible along the interface (primary amplitude at least 1.5 strides, so it is not a flat staircase) |
-| First second | the settle (about 0.3–0.6 s) shows the lattice relaxing with the interface held; the extra weight then ramps in, and the ripple's troughs visibly start to deepen by about 1 s (SCENE-02) |
+| First second | the settle (0.6 s, then a 0.4 s ramp) shows the lattice relaxing with the interface held; the extra weight then ramps in, and the ripple's troughs visibly start to deepen by about 1 s (SCENE-02) |
 | About 4 s (default 2×, gravity 10) | at least 3 separate orange fingers, away from the walls, reach past the 20% depth line with rounded tips while blue bubbles rise between them. Rain (single orange particles trickling through blue) is not a finger and must not dominate the frame (Research Pitfall 1) |
 | About 10 s | overturned: orange mostly at the bottom, blue mostly on top. Some mixed pockets may remain; no copy promises a clean final split |
 | After the overturn | the tank settles and stays still; nothing escapes the closed tank |
@@ -268,11 +268,11 @@ No new action, no `aria-pressed`, no pointer gesture. The scene stays in the e2e
 
 | Frame | Value |
 |-------|-------|
-| `RAYLEIGH_TAYLOR_VIEW_BOUNDS` (landscape `viewBounds`, README wide export) | nominal `{ minX: -2.0, minY: -0.6, maxX: 2.0, maxY: 3.8 }`: the outer tank box plus a 0.3 m margin on every side. Mirrored from Rust `FRAME_*` constants in `rayleigh_taylor/geometry.rs`; a debug Rust geometry test asserts every tank vertex lies inside `FRAME_*` by at least 0.1 m, and an R14 `include_str!` test compares the f32 bits with the TS constant. The TS docstring says "Keep in sync with `FRAME_*` in `crates/liquidfun-wasm/src/scene/rayleigh_taylor/geometry.rs`" |
-| `PORTRAIT_VIEW_BOUNDS["rayleigh-taylor"]` | **[UI-D94]** the same constant, with the comment "The closed tank is already a portrait-friendly frame; the walls set the width." A phone canvas is width-bound for this frame, and the tank walls set the width, so a tighter frame would clip a wall (D-13) |
-| `MIN_HEIGHT_FRACTION["rayleigh-taylor"]` | recompute from the final bounds and set it just below the measured fit (nominal: 4.4 / 4.0 × 390 / 844 ≈ 0.51, so about `0.48`) |
+| `RAYLEIGH_TAYLOR_VIEW_BOUNDS` (landscape `viewBounds`, README wide export) | `{ minX: -2.0, minY: -0.6, maxX: 2.0, maxY: 2.2 }` (final, 49-01): the outer tank box plus a 0.3 m margin on every side. Mirrored from Rust `FRAME_*` constants in `rayleigh_taylor/geometry.rs`; a debug Rust geometry test asserts every tank vertex lies inside `FRAME_*` by at least 0.1 m, and an R14 `include_str!` test compares the f32 bits with the TS constant. The TS docstring says "Keep in sync with `FRAME_*` in `crates/liquidfun-wasm/src/scene/rayleigh_taylor/geometry.rs`" |
+| `PORTRAIT_VIEW_BOUNDS["rayleigh-taylor"]` | **[UI-D94]** the same constant, with the comment "The wide closed tank sets the width; a tighter frame would clip a wall." A phone canvas is width-bound for this frame, and the tank walls set the width, so a tighter frame would clip a wall (D-13). The tank is wider than tall after D-06a, so it leaves vertical margin on a phone (AGENTS.md allows this for a wide scene) |
+| `MIN_HEIGHT_FRACTION["rayleigh-taylor"]` | recompute from the final bounds and set it just below the measured fit (final: 2.8 / 4.0 × 390 / 844 ≈ 0.32, so about `0.3`, the Archimedes Screw value) |
 | `MIN_WIDTH_FRACTION` | no entry (default 0.85 holds) |
-| Wall test points | outer and inner corners of the floor bottom and the lid top (`(±1.7, −0.3)`, `(±1.7, 3.5)`, `(±1.4, 0)`, `(±1.4, 3.2)`), computed from the final geometry |
+| Wall test points | outer and inner corners of the floor bottom and the lid top (`(±1.7, −0.3)`, `(±1.7, 1.9)`, `(±1.4, 0)`, `(±1.4, 1.6)`), computed from the final geometry |
 
 Landscape shows the whole tank with a small margin. HUD clearance comes from the shared safe-frame fit (`data-hud-obstacle`); no padding for chrome. The scale legend (bottom-right, meters, shared `ScaleLegend`) and the gravity slider come from the shared plumbing; this scene adds no chrome and does not hide the legend.
 
