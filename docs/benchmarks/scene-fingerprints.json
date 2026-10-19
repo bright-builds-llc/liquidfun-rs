@@ -3,10 +3,10 @@
   "schema_version": 1,
   "growth_rule": "Protected ids only grow. After a new scene ships, a later commit appends its id and fingerprint here on its own, never in the same commit as a scene or shared-code change. Compare with `just scene-fingerprint-gate`. See docs/adding-a-scene.md.",
   "provenance": {
-    "git_commit": "f798bff915e346a0b901454bf15eeb590d03fd77",
+    "git_commit": "43f84a6058ed8691a40557cf5c5c3171e19fceaf",
     "milestone_base": "b151838be180262eba58245b8e5b376b22de6276",
-    "scene_spot_stamp": "target/dam-break-perf/2026-10-15T07-06-56Z",
-    "captured_at": "2026-10-15T07-06-56Z",
+    "scene_spot_stamp": "target/dam-break-perf/2026-10-19T00-30-27Z",
+    "captured_at": "2026-10-19T00-30-27Z",
     "os": "macos",
     "arch": "aarch64",
     "cpu_brand": "Apple M4 Max",
@@ -127,7 +127,7 @@
     },
     {
       "id": "fake-ferrofluid",
-      "fingerprint": "e73ef71f0615b4eb"
+      "fingerprint": "9f1e59fce8af89e7"
     }
   ]
 }
