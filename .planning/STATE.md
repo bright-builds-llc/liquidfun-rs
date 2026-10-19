@@ -1,14 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.6
-milestone_name: Physics Curiosity Scenes
-status: ready_to_plan
-current_phase: 49
-current_phase_name: "Rayleigh–Taylor Instability"
-current_plan: null
-stopped_at: Phase 48 complete (verified 4/4); 28/28 fingerprints protected
-last_updated: "2026-10-15T08:03:34.588Z"
-last_activity: 2026-10-15
+milestone_name: milestone
+status: verifying
+stopped_at: Phase 49 context gathered
+last_updated: "2026-10-19T00:39:03.375Z"
+last_activity: "2026-10-17 - Completed quick task 261016-u0s: Tune fake-ferrofluid spikes and frame"
 progress:
   total_phases: 7
   completed_phases: 4
@@ -399,6 +396,6 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 
 ## Session Continuity
 
-Last session: 2026-10-15T07:10:12.992Z
-Stopped at: Completed 48-05-PLAN.md
-Resume file: None
+Last session: 2026-10-19T00:39:03.368Z
+Stopped at: Phase 49 context gathered
+Resume file: .planning/phases/49-rayleigh-taylor-instability/49-CONTEXT.md
