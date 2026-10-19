@@ -17,6 +17,7 @@ export const DEFAULT_PRESET_VALUES: Readonly<Record<string, string>> = {
   "jet-strength": "medium",
   emission: "on",
   material: "water",
+  "weight-ratio": "2",
 };
 
 /** True when changing the control rebuilds the scene from its initial state. */

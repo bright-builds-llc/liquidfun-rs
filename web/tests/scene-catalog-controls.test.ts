@@ -60,6 +60,8 @@ const RECREATING_CONTROL_IDS = [
   "gravity",
   "gravity",
   "gravity",
+  "weight-ratio",
+  "gravity",
 ] as const;
 
 function controlLabels(controls: readonly SceneControl[]): string[] {

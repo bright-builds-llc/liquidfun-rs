@@ -2,6 +2,7 @@ import {
   ARCHIMEDES_SCREW_VIEW_BOUNDS,
   CARTESIAN_DIVER_VIEW_BOUNDS,
   FAKE_FERROFLUID_VIEW_BOUNDS,
+  RAYLEIGH_TAYLOR_VIEW_BOUNDS,
   THEO_JANSEN_VIEW_BOUNDS,
   WASHING_MACHINE_VIEW_BOUNDS,
   WAVE_MACHINE_VIEW_BOUNDS,
@@ -101,6 +102,8 @@ export const PORTRAIT_VIEW_BOUNDS: Record<SceneId, WorldBounds> = {
   "archimedes-screw": ARCHIMEDES_SCREW_VIEW_BOUNDS,
   // The dish walls set the width, so a tighter frame would clip a wall.
   "fake-ferrofluid": FAKE_FERROFLUID_VIEW_BOUNDS,
+  // The wide closed tank sets the width; a tighter frame would clip a wall.
+  "rayleigh-taylor": RAYLEIGH_TAYLOR_VIEW_BOUNDS,
 };
 
 /** World rectangle fitted for one scene at the canvas's current aspect. */

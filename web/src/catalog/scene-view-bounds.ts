@@ -59,6 +59,20 @@ export const LIQUID_TUMBLER_VIEW_BOUNDS = {
 } as const;
 
 /**
+ * Camera frame for Rayleigh–Taylor Instability, in meters.
+ *
+ * The closed tank, walls and lid, with a 0.3 m margin on every side.
+ * Keep in sync with `FRAME_*` in
+ * `crates/liquidfun-wasm/src/scene/rayleigh_taylor/geometry.rs`.
+ */
+export const RAYLEIGH_TAYLOR_VIEW_BOUNDS = {
+  minX: -2.0,
+  minY: -0.6,
+  maxX: 2.0,
+  maxY: 2.2,
+} as const;
+
+/**
  * Camera frame for Wave Machine, in meters.
  *
  * Matches the tank in `wave_machine.rs` (about x = ±2.05, y = -0.05..2.05

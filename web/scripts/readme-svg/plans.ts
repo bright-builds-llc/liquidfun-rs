@@ -95,6 +95,7 @@ export const README_SVG_PLANS: readonly ReadmeSvgPlan[] = [
       { atSample: 160, kind: "action", name: "magnet" },
     ],
   },
+  { id: "rayleigh-taylor", cues: [] },
 ];
 
 /** Repo path of one committed README SVG loop. */

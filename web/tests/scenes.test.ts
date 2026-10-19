@@ -70,6 +70,8 @@ const UI_SPEC_DESCRIPTIONS: Readonly<Record<SceneId, string>> = {
     "Slanted vanes slide up a tilted tube and carry pockets of water from the low reservoir into the upper basin, which overflows back down a chute. Flat vanes stand in for a turning helix in this 2D side view. This is an original experimental scene.",
   "fake-ferrofluid":
     "A dark liquid puddle sits in a shallow dish over a magnet and rises into a row of separate spikes. A scripted magnetic pull lifts the liquid into the spikes. The physics engine has no magnetism, and the magnet is only a drawn marker. This is an original experimental scene.",
+  "rayleigh-taylor":
+    "A heavy orange layer rests on a light blue one in a closed tank. Both layers are the same particle liquid, and the orange one is given extra weight, so a small ripple grows into fingers that sink while blue bubbles rise, and the layers turn over. This is an original experimental scene.",
 };
 
 const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
@@ -119,6 +121,8 @@ const UI_SPEC_HINTS: Readonly<Record<SceneId, string>> = {
     "Use Screw speed to speed up or stop the screw, and Direction to run it in reverse. Labeled controls also work from the keyboard.",
   "fake-ferrofluid":
     "Press and drag to move the magnet, and the spikes follow. Let go and it switches off and returns under the dish. Use Magnet to switch it on or off, and Magnet strength to change the pull. Labeled controls also work from the keyboard.",
+  "rayleigh-taylor":
+    "Watch the ripple grow into fingers. Pick a Weight ratio to run it again with that ratio, or use Reset scene to start over with the default settings. Labeled controls also work from the keyboard.",
 };
 
 const KEYBOARD_REMINDER = "Labeled controls also work from the keyboard.";
@@ -218,6 +222,7 @@ describe("SCENES", () => {
       "cartesian-diver",
       "archimedes-screw",
       "fake-ferrofluid",
+      "rayleigh-taylor",
     ] as const;
 
     // Act
@@ -260,6 +265,7 @@ describe("SCENES", () => {
       "Cartesian Diver",
       "Archimedes Screw",
       "Fake Ferrofluid",
+      "Rayleigh–Taylor Instability",
     ];
 
     // Act

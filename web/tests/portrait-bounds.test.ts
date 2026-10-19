@@ -75,6 +75,8 @@ const MIN_HEIGHT_FRACTION: Record<SceneId, number> = {
   "archimedes-screw": 0.3,
   // The wide dish frame is width-bound on a phone and fits 0.218 of its height.
   "fake-ferrofluid": 0.21,
+  // The wide closed tank is width-bound on a phone and fits 0.297 of its height.
+  "rayleigh-taylor": 0.29,
 };
 
 /** Smallest share of the iPhone width the fitted frame should cover. */

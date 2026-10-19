@@ -1,5 +1,5 @@
 /** Static SVG previews for the curiosity scenes. */
-import { CANVAS, FERRO, PreviewFrame, RIGID, WATER } from "./preview-kit";
+import { CANVAS, FERRO, PreviewFrame, RIGID, RT_HEAVY, RT_LIGHT, WATER } from "./preview-kit";
 
 export function CartesianDiverPreview() {
   return (
@@ -54,6 +54,24 @@ export function FakeFerrofluidPreview() {
       <polyline points="16,40 16,68 144,68 144,40" fill="none" stroke={RIGID} stroke-width="3" />
       <rect x="68" y="74" width="24" height="6" fill={CANVAS} stroke={RIGID} stroke-width="2" />
       <line x1="80" y1="74" x2="80" y2="80" stroke={RIGID} stroke-width="2" />
+    </PreviewFrame>
+  );
+}
+
+export function RayleighTaylorPreview() {
+  return (
+    <PreviewFrame>
+      <rect x="45" y="27.5" width="70" height="18.5" fill={RT_HEAVY} />
+      <rect x="45" y="46" width="70" height="19" fill={RT_LIGHT} />
+      <ellipse cx="73" cy="40" rx="3.5" ry="5" fill={RT_LIGHT} />
+      <ellipse cx="87" cy="40" rx="3.5" ry="5" fill={RT_LIGHT} />
+      <rect x="64" y="45" width="4" height="9" fill={RT_HEAVY} />
+      <rect x="78" y="45" width="4" height="11" fill={RT_HEAVY} />
+      <rect x="92" y="45" width="4" height="9" fill={RT_HEAVY} />
+      <ellipse cx="66" cy="55" rx="4.5" ry="3" fill={RT_HEAVY} />
+      <ellipse cx="80" cy="57" rx="4.5" ry="3" fill={RT_HEAVY} />
+      <ellipse cx="94" cy="55" rx="4.5" ry="3" fill={RT_HEAVY} />
+      <rect x="43.5" y="23.5" width="73" height="43" fill="none" stroke={RIGID} stroke-width="3" />
     </PreviewFrame>
   );
 }

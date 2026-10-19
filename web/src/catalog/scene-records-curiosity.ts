@@ -2,6 +2,7 @@
 import { SCREW_SPEED_CONTROL } from "./archimedes-screw-speed";
 import { MAGNET_STRENGTH_CONTROL } from "./fake-ferrofluid-strength";
 import { withGravitySlider } from "./gravity-slider";
+import { WEIGHT_RATIO_CONTROL } from "./rayleigh-taylor-ratio";
 import {
   SHOWCASE,
   action,
@@ -13,6 +14,7 @@ import {
   ARCHIMEDES_SCREW_VIEW_BOUNDS,
   CARTESIAN_DIVER_VIEW_BOUNDS,
   FAKE_FERROFLUID_VIEW_BOUNDS,
+  RAYLEIGH_TAYLOR_VIEW_BOUNDS,
 } from "./scene-view-bounds";
 import type { SceneRecord } from "./scenes";
 
@@ -68,6 +70,21 @@ export const CURIOSITY_SCENE_RECORDS: readonly SceneRecord[] = [
     viewBounds: FAKE_FERROFLUID_VIEW_BOUNDS,
     credits: {
       implementationPath: sceneSource("fake_ferrofluid.rs"),
+      inspiration: [SHOWCASE],
+    },
+  },
+  {
+    id: "rayleigh-taylor",
+    title: "Rayleigh–Taylor Instability",
+    ready: true,
+    description:
+      "A heavy orange layer rests on a light blue one in a closed tank. Both layers are the same particle liquid, and the orange one is given extra weight, so a small ripple grows into fingers that sink while blue bubbles rise, and the layers turn over. This is an original experimental scene.",
+    interactionHint:
+      "Watch the ripple grow into fingers. Pick a Weight ratio to run it again with that ratio, or use Reset scene to start over with the default settings. Labeled controls also work from the keyboard.",
+    controls: withGravitySlider([WEIGHT_RATIO_CONTROL]),
+    viewBounds: RAYLEIGH_TAYLOR_VIEW_BOUNDS,
+    credits: {
+      implementationPath: sceneSource("rayleigh_taylor.rs"),
       inspiration: [SHOWCASE],
     },
   },

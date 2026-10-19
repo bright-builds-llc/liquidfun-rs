@@ -4,6 +4,10 @@ import type { JSX } from "solid-js";
 export const WATER = "#4DA3FF";
 /** Fake Ferrofluid liquid; matches the Rust particle color. */
 export const FERRO = "#8A84AD";
+/** Rayleigh–Taylor heavy layer; matches the Rust particle color. */
+export const RT_HEAVY = "#FB923C";
+/** Rayleigh–Taylor light layer; matches the Rust particle color. */
+export const RT_LIGHT = "#3B82F6";
 export const DRIP = "#F2B040";
 export const ACCENT_WATER = "#39D3C7";
 export const MIX_RED = "#F87171";

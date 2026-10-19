@@ -4,6 +4,7 @@ import {
   CARTESIAN_DIVER_VIEW_BOUNDS,
   FAKE_FERROFLUID_VIEW_BOUNDS,
   LIQUID_TUMBLER_VIEW_BOUNDS,
+  RAYLEIGH_TAYLOR_VIEW_BOUNDS,
   SCENES,
   TESLA_VALVE_VIEW_BOUNDS,
   THEO_JANSEN_VIEW_BOUNDS,
@@ -40,6 +41,7 @@ export const SCENE_IDS = [
   "cartesian-diver",
   "archimedes-screw",
   "fake-ferrofluid",
+  "rayleigh-taylor",
 ] as const;
 
 export type SceneId = (typeof SCENE_IDS)[number];
@@ -103,6 +105,7 @@ export {
   CARTESIAN_DIVER_VIEW_BOUNDS,
   FAKE_FERROFLUID_VIEW_BOUNDS,
   LIQUID_TUMBLER_VIEW_BOUNDS,
+  RAYLEIGH_TAYLOR_VIEW_BOUNDS,
   SCENES,
   TESLA_VALVE_VIEW_BOUNDS,
   THEO_JANSEN_VIEW_BOUNDS,
