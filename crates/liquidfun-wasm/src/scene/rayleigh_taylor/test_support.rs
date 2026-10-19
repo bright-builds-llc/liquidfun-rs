@@ -254,3 +254,42 @@ pub(super) fn ripple_depth(layers: &Layers, frame: GravityFrame, interface: f32)
         })
         .fold(f32::NEG_INFINITY, f32::max)
 }
+
+/// The particle force lane split by `heavy`: `(heavy rows, light rows)`,
+/// each in row order. Read it right before and right after `on_advance`
+/// and compare the two reads: wall reaction forces from the previous step
+/// already sit in the lane, so its absolute values mean nothing here.
+pub(super) fn force_rows(
+    world: &World,
+    system: ParticleSystemId,
+    heavy: ParticleGroupId,
+) -> (Vec<Vec2>, Vec<Vec2>) {
+    let view = world.particle_system_view(system).expect("liquid");
+    let mut rows = (Vec::new(), Vec::new());
+    for (force, group) in view.forces().iter().zip(view.group_ids()) {
+        if *group == Some(heavy) {
+            rows.0.push(*force);
+        } else {
+            rows.1.push(*force);
+        }
+    }
+    rows
+}
+
+/// Bit patterns of `vectors`, for exact comparisons.
+pub(super) fn vector_bits(vectors: &[Vec2]) -> Vec<(u32, u32)> {
+    vectors
+        .iter()
+        .map(|vector| (vector.x.to_bits(), vector.y.to_bits()))
+        .collect()
+}
+
+/// Bit patterns of the whole particle velocity lane.
+pub(super) fn velocity_bits(world: &World, system: ParticleSystemId) -> Vec<(u32, u32)> {
+    vector_bits(
+        world
+            .particle_system_view(system)
+            .expect("liquid")
+            .velocities(),
+    )
+}
