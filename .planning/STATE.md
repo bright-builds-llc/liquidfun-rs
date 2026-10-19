@@ -5,16 +5,16 @@ milestone_name: Physics Curiosity Scenes
 status: executing
 current_phase: 49
 current_phase_name: "Rayleigh–Taylor Instability"
-current_plan: 1
-stopped_at: Phase 49 execution started
-last_updated: "2026-10-19T01:26:11.510Z"
-last_activity: 2026-10-19 -- Phase 49 execution started
+current_plan: 2
+stopped_at: Completed 49-01-PLAN.md
+last_updated: "2026-10-19T02:11:19.653Z"
+last_activity: 2026-10-19
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 30
-  completed_plans: 25
-  percent: 83
+  completed_plans: 26
+  percent: 87
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 ## Current Position
 
 Phase: 49 (Rayleigh–Taylor Instability) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 49
-Last activity: 2026-10-19 -- Phase 49 execution started
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-10-19
 
 Progress: [████████░░] Phases 45–48 of 45–49 complete (50 and 51 dropped)
 
@@ -245,6 +245,8 @@ v1.3, v1.4 and v1.5 decisions are archived in `.planning/milestones/v1.3-STATE.m
 - [Phase 48]: 48-04: ferrofluid scene-spot 990/990, median 0.314 ms/step; gate PASS 27/27 with fake-ferrofluid e73ef71f0615b4eb added (capture 2026-10-15T07-06-56Z at f798bff91)
 - [Phase 48]: 48-04: finding, not re-tuned: crests rise about 0.3 m and fill only the bottom quarter of the 3.0 m dish; liquid reads mid-tone gray-violet, not dark
 - [Phase 48]: 48-05: baseline grown in single-file commit 2db76fda3 from reused 48-04 capture 2026-10-15T07-06-56Z at f798bff91 (crates/tools/web identical to HEAD); gate rerun PASS 28/28 unchanged, added none; Phase 49 protects fake-ferrofluid
+- [Phase 49]: 49-01 D-06a rerun: plain WATER at r 0.035, pressure 2.0, damping 0.2, seed 5@0.10+9@0.03, settle 36, ramp 24 in a 2.8 x 1.6 m tank passes S0-S6 and the rain veto (fingers step 114, overturn 156, ratio 1.2 overturn 378)
+- [Phase 49]: 49-01 tank is wider than tall (lid 1.6, fill 1.5, FRAME_MAX_Y 2.2); Plan 03 must use the SUMMARY wall points and MIN_HEIGHT_FRACTION 0.3, not the nominal values
 
 ### Pending Todos
 
@@ -396,9 +398,10 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | Phase 48 P03 | 17min | 2 tasks | 23 files |
 | Phase 48 P04 | 27min | 3 tasks | 4 files |
 | Phase 48 P05 | 2 min | 2 tasks | 1 files |
+| Phase 49 P01 | 45min | 3 tasks | 11 files |
 
 ## Session Continuity
 
-Last session: 2026-10-19T00:39:03.368Z
-Stopped at: Phase 49 context gathered
-Resume file: .planning/phases/49-rayleigh-taylor-instability/49-CONTEXT.md
+Last session: 2026-10-19T02:11:19.650Z
+Stopped at: Completed 49-01-PLAN.md
+Resume file: None

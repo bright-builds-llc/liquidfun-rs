@@ -219,7 +219,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 49-01-PLAN.md — Scene core (tank, seeded two-group lattice, gravity-following extra weight via apply_group_acceleration, weight-ratio parse and Recreated arm) and the time-boxed D-06 spike
+- [x] 49-01-PLAN.md — Scene core (tank, seeded two-group lattice, gravity-following extra weight via apply_group_acceleration, weight-ratio parse and Recreated arm) and the time-boxed D-06 spike
 - [ ] 49-02-PLAN.md — D-18 tests: settle and tilted-gravity twins, release fingers, overturn, per-ratio replay, sideways gravity, 60 s ratio 3 and gravity 2/80 smokes
 - [ ] 49-03-PLAN.md — Catalog registration (Rust + web), Weight ratio preset and default, preview, frames, README/survey/demo plans, honesty and sync tests, e2e
 - [ ] 49-04-PLAN.md — Four-mode color check, README preview review, checklist row, all gates, scene-spot numbers and the 28/28 fingerprint gate
@@ -296,7 +296,7 @@ Plans:
 | 46. Cartesian Diver | v1.6 | 5/5 | Complete    | 2026-10-14 |
 | 47. Archimedes Screw | v1.6 | 5/5 | Complete    | 2026-10-14 |
 | 48. Fake Ferrofluid | v1.6 | 5/5 | Complete    | 2026-10-15 |
-| 49. Rayleigh–Taylor Instability | v1.6 | 0/TBD | Not started | - |
+| 49. Rayleigh–Taylor Instability | v1.6 | 1/5 | In Progress|  |
 | 50. Siphon | v1.6 | 0/TBD | Dropped (SEED-008) | - |
 | 51. Sand Hourglass | v1.6 | 0/TBD | Dropped (SEED-007) | - |
 
