@@ -42,6 +42,7 @@ fn parse_scene_id_maps_allowlisted_tokens() {
         ("cartesian-diver", SceneId::CartesianDiver),
         ("archimedes-screw", SceneId::ArchimedesScrew),
         ("fake-ferrofluid", SceneId::FakeFerrofluid),
+        ("rayleigh-taylor", SceneId::RayleighTaylor),
     ];
 
     for (raw, expected) in tokens {

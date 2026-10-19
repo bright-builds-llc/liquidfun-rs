@@ -188,6 +188,7 @@ mod tests {
             SceneId::CartesianDiver => 25,
             SceneId::ArchimedesScrew => 26,
             SceneId::FakeFerrofluid => 27,
+            SceneId::RayleighTaylor => 28,
         }
     }
 }

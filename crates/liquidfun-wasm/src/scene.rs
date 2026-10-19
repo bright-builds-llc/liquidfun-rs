@@ -25,6 +25,7 @@ mod liquid_timer;
 mod liquid_tumbler;
 pub(crate) mod particle_force;
 mod particles;
+mod rayleigh_taylor;
 mod rigid_particles;
 mod soup;
 mod soup_family;
@@ -75,6 +76,7 @@ pub(crate) enum SceneId {
     CartesianDiver,
     ArchimedesScrew,
     FakeFerrofluid,
+    RayleighTaylor,
 }
 
 /// Every playground catalog scene, in `web/src/catalog/scenes.ts` `SCENE_IDS` order.
@@ -142,6 +144,7 @@ pub(crate) fn parse_scene_id(raw: &str) -> Result<SceneId, SessionError> {
         "cartesian-diver" => Ok(SceneId::CartesianDiver),
         "archimedes-screw" => Ok(SceneId::ArchimedesScrew),
         "fake-ferrofluid" => Ok(SceneId::FakeFerrofluid),
+        "rayleigh-taylor" => Ok(SceneId::RayleighTaylor),
         _ => Err(SessionError::UnknownScene),
     }
 }
@@ -293,6 +296,7 @@ pub(crate) fn build_scene(
         SceneId::CartesianDiver => cartesian_diver::build(&scene_presets),
         SceneId::ArchimedesScrew => archimedes_screw::build(&scene_presets),
         SceneId::FakeFerrofluid => fake_ferrofluid::build(&scene_presets),
+        SceneId::RayleighTaylor => rayleigh_taylor::build(&scene_presets),
     }?;
     gravity_slider::apply_gravity_preset(&mut built.world, maybe_magnitude)?;
     Ok(built)
