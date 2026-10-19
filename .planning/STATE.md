@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 Phase: 49
 Plan: Not started
 Status: Phase 48 complete and verified — ready to discuss Phase 49
-Last activity: 2026-10-15
+Last activity: 2026-10-17 - Completed quick task 261016-u0s: Tune fake-ferrofluid spikes and frame
 
 Progress: [████████░░] Phases 45–48 of 45–49 complete (50 and 51 dropped)
 
@@ -282,6 +282,7 @@ None. (Half-float render targets shipped in 43-02; the owner approved the iPhone
 | 261010-wkd | Distinct HUD slider toggle icon (panel chevron) and Tesla valve portrait frame fitted to its walls (+19.9% px/m at 390x844) | 2026-10-11 | complete (6bc85b040) | [261010-wkd](./quick/261010-wkd-distinct-hud-slider-toggle-icon-and-tigh/) |
 | 261011-n6v | Fix flaky Pages CI timeout: static-layer pixel comparisons use a fast mismatch helper instead of deep equality (about 1 s to under 10 ms per test) | 2026-10-11 | complete (4e23b88cb) | [261011-n6v](./quick/261011-n6v-fix-flaky-static-layer-test-timeout-in-p/) |
 | 261012-eaw | Fix flaky README WebP missing-encoder test: encoder start waits for spawn/error, so a missing ffmpeg rejects start instead of racing a frame write | 2026-10-12 | complete (7702cc6b3) | [261012-eaw](./quick/261012-eaw-make-readme-svg-webp-missing-encoder-tes/) |
+| 261016-u0s | Sharpen fake-ferrofluid spikes (about 0.28 m crests to about 0.6 m pointed spikes) and shrink the frame (walls 3.0 to 2.6 m, magnet clamp 1.4 to 0.6 m, frame top 3.6 to 2.9 m); fingerprint re-pinned alone | 2026-10-17 | complete (6b0fcb34e) | [261016-u0s](./quick/261016-u0s-tune-fake-ferrofluid-spikes-and-frame/) |
 | fast-261007 | Fix wasm32 particle join bound overflow that capped Drawing near ~1,600 particles (commit 04216676b) | 2026-10-07 | complete | - |
 
 ## Performance Metrics
