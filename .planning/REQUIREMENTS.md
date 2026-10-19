@@ -40,8 +40,8 @@ Research: `.planning/research/v1.6-curiosity-scenes/SUMMARY.md`.
 
 ### Rayleigh–Taylor instability
 
-- [ ] **RT-01**: Player sees a heavy liquid layer above a light one develop into fingers that sink through the light liquid. The layers overturn within about 10 seconds.
-- [ ] **RT-02**: Player can choose the heavy-to-light weight ratio and restart the run. The same settings always produce the same pattern.
+- [x] **RT-01**: Player sees a heavy liquid layer above a light one develop into fingers that sink through the light liquid. The layers overturn within about 10 seconds.
+- [x] **RT-02**: Player can choose the heavy-to-light weight ratio and restart the run. The same settings always produce the same pattern.
 
 ### Siphon
 
@@ -99,8 +99,8 @@ SCENE-01..03 apply to every scene phase (46–51) and the PREP-01 gate reruns af
 | FERRO-01 | Phase 48 | Complete |
 | FERRO-02 | Phase 48 | Complete |
 | FERRO-03 | Phase 48 | Complete |
-| RT-01 | Phase 49 | Pending |
-| RT-02 | Phase 49 | Pending |
+| RT-01 | Phase 49 | Complete |
+| RT-02 | Phase 49 | Complete |
 | SIPHON-01 | Phase 50 | Returned to SEED-008 |
 | SIPHON-02 | Phase 50 | Returned to SEED-008 |
 | SAND-01 | Phase 51 | Returned to SEED-007 |

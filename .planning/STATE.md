@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Physics Curiosity Scenes
-status: verifying
+status: completed
 current_phase: 49
 current_phase_name: "Rayleigh–Taylor Instability"
-current_plan: 5
-stopped_at: Completed 49-05-PLAN.md
-last_updated: "2026-10-19T03:16:20.897Z"
+current_plan: null
+stopped_at: Phase 49 complete (verified 28/28); 29/29 fingerprints protected
+last_updated: "2026-10-19T03:33:02.972Z"
 last_activity: 2026-10-19
 progress:
   total_phases: 7
@@ -28,12 +28,12 @@ See: `.planning/PROJECT.md` (updated 2026-10-14)
 
 ## Current Position
 
-Phase: 49 (Rayleigh–Taylor Instability) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-10-19
+Phase: 49 (last active v1.6 phase; 50 and 51 dropped)
+Plan: 5 of 5 complete
+Status: Phase 49 complete — v1.6 scene phases done; ready for milestone audit
+Last activity: 2026-10-19 - Completed Phase 49 Rayleigh–Taylor Instability (verified 28/28, 29/29 fingerprints)
 
-Progress: [████████░░] Phases 45–48 of 45–49 complete (50 and 51 dropped)
+Progress: [██████████] Phases 45–49 complete (50 and 51 dropped)
 
 v1.5 Puzzle Mode is archived, and annotated tag `v1.5` marks the archive, authorized by the owner on 2026-10-14. The milestone audit passed and is in `milestones/v1.5-MILESTONE-AUDIT.md`; full v1.5 state is in `milestones/v1.5-STATE.md`. v1.6 Physics Curiosity Scenes started 2026-10-14 (SEED-004); phase numbering continues at 45. v1.4 (tag `v1.4`) and v1.3 also remain archived. Package publication remains separately authorized.
 
